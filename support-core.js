@@ -19,7 +19,7 @@ const CORE=[
 const tool=CORE.find(x=>x.slug===slug)||CORE[0],$=s=>document.querySelector(s),panel=$('#panel');
 $('#toolIcon').textContent=tool.icon;$('#toolTitle').textContent=tool.title;$('#toolHint').textContent=tool.hint;document.title=tool.title+' • Classroom Companion';
 $('#closeBtn').onclick=()=>window.close();
-function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[m]))}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function safe(raw,fallback){try{return JSON.parse(raw)||fallback}catch(e){return fallback}}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('show'),1500)}
 function fmt(sec){sec=Math.max(0,Math.floor(sec));return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`}
