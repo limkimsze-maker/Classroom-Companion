@@ -23,30 +23,42 @@
 </main>
 <script>
 const launch=document.getElementById('launch'),status=document.getElementById('status');
+let stripWindow=null;
 launch.onclick=()=>{
   status.classList.remove('show');
+
+  // Reuse the existing strip if it is already open instead of spawning duplicates.
+  if(stripWindow && !stripWindow.closed){
+    try{stripWindow.focus()}catch(e){}
+    return;
+  }
+
   const stripUrl='widget.html?v='+Date.now();
   const features='popup=yes,width=760,height=148,resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no';
-  const w=window.open(stripUrl,'_blank',features);
-  if(!w){status.classList.add('show');return}
-  try{w.opener=null}catch(e){}
-  w.focus();
+  stripWindow=window.open(stripUrl,'ClassroomCompanionStrip',features);
+  if(!stripWindow){status.classList.add('show');return}
+  try{stripWindow.opener=null}catch(e){}
 
-  // Chrome can ignore a small height when the popup is first created.
-  // Force the proven slim size after the window has actually opened.
-  const forceSlim=()=>{try{if(!w.closed)w.resizeTo(760,148)}catch(e){}};
-  setTimeout(forceSlim,100);
-  setTimeout(forceSlim,250);
-  setTimeout(forceSlim,450);
-
-  setTimeout(()=>{
-    forceSlim();
-    try{window.close()}catch(e){}
-    setTimeout(()=>{
-      if(!window.closed){
-        document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Strip launched</h2><p>Your browser kept this launcher tab open. You can close it now; the classroom strip will continue working independently.</p></div></div>';
+  const focusStrip=()=>{
+    try{
+      if(!stripWindow.closed){
+        stripWindow.resizeTo(760,148);
+        stripWindow.focus();
       }
-    },180);
+    }catch(e){}
+  };
+
+  // Chrome can briefly resize/refocus a new popup while it is being created.
+  // Reassert the slim size and focus, but NEVER close the launcher tab: closing it
+  // makes Chrome activate the previously viewed page and appears to "jump back".
+  focusStrip();
+  setTimeout(focusStrip,100);
+  setTimeout(focusStrip,250);
+  setTimeout(focusStrip,450);
+  setTimeout(()=>{
+    focusStrip();
+    document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom strip is running</h2><p>This launcher stays quietly in the background so Chrome does not jump back to another page. Close it whenever you finish teaching.</p></div></div>';
+    try{window.blur();stripWindow.focus()}catch(e){}
   },650);
 };
 </script>
