@@ -41,11 +41,18 @@ launch.onclick=()=>{
   const injectStripEnhancements=()=>{
     try{
       if(!stripWindow||stripWindow.closed||!stripWindow.document?.body)return;
-      if(stripWindow.document.getElementById('transitionStripPatch'))return;
-      const s=stripWindow.document.createElement('script');
-      s.id='transitionStripPatch';
-      s.src='transition-strip.js?v=20261003transition1';
-      stripWindow.document.body.appendChild(s);
+      if(!stripWindow.document.getElementById('transitionStripPatch')){
+        const s=stripWindow.document.createElement('script');
+        s.id='transitionStripPatch';
+        s.src='transition-strip.js?v=20261003transition1';
+        stripWindow.document.body.appendChild(s);
+      }
+      if(!stripWindow.document.getElementById('brainBreakStripPatch')){
+        const s2=stripWindow.document.createElement('script');
+        s2.id='brainBreakStripPatch';
+        s2.src='brain-break-strip.js?v=20261003bb1';
+        stripWindow.document.body.appendChild(s2);
+      }
     }catch(e){}
   };
   try{stripWindow.addEventListener('load',injectStripEnhancements)}catch(e){}
