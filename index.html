@@ -13,13 +13,13 @@
 <main class="card">
   <div class="logo">✦</div>
   <h1>Classroom Companion</h1>
-  <p>Launch a slim classroom strip that stays open while you teach.</p>
+  <p>Launch one tiny classroom widget. Tap it whenever you need a tool.</p>
   <div class="buttons">
-    <button class="btn primary" id="launch" type="button">▣ Launch Classroom Strip</button>
+    <button class="btn primary" id="launch" type="button">✦ Launch Classroom Widget</button>
     <a class="btn" href="full.html">Open Full Toolkit</a>
   </div>
   <div class="note">No login • No installation • No ads • No subscription</div>
-  <div class="status" id="status">The popup was blocked. Allow popups for this site, then press Launch Classroom Strip again.</div>
+  <div class="status" id="status">The popup was blocked. Allow popups for this site, then press Launch Classroom Widget again.</div>
 </main>
 <script>
 const launch=document.getElementById('launch'),status=document.getElementById('status');
@@ -30,8 +30,8 @@ launch.onclick=()=>{
 
   const mobile=matchMedia('(max-width:700px)').matches||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const sw=screen.availWidth||760,sh=screen.availHeight||800;
-  const popupWidth=mobile?Math.max(360,Math.min(sw,700)):760;
-  const popupHeight=mobile?Math.max(220,Math.min(sh,360)):148;
+  const popupWidth=mobile?Math.max(360,Math.min(sw,700)):118;
+  const popupHeight=mobile?Math.max(220,Math.min(sh,360)):112;
   const stripUrl='widget-launch.html?v='+Date.now();
   const features=`popup=yes,width=${popupWidth},height=${popupHeight},resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no`;
   stripWindow=window.open(stripUrl,'ClassroomCompanionStrip',features);
@@ -50,18 +50,17 @@ launch.onclick=()=>{
       ensure('transitionStripPatch','transition-strip.js?v=20261003transition2');
       ensure('brainBreakStripPatch','brain-break-strip.js?v=20261003bb3');
       ensure('clockStripPatch','clock-strip.js?v=20261003clock3');
+      ensure('compactWidgetPatch','compact-widget.js?v=20261003compact1');
       return true;
     }catch(e){return false}
   };
 
   const focusStrip=()=>{
     try{
-      if(!stripWindow.closed){
-        const d=stripWindow.document;
-        if(d?.fullscreenElement||d?.webkitFullscreenElement)return;
-        if(!mobile)stripWindow.resizeTo(popupWidth,popupHeight);
-        stripWindow.focus();
-      }
+      if(stripWindow.closed)return;
+      const d=stripWindow.document;
+      if(d?.fullscreenElement||d?.webkitFullscreenElement)return;
+      stripWindow.focus();
     }catch(e){}
   };
 
@@ -74,8 +73,7 @@ launch.onclick=()=>{
   setTimeout(focusStrip,450);
   setTimeout(()=>{
     injectStripEnhancements();
-    focusStrip();
-    document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom strip is running</h2><p>This launcher stays quietly in the background so Chrome does not jump back to another page. On mobile, swipe the strip left or right to reach every tool.</p></div></div>';
+    document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom widget is running</h2><p>Tap the small ✦ widget to choose a tool. The launcher stays quietly in the background.</p></div></div>';
     try{window.blur();if(!(stripWindow.document?.fullscreenElement||stripWindow.document?.webkitFullscreenElement))stripWindow.focus()}catch(e){}
   },900);
 };
