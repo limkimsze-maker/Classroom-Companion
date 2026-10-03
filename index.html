@@ -13,19 +13,19 @@
 <main class="card">
   <div class="logo">✦</div>
   <h1>Classroom Companion</h1>
-  <p>Launch a small classroom widget. The launcher will try to close itself automatically after the widget opens.</p>
+  <p>Launch a slim classroom strip that stays open while you teach.</p>
   <div class="buttons">
-    <button class="btn primary" id="launch" type="button">▣ Launch Classroom Widget</button>
+    <button class="btn primary" id="launch" type="button">▣ Launch Classroom Strip</button>
     <a class="btn" href="full.html">Open Full Toolkit</a>
   </div>
   <div class="note">No login • No installation • No ads • No subscription</div>
-  <div class="status" id="status">The popup was blocked. Allow popups for this site, then press Launch Classroom Widget again.</div>
+  <div class="status" id="status">The popup was blocked. Allow popups for this site, then press Launch Classroom Strip again.</div>
 </main>
 <script>
 const launch=document.getElementById('launch'),status=document.getElementById('status');
 launch.onclick=()=>{
   status.classList.remove('show');
-  const w=window.open('widget.html','ClassroomCompanionWidget','popup=yes,width=470,height=320,resizable=yes,scrollbars=yes');
+  const w=window.open('widget.html','ClassroomCompanionWidget','popup=yes,width=1010,height=178,resizable=yes,scrollbars=no');
   if(!w){status.classList.add('show');return}
   try{w.opener=null}catch(e){}
   w.focus();
@@ -33,7 +33,7 @@ launch.onclick=()=>{
     try{window.close()}catch(e){}
     setTimeout(()=>{
       if(!window.closed){
-        document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Widget launched</h2><p>Your browser kept this launcher tab open. You can close it now; the classroom widget will continue working independently.</p></div></div>';
+        document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Strip launched</h2><p>Your browser kept this launcher tab open. You can close it now; the classroom strip will continue working independently.</p></div></div>';
       }
     },180);
   },120);
