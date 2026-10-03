@@ -6,7 +6,7 @@ function ensureEmbeddedLauncher(currentTool='full-screen-clock'){
   if(window.ClassroomCompanionEmbeddedLauncher){window.ClassroomCompanionEmbeddedLauncher.show(currentTool);return}
   let s=document.getElementById('ccEmbeddedLauncherScript');
   if(s)return;
-  s=document.createElement('script');s.id='ccEmbeddedLauncherScript';s.src='embedded-launcher.js?v=20261003embedded8';s.dataset.currentTool=currentTool;
+  s=document.createElement('script');s.id='ccEmbeddedLauncherScript';s.src='embedded-launcher.js?v=20261003embedded9';s.dataset.currentTool=currentTool;
   s.onload=()=>window.ClassroomCompanionEmbeddedLauncher?.show(currentTool);
   document.body.appendChild(s);
 }
@@ -30,5 +30,5 @@ document.addEventListener('fullscreenchange',()=>{const o=document.getElementByI
 const oldInstant=window.instantTool;window.instantTool=function(t){if(t&&t.slug==='full-screen-clock'){openClock();return}return oldInstant&&oldInstant(t)};
 const oldOptions=window.toolOptions;window.toolOptions=function(t){if(!t||t.slug!=='full-screen-clock')return oldOptions&&oldOptions(t);showQuick('Full-Screen Clock',[{label:'🕘 24-hour + Date',primary:true,action:()=>{closeQuick();openClock({format:'24',date:true})}},{label:'🕘 12-hour + Date',action:()=>{closeQuick();openClock({format:'12',date:true})}},{label:'⏱ 24-hour + Seconds',action:()=>{closeQuick();openClock({format:'24',seconds:true,date:true})}},{label:'◻ Clock Only',action:()=>{closeQuick();openClock({format:'24',date:false})}}])};
 const oldStop=window.universalStop;window.universalStop=function(){closeClock();return oldStop&&oldStop()};
-setTimeout(()=>{if(document.getElementById('ccToolLauncherBtn')&&!document.getElementById('ccGroupedToolMenuScript')){const s=document.createElement('script');s.id='ccGroupedToolMenuScript';s.src='tool-menu-ui.js?v=20261003menu2';document.body.appendChild(s)}},0);
+setTimeout(()=>{if(document.getElementById('ccToolLauncherBtn')&&!document.getElementById('ccGroupedToolMenuScript')){const s=document.createElement('script');s.id='ccGroupedToolMenuScript';s.src='tool-menu-ui.js?v=20261003menu3';document.body.appendChild(s)}},0);
 })();
