@@ -5,31 +5,53 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <title>Classroom Companion — All Tools</title>
-<link rel="stylesheet" href="app.css?v=20261003c">
-<style>#floatBtn,#floatHint{display:none!important}</style>
+<link rel="stylesheet" href="app.css?v=20261003f">
+<style>
+#floatBtn,#floatHint{display:none!important}
+.widget.tool-focus{outline:4px solid #0f766e;outline-offset:4px;box-shadow:0 0 0 8px rgba(15,118,110,.12),0 12px 30px rgba(15,118,110,.18)!important;transition:box-shadow .2s ease}
+</style>
 </head>
 <body>
 <div style="font-family:system-ui;padding:24px">Loading Classroom Companion…</div>
 <script>
-(function(){
-  let returned=false;
-  function returnToStrip(){
-    if(returned)return;
-    returned=true;
-    try{
-      if(window.opener && !window.opener.closed){
-        window.opener.postMessage({type:'classroom-companion-return-to-strip'},location.origin);
-        window.opener.focus();
-      }
-    }catch(e){}
+let returned=false;
+function returnToStrip(){
+  if(returned)return;
+  returned=true;
+  try{
+    if(window.opener && !window.opener.closed){
+      window.opener.postMessage({type:'classroom-companion-return-to-strip'},location.origin);
+      window.opener.focus();
+    }
+  }catch(e){}
+}
+window.addEventListener('beforeunload',returnToStrip);
+window.addEventListener('pagehide',returnToStrip);
+function slugify(s){return String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function indexToolkit(){
+  document.querySelectorAll('.widget').forEach(w=>{
+    const title=w.querySelector('.widget-title')?.textContent?.trim();
+    if(title)w.id='tool-'+slugify(title);
+  });
+}
+function focusTool(slug){
+  if(!slug)return;
+  const target=document.getElementById('tool-'+slug);
+  if(!target)return;
+  document.querySelectorAll('.widget.tool-focus').forEach(x=>x.classList.remove('tool-focus'));
+  target.classList.add('tool-focus');
+  target.scrollIntoView({behavior:'smooth',block:'center'});
+  setTimeout(()=>target.classList.remove('tool-focus'),5000);
+}
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin)return;
+  if(e.data&&e.data.type==='classroom-companion-focus-tool'){
+    focusTool(e.data.slug||'');
   }
-  window.addEventListener('beforeunload',returnToStrip);
-  window.addEventListener('pagehide',returnToStrip);
-})();
-
+});
 (async()=>{
   try{
-    const V='20261003c';
+    const V='20261003f';
     const files=['fragment1.html','fragment2.html','fragment3.html','fragment4.html','fragment5.html'];
     const parts=await Promise.all(files.map(f=>fetch(f+'?v='+V,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(f);return r.text()})));
     document.body.innerHTML=parts.join('');
@@ -40,6 +62,9 @@
     }
     document.getElementById('floatBtn')?.remove();
     document.getElementById('floatHint')?.remove();
+    indexToolkit();
+    const requested=new URLSearchParams(location.search).get('focus')||'';
+    if(requested)setTimeout(()=>focusTool(requested),120);
   }catch(e){
     document.body.innerHTML='<div style="font-family:system-ui;padding:24px"><h1>Classroom Companion</h1><p>Could not load the toolkit. Refresh the page.</p></div>';
     console.error(e);
