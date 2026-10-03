@@ -10,6 +10,7 @@
 <script>
 (async()=>{
   try{
+    try{window.moveTo(0,0);window.resizeTo(screen.availWidth||1280,screen.availHeight||800)}catch(e){}
     const r=await fetch('widget.html?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('widget');
     let html=await r.text();
@@ -76,17 +77,12 @@ function toolWindowName(s){return 'ClassroomCompanionTool_'+String(s).replace(/[
 function openAnotherTool(other){
   if(!other)return;
   if(other.slug===slug){showRequestedOptions();return}
-  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
-  const width=480,height=560;
-  const baseLeft=Number.isFinite(window.screenX)?window.screenX:100;
-  const baseTop=Number.isFinite(window.screenY)?window.screenY:80;
-  const left=Math.max(0,Math.min(sw-width,baseLeft+42));
-  const top=Math.max(0,Math.min(sh-height,baseTop+36));
+  const sw=Math.max(900,screen.availWidth||1280),sh=Math.max(650,screen.availHeight||800);
   const url='tool-window.html?tool='+encodeURIComponent(other.slug)+'&v='+Date.now();
   const w=window.open(url,toolWindowName(other.slug),
-    'popup=yes,width='+width+',height='+height+',left='+left+',top='+top+',resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no');
+    'popup=yes,width='+sw+',height='+sh+',left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no');
   if(!w){showQuick('Pop-up blocked',[{type:'value',label:'Allow pop-ups for this site to open another classroom tool.'}],{withStop:false});return}
-  closeQuick();try{w.focus()}catch(e){}
+  closeQuick();try{w.moveTo(0,0);w.resizeTo(sw,sh);w.focus()}catch(e){}
 }
 function showToolLauncher(){
   if(!tools.length)return;
