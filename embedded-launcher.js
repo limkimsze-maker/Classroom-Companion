@@ -38,12 +38,10 @@ function closeMenu(){menu.classList.remove('show');btn.classList.remove('active'
 function openMenu(){menu.classList.add('show');btn.classList.add('active')}
 function openTool(t){
   if(t.slug===current){closeMenu();return}
-  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
-  const left=Math.max(90,Math.min(sw-480,170+Math.floor(Math.random()*100)));
-  const top=Math.max(20,Math.min(sh-560,40+Math.floor(Math.random()*80)));
+  const sw=Math.max(900,screen.availWidth||1280),sh=Math.max(650,screen.availHeight||800);
   const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now();
-  const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=480,height=560,left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
-  if(w){try{w.focus()}catch(e){};closeMenu()}
+  const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
+  if(w){try{w.moveTo(0,0);w.resizeTo(sw,sh);w.focus()}catch(e){};closeMenu()}
 }
 function renderList(){
   list.innerHTML='';
