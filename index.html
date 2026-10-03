@@ -40,28 +40,19 @@ launch.onclick=()=>{
 
   const injectStripEnhancements=()=>{
     try{
-      if(!stripWindow||stripWindow.closed||!stripWindow.document?.body)return;
-      if(!stripWindow.document.getElementById('transitionStripPatch')){
-        const s=stripWindow.document.createElement('script');
-        s.id='transitionStripPatch';
-        s.src='transition-strip.js?v=20261003transition1';
-        stripWindow.document.body.appendChild(s);
-      }
-      if(!stripWindow.document.getElementById('brainBreakStripPatch')){
-        const s2=stripWindow.document.createElement('script');
-        s2.id='brainBreakStripPatch';
-        s2.src='brain-break-strip.js?v=20261003bb2';
-        stripWindow.document.body.appendChild(s2);
-      }
-      if(!stripWindow.document.getElementById('clockStripPatch')){
-        const s3=stripWindow.document.createElement('script');
-        s3.id='clockStripPatch';
-        s3.src='clock-strip.js?v=20261003clock1';
-        stripWindow.document.body.appendChild(s3);
-      }
-    }catch(e){}
+      if(!stripWindow||stripWindow.closed||!stripWindow.document?.body)return false;
+      const d=stripWindow.document;
+      if(!d.getElementById('shortcutTrack'))return false;
+      const ensure=(id,src)=>{
+        if(d.getElementById(id))return;
+        const s=d.createElement('script');s.id=id;s.src=src;d.body.appendChild(s);
+      };
+      ensure('transitionStripPatch','transition-strip.js?v=20261003transition2');
+      ensure('brainBreakStripPatch','brain-break-strip.js?v=20261003bb3');
+      ensure('clockStripPatch','clock-strip.js?v=20261003clock2');
+      return true;
+    }catch(e){return false}
   };
-  try{stripWindow.addEventListener('load',injectStripEnhancements)}catch(e){}
 
   const focusStrip=()=>{
     try{
@@ -72,18 +63,19 @@ launch.onclick=()=>{
     }catch(e){}
   };
 
+  const retry=setInterval(()=>{injectStripEnhancements()},250);
+  setTimeout(()=>clearInterval(retry),10000);
+  try{stripWindow.addEventListener('load',()=>{injectStripEnhancements();focusStrip()})}catch(e){}
+
   focusStrip();
-  setTimeout(()=>{injectStripEnhancements();focusStrip()},100);
-  setTimeout(()=>{injectStripEnhancements();focusStrip()},300);
-  setTimeout(()=>{injectStripEnhancements();focusStrip()},700);
-  setTimeout(()=>{injectStripEnhancements();focusStrip()},1200);
-  setTimeout(()=>{injectStripEnhancements();focusStrip()},2000);
+  setTimeout(focusStrip,150);
+  setTimeout(focusStrip,450);
   setTimeout(()=>{
     injectStripEnhancements();
     focusStrip();
     document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom strip is running</h2><p>This launcher stays quietly in the background so Chrome does not jump back to another page. On mobile, swipe the strip left or right to reach every tool.</p></div></div>';
     try{window.blur();stripWindow.focus()}catch(e){}
-  },650);
+  },900);
 };
 </script>
 </body>
