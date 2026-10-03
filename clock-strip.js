@@ -2,13 +2,22 @@
 'use strict';
 window.__clockStripReady=true;
 let clockTimer=null,current={format:'24',seconds:false,date:true};
+function ensureEmbeddedLauncher(currentTool='full-screen-clock'){
+  if(window.ClassroomCompanionEmbeddedLauncher){window.ClassroomCompanionEmbeddedLauncher.show(currentTool);return}
+  let s=document.getElementById('ccEmbeddedLauncherScript');
+  if(s)return;
+  s=document.createElement('script');s.id='ccEmbeddedLauncherScript';s.src='embedded-launcher.js?v=20261003embedded2';s.dataset.currentTool=currentTool;
+  s.onload=()=>window.ClassroomCompanionEmbeddedLauncher?.show(currentTool);
+  document.body.appendChild(s);
+}
+function hideEmbeddedLauncher(){try{window.ClassroomCompanionEmbeddedLauncher?.hide()}catch(e){}}
 function ensureClockOverlay(){
   let o=document.getElementById('ccClockOverlay');
   if(o)return o;
   o=document.createElement('div');
   o.id='ccClockOverlay';
   o.innerHTML=`<style>
-  #ccClockOverlay{position:fixed;inset:0;z-index:2147483647;background:radial-gradient(circle at 50% 20%,#184c68 0,#0f2c43 43%,#081925 100%);color:#fff;display:none;align-items:center;justify-content:center;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+  #ccClockOverlay{position:fixed;inset:0;z-index:2147483646;background:radial-gradient(circle at 50% 20%,#184c68 0,#0f2c43 43%,#081925 100%);color:#fff;display:none;align-items:center;justify-content:center;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
   #ccClockOverlay.show{display:flex}
   #ccClockOverlay .clockWrap{text-align:center;width:min(1200px,94vw);padding:5vh 3vw}
   #ccClockOverlay .clockTime{font-size:clamp(110px,24vw,330px);font-weight:1000;line-height:.9;letter-spacing:-.07em;font-variant-numeric:tabular-nums;text-shadow:0 12px 50px rgba(0,0,0,.28)}
@@ -43,10 +52,10 @@ async function enterFullscreen(){
 }
 async function openClock(opts={}){
   current={format:opts.format||'24',seconds:!!opts.seconds,date:opts.date!==false};
-  const o=ensureClockOverlay();o.classList.add('show');renderClock();clearInterval(clockTimer);clockTimer=setInterval(renderClock,250);await enterFullscreen();
+  const o=ensureClockOverlay();o.classList.add('show');renderClock();clearInterval(clockTimer);clockTimer=setInterval(renderClock,250);ensureEmbeddedLauncher('full-screen-clock');await enterFullscreen();
 }
 function closeClock(){
-  clearInterval(clockTimer);clockTimer=null;const o=document.getElementById('ccClockOverlay');if(o)o.classList.remove('show');
+  clearInterval(clockTimer);clockTimer=null;const o=document.getElementById('ccClockOverlay');if(o)o.classList.remove('show');hideEmbeddedLauncher();
   try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen();else if(document.webkitFullscreenElement&&document.webkitExitFullscreen)document.webkitExitFullscreen()}catch(e){}
 }
 // Do not dismiss the clock just because the browser drops fullscreen.
