@@ -9,15 +9,21 @@ if(!oldStrip||!oldWrap||!quick||typeof allTools==='undefined')return;
 const TOOLBAR_STORE='classroomCompanionCompactToolbarV1';
 const MAX_PINNED=5;
 const REMOVED_DUPLICATES=new Set(['movement-break','end-of-lesson-self-check']);
-const tools=[...new Map(allTools.filter(t=>!REMOVED_DUPLICATES.has(t.slug)).map(t=>[t.slug,t])).values()];
+const SPECIAL_TOOLS=[
+  {icon:'🧹',title:'Duty Roster',slug:'duty-roster'},
+  {icon:'🪪',title:'Roles & Responsibilities',slug:'roles-responsibilities'},
+  {icon:'👥',title:'Group Names & Members',slug:'group-names-members'}
+];
+const tools=[...new Map([...allTools.filter(t=>!REMOVED_DUPLICATES.has(t.slug)),...SPECIAL_TOOLS].map(t=>[t.slug,t])).values()];
+const SPECIAL_SLUGS=new Set(SPECIAL_TOOLS.map(t=>t.slug));
 const toolWindows=new Map();
 const CATEGORIES=[
   {id:'teach',icon:'⏱️',title:'Teach & Pace',hint:'Timers, stages, transitions',slugs:['timer-calm-music','lesson-stages','transition-countdown','focus-intervals','full-screen-clock','date-day']},
   {id:'manage',icon:'🌿',title:'Settle & Manage',hint:'Attention, behaviour, routines',slugs:['attention-signal','calm-reset','noise-level','class-traffic-light','work-mode','behaviour-expectations','pre-correction','help-before-teacher','screen-shade']},
   {id:'check',icon:'❓',title:'Ask & Check',hint:'Questions, responses, checks',slugs:['think-pair-share','mini-whiteboard-routine','question-spinner','answer-check','confidence-check','participation-counter','engagement-snapshot']},
-  {id:'choose',icon:'🎲',title:'Choose & Group',hint:'Pick, randomise, make groups',slugs:['random-number','dice','coin-toss','action-spinner','pick-a-pupil','make-groups']},
+  {id:'choose',icon:'🎲',title:'Choose & Group',hint:'Pick, randomise, saved groups',slugs:['random-number','dice','coin-toss','action-spinner','pick-a-pupil','make-groups','group-names-members']},
   {id:'reflect',icon:'💭',title:'Reflect & Extend',hint:'Brain breaks, reflection, extension',slugs:['early-finisher','brain-break','kwl-chart','reflect','quote-of-the-day']},
-  {id:'plan',icon:'⭐',title:'Reward & Plan',hint:'Goals, rewards, tracking, timetable',slugs:['whole-class-goal','rewards','observation-counter','soundboard','daily-visual-timetable','weekly-visual-timetable']}
+  {id:'plan',icon:'🗂️',title:'Plan & Organise',hint:'Duties, roles, rewards, timetable',slugs:['duty-roster','roles-responsibilities','whole-class-goal','rewards','observation-counter','soundboard','daily-visual-timetable','weekly-visual-timetable']}
 ];
 
 function loadPrefs(){
@@ -62,8 +68,31 @@ function markCategoryHome(){const s=document.getElementById('quickScroll');if(!s
 function markCategoryTools(){const s=document.getElementById('quickScroll');if(!s)return;s.classList.remove('ccCategoryGrid');s.querySelector('.quick-chip')?.classList.add('ccBack')}
 function pruneWindows(){for(const [slug,w] of [...toolWindows]){try{if(!w||w.closed)toolWindows.delete(slug)}catch(e){toolWindows.delete(slug)}}updateActiveUI()}
 function updateActiveUI(){const n=toolWindows.size;activeCount.textContent=String(n);launch.classList.toggle('has-active',n>0);renderPinned(false)}
-function openTool(t){pruneWindows();const existing=toolWindows.get(t.slug);if(existing){try{existing.focus();existing.postMessage({type:'classroom-companion-show-options'},location.origin);closeQuick();resizeCollapsed();return}catch(e){toolWindows.delete(t.slug)}}const index=toolWindows.size,sw=screen.availWidth||1280,sh=screen.availHeight||800,width=Math.min(520,sw),height=Math.min(680,sh),left=Math.max(0,Math.min(sw-width,150+index*36)),top=Math.max(0,Math.min(sh-height,24+index*32));const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now();const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);if(!w){toast('Allow popups to open this tool');return}toolWindows.set(t.slug,w);try{w.focus()}catch(e){}closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed()}
-function showActiveTools(){clearMenuClasses();pruneWindows();const items=[];for(const [slug,w] of toolWindows){const t=tools.find(x=>x.slug===slug);if(!t)continue;items.push({label:`↗ ${t.icon} ${t.title}`,action:()=>{try{w.focus();w.postMessage({type:'classroom-companion-show-options'},location.origin)}catch(e){}closeQuick();resizeCollapsed()}})}if(items.length)items.push({label:'Close all tool windows',stop:true,action:()=>{for(const w of toolWindows.values())try{w.close()}catch(e){}toolWindows.clear();updateActiveUI();closeQuick();resizeCollapsed()}});else items.push({type:'value',label:'No tool windows are open.'});showQuick(`Active tools • ${toolWindows.size}`,items,{withStop:false});launch.classList.add('active');resizeExpanded()}
+function organisationMode(slug){return slug==='roles-responsibilities'?'roles':slug==='group-names-members'?'groups':'duty'}
+function openOrganisation(t,project=false){
+  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
+  const mode=organisationMode(t.slug);
+  const url=project?'class-organisation-dashboard.html?v='+Date.now():'class-organisation.html?mode='+mode+'&v='+Date.now();
+  const name=project?'ClassroomCompanionOrganisationDashboard':toolWindowName(t.slug);
+  const w=window.open(url,name,`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
+  if(!w){toast('Allow popups to open this tool');return}
+  if(!project)toolWindows.set(t.slug,w);
+  try{w.focus()}catch(e){}
+  closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed();
+}
+function showOrganisationOptions(t){
+  clearMenuClasses();
+  showQuick(t.title,[
+    {label:`${t.icon} Open & edit`,primary:true,action:()=>openOrganisation(t,false)},
+    {label:'▣ Project class overview',action:()=>openOrganisation(t,true)},
+    {label:'← Back to tools',action:()=>{const cat=CATEGORIES.find(c=>c.slugs.includes(t.slug));if(cat)showCategory(cat);else showLauncherHome()}}
+  ],{withStop:false});
+  launch.classList.add('active');resizeExpanded();
+}
+function openTool(t){
+  if(SPECIAL_SLUGS.has(t.slug)){showOrganisationOptions(t);return}
+  pruneWindows();const existing=toolWindows.get(t.slug);if(existing){try{existing.focus();existing.postMessage({type:'classroom-companion-show-options'},location.origin);closeQuick();resizeCollapsed();return}catch(e){toolWindows.delete(t.slug)}}const index=toolWindows.size,sw=screen.availWidth||1280,sh=screen.availHeight||800,width=Math.min(520,sw),height=Math.min(680,sh),left=Math.max(0,Math.min(sw-width,150+index*36)),top=Math.max(0,Math.min(sh-height,24+index*32));const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now();const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);if(!w){toast('Allow popups to open this tool');return}toolWindows.set(t.slug,w);try{w.focus()}catch(e){}closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed()}
+function showActiveTools(){clearMenuClasses();pruneWindows();const items=[];for(const [slug,w] of toolWindows){const t=tools.find(x=>x.slug===slug);if(!t)continue;items.push({label:`↗ ${t.icon} ${t.title}`,action:()=>{try{w.focus();if(!SPECIAL_SLUGS.has(slug))w.postMessage({type:'classroom-companion-show-options'},location.origin)}catch(e){}closeQuick();resizeCollapsed()}})}if(items.length)items.push({label:'Close all tool windows',stop:true,action:()=>{for(const w of toolWindows.values())try{w.close()}catch(e){}toolWindows.clear();updateActiveUI();closeQuick();resizeCollapsed()}});else items.push({type:'value',label:'No tool windows are open.'});showQuick(`Active tools • ${toolWindows.size}`,items,{withStop:false});launch.classList.add('active');resizeExpanded()}
 function renderPinned(resize=true){pinnedBar.innerHTML='';for(const slug of prefs.tools){const t=tools.find(x=>x.slug===slug);if(!t)continue;const b=document.createElement('button');b.type='button';b.className='ccPinnedTool'+(toolWindows.has(slug)?' running':'');b.title=t.title;b.innerHTML=`<span class="ccPinnedIcon">${t.icon}</span><span class="ccPinnedLabel">${escapeHtml(t.title)}</span>`;b.onclick=()=>openTool(t);pinnedBar.appendChild(b)}pinnedBar.classList.toggle('show',prefs.visible&&prefs.tools.length>0);if(resize)setTimeout(()=>isQuickOpen()?resizeExpanded():resizeCollapsed(),40)}
 function showToolbarSetup(){clearMenuClasses();const selected=new Set(prefs.tools),items=[];if(selected.size)items.push({label:prefs.visible?'👁 Hide toolbar':'👁 Show toolbar',primary:!prefs.visible,action:()=>{prefs.visible=!prefs.visible;savePrefs();renderPinned();showToolbarSetup()}});for(const t of tools){const on=selected.has(t.slug);items.push({label:`${on?'✓':'＋'} ${t.icon} ${t.title}`,active:on,action:()=>{if(on)prefs.tools=prefs.tools.filter(x=>x!==t.slug);else{if(prefs.tools.length>=MAX_PINNED){toast(`Pin up to ${MAX_PINNED} tools`);return}prefs.tools.push(t.slug);prefs.visible=true}savePrefs();renderPinned();showToolbarSetup()}})}if(selected.size)items.push({label:'Clear toolbar',action:()=>{prefs={visible:true,tools:[]};savePrefs();renderPinned();showToolbarSetup()}});showQuick(`Toolbar • ${prefs.tools.length}/${MAX_PINNED}`,items,{withStop:false});launch.classList.add('active');resizeExpanded()}
 function showCategory(cat){clearMenuClasses();const items=[{label:'← All categories',action:showLauncherHome}];for(const slug of cat.slugs){const t=tools.find(x=>x.slug===slug);if(t)items.push({label:`${toolWindows.has(t.slug)?'● ':''}${t.icon} ${t.title}`,action:()=>openTool(t)})}showQuick(cat.title,items,{withStop:false});markCategoryTools();launch.classList.add('active');resizeExpanded()}
