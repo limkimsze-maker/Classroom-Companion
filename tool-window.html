@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Classroom Companion Tool</title>
+<style>html,body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#eef3f5;color:#17202a}.loading{padding:24px;font-weight:850}</style>
+</head>
+<body><div class="loading">Opening tool…</div>
+<script>
+(async()=>{
+  try{
+    const r=await fetch('widget.html?v='+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw new Error('widget');
+    let html=await r.text();
+    const toolCss=`
+html,body{background:#eef3f5!important;overflow:auto!important;min-height:100vh!important}
+body{padding:0!important}
+#strip{display:none!important}
+#wrap{width:100%!important;max-width:none!important;padding:0!important}
+#quickbar{display:none!important;position:static!important;width:auto!important;max-width:none!important;margin:10px!important;min-height:0!important;padding:8px!important;border-radius:14px!important;box-shadow:0 10px 26px rgba(18,32,46,.12)!important;background:#fff!important;align-items:flex-start!important}
+#quickbar.show{display:flex!important}
+#quickbar .quick-title{font-size:12px!important;line-height:1.15!important;max-width:92px!important;white-space:normal!important;padding:7px 5px!important}
+#quickbar .quick-scroll{display:flex!important;flex-wrap:wrap!important;gap:6px!important;max-width:none!important;overflow:visible!important}
+#quickbar .quick-chip{height:auto!important;min-height:36px!important;padding:8px 10px!important;white-space:normal!important;line-height:1.15!important;text-align:left!important}
+#quickbar .quick-value{max-width:none!important;white-space:normal!important;line-height:1.35!important;padding:10px!important}
+#quickbar .quick-close{display:none!important}
+#ccToolHead{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #d8e1e8;padding:10px 12px;display:flex;align-items:center;gap:9px;box-shadow:0 4px 12px rgba(18,32,46,.06)}
+#ccToolIcon{font-size:25px;line-height:1}#ccToolMeta{min-width:0;flex:1}#ccToolTitle{font-size:14px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ccToolStatus{font-size:10px;color:#0f766e;font-weight:850;margin-top:2px}
+.ccHeadBtn{height:34px;border:1px solid #d8e1e8;background:#fff;border-radius:10px;padding:0 10px;font-weight:900;cursor:pointer}.ccHeadBtn.primary{background:#0f766e;border-color:#0f766e;color:#fff}
+#toast{bottom:8px!important}
+`;
+    html=html.replace('</style>',toolCss+'</style>');
+    html=html.replace('<body>','<body><div id="ccToolHead"><div id="ccToolIcon">✦</div><div id="ccToolMeta"><div id="ccToolTitle">Classroom Tool</div><div id="ccToolStatus">Ready</div></div><button class="ccHeadBtn primary" id="ccToolOptionsBtn" type="button">••• Options</button><button class="ccHeadBtn" id="ccToolCloseBtn" type="button">×</button></div>');
+    const addon=`
+<script src="transition-strip.js?v=20261003transition2"><\/script>
+<script src="brain-break-strip.js?v=20261003bb3"><\/script>
+<script src="clock-strip.js?v=20261003clock3"><\/script>
+<script>
+(function(){
+'use strict';
+const params=new URLSearchParams(location.search),slug=params.get('tool')||'';
+const t=(window.allTools||[]).find(x=>x.slug===slug);
+const title=document.getElementById('ccToolTitle'),icon=document.getElementById('ccToolIcon'),status=document.getElementById('ccToolStatus');
+try{window.fitStrip=()=>{};fitStrip=window.fitStrip;window.restoreStrip=()=>{};restoreStrip=window.restoreStrip}catch(e){}
+if(t){title.textContent=t.title;icon.textContent=t.icon;document.title=t.title+' • Classroom Companion'}else{title.textContent='Unknown tool'}
+function setStatus(){
+  try{
+    if(slug==='timer-calm-music'){status.textContent=format(timer.sec)+' • '+(timer.running?'Running':'Ready');return}
+    if(slug==='noise-level'){status.textContent=document.getElementById('noiseVal')?.textContent||'Ready';return}
+    if(slug==='question-spinner'){status.textContent=document.getElementById('questionVal')?.textContent||'Ready';return}
+    if(slug==='pick-a-pupil'){status.textContent=document.getElementById('pickVal')?.textContent||'Ready';return}
+    if(slug==='participation-counter'){status.textContent=participation+' responses';return}
+    if(slug==='whole-class-goal'){status.textContent=String(goal);return}
+  }catch(e){}
+  status.textContent='Ready';
+}
+function showRequestedOptions(){
+  if(!t)return;
+  try{
+    switch(slug){
+      case'timer-calm-music':timerOptions();break;
+      case'noise-level':showQuick('Noise level',noiseLevels.map(x=>({label:x,active:document.getElementById('noiseVal')?.textContent===x,action:()=>{chooseNoise(x);showValue('Noise level',x)}})));break;
+      case'question-spinner':showQuick('Question',questionPrompts.map(x=>({label:x,action:()=>{document.getElementById('questionVal').textContent=x;showValue('Question',x)}})));break;
+      case'pick-a-pupil':showQuick('Pick pupil',[{label:'Pick now',primary:true,action:()=>{pickPupil();showValue('Pick pupil',document.getElementById('pickVal')?.textContent||'Ready')}},{label:'New round',action:()=>{resetPicker();showValue('Pick pupil','New round ready')}},{label:'Manage class',action:()=>openConfig('class')}]);break;
+      case'rewards':showQuick('Reward',[...['Focus','Effort','Kindness','Teamwork','Ready','Helpful','Perseverance','Responsible','Improved'].map(x=>({label:x,action:()=>{addPoint(x);showValue('Reward',x)}})),{label:'Reset points',action:()=>{data.classPoints[classKey()]=0;saveData();renderPoints();showValue('Reward','Points reset')}}]);break;
+      default:toolOptions(t);
+    }
+  }catch(e){try{instantTool(t)}catch(_){showQuick(t.title,[{type:'value',label:'This tool could not open.'}],{withStop:false})}}
+  setTimeout(setStatus,80);
+}
+document.getElementById('ccToolOptionsBtn').onclick=showRequestedOptions;
+document.getElementById('ccToolCloseBtn').onclick=()=>window.close();
+window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='classroom-companion-show-options'){showRequestedOptions();try{window.focus()}catch(_){}}});
+setInterval(setStatus,500);
+setTimeout(showRequestedOptions,50);
+})();
+<\/script>`;
+    html=html.replace('</body>',addon+'</body>');
+    document.open();document.write(html);document.close();
+  }catch(e){document.body.innerHTML='<div class="loading">Could not open this classroom tool. Please close this window and try again.</div>';console.error(e)}
+})();
+</script>
+</body>
+</html>
