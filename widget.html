@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Classroom Companion Widget</title>
+<style>
+:root{--teal:#0f766e;--teal2:#dff6f1;--ink:#17202a;--muted:#667085;--line:#d8e1e8;--bg:#f6f8fb;--gold:#a16207}*{box-sizing:border-box}html,body{margin:0;min-width:330px;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,select,input,textarea{font:inherit}.wrap{padding:10px}.top{display:flex;align-items:center;gap:8px;margin-bottom:8px}.brand{font-weight:950;font-size:15px;white-space:nowrap}.spacer{flex:1}.class-select{min-width:0;max-width:150px;height:34px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 8px;font-weight:750}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(18,32,46,.08);padding:10px}.timer{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}.time{font-size:34px;line-height:1;font-weight:950;letter-spacing:-.03em;color:var(--teal)}.btn{border:1px solid var(--line);background:#fff;border-radius:11px;min-height:38px;padding:7px 10px;font-weight:900;color:var(--ink);cursor:pointer}.btn:hover{background:#f8fbfc}.btn.primary{background:var(--teal);border-color:var(--teal);color:white}.btn.soft{background:var(--teal2);border-color:#bfe7df;color:#0b5b55}.btn.tiny{min-height:32px;padding:5px 8px;font-size:12px}.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:8px}.tool{border:1px solid var(--line);background:#fff;border-radius:12px;min-height:61px;padding:7px 4px;text-align:center;font-weight:850;cursor:pointer}.tool .ico{display:block;font-size:19px;margin-bottom:2px}.tool .lab{display:block;font-size:11px;line-height:1.1}.tool .val{display:block;font-size:11px;color:var(--teal);font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}.bottom{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}.status{flex:1;min-width:120px;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.drawer{display:none;margin-top:8px}.drawer.show{display:block}.drawer .panel{padding:12px}.drawer h2{font-size:15px;margin:0 0 8px}.field{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:7px;background:#fff}.names{min-height:90px;resize:vertical}.row{display:flex;gap:6px;flex-wrap:wrap}.picker-name,.prompt{font-size:20px;font-weight:950;color:var(--teal);text-align:center;padding:4px 0}.help{font-size:11px;color:var(--muted);line-height:1.4}.toast{position:fixed;left:50%;bottom:10px;transform:translateX(-50%) translateY(10px);background:#17202a;color:#fff;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:.18s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}@media(max-width:430px){.grid{grid-template-columns:repeat(3,1fr)}.brand{display:none}.time{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">✦ Classroom Companion</div>
+    <div class="spacer"></div>
+    <select id="classSelect" class="class-select" aria-label="Choose class"><option value="">No class</option></select>
+    <button id="classBtn" class="btn tiny" type="button">Class</button>
+  </div>
+
+  <div class="panel">
+    <div class="timer">
+      <div class="time" id="time">05:00</div>
+      <button id="timerStart" class="btn primary" type="button">Start</button>
+      <button id="timerReset" class="btn" type="button">Reset</button>
+    </div>
+    <div class="grid">
+      <button class="tool" id="pointBtn" type="button"><span class="ico">⭐</span><span class="lab">Point</span><span class="val" id="pointVal">0</span></button>
+      <button class="tool" id="pickBtn" type="button"><span class="ico">🎯</span><span class="lab">Pick</span><span class="val" id="pickVal">Ready</span></button>
+      <button class="tool" id="questionBtn" type="button"><span class="ico">❓</span><span class="lab">Question</span><span class="val" id="questionVal">Why?</span></button>
+      <button class="tool" id="noiseBtn" type="button"><span class="ico">🔊</span><span class="lab">Noise</span><span class="val" id="noiseVal">Silent</span></button>
+      <button class="tool" id="moreBtn" type="button"><span class="ico">•••</span><span class="lab">All Tools</span><span class="val">Open</span></button>
+    </div>
+    <div class="bottom">
+      <div class="status" id="status">Ready. You can close the launcher tab.</div>
+      <button class="btn tiny" data-size="compact" type="button">Compact</button>
+      <button class="btn tiny" data-size="medium" type="button">Medium</button>
+    </div>
+  </div>
+
+  <div class="drawer" id="classDrawer">
+    <div class="panel">
+      <h2>Add Class</h2>
+      <input id="className" class="field" placeholder="Class name, e.g. 3 Respect">
+      <textarea id="classNames" class="field names" placeholder="Paste or type one pupil name per line"></textarea>
+      <div class="row"><button id="saveClass" class="btn primary" type="button">Save Class</button><button id="closeClass" class="btn" type="button">Close</button></div>
+      <div class="help">Saved only in this browser. Adding a class is optional.</div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+try{window.opener=null}catch(e){}
+const STORE='classroomCompanionV1';
+const defaults={classes:{},selectedClass:'',classPoints:{},pupilPoints:{},teamPoints:{},timetables:{},kwl:{k:'',w:'',l:''}};
+let data=load();
+let timer={sec:300,base:300,running:false,id:null};
+let pickerPool=[];
+let questionPrompts=['Who?','What?','When?','Where?','Why?','How?','Explain','Compare','Predict','What if…?','What evidence?','Give a reason','How do you know?','Describe'];
+let noiseLevels=['Silent','Whisper','Partner','Group','Presentation'];
+let noiseIndex=0;
+const $=s=>document.querySelector(s);
+function load(){try{return {...structuredClone(defaults),...JSON.parse(localStorage.getItem(STORE)||'{}')}}catch(e){return structuredClone(defaults)}}
+function save(){localStorage.setItem(STORE,JSON.stringify(data))}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('show'),1500)}
+function format(s){s=Math.max(0,s);return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
+function classKey(){return data.selectedClass||'_general'}
+function currentClass(){return data.classes[data.selectedClass]||null}
+function renderClasses(){const sel=$('#classSelect');sel.innerHTML='<option value="">No class</option>'+Object.keys(data.classes).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');sel.value=data.selectedClass||'';renderPoints();resetPicker();}
+function escapeHtml(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function renderPoints(){const k=classKey();$('#pointVal').textContent=data.classPoints[k]||0}
+function resetPicker(){const c=currentClass();pickerPool=c?[...c.names]:[];$('#pickVal').textContent=c?'Ready':'Add class'}
+function renderTimer(){$('#time').textContent=format(timer.sec)}
+$('#timerStart').onclick=()=>{timer.running=!timer.running;$('#timerStart').textContent=timer.running?'Pause':'Start';clearInterval(timer.id);if(timer.running){timer.id=setInterval(()=>{timer.sec--;renderTimer();if(timer.sec<=0){clearInterval(timer.id);timer.running=false;$('#timerStart').textContent='Start';toast('Time is up') }},1000)}};
+$('#timerReset').onclick=()=>{clearInterval(timer.id);timer.running=false;timer.sec=timer.base;$('#timerStart').textContent='Start';renderTimer()};
+$('#pointBtn').onclick=()=>{const k=classKey();data.classPoints[k]=(data.classPoints[k]||0)+1;save();renderPoints();toast('+1 point')};
+$('#pickBtn').onclick=()=>{const c=currentClass();if(!c||!c.names.length){$('#classDrawer').classList.add('show');toast('Add or select a class first');return}if(!pickerPool.length)pickerPool=[...c.names];const i=Math.floor(Math.random()*pickerPool.length),name=pickerPool.splice(i,1)[0];$('#pickVal').textContent=name;$('#status').textContent='Picked: '+name};
+$('#questionBtn').onclick=()=>{let n=0;const id=setInterval(()=>{$('#questionVal').textContent=questionPrompts[Math.floor(Math.random()*questionPrompts.length)];if(++n>9){clearInterval(id);$('#status').textContent='Prompt: '+$('#questionVal').textContent}},65)};
+$('#noiseBtn').onclick=()=>{noiseIndex=(noiseIndex+1)%noiseLevels.length;$('#noiseVal').textContent=noiseLevels[noiseIndex];$('#status').textContent='Noise level: '+noiseLevels[noiseIndex]};
+$('#moreBtn').onclick=()=>window.open('full.html','_blank');
+$('#classBtn').onclick=()=>$('#classDrawer').classList.toggle('show');
+$('#closeClass').onclick=()=>$('#classDrawer').classList.remove('show');
+$('#classSelect').onchange=e=>{data.selectedClass=e.target.value;save();renderClasses();$('#status').textContent=data.selectedClass?('Class: '+data.selectedClass):'No class selected'};
+$('#saveClass').onclick=()=>{const name=$('#className').value.trim();const names=$('#classNames').value.split(/\n|,/).map(s=>s.trim()).filter(Boolean);if(!name){toast('Enter a class name');return}data.classes[name]={names};data.selectedClass=name;save();$('#className').value='';$('#classNames').value='';renderClasses();$('#classDrawer').classList.remove('show');$('#status').textContent=`${name} saved • ${names.length} pupils`;toast('Class saved')};
+document.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{const compact=b.dataset.size==='compact';try{window.resizeTo(compact?470:640,compact?320:440);window.focus()}catch(e){toast('Resize is blocked by this browser')}});
+window.addEventListener('storage',e=>{if(e.key===STORE){data=load();renderClasses()}});
+renderTimer();renderClasses();
+</script>
+</body>
+</html>
