@@ -25,7 +25,8 @@
 const launch=document.getElementById('launch'),status=document.getElementById('status');
 launch.onclick=()=>{
   status.classList.remove('show');
-  const w=window.open('widget.html','ClassroomCompanionWidget','popup=yes,width=900,height=148,resizable=yes,scrollbars=no');
+  const stripUrl='widget.html?v=20261003-choose-tools-3';
+  const w=window.open(stripUrl,'ClassroomCompanionWidgetV3','popup=yes,width=900,height=148,resizable=yes,scrollbars=no');
   if(!w){status.classList.add('show');return}
   try{w.opener=null}catch(e){}
   w.focus();
