@@ -36,7 +36,7 @@ body{padding:0!important}
     const addon=`
 <script src="transition-strip.js?v=20261003transition2"><\/script>
 <script src="brain-break-strip.js?v=20261003bb4"><\/script>
-<script src="clock-strip.js?v=20261003clock4"><\/script>
+<script src="clock-strip.js?v=20261003clock5"><\/script>
 <script>
 (function(){
 'use strict';
@@ -82,7 +82,7 @@ function openAnotherTool(other){
   const baseTop=Number.isFinite(window.screenY)?window.screenY:80;
   const left=Math.max(0,Math.min(sw-width,baseLeft+42));
   const top=Math.max(0,Math.min(sh-height,baseTop+36));
-  const url='tool-window.html?tool='+encodeURIComponent(other.slug)+'&v=20261003toolwin4';
+  const url='tool-window.html?tool='+encodeURIComponent(other.slug)+'&v='+Date.now();
   const w=window.open(url,toolWindowName(other.slug),
     'popup=yes,width='+width+',height='+height+',left='+left+',top='+top+',resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no');
   if(!w){showQuick('Pop-up blocked',[{type:'value',label:'Allow pop-ups for this site to open another classroom tool.'}],{withStop:false});return}
