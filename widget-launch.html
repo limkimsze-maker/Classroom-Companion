@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Classroom Companion Strip</title>
+<style>html,body{margin:0;font-family:system-ui;background:#f6f8fb;color:#17202a}.loading{padding:18px;font-weight:800}</style>
+</head>
+<body><div class="loading">Opening Classroom Companion…</div>
+<script>
+(async()=>{
+  try{
+    const r=await fetch('widget.html?v='+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw new Error('widget');
+    let html=await r.text();
+
+    const mobileCss=`
+@media (max-width:700px),(pointer:coarse){
+  html,body{overflow-x:hidden!important;overflow-y:hidden!important;width:100%!important;max-width:100%!important}
+  .wrap{width:100vw!important;max-width:100vw!important;padding:3px!important}
+  .strip{width:calc(100vw - 6px)!important;max-width:none!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding-right:10px!important}
+  .strip::-webkit-scrollbar{display:none!important}
+  .shortcut-track{max-width:none!important;overflow:visible!important;flex:0 0 auto!important}
+  .quickbar{width:calc(100vw - 6px)!important;max-width:calc(100vw - 6px)!important;overflow:hidden!important}
+  .quick-scroll{max-width:calc(100vw - 92px)!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+  .brand span:last-child{display:none!important}
+  .brand{padding-right:0!important}
+}
+`;
+    html=html.replace('</style>',mobileCss+'</style>');
+    html=html.replace(/ambient-engine\.js\?v=[^\"]+/,'ambient-engine.js?v=20261003mobile1');
+
+    const learnerQuotes=[
+      'You do not have to understand everything at once. Learn one step at a time.',
+      'Slow progress is still progress. Keep the next step small and clear.',
+      'Not knowing yet is the beginning of learning.',
+      'A hard question is not a stop sign. Try a different strategy.',
+      'Your first answer does not need to be perfect. It only needs to get you started.',
+      'Mistakes show you what to work on next.',
+      'When one way does not work, change the way — not the goal.',
+      'Ask for help when you need it. Strong learners do.',
+      'You can learn difficult things by breaking them into smaller parts.',
+      'Today, aim to understand one thing better than yesterday.',
+      'Getting stuck does not mean you cannot learn it. It means you need a next move.',
+      'Try, check, change, and try again. That is learning.',
+      'You are allowed to take your time. Keep thinking.',
+      'One careful step is better than rushing through ten.',
+      'If the work feels hard, choose one part you can do first.',
+      'Every time you correct a mistake, your understanding gets stronger.',
+      'You do not need to be the fastest learner. You need to keep learning.',
+      'A small success today can become confidence tomorrow.',
+      'Say what you know first. Then work out what is missing.',
+      'When you feel unsure, use a strategy instead of giving up.',
+      'Learning can feel difficult before it starts to feel familiar.',
+      'Compare your work with your last attempt, not with someone else’s.',
+      'You can pause, think, and try again.',
+      'A question you ask today can unlock something tomorrow.',
+      'Keep the parts you understand and work on one confusing part at a time.',
+      'Effort helps most when you also change your strategy.',
+      'You have learnt hard things before. Use the same patience again.',
+      'Read it again. Draw it. Say it. Try another way.',
+      'Being confused is a signal to slow down and look for the next clue.',
+      'You do not have to get it right immediately to get better at it.',
+      'Keep going until the next small step makes sense.'
+    ];
+    const bank='const quotes='+JSON.stringify(learnerQuotes)+';';
+    html=html.replace(/const quotes=\[[\s\S]*?\];\nconst expectations=/,bank+'\nconst expectations=');
+
+    const helpers=`
+function dailyQuote(){const d=new Date();const day=Math.floor(new Date(d.getFullYear(),d.getMonth(),d.getDate())/86400000);return quotes[((day%quotes.length)+quotes.length)%quotes.length]}
+function chooseStripVoice(){try{const vs=speechSynthesis.getVoices()||[],female=/female|sonia|libby|hazel|serena|susan|kate|emma|emily|amy|fiona|samantha|moira|victoria/i,uk=vs.filter(v=>/^en[-_]GB$/i.test(v.lang||'')||/united kingdom|british|uk english/i.test(v.name||''));return uk.find(v=>female.test(v.name||''))||uk[0]||vs.find(v=>/^en/i.test(v.lang||'')&&female.test(v.name||''))||vs.find(v=>/^en/i.test(v.lang||''))||null}catch(e){return null}}
+function speakStripQuote(q=dailyQuote()){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(q);u.lang='en-GB';u.rate=.86;u.pitch=1.04;const v=chooseStripVoice();if(v)u.voice=v;speechSynthesis.speak(u);toast(v?'Reading with '+v.name:'Reading quote')}catch(e){toast('Text-to-speech is unavailable')}}
+function openQuoteFull(){const url='full.html?quote=1';if(fullWin&&!fullWin.closed){try{fullWin.location.href=url;fullWin.focus();return}catch(e){}}fullWin=window.open(url,'ClassroomCompanionFull','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');if(!fullWin){toast('Allow popups to open Quote of the Day');return}fullWin.focus();watchFull()}
+`;
+    html=html.replace('function instantTool(t){',helpers+'function instantTool(t){');
+    html=html.replace("case'quote-of-the-day':showValue('Quote',quotes[Math.floor(Math.random()*quotes.length)]);break;","case'quote-of-the-day':showValue('Quote of the Day',dailyQuote());break;");
+    html=html.replace("case'reflect':choose('Reflect',reflectPrompts,x=>showValue('Reflect',x));break;case'soundboard':",`case'reflect':choose('Reflect',reflectPrompts,x=>showValue('Reflect',x));break;case'quote-of-the-day':showQuick('Quote of the Day',[{label:'🌱 Today’s Quote',primary:true,action:()=>showValue('Quote of the Day',dailyQuote())},{label:'🌷 Full Screen + Voice',action:()=>{closeQuick();openQuoteFull()}},{label:'🔊 Read Aloud',action:()=>{closeQuick();speakStripQuote()}},{label:'🎲 Another Quote',action:()=>showValue('Another Quote',quotes[Math.floor(Math.random()*quotes.length)])}]);break;case'soundboard':`);
+    html=html.replace('function universalStop(){stopTimer();','function universalStop(){try{speechSynthesis?.cancel()}catch(e){}stopTimer();');
+
+    document.open();document.write(html);document.close();
+  }catch(e){document.body.innerHTML='<div class="loading">Could not open the Classroom Companion strip. Please refresh.</div>';console.error(e)}
+})();
+</script>
+</body>
+</html>
