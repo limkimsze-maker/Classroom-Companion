@@ -4,25 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
-<title>Classroom Companion — Zero-Prep Teacher Toolkit</title>
-<link rel="stylesheet" href="app.css">
+<title>Classroom Companion</title>
+<style>
+:root{--teal:#0f766e;--teal2:#dff6f1;--ink:#17202a;--muted:#667085;--line:#d8e1e8;--bg:#f6f8fb}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(145deg,#eff8f6,#f7f9fc 55%,#edf3f8);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);padding:20px}.card{width:min(560px,100%);background:#fff;border:1px solid var(--line);border-radius:28px;padding:28px;box-shadow:0 24px 60px rgba(18,32,46,.12)}.logo{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;background:var(--teal2);color:var(--teal);font-size:28px;font-weight:950;margin-bottom:16px}h1{font-size:30px;line-height:1.05;margin:0 0 8px;letter-spacing:-.03em}p{color:var(--muted);line-height:1.55;margin:0 0 22px}.buttons{display:grid;gap:10px}.btn{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;border:1px solid var(--line);border-radius:15px;min-height:52px;padding:12px 16px;background:#fff;color:var(--ink);font-weight:900;font-size:16px;cursor:pointer}.btn.primary{background:var(--teal);border-color:var(--teal);color:white}.btn:hover{filter:brightness(.98)}.note{font-size:12px;color:var(--muted);margin-top:16px}.status{display:none;margin-top:12px;padding:10px 12px;border-radius:12px;background:#fff7ed;color:#9a3412;font-size:13px;font-weight:750}.status.show{display:block}
+</style>
 </head>
 <body>
-<div style="font-family:system-ui;padding:24px">Loading Classroom Companion…</div>
+<main class="card">
+  <div class="logo">✦</div>
+  <h1>Classroom Companion</h1>
+  <p>Launch a small classroom widget. Once it opens, you may close this launcher tab — the widget continues working on its own.</p>
+  <div class="buttons">
+    <button class="btn primary" id="launch" type="button">▣ Launch Classroom Widget</button>
+    <a class="btn" href="full.html">Open Full Toolkit</a>
+  </div>
+  <div class="note">No login • No installation • No ads • No subscription</div>
+  <div class="status" id="status">The popup was blocked. Allow popups for this site, then press Launch Classroom Widget again.</div>
+</main>
 <script>
-(async()=>{
-  try{
-    const files=['fragment1.html','fragment2.html','fragment3.html','fragment4.html','fragment5.html'];
-    const parts=await Promise.all(files.map(f=>fetch(f).then(r=>{if(!r.ok)throw new Error(f);return r.text()})));
-    document.body.innerHTML=parts.join('');
-    for(const src of ['app-part1.js','app-part2.js','app-part3.js','app-part4.js','app-part5.js','launcher.js']){
-      await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)});
-    }
-  }catch(e){
-    document.body.innerHTML='<div style="font-family:system-ui;padding:24px"><h1>Classroom Companion</h1><p>Could not load the toolkit. Refresh the page.</p></div>';
-    console.error(e);
-  }
-})();
+const launch=document.getElementById('launch'),status=document.getElementById('status');
+launch.onclick=()=>{
+  status.classList.remove('show');
+  const w=window.open('widget.html','ClassroomCompanionWidget','popup=yes,width=470,height=320,resizable=yes,scrollbars=yes');
+  if(!w){status.classList.add('show');return}
+  try{w.opener=null}catch(e){}
+  w.focus();
+};
 </script>
 </body>
 </html>
