@@ -13,55 +13,28 @@ const tools=[
 ['❓','Question Spinner'],['🅰️','Answer Check'],['📈','Confidence Check'],['🙋','Participation Counter'],['📊','Engagement Snapshot'],['🧠','KWL Chart'],['💭','Reflect'],
 ['✨','Quote of the Day'],['🏁','Whole-Class Goal'],['⭐','Rewards'],['🎵','Soundboard'],['📝','Observation Counter'],['🪟','Screen Shade'],['🔢','Random Number'],['🎲','Dice'],['🪙','Coin Toss'],['🧭','Action Spinner'],['🎯','Pick a Pupil'],['👥','Make Groups'],['🗓️','Daily Visual Timetable'],['📆','Weekly Visual Timetable']
 ].map(([icon,title])=>({icon,title,slug:String(title).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}));
-
 const style=document.createElement('style');
-style.textContent=`
-#ccEmbeddedLauncher{position:fixed;left:12px;top:12px;z-index:2147483647;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-#ccEmbeddedLauncher.ccHidden{display:none!important}
-#ccEmbeddedButton{width:52px;height:52px;border:2px solid rgba(255,255,255,.72);border-radius:15px;background:#0f766e;color:#fff;display:grid;place-items:center;font:1000 23px/1 inherit;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.24);backdrop-filter:blur(10px)}
-#ccEmbeddedButton.active{background:#fff;color:#0f766e;border-color:#0f766e}
-#ccEmbeddedMenu{position:absolute;left:0;top:60px;width:min(360px,calc(100vw - 24px));max-height:min(620px,calc(100vh - 84px));display:none;flex-direction:column;background:rgba(255,255,255,.98);border:1px solid #b8d8d3;border-radius:15px;box-shadow:0 18px 46px rgba(0,0,0,.28);overflow:hidden;color:#17202a}
-#ccEmbeddedMenu.show{display:flex}
-.ccEmbeddedHead{display:flex;align-items:center;gap:8px;padding:10px 11px;border-bottom:1px solid #e1e8ec;flex:0 0 auto}.ccEmbeddedTitle{font-size:13px;font-weight:1000;flex:1}.ccEmbeddedClose{width:30px;height:30px;border:0;border-radius:8px;background:#eef2f5;font-weight:1000;cursor:pointer}
-#ccEmbeddedList{overflow:auto;padding:7px;display:flex;flex-direction:column;gap:4px}.ccEmbeddedTool{min-height:38px;border:1px solid #d8e1e8;border-radius:9px;background:#fff;padding:7px 9px;text-align:left;font:900 12px/1.2 inherit;color:#17202a;cursor:pointer}.ccEmbeddedTool:hover,.ccEmbeddedTool:focus-visible{background:#f0faf8;border-color:#83cfc4;outline:none}.ccEmbeddedTool.current{background:#dff6f1;border-color:#83cfc4;color:#0b5b55}
-@media(max-width:700px){#ccEmbeddedLauncher{left:8px;top:8px}#ccEmbeddedButton{width:48px;height:48px}#ccEmbeddedMenu{top:56px;width:min(330px,calc(100vw - 16px));max-height:calc(100vh - 72px)}}
-`;
+style.textContent=`#ccEmbeddedLauncher{position:fixed;left:12px;top:12px;z-index:2147483647;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}#ccEmbeddedLauncher.ccHidden{display:none!important}#ccEmbeddedButton{width:52px;height:52px;border:2px solid rgba(255,255,255,.72);border-radius:15px;background:#0f766e;color:#fff;display:grid;place-items:center;font:1000 23px/1 inherit;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.24);backdrop-filter:blur(10px)}#ccEmbeddedButton.active{background:#fff;color:#0f766e;border-color:#0f766e}#ccEmbeddedMenu{position:absolute;left:0;top:60px;width:min(360px,calc(100vw - 24px));max-height:min(620px,calc(100vh - 84px));display:none;flex-direction:column;background:rgba(255,255,255,.98);border:1px solid #b8d8d3;border-radius:15px;box-shadow:0 18px 46px rgba(0,0,0,.28);overflow:hidden;color:#17202a}#ccEmbeddedMenu.show{display:flex}.ccEmbeddedHead{display:flex;align-items:center;gap:8px;padding:10px 11px;border-bottom:1px solid #e1e8ec;flex:0 0 auto}.ccEmbeddedTitle{font-size:13px;font-weight:1000;flex:1}.ccEmbeddedClose{width:30px;height:30px;border:0;border-radius:8px;background:#eef2f5;font-weight:1000;cursor:pointer}#ccEmbeddedList{overflow:auto;padding:7px;display:flex;flex-direction:column;gap:4px}.ccEmbeddedTool{min-height:38px;border:1px solid #d8e1e8;border-radius:9px;background:#fff;padding:7px 9px;text-align:left;font:900 12px/1.2 inherit;color:#17202a;cursor:pointer}.ccEmbeddedTool:hover,.ccEmbeddedTool:focus-visible{background:#f0faf8;border-color:#83cfc4;outline:none}.ccEmbeddedTool.current{background:#dff6f1;border-color:#83cfc4;color:#0b5b55}@media(max-width:700px){#ccEmbeddedLauncher{left:8px;top:8px}#ccEmbeddedButton{width:48px;height:48px}#ccEmbeddedMenu{top:56px;width:min(330px,calc(100vw - 16px));max-height:calc(100vh - 72px)}}`;
 document.head.appendChild(style);
-
 const root=document.createElement('div');root.id='ccEmbeddedLauncher';
 root.innerHTML=`<button id="ccEmbeddedButton" type="button" aria-label="Open classroom tools" title="Classroom tools">✦</button><div id="ccEmbeddedMenu" role="menu"><div class="ccEmbeddedHead"><div class="ccEmbeddedTitle">All Tools</div><button class="ccEmbeddedClose" type="button" aria-label="Close tools">×</button></div><div id="ccEmbeddedList"></div></div>`;
 document.body.appendChild(root);
 const btn=root.querySelector('#ccEmbeddedButton'),menu=root.querySelector('#ccEmbeddedMenu'),list=root.querySelector('#ccEmbeddedList');
-
 function toolWindowName(slug){return 'ClassroomCompanionTool_'+slug.replace(/[^a-z0-9]/gi,'_')}
 function closeMenu(){menu.classList.remove('show');btn.classList.remove('active')}
 function openMenu(){menu.classList.add('show');btn.classList.add('active')}
 function openTool(t){
   if(t.slug===current){closeMenu();return}
-  const sw=Math.max(900,screen.availWidth||1280),sh=Math.max(650,screen.availHeight||800);
+  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
+  const width=Math.min(520,sw),height=Math.min(680,sh);
+  const left=Math.max(0,Math.min(sw-width,150));
+  const top=Math.max(0,Math.min(sh-height,24));
   const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now();
-  const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
-  if(w){try{w.moveTo(0,0);w.resizeTo(sw,sh);w.focus()}catch(e){};closeMenu()}
+  const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
+  if(w){try{w.focus()}catch(e){};closeMenu()}
 }
-function renderList(){
-  list.innerHTML='';
-  for(const t of tools){
-    const b=document.createElement('button');b.type='button';b.className='ccEmbeddedTool'+(t.slug===current?' current':'');
-    b.textContent=(t.slug===current?'✓ ':'')+t.icon+' '+t.title;
-    b.onclick=e=>{e.stopPropagation();openTool(t)};
-    list.appendChild(b);
-  }
-}
-function show(nextCurrent=''){
-  current=String(nextCurrent||'').trim();
-  renderList();
-  root.classList.remove('ccHidden');
-}
+function renderList(){list.innerHTML='';for(const t of tools){const b=document.createElement('button');b.type='button';b.className='ccEmbeddedTool'+(t.slug===current?' current':'');b.textContent=(t.slug===current?'✓ ':'')+t.icon+' '+t.title;b.onclick=e=>{e.stopPropagation();openTool(t)};list.appendChild(b)}}
+function show(nextCurrent=''){current=String(nextCurrent||'').trim();renderList();root.classList.remove('ccHidden')}
 function hide(){closeMenu();root.classList.add('ccHidden')}
-btn.onclick=e=>{e.stopPropagation();menu.classList.contains('show')?closeMenu():openMenu()};
-root.querySelector('.ccEmbeddedClose').onclick=e=>{e.stopPropagation();closeMenu()};
-menu.onclick=e=>e.stopPropagation();
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menu.classList.contains('show')){e.stopPropagation();closeMenu()}},true);
-window.ClassroomCompanionEmbeddedLauncher={show,hide,openTool};
-show(current);
+btn.onclick=e=>{e.stopPropagation();menu.classList.contains('show')?closeMenu():openMenu()};root.querySelector('.ccEmbeddedClose').onclick=e=>{e.stopPropagation();closeMenu()};menu.onclick=e=>e.stopPropagation();document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menu.classList.contains('show')){e.stopPropagation();closeMenu()}},true);window.ClassroomCompanionEmbeddedLauncher={show,hide,openTool};show(current);
 })();
