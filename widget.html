@@ -6,13 +6,14 @@
 <meta name="theme-color" content="#0f766e">
 <title>Classroom Companion Strip</title>
 <style>
-:root{--teal:#0f766e;--teal2:#dff6f1;--ink:#17202a;--muted:#667085;--line:#d8e1e8;--bg:#f6f8fb}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}button,select,input,textarea{font:inherit}.wrap{padding:3px;width:max-content}.strip{height:48px;width:max-content;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 4px 12px rgba(18,32,46,.07);display:flex;align-items:center;gap:4px;padding:4px 5px;white-space:nowrap}.brand{display:flex;align-items:center;gap:4px;font-weight:950;font-size:11px;padding:0 3px 0 1px}.brand .mark{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:var(--teal2);color:var(--teal);font-size:13px}.cluster{display:flex;align-items:center;gap:4px}.class-select{width:92px;height:28px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 5px;font-weight:800;font-size:12px}.btn{height:28px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 7px;font-weight:900;color:var(--ink);cursor:pointer;font-size:12px}.btn:hover,.tool:hover{background:#f8fbfc}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.timer-box{display:flex;align-items:center;gap:4px;padding-left:4px;border-left:1px solid var(--line)}.time{font-size:20px;line-height:1;font-weight:950;color:var(--teal);letter-spacing:-.04em;min-width:58px;text-align:center}.tool{height:34px;min-width:61px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 5px;display:grid;grid-template-columns:16px auto;grid-template-rows:1fr 1fr;column-gap:3px;align-items:center;text-align:left;cursor:pointer}.tool .ico{grid-row:1/3;font-size:15px}.tool .lab{font-size:9.5px;line-height:1;font-weight:900;align-self:end}.tool .val{font-size:9px;line-height:1;color:var(--teal);font-weight:950;align-self:start;max-width:64px;overflow:hidden;text-overflow:ellipsis}.tool.more{min-width:68px}#pickBtn{min-width:112px}#pickVal{max-width:none;overflow:visible;text-overflow:clip;white-space:nowrap;font-size:10px}.customise{height:34px;min-width:62px;border:1px solid #bfe7df;background:var(--teal2);color:#0b5b55;border-radius:8px;padding:0 7px;font-weight:950;font-size:11px;cursor:pointer}.drawer{display:none;position:fixed;inset:7px;background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 10px 30px rgba(18,32,46,.16);padding:14px;overflow:auto;z-index:4}.drawer.show{display:block}.drawer h2{font-size:18px;margin:0 0 10px}.field{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;margin-bottom:8px;background:#fff}.names{height:145px;resize:none}.row{display:flex;gap:7px;flex-wrap:wrap}.help{font-size:11px;color:var(--muted);line-height:1.4;margin-top:8px}.checklist{display:grid;gap:5px;margin:8px 0 12px}.checkrow{display:flex;align-items:center;gap:10px;min-height:36px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:850;cursor:pointer}.checkrow input{width:18px;height:18px;accent-color:var(--teal);cursor:pointer}.checkrow span{flex:1}.toast{position:fixed;left:50%;bottom:4px;transform:translateX(-50%) translateY(8px);background:#17202a;color:#fff;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;opacity:0;pointer-events:none;transition:.16s;z-index:5}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+:root{--teal:#0f766e;--teal2:#dff6f1;--ink:#17202a;--muted:#667085;--line:#d8e1e8;--bg:#f6f8fb}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}button,select,input,textarea{font:inherit}.wrap{padding:3px;width:max-content}.strip{height:48px;width:max-content;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 4px 12px rgba(18,32,46,.07);display:flex;align-items:center;gap:4px;padding:4px 5px;white-space:nowrap}.brand{display:flex;align-items:center;gap:4px;font-weight:950;font-size:11px;padding:0 3px 0 1px}.brand .mark{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:var(--teal2);color:var(--teal);font-size:13px}.cluster{display:flex;align-items:center;gap:4px}.class-select{width:92px;height:28px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 5px;font-weight:800;font-size:12px}.btn{height:28px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 7px;font-weight:900;color:var(--ink);cursor:pointer;font-size:12px}.btn:hover,.tool:hover{background:#f8fbfc}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.timer-box{display:flex;align-items:center;gap:4px;padding-left:4px;border-left:1px solid var(--line)}.time{font-size:20px;line-height:1;font-weight:950;color:var(--teal);letter-spacing:-.04em;min-width:58px;text-align:center}.tool{height:34px;min-width:61px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 5px;display:grid;grid-template-columns:16px auto;grid-template-rows:1fr 1fr;column-gap:3px;align-items:center;text-align:left;cursor:pointer}.tool .ico{grid-row:1/3;font-size:15px}.tool .lab{font-size:9.5px;line-height:1;font-weight:900;align-self:end}.tool .val{font-size:9px;line-height:1;color:var(--teal);font-weight:950;align-self:start;max-width:64px;overflow:hidden;text-overflow:ellipsis}.tool.more{min-width:68px}#pickBtn{min-width:112px}#pickVal{max-width:none;overflow:visible;text-overflow:clip;white-space:nowrap;font-size:10px}.customise{height:34px;min-width:92px;border:2px solid var(--teal);background:var(--teal2);color:#0b5b55;border-radius:8px;padding:0 8px;font-weight:950;font-size:11px;cursor:pointer}.customise:hover{background:#ccefe8}.drawer{display:none;position:fixed;inset:7px;background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 10px 30px rgba(18,32,46,.16);padding:14px;overflow:auto;z-index:4}.drawer.show{display:block}.drawer h2{font-size:18px;margin:0 0 10px}.field{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;margin-bottom:8px;background:#fff}.names{height:145px;resize:none}.row{display:flex;gap:7px;flex-wrap:wrap}.help{font-size:11px;color:var(--muted);line-height:1.4;margin-top:8px}.checklist{display:grid;gap:5px;margin:8px 0 12px}.checkrow{display:flex;align-items:center;gap:10px;min-height:36px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:850;cursor:pointer}.checkrow input{width:18px;height:18px;accent-color:var(--teal);cursor:pointer}.checkrow span{flex:1}.toast{position:fixed;left:50%;bottom:4px;transform:translateX(-50%) translateY(8px);background:#17202a;color:#fff;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;opacity:0;pointer-events:none;transition:.16s;z-index:5}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 <div class="wrap" id="stripWrap">
   <div class="strip" id="strip">
     <div class="brand" title="Classroom Companion"><span class="mark">✦</span><span>Companion</span></div>
+    <button class="customise" id="customiseBtn" type="button" title="Choose which tools appear on the strip">☑ Choose tools</button>
 
     <div class="cluster" id="classTools">
       <select id="classSelect" class="class-select" aria-label="Choose class"><option value="">No class</option></select>
@@ -30,7 +31,6 @@
     <button class="tool" id="questionBtn" type="button"><span class="ico">❓</span><span class="lab">Question</span><span class="val" id="questionVal">Why?</span></button>
     <button class="tool" id="noiseBtn" type="button"><span class="ico">🔊</span><span class="lab">Noise</span><span class="val" id="noiseVal">Silent</span></button>
     <button class="tool more" id="moreBtn" type="button"><span class="ico">•••</span><span class="lab">All Tools</span><span class="val">Open</span></button>
-    <button class="customise" id="customiseBtn" type="button">☑ Tools</button>
   </div>
 </div>
 
@@ -81,24 +81,9 @@ function format(s){s=Math.max(0,s);return `${String(Math.floor(s/60)).padStart(2
 function classKey(){return data.selectedClass||'_general'}
 function currentClass(){return data.classes[data.selectedClass]||null}
 function escapeHtml(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function fitStrip(){
-  requestAnimationFrame(()=>{
-    try{
-      const strip=$('#strip');
-      const chromeW=Math.max(0,window.outerWidth-window.innerWidth);
-      const chromeH=Math.max(0,window.outerHeight-window.innerHeight);
-      const wantedW=Math.max(360,Math.ceil(strip.scrollWidth+8+chromeW));
-      const wantedH=Math.ceil(54+chromeH);
-      window.resizeTo(wantedW,wantedH);
-    }catch(e){}
-  });
-}
+function fitStrip(){requestAnimationFrame(()=>{try{const strip=$('#strip');const chromeW=Math.max(0,window.outerWidth-window.innerWidth);const chromeH=Math.max(0,window.outerHeight-window.innerHeight);const wantedW=Math.max(420,Math.ceil(strip.scrollWidth+8+chromeW));const wantedH=Math.ceil(54+chromeH);window.resizeTo(wantedW,wantedH)}catch(e){}})}
 function restoreStrip(){fitStrip();try{window.focus()}catch(e){}setTimeout(()=>{try{window.focus()}catch(e){}},80)}
-function applyPrefs(resize=true){
-  Object.entries(toolIds).forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.style.display=prefs[key]?'':'none'});
-  document.querySelectorAll('[data-tool]').forEach(cb=>cb.checked=!!prefs[cb.dataset.tool]);
-  if(resize)setTimeout(fitStrip,40);
-}
+function applyPrefs(resize=true){Object.entries(toolIds).forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.style.display=prefs[key]?'':'none'});document.querySelectorAll('[data-tool]').forEach(cb=>cb.checked=!!prefs[cb.dataset.tool]);if(resize)setTimeout(fitStrip,40)}
 function renderClasses(){const sel=$('#classSelect');sel.innerHTML='<option value="">No class</option>'+Object.keys(data.classes).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');sel.value=data.selectedClass||'';renderPoints();resetPicker()}
 function renderPoints(){$('#pointVal').textContent=data.classPoints[classKey()]||0}
 function resetPicker(){const c=currentClass();pickerPool=c?[...c.names]:[];$('#pickVal').textContent=c?'Ready':'Add class';$('#pickBtn').title=c?'Pick a pupil':'Add or select a class first'}
@@ -107,22 +92,13 @@ function openClass(){const c=currentClass();if(c){$('#className').value=data.sel
 function closeClass(){$('#classDrawer').classList.remove('show');setTimeout(fitStrip,40)}
 function openCustomise(){applyPrefs(false);$('#customiseDrawer').classList.add('show');try{window.resizeTo(420,500)}catch(e){}}
 function closeCustomise(){$('#customiseDrawer').classList.remove('show');setTimeout(fitStrip,40)}
-
 $('#timerStart').onclick=()=>{timer.running=!timer.running;$('#timerStart').textContent=timer.running?'Pause':'Start';clearInterval(timer.id);if(timer.running){timer.id=setInterval(()=>{timer.sec--;renderTimer();if(timer.sec<=0){clearInterval(timer.id);timer.running=false;$('#timerStart').textContent='Start';toast('Time is up')}},1000)}};
 $('#timerReset').onclick=()=>{clearInterval(timer.id);timer.running=false;timer.sec=timer.base;$('#timerStart').textContent='Start';renderTimer()};
 $('#pointBtn').onclick=()=>{const k=classKey();data.classPoints[k]=(data.classPoints[k]||0)+1;save();renderPoints();toast('+1 point')};
 $('#pickBtn').onclick=()=>{const c=currentClass();if(!c||!c.names.length){openClass();toast('Add or select a class first');return}if(!pickerPool.length)pickerPool=[...c.names];const i=Math.floor(Math.random()*pickerPool.length),name=pickerPool.splice(i,1)[0];$('#pickVal').textContent=name;$('#pickBtn').title=name;setTimeout(fitStrip,20);toast(name)};
 $('#questionBtn').onclick=()=>{let n=0;const id=setInterval(()=>{$('#questionVal').textContent=questionPrompts[Math.floor(Math.random()*questionPrompts.length)];if(++n>9)clearInterval(id)},65)};
 $('#noiseBtn').onclick=()=>{noiseIndex=(noiseIndex+1)%noiseLevels.length;$('#noiseVal').textContent=noiseLevels[noiseIndex];toast(noiseLevels[noiseIndex])};
-$('#moreBtn').onclick=()=>{
-  if(fullWin&&!fullWin.closed){fullWin.focus();return}
-  fullWin=window.open('full.html','ClassroomCompanionFull','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');
-  if(!fullWin){toast('Allow popups to open All Tools');return}
-  try{fullWin.addEventListener('beforeunload',()=>setTimeout(restoreStrip,0),{once:true})}catch(e){}
-  fullWin.focus();
-  clearInterval(fullWatch);
-  fullWatch=setInterval(()=>{if(!fullWin||fullWin.closed){clearInterval(fullWatch);fullWatch=null;fullWin=null;restoreStrip();toast('Back to strip')}},250);
-};
+$('#moreBtn').onclick=()=>{if(fullWin&&!fullWin.closed){fullWin.focus();return}fullWin=window.open('full.html','ClassroomCompanionFull','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');if(!fullWin){toast('Allow popups to open All Tools');return}try{fullWin.addEventListener('beforeunload',()=>setTimeout(restoreStrip,0),{once:true})}catch(e){}fullWin.focus();clearInterval(fullWatch);fullWatch=setInterval(()=>{if(!fullWin||fullWin.closed){clearInterval(fullWatch);fullWatch=null;fullWin=null;restoreStrip();toast('Back to strip')}},250)};
 $('#classBtn').onclick=openClass;
 $('#closeClass').onclick=closeClass;
 $('#customiseBtn').onclick=openCustomise;
