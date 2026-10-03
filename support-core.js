@@ -19,18 +19,26 @@ const CORE=[
 const tool=CORE.find(x=>x.slug===slug)||CORE[0],$=s=>document.querySelector(s),panel=$('#panel');
 $('#toolIcon').textContent=tool.icon;$('#toolTitle').textContent=tool.title;$('#toolHint').textContent=tool.hint;document.title=tool.title+' • Classroom Companion';
 $('#closeBtn').onclick=()=>window.close();
-function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[m]))}
 function safe(raw,fallback){try{return JSON.parse(raw)||fallback}catch(e){return fallback}}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('show'),1500)}
 function fmt(sec){sec=Math.max(0,Math.floor(sec));return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`}
 function classData(){return safe(localStorage.getItem(CC_STORE),{})||{classes:{},selectedClass:''}}
-function classNames(){return Object.keys(classData().classes||{})}
+function masterStore(){return safe(localStorage.getItem(MASTER_STORE),{})||{}}
+function hasPupils(rows){return Array.isArray(rows)&&rows.some(r=>String(r?.pupil||'').trim())}
+function classNames(){
+ const configured=Object.keys(classData().classes||{}),store=masterStore(),names=[];
+ if(hasPupils(store._general))names.push('General');
+ for(const name of configured)if(!names.includes(name))names.push(name);
+ for(const key of Object.keys(store))if(key!=='_general'&&hasPupils(store[key])&&!names.includes(key))names.push(key);
+ return names;
+}
 function selectedClass(){const d=classData(),names=classNames();return d.selectedClass&&names.includes(d.selectedClass)?d.selectedClass:(names[0]||'')}
-function setSelectedClass(name){const d=classData();d.classes=d.classes||{};d.selectedClass=name;localStorage.setItem(CC_STORE,JSON.stringify(d))}
+function setSelectedClass(name){const d=classData();d.classes=d.classes||{};d.selectedClass=name==='General'?'':name;localStorage.setItem(CC_STORE,JSON.stringify(d))}
 function masterRows(name=selectedClass()){
- if(!name)return[];
- const store=safe(localStorage.getItem(MASTER_STORE),{})||{},rows=store[name]||store._general;
- if(Array.isArray(rows)&&rows.some(r=>String(r.pupil||'').trim()))return rows.filter(r=>String(r.pupil||'').trim());
+ const key=!name||name==='General'?'_general':name,store=masterStore(),rows=store[key];
+ if(hasPupils(rows))return rows.filter(r=>String(r?.pupil||'').trim());
+ if(!name||name==='General')return[];
  const d=classData(),c=d.classes?.[name],names=Array.isArray(c?.names)?c.names:Array.isArray(c)?c:[];
  return names.map((p,i)=>({index:String(i+1),pupil:typeof p==='string'?p:(p?.name||p?.pupil||''),group:''})).filter(r=>r.pupil)
 }
@@ -47,7 +55,7 @@ function bindClassControls(onChange){
  $('#addClassInline')?.addEventListener('click',openClassSetup);
  $('#classSelect')?.addEventListener('change',e=>{setSelectedClass(e.target.value);onChange?.()})
 }
-function timetableKey(){return selectedClass()||'_general'}
+function timetableKey(){const name=selectedClass();return !name||name==='General'?'_general':name}
 function loadTimetable(){const all=safe(localStorage.getItem(TIMETABLE_STORE),{})||{};return Array.isArray(all[timetableKey()])?all[timetableKey()]:[]}
 function saveTimetable(rows){const all=safe(localStorage.getItem(TIMETABLE_STORE),{})||{};all[timetableKey()]=rows;localStorage.setItem(TIMETABLE_STORE,JSON.stringify(all))}
 let audioCtx=null;
@@ -57,5 +65,6 @@ function chime(){[659,784,1047].forEach((f,i)=>tone(f,.18,.07,'sine',i*.11))}
 function tickTone(){tone(520,.06,.035,'triangle')}
 function speak(text){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-SG';u.rate=.86;u.pitch=1.03;const vs=speechSynthesis.getVoices()||[];u.voice=vs.find(v=>/^en[-_]SG$/i.test(v.lang||''))||vs.find(v=>/^en/i.test(v.lang||''))||null;speechSynthesis.speak(u)}catch(e){toast('Read aloud is unavailable')}}
 function attachLauncher(){const s=document.createElement('script');s.src='embedded-launcher.js?v=20261003core13';s.dataset.currentTool=slug;document.body.appendChild(s)}
+window.addEventListener('storage',e=>{if((slug==='pick-a-pupil'||slug==='make-groups')&&(e.key===MASTER_STORE||e.key===CC_STORE))location.reload()});
 window.Support={slug,tool,CORE,$,panel,esc,safe,toast,fmt,CC_STORE,MASTER_STORE,TIMETABLE_STORE,classData,classNames,selectedClass,setSelectedClass,masterRows,openClassSetup,classControls,bindClassControls,timetableKey,loadTimetable,saveTimetable,tone,chime,tickTone,speak,attachLauncher};
 })();
