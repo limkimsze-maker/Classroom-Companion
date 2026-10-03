@@ -3,10 +3,12 @@
 let brainWin=null;
 function openBrainBreak(sec=30,sound=true,index=null){
   const q=new URLSearchParams({sec:String(sec),sound:sound?'1':'0'});if(index!==null)q.set('i',String(index));
-  const url='brain-break.html?'+q.toString()+'&v=20261003bb1';
+  const url='brain-break.html?'+q.toString()+'&v=20261003bb2';
   try{if(brainWin&&!brainWin.closed){brainWin.location.href=url;brainWin.focus();return}}catch(e){}
-  brainWin=window.open(url,'ClassroomCompanionBrainBreak','popup=yes,width=1200,height=800,resizable=yes,scrollbars=no');
+  const w=Math.max(900,screen.availWidth||1200),h=Math.max(650,screen.availHeight||800);
+  brainWin=window.open(url,'ClassroomCompanionBrainBreak',`popup=yes,width=${w},height=${h},left=0,top=0,resizable=yes,scrollbars=no`);
   if(!brainWin){toast('Allow popups to open Brain Break');return}
+  try{brainWin.moveTo(0,0);brainWin.resizeTo(w,h)}catch(e){}
   brainWin.focus();
 }
 const names=['March & Move','Reach for the Sky','Balance Challenge','Shoulder Roll','Star Jump Energy','Shake It Out','Figure 8','Touch Your Toes'];
