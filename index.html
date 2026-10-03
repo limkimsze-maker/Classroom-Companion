@@ -26,7 +26,7 @@ const launch=document.getElementById('launch'),status=document.getElementById('s
 launch.onclick=()=>{
   status.classList.remove('show');
   const stripUrl='widget.html?v='+Date.now();
-  const features='popup=yes,width=760,height=80,resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no';
+  const features='popup=yes,width=760,height=148,resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no';
   const w=window.open(stripUrl,'_blank',features);
   if(!w){status.classList.add('show');return}
   try{w.opener=null}catch(e){}
