@@ -6,7 +6,7 @@ function ensureEmbeddedLauncher(currentTool='full-screen-clock'){
   if(window.ClassroomCompanionEmbeddedLauncher){window.ClassroomCompanionEmbeddedLauncher.show(currentTool);return}
   let s=document.getElementById('ccEmbeddedLauncherScript');
   if(s)return;
-  s=document.createElement('script');s.id='ccEmbeddedLauncherScript';s.src='embedded-launcher.js?v=20261003embedded2';s.dataset.currentTool=currentTool;
+  s=document.createElement('script');s.id='ccEmbeddedLauncherScript';s.src='embedded-launcher.js?v=20261003embedded3';s.dataset.currentTool=currentTool;
   s.onload=()=>window.ClassroomCompanionEmbeddedLauncher?.show(currentTool);
   document.body.appendChild(s);
 }
@@ -58,8 +58,6 @@ function closeClock(){
   clearInterval(clockTimer);clockTimer=null;const o=document.getElementById('ccClockOverlay');if(o)o.classList.remove('show');hideEmbeddedLauncher();
   try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen();else if(document.webkitFullscreenElement&&document.webkitExitFullscreen)document.webkitExitFullscreen()}catch(e){}
 }
-// Do not dismiss the clock just because the browser drops fullscreen.
-// This keeps the clock visible until the teacher explicitly presses Close or Stop.
 document.addEventListener('fullscreenchange',()=>{const o=document.getElementById('ccClockOverlay');if(o&&o.classList.contains('show'))renderClock()});
 document.addEventListener('webkitfullscreenchange',()=>{const o=document.getElementById('ccClockOverlay');if(o&&o.classList.contains('show'))renderClock()});
 const oldInstant=window.instantTool;
