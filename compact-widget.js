@@ -9,11 +9,7 @@ if(!oldStrip||!oldWrap||!quick||typeof allTools==='undefined')return;
 const TOOLBAR_STORE='classroomCompanionCompactToolbarV1';
 const MAX_PINNED=5;
 const REMOVED_DUPLICATES=new Set(['movement-break','end-of-lesson-self-check']);
-const SPECIAL_TOOLS=[
-  {icon:'🧹',title:'Duty Roster',slug:'duty-roster'},
-  {icon:'🪪',title:'Roles & Responsibilities',slug:'roles-responsibilities'},
-  {icon:'👥',title:'Group Names & Members',slug:'group-names-members'}
-];
+const SPECIAL_TOOLS=[{icon:'🗂️',title:'Class Organisation',slug:'class-organisation'}];
 const tools=[...new Map([...allTools.filter(t=>!REMOVED_DUPLICATES.has(t.slug)),...SPECIAL_TOOLS].map(t=>[t.slug,t])).values()];
 const SPECIAL_SLUGS=new Set(SPECIAL_TOOLS.map(t=>t.slug));
 const toolWindows=new Map();
@@ -21,9 +17,9 @@ const CATEGORIES=[
   {id:'teach',icon:'⏱️',title:'Teach & Pace',hint:'Timers, stages, transitions',slugs:['timer-calm-music','lesson-stages','transition-countdown','focus-intervals','full-screen-clock','date-day']},
   {id:'manage',icon:'🌿',title:'Settle & Manage',hint:'Attention, behaviour, routines',slugs:['attention-signal','calm-reset','noise-level','class-traffic-light','work-mode','behaviour-expectations','pre-correction','help-before-teacher','screen-shade']},
   {id:'check',icon:'❓',title:'Ask & Check',hint:'Questions, responses, checks',slugs:['think-pair-share','mini-whiteboard-routine','question-spinner','answer-check','confidence-check','participation-counter','engagement-snapshot']},
-  {id:'choose',icon:'🎲',title:'Choose & Group',hint:'Pick, randomise, saved groups',slugs:['random-number','dice','coin-toss','action-spinner','pick-a-pupil','make-groups','group-names-members']},
+  {id:'choose',icon:'🎲',title:'Choose & Group',hint:'Pick, randomise, make groups',slugs:['random-number','dice','coin-toss','action-spinner','pick-a-pupil','make-groups']},
   {id:'reflect',icon:'💭',title:'Reflect & Extend',hint:'Brain breaks, reflection, extension',slugs:['early-finisher','brain-break','kwl-chart','reflect','quote-of-the-day']},
-  {id:'plan',icon:'🗂️',title:'Plan & Organise',hint:'Duties, roles, rewards, timetable',slugs:['duty-roster','roles-responsibilities','whole-class-goal','rewards','observation-counter','soundboard','daily-visual-timetable','weekly-visual-timetable']}
+  {id:'plan',icon:'🗂️',title:'Plan & Organise',hint:'Master sheet, roster, roles, dismissal',slugs:['class-organisation','whole-class-goal','rewards','observation-counter','soundboard','daily-visual-timetable','weekly-visual-timetable']}
 ];
 
 function loadPrefs(){
@@ -68,27 +64,13 @@ function markCategoryHome(){const s=document.getElementById('quickScroll');if(!s
 function markCategoryTools(){const s=document.getElementById('quickScroll');if(!s)return;s.classList.remove('ccCategoryGrid');s.querySelector('.quick-chip')?.classList.add('ccBack')}
 function pruneWindows(){for(const [slug,w] of [...toolWindows]){try{if(!w||w.closed)toolWindows.delete(slug)}catch(e){toolWindows.delete(slug)}}updateActiveUI()}
 function updateActiveUI(){const n=toolWindows.size;activeCount.textContent=String(n);launch.classList.toggle('has-active',n>0);renderPinned(false)}
-function organisationMode(slug){return slug==='roles-responsibilities'?'roles':slug==='group-names-members'?'groups':'duty'}
-function openOrganisation(t,project=false){
-  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
-  const mode=organisationMode(t.slug);
-  const url=project?'class-organisation-dashboard.html?v='+Date.now():'class-organisation.html?mode='+mode+'&v='+Date.now();
-  const name=project?'ClassroomCompanionOrganisationDashboard':toolWindowName(t.slug);
-  const w=window.open(url,name,`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
-  if(!w){toast('Allow popups to open this tool');return}
-  if(!project)toolWindows.set(t.slug,w);
-  try{w.focus()}catch(e){}
-  closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed();
+function openOrganisation(t){
+  pruneWindows();const existing=toolWindows.get(t.slug);if(existing){try{existing.focus();closeQuick();resizeCollapsed();return}catch(e){toolWindows.delete(t.slug)}}
+  const sw=screen.availWidth||1280,sh=screen.availHeight||800,url='class-organisation.html?v='+Date.now();
+  const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
+  if(!w){toast('Allow popups to open this tool');return}toolWindows.set(t.slug,w);try{w.focus()}catch(e){}closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed();
 }
-function showOrganisationOptions(t){
-  clearMenuClasses();
-  showQuick(t.title,[
-    {label:`${t.icon} Open & edit`,primary:true,action:()=>openOrganisation(t,false)},
-    {label:'▣ Project class overview',action:()=>openOrganisation(t,true)},
-    {label:'← Back to tools',action:()=>{const cat=CATEGORIES.find(c=>c.slugs.includes(t.slug));if(cat)showCategory(cat);else showLauncherHome()}}
-  ],{withStop:false});
-  launch.classList.add('active');resizeExpanded();
-}
+function showOrganisationOptions(t){clearMenuClasses();showQuick(t.title,[{label:'🗂️ Open master sheet',primary:true,action:()=>openOrganisation(t)},{label:'▣ Open and use Project for filtered classroom views',action:()=>openOrganisation(t)},{label:'← Back to tools',action:()=>{const cat=CATEGORIES.find(c=>c.slugs.includes(t.slug));cat?showCategory(cat):showLauncherHome()}}],{withStop:false});launch.classList.add('active');resizeExpanded()}
 function openTool(t){
   if(SPECIAL_SLUGS.has(t.slug)){showOrganisationOptions(t);return}
   pruneWindows();const existing=toolWindows.get(t.slug);if(existing){try{existing.focus();existing.postMessage({type:'classroom-companion-show-options'},location.origin);closeQuick();resizeCollapsed();return}catch(e){toolWindows.delete(t.slug)}}const index=toolWindows.size,sw=screen.availWidth||1280,sh=screen.availHeight||800,width=Math.min(520,sw),height=Math.min(680,sh),left=Math.max(0,Math.min(sw-width,150+index*36)),top=Math.max(0,Math.min(sh-height,24+index*32));const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now();const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);if(!w){toast('Allow popups to open this tool');return}toolWindows.set(t.slug,w);try{w.focus()}catch(e){}closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed()}
