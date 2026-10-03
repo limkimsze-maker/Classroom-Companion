@@ -25,13 +25,14 @@ body{padding:0!important}
 #quickbar .quick-chip{height:auto!important;min-height:36px!important;padding:8px 10px!important;white-space:normal!important;line-height:1.15!important;text-align:left!important}
 #quickbar .quick-value{max-width:none!important;white-space:normal!important;line-height:1.35!important;padding:10px!important}
 #quickbar .quick-close{display:none!important}
-#ccToolHead{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #d8e1e8;padding:10px 12px;display:flex;align-items:center;gap:9px;box-shadow:0 4px 12px rgba(18,32,46,.06)}
+#ccToolHead{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #d8e1e8;padding:10px 12px;display:flex;align-items:center;gap:7px;box-shadow:0 4px 12px rgba(18,32,46,.06)}
 #ccToolIcon{font-size:25px;line-height:1}#ccToolMeta{min-width:0;flex:1}#ccToolTitle{font-size:14px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ccToolStatus{font-size:10px;color:#0f766e;font-weight:850;margin-top:2px}
-.ccHeadBtn{height:34px;border:1px solid #d8e1e8;background:#fff;border-radius:10px;padding:0 10px;font-weight:900;cursor:pointer}.ccHeadBtn.primary{background:#0f766e;border-color:#0f766e;color:#fff}
+.ccHeadBtn{height:34px;border:1px solid #d8e1e8;background:#fff;border-radius:10px;padding:0 10px;font-weight:900;cursor:pointer;white-space:nowrap}.ccHeadBtn.primary{background:#0f766e;border-color:#0f766e;color:#fff}.ccHeadBtn.launcher{width:38px;padding:0;font-size:18px;background:#0f766e;border-color:#0f766e;color:#fff}
 #toast{bottom:8px!important}
+@media(max-width:520px){#ccToolHead{padding:8px;gap:5px}.ccHeadBtn{padding:0 7px;font-size:11px}.ccHeadBtn.launcher{width:34px;font-size:17px}#ccToolTitle{font-size:12px}}
 `;
     html=html.replace('</style>',toolCss+'</style>');
-    html=html.replace('<body>','<body><div id="ccToolHead"><div id="ccToolIcon">✦</div><div id="ccToolMeta"><div id="ccToolTitle">Classroom Tool</div><div id="ccToolStatus">Ready</div></div><button class="ccHeadBtn primary" id="ccToolOptionsBtn" type="button">••• Options</button><button class="ccHeadBtn" id="ccToolCloseBtn" type="button">×</button></div>');
+    html=html.replace('<body>','<body><div id="ccToolHead"><button class="ccHeadBtn launcher" id="ccToolLauncherBtn" type="button" title="Open another tool" aria-label="Open classroom tools">✦</button><div id="ccToolIcon">✦</div><div id="ccToolMeta"><div id="ccToolTitle">Classroom Tool</div><div id="ccToolStatus">Ready</div></div><button class="ccHeadBtn primary" id="ccToolOptionsBtn" type="button">••• Options</button><button class="ccHeadBtn" id="ccToolCloseBtn" type="button">×</button></div>');
     const addon=`
 <script src="transition-strip.js?v=20261003transition2"><\/script>
 <script src="brain-break-strip.js?v=20261003bb3"><\/script>
@@ -70,6 +71,32 @@ function showRequestedOptions(){
   }catch(e){try{instantTool(t)}catch(_){showQuick(t.title,[{type:'value',label:'This tool could not open.'}],{withStop:false})}}
   setTimeout(setStatus,80);
 }
+function toolWindowName(s){return 'ClassroomCompanionTool_'+String(s).replace(/[^a-z0-9]/gi,'_')}
+function openAnotherTool(other){
+  if(!other)return;
+  if(other.slug===slug){showRequestedOptions();return}
+  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
+  const width=480,height=560;
+  const baseLeft=Number.isFinite(window.screenX)?window.screenX:100;
+  const baseTop=Number.isFinite(window.screenY)?window.screenY:80;
+  const left=Math.max(0,Math.min(sw-width,baseLeft+42));
+  const top=Math.max(0,Math.min(sh-height,baseTop+36));
+  const url='tool-window.html?tool='+encodeURIComponent(other.slug)+'&v=20261003toolwin3';
+  const w=window.open(url,toolWindowName(other.slug),
+    'popup=yes,width='+width+',height='+height+',left='+left+',top='+top+',resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no');
+  if(!w){showQuick('Pop-up blocked',[{type:'value',label:'Allow pop-ups for this site to open another classroom tool.'}],{withStop:false});return}
+  closeQuick();try{w.focus()}catch(e){}
+}
+function showToolLauncher(){
+  if(!tools.length)return;
+  const items=tools.map(other=>({
+    label:(other.slug===slug?'● ':'')+other.icon+' '+other.title,
+    active:other.slug===slug,
+    action:()=>openAnotherTool(other)
+  }));
+  showQuick('All Tools',items,{withStop:false});
+}
+document.getElementById('ccToolLauncherBtn').onclick=showToolLauncher;
 document.getElementById('ccToolOptionsBtn').onclick=showRequestedOptions;
 document.getElementById('ccToolCloseBtn').onclick=()=>window.close();
 window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data?.type==='classroom-companion-show-options'){showRequestedOptions();try{window.focus()}catch(_){}}});
