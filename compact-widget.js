@@ -6,18 +6,22 @@ const oldWrap=document.getElementById('wrap');
 const quick=document.getElementById('quickbar');
 if(!oldStrip||!oldWrap||!quick||typeof allTools==='undefined')return;
 
-const TOOLBAR_STORE='classroomCompanionCompactToolbarV1',MAX_PINNED=5;
-const uniqueTools=[...new Map(allTools.map(t=>[t.slug,t])).values()];
+const TOOLBAR_STORE='classroomCompanionCompactToolbarV1';
+const MAX_PINNED=5;
+const tools=[...new Map(allTools.map(t=>[t.slug,t])).values()];
 const toolWindows=new Map();
 
-function loadToolbarPrefs(){
+function loadPrefs(){
   try{
     const p=JSON.parse(localStorage.getItem(TOOLBAR_STORE)||'{}');
-    return {visible:p.visible!==false,tools:Array.isArray(p.tools)?p.tools.filter((s,i,a)=>a.indexOf(s)===i&&uniqueTools.some(t=>t.slug===s)).slice(0,MAX_PINNED):[]};
+    return {
+      visible:p.visible!==false,
+      tools:Array.isArray(p.tools)?p.tools.filter((s,i,a)=>a.indexOf(s)===i&&tools.some(t=>t.slug===s)).slice(0,MAX_PINNED):[]
+    };
   }catch(e){return {visible:true,tools:[]}}
 }
-let toolbarPrefs=loadToolbarPrefs();
-function saveToolbarPrefs(){localStorage.setItem(TOOLBAR_STORE,JSON.stringify(toolbarPrefs))}
+let prefs=loadPrefs();
+function savePrefs(){localStorage.setItem(TOOLBAR_STORE,JSON.stringify(prefs))}
 
 const style=document.createElement('style');
 style.textContent=`
@@ -41,89 +45,117 @@ html,body{background:transparent!important;overflow:hidden!important}
 #ccPinnedBar.show{display:flex}#ccPinnedBar::-webkit-scrollbar{display:none}
 .ccPinnedTool{width:52px;height:44px;flex:0 0 52px;border:1px solid #d8e1e8;background:#fff;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px;cursor:pointer;color:#17202a}
 .ccPinnedTool.running{background:#f0faf8;border-color:#58b9ac;box-shadow:inset 0 0 0 1px #58b9ac}
-.ccPinnedTool:hover,.ccPinnedTool:focus-visible{background:#f0faf8;border-color:#83cfc4;outline:none}.ccPinnedIcon{font-size:18px;line-height:1}.ccPinnedLabel{width:46px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:7.5px;line-height:1;font-weight:900;text-align:center}
+.ccPinnedIcon{font-size:18px;line-height:1}.ccPinnedLabel{width:46px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:7.5px;line-height:1;font-weight:900;text-align:center}
 @media(max-width:700px){#quickbar{width:calc(100vw - 12px)!important}#quickbar .quick-scroll{max-height:calc(100vh - 100px)!important}#ccPinnedBar{max-width:calc(100vw - 72px)}}
 `;
 document.head.appendChild(style);
 
-const root=document.createElement('div');root.id='ccMiniRoot';
+const root=document.createElement('div');
+root.id='ccMiniRoot';
 root.innerHTML=`<button id="ccMiniLaunch" type="button" aria-label="Open classroom tools" title="Classroom tools"><span class="spark">✦</span><span class="dots">•••</span><span class="count" id="ccActiveCount">0</span></button><div id="ccPinnedBar" aria-label="Pinned classroom tools"></div>`;
 document.body.appendChild(root);
-const launch=root.querySelector('#ccMiniLaunch'),activeCount=root.querySelector('#ccActiveCount'),pinnedBar=root.querySelector('#ccPinnedBar');
+
+const launch=root.querySelector('#ccMiniLaunch');
+const activeCount=root.querySelector('#ccActiveCount');
+const pinnedBar=root.querySelector('#ccPinnedBar');
 const mobile=matchMedia('(max-width:700px)').matches||matchMedia('(pointer:coarse)').matches;
 
-function pruneToolWindows(){
-  for(const [slug,w] of [...toolWindows]){try{if(!w||w.closed)toolWindows.delete(slug)}catch(e){toolWindows.delete(slug)}}
-  updateActiveBadge();
-}
-function updateActiveBadge(){
-  const n=toolWindows.size;activeCount.textContent=String(n);launch.classList.toggle('has-active',n>0);renderPinnedToolbar(false);
-}
-function collapsedWidth(){return toolbarPrefs.visible&&toolbarPrefs.tools.length?Math.min(520,122+toolbarPrefs.tools.length*56):118}
-function resizeCollapsed(){if(mobile)return;try{if(!document.fullscreenElement)window.resizeTo(collapsedWidth(),112)}catch(e){}}
-function resizeExpanded(){if(mobile)return;try{if(!document.fullscreenElement)window.resizeTo(520,680)}catch(e){}}
 function isQuickOpen(){return quick.classList.contains('show')}
 function isAllToolsOpen(){return isQuickOpen()&&document.getElementById('quickTitle')?.textContent==='All Tools'}
+function collapsedWidth(){return prefs.visible&&prefs.tools.length?Math.min(520,122+prefs.tools.length*56):118}
+function resizeCollapsed(){if(mobile)return;try{if(!document.fullscreenElement)window.resizeTo(collapsedWidth(),112)}catch(e){}}
+function resizeExpanded(){if(mobile)return;try{if(!document.fullscreenElement)window.resizeTo(520,680)}catch(e){}}
 function toolWindowName(slug){return 'ClassroomCompanionTool_'+slug.replace(/[^a-z0-9]/gi,'_')}
 
-function openToolWindow(t){
-  pruneToolWindows();
+function pruneWindows(){
+  for(const [slug,w] of [...toolWindows]){
+    try{if(!w||w.closed)toolWindows.delete(slug)}catch(e){toolWindows.delete(slug)}
+  }
+  updateActiveUI();
+}
+function updateActiveUI(){
+  const n=toolWindows.size;
+  activeCount.textContent=String(n);
+  launch.classList.toggle('has-active',n>0);
+  renderPinned(false);
+}
+
+function openTool(t){
+  pruneWindows();
   const existing=toolWindows.get(t.slug);
   if(existing){
-    try{existing.focus();existing.postMessage({type:'classroom-companion-show-options'},location.origin);closeQuick();resizeCollapsed();return}catch(e){toolWindows.delete(t.slug)}
+    try{
+      existing.focus();
+      existing.postMessage({type:'classroom-companion-show-options'},location.origin);
+      closeQuick();resizeCollapsed();return;
+    }catch(e){toolWindows.delete(t.slug)}
   }
-  const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v=20261003toolwin1';
-  const sw=screen.availWidth||1280,sh=screen.availHeight||800,index=toolWindows.size;
-  const left=Math.max(0,Math.min(sw-480,70+index*34)),top=Math.max(0,Math.min(sh-560,70+index*30));
+  const index=toolWindows.size;
+  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
+  const left=Math.max(0,Math.min(sw-480,70+index*34));
+  const top=Math.max(0,Math.min(sh-560,70+index*30));
+  const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v=20261003toolwin2';
   const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=480,height=560,left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
   if(!w){toast('Allow popups to open this tool');return}
-  toolWindows.set(t.slug,w);try{w.focus()}catch(e){}
-  closeQuick();launch.classList.remove('active');updateActiveBadge();resizeCollapsed();
+  toolWindows.set(t.slug,w);
+  try{w.focus()}catch(e){}
+  closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed();
 }
 
 function showActiveTools(){
-  pruneToolWindows();
+  pruneWindows();
   const items=[];
   for(const [slug,w] of toolWindows){
-    const t=uniqueTools.find(x=>x.slug===slug);if(!t)continue;
+    const t=tools.find(x=>x.slug===slug);if(!t)continue;
     items.push({label:`↗ ${t.icon} ${t.title}`,action:()=>{try{w.focus();w.postMessage({type:'classroom-companion-show-options'},location.origin)}catch(e){}closeQuick();resizeCollapsed()}});
   }
-  if(items.length)items.push({label:'Close all tool windows',stop:true,action:()=>{for(const w of toolWindows.values())try{w.close()}catch(e){}toolWindows.clear();updateActiveBadge();closeQuick();resizeCollapsed()}});
-  else items.push({type:'value',label:'No tool windows are open.'});
-  showQuick(`Active tools • ${toolWindows.size}`,items,{withStop:false});launch.classList.add('active');resizeExpanded();
+  if(items.length){
+    items.push({label:'Close all tool windows',stop:true,action:()=>{for(const w of toolWindows.values())try{w.close()}catch(e){}toolWindows.clear();updateActiveUI();closeQuick();resizeCollapsed()}});
+  }else items.push({type:'value',label:'No tool windows are open.'});
+  showQuick(`Active tools • ${toolWindows.size}`,items,{withStop:false});
+  launch.classList.add('active');resizeExpanded();
 }
 
-function renderPinnedToolbar(resize=true){
+function renderPinned(resize=true){
   pinnedBar.innerHTML='';
-  for(const slug of toolbarPrefs.tools){
-    const t=uniqueTools.find(x=>x.slug===slug);if(!t)continue;
-    const b=document.createElement('button');b.type='button';b.className='ccPinnedTool'+(toolWindows.has(slug)?' running':'');b.title=t.title;b.setAttribute('aria-label',t.title);
+  for(const slug of prefs.tools){
+    const t=tools.find(x=>x.slug===slug);if(!t)continue;
+    const b=document.createElement('button');
+    b.type='button';b.className='ccPinnedTool'+(toolWindows.has(slug)?' running':'');b.title=t.title;
     b.innerHTML=`<span class="ccPinnedIcon">${t.icon}</span><span class="ccPinnedLabel">${escapeHtml(t.title)}</span>`;
-    b.onclick=()=>openToolWindow(t);pinnedBar.appendChild(b);
+    b.onclick=()=>openTool(t);
+    pinnedBar.appendChild(b);
   }
-  pinnedBar.classList.toggle('show',toolbarPrefs.visible&&toolbarPrefs.tools.length>0);
-  if(resize)setTimeout(()=>{if(isQuickOpen())resizeExpanded();else resizeCollapsed()},40);
+  pinnedBar.classList.toggle('show',prefs.visible&&prefs.tools.length>0);
+  if(resize)setTimeout(()=>isQuickOpen()?resizeExpanded():resizeCollapsed(),40);
 }
+
 function showToolbarSetup(){
-  const selected=new Set(toolbarPrefs.tools),items=[];
-  if(selected.size)items.push({label:toolbarPrefs.visible?'👁 Hide toolbar':'👁 Show toolbar',primary:!toolbarPrefs.visible,action:()=>{toolbarPrefs.visible=!toolbarPrefs.visible;saveToolbarPrefs();renderPinnedToolbar();showToolbarSetup()}});
-  for(const t of uniqueTools){
+  const selected=new Set(prefs.tools),items=[];
+  if(selected.size)items.push({label:prefs.visible?'👁 Hide toolbar':'👁 Show toolbar',primary:!prefs.visible,action:()=>{prefs.visible=!prefs.visible;savePrefs();renderPinned();showToolbarSetup()}});
+  for(const t of tools){
     const on=selected.has(t.slug);
     items.push({label:`${on?'✓':'＋'} ${t.icon} ${t.title}`,active:on,action:()=>{
-      if(on)toolbarPrefs.tools=toolbarPrefs.tools.filter(x=>x!==t.slug);
-      else{if(toolbarPrefs.tools.length>=MAX_PINNED){toast(`Pin up to ${MAX_PINNED} tools`);return}toolbarPrefs.tools.push(t.slug);toolbarPrefs.visible=true}
-      saveToolbarPrefs();renderPinnedToolbar();showToolbarSetup();
+      if(on)prefs.tools=prefs.tools.filter(x=>x!==t.slug);
+      else{
+        if(prefs.tools.length>=MAX_PINNED){toast(`Pin up to ${MAX_PINNED} tools`);return}
+        prefs.tools.push(t.slug);prefs.visible=true;
+      }
+      savePrefs();renderPinned();showToolbarSetup();
     }});
   }
-  if(selected.size)items.push({label:'Clear toolbar',action:()=>{toolbarPrefs={visible:true,tools:[]};saveToolbarPrefs();renderPinnedToolbar();showToolbarSetup()}});
-  showQuick(`Toolbar • ${toolbarPrefs.tools.length}/${MAX_PINNED}`,items,{withStop:false});launch.classList.add('active');resizeExpanded();
+  if(selected.size)items.push({label:'Clear toolbar',action:()=>{prefs={visible:true,tools:[]};savePrefs();renderPinned();showToolbarSetup()}});
+  showQuick(`Toolbar • ${prefs.tools.length}/${MAX_PINNED}`,items,{withStop:false});
+  launch.classList.add('active');resizeExpanded();
 }
+
 function showAllTools(){
-  pruneToolWindows();
-  const items=[{label:'📌 Toolbar setup',primary:toolbarPrefs.tools.length>0,action:showToolbarSetup}];
+  pruneWindows();
+  const items=[{label:'📌 Toolbar setup',primary:prefs.tools.length>0,action:showToolbarSetup}];
   if(toolWindows.size)items.push({label:`🟢 Active tools (${toolWindows.size})`,active:true,action:showActiveTools});
-  for(const t of uniqueTools)items.push({label:`${toolWindows.has(t.slug)?'● ':''}${t.icon} ${t.title}`,action:()=>openToolWindow(t)});
-  showQuick('All Tools',items,{withStop:false});launch.classList.add('active');resizeExpanded();
+  for(const t of tools)items.push({label:`${toolWindows.has(t.slug)?'● ':''}${t.icon} ${t.title}`,action:()=>openTool(t)});
+  showQuick('All Tools',items,{withStop:false});
+  launch.classList.add('active');resizeExpanded();
 }
 
 launch.onclick=()=>{
@@ -136,10 +168,8 @@ const observer=new MutationObserver(()=>{
   else{launch.classList.remove('active');setTimeout(resizeCollapsed,80)}
 });
 observer.observe(quick,{attributes:true,attributeFilter:['class']});
-
-document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&!isQuickOpen())setTimeout(resizeCollapsed,120)});
-window.addEventListener('storage',e=>{if(e.key===TOOLBAR_STORE){toolbarPrefs=loadToolbarPrefs();renderPinnedToolbar()}});
-setInterval(pruneToolWindows,700);
+window.addEventListener('storage',e=>{if(e.key===TOOLBAR_STORE){prefs=loadPrefs();renderPinned()}});
+setInterval(pruneWindows,700);
 window.addEventListener('beforeunload',()=>{for(const w of toolWindows.values())try{w.close()}catch(e){}});
-renderPinnedToolbar();updateActiveBadge();resizeCollapsed();
+renderPinned();updateActiveUI();resizeCollapsed();
 })();
