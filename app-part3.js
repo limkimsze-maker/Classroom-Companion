@@ -1,7 +1,7 @@
 // Brain / early / question / reflection
   function random(arr){return arr[Math.floor(Math.random()*arr.length)]}
   $('#brainNext').onclick=()=>$('#brainText').textContent=random(brainBreaks);
-  $('#brainFull').onclick=()=>overlay($('#brainText').textContent,'Brain break');
+  $('#brainFull').onclick=()=>{const w=Math.max(900,screen.availWidth||1200),h=Math.max(650,screen.availHeight||800);const win=window.open('brain-break.html?sound=1&v=20261003bb2','ClassroomCompanionBrainBreak',`popup=yes,width=${w},height=${h},left=0,top=0,resizable=yes,scrollbars=no`);if(!win){toast('Allow popups to open Brain Break');return}try{win.moveTo(0,0);win.resizeTo(w,h);win.focus()}catch(e){}};
   $('#earlyNext').onclick=()=>$('#earlyText').textContent=random(earlyFinish);
   $('#earlyFull').onclick=()=>overlay($('#earlyText').textContent,'If you are finished');
   $('#questionSpin').onclick=()=>{let n=0;const id=setInterval(()=>{$('#questionPrompt').textContent=random(questionPrompts);if(++n>10){clearInterval(id);chime();syncFloat()}},65)};
