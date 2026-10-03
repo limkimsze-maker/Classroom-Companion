@@ -58,6 +58,11 @@ function classKey(){return data.selectedClass||'_general'}
 function currentClass(){return data.classes[data.selectedClass]||null}
 function escapeHtml(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function fitStrip(){try{window.resizeTo(STRIP_W,STRIP_H)}catch(e){}}
+function restoreStrip(){
+  fitStrip();
+  try{window.focus()}catch(e){}
+  setTimeout(()=>{try{window.focus()}catch(e){}},80);
+}
 function renderClasses(){const sel=$('#classSelect');sel.innerHTML='<option value="">No class</option>'+Object.keys(data.classes).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');sel.value=data.selectedClass||'';renderPoints();resetPicker()}
 function renderPoints(){$('#pointVal').textContent=data.classPoints[classKey()]||0}
 function resetPicker(){const c=currentClass();pickerPool=c?[...c.names]:[];$('#pickVal').textContent=c?'Ready':'Add class'}
@@ -75,14 +80,29 @@ $('#moreBtn').onclick=()=>{
   if(fullWin&&!fullWin.closed){fullWin.focus();return}
   fullWin=window.open('full.html','ClassroomCompanionFull','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');
   if(!fullWin){toast('Allow popups to open All Tools');return}
+  try{
+    fullWin.addEventListener('beforeunload',()=>setTimeout(restoreStrip,0),{once:true});
+  }catch(e){}
   fullWin.focus();
   clearInterval(fullWatch);
-  fullWatch=setInterval(()=>{if(!fullWin||fullWin.closed){clearInterval(fullWatch);fullWin=null;fitStrip();try{window.focus()}catch(e){}toast('Back to strip')}},400);
+  fullWatch=setInterval(()=>{
+    if(!fullWin||fullWin.closed){
+      clearInterval(fullWatch);fullWatch=null;fullWin=null;restoreStrip();toast('Back to strip');
+    }
+  },250);
 };
 $('#classBtn').onclick=openClass;
 $('#closeClass').onclick=closeClass;
 $('#classSelect').onchange=e=>{data.selectedClass=e.target.value;save();renderClasses()};
 $('#saveClass').onclick=()=>{const name=$('#className').value.trim();const names=$('#classNames').value.split(/\n|,/).map(s=>s.trim()).filter(Boolean);if(!name){toast('Enter a class name');return}data.classes[name]={names};data.selectedClass=name;save();renderClasses();closeClass();toast(`${name} saved`)};
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin)return;
+  if(e.data&&e.data.type==='classroom-companion-return-to-strip'){
+    if(fullWatch){clearInterval(fullWatch);fullWatch=null}
+    fullWin=null;
+    restoreStrip();
+  }
+});
 window.addEventListener('storage',e=>{if(e.key===STORE){data=load();renderClasses()}});
 renderTimer();renderClasses();setTimeout(fitStrip,80);
 </script>
