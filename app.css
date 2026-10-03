@@ -80,6 +80,8 @@ main{max-width:1500px;margin:0 auto;padding:0 18px 64px}
 }
 .widget:hover{transform:translateY(-2px);box-shadow:0 14px 28px rgba(15,23,42,.10)}
 .widget.hidden{display:none}
+/* Duplicate tools removed from the teacher-facing collection. Brain Break replaces Movement Break; Confidence Check replaces End-of-Lesson Self-Check. */
+.widget[data-name^="movement break timer"],.widget[data-name^="end of lesson self check"]{display:none!important}
 .widget-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .widget-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--surface2);font-size:21px}
 .widget-title{font-weight:900;line-height:1.1}
