@@ -10,7 +10,6 @@
 <script>
 (async()=>{
   try{
-    try{window.moveTo(0,0);window.resizeTo(screen.availWidth||1280,screen.availHeight||800)}catch(e){}
     const r=await fetch('widget.html?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('widget');
     let html=await r.text();
@@ -19,21 +18,23 @@ html,body{background:#eef3f5!important;overflow:auto!important;min-height:100vh!
 body{padding:0!important}
 #strip{display:none!important}
 #wrap{width:100%!important;max-width:none!important;padding:0!important}
-#quickbar{display:none!important;position:static!important;width:auto!important;max-width:none!important;margin:10px!important;min-height:0!important;padding:8px!important;border-radius:14px!important;box-shadow:0 10px 26px rgba(18,32,46,.12)!important;background:#fff!important;align-items:flex-start!important}
+#quickbar{display:none!important;position:relative!important;z-index:60!important;width:auto!important;max-width:none!important;margin:10px!important;min-height:0!important;padding:8px!important;border-radius:14px!important;box-shadow:0 10px 26px rgba(18,32,46,.12)!important;background:#fff!important;align-items:flex-start!important}
 #quickbar.show{display:flex!important}
-#quickbar .quick-title{font-size:12px!important;line-height:1.15!important;max-width:92px!important;white-space:normal!important;padding:7px 5px!important}
+#quickbar .quick-title{font-size:12px!important;line-height:1.15!important;max-width:110px!important;white-space:normal!important;padding:7px 5px!important}
 #quickbar .quick-scroll{display:flex!important;flex-wrap:wrap!important;gap:6px!important;max-width:none!important;overflow:visible!important}
 #quickbar .quick-chip{height:auto!important;min-height:36px!important;padding:8px 10px!important;white-space:normal!important;line-height:1.15!important;text-align:left!important}
 #quickbar .quick-value{max-width:none!important;white-space:normal!important;line-height:1.35!important;padding:10px!important}
 #quickbar .quick-close{display:none!important}
-#ccToolHead{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #d8e1e8;padding:10px 12px;display:flex;align-items:center;gap:7px;box-shadow:0 4px 12px rgba(18,32,46,.06)}
+#ccToolHead{position:sticky;top:0;z-index:70;background:#fff;border-bottom:1px solid #d8e1e8;padding:10px 12px;display:flex;align-items:center;gap:7px;box-shadow:0 4px 12px rgba(18,32,46,.06)}
 #ccToolIcon{font-size:25px;line-height:1}#ccToolMeta{min-width:0;flex:1}#ccToolTitle{font-size:14px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ccToolStatus{font-size:10px;color:#0f766e;font-weight:850;margin-top:2px}
 .ccHeadBtn{height:34px;border:1px solid #d8e1e8;background:#fff;border-radius:10px;padding:0 10px;font-weight:900;cursor:pointer;white-space:nowrap}.ccHeadBtn.primary{background:#0f766e;border-color:#0f766e;color:#fff}.ccHeadBtn.launcher{width:38px;padding:0;font-size:18px;background:#0f766e;border-color:#0f766e;color:#fff}
+#ccToolStage{min-height:calc(100vh - 62px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;background:radial-gradient(circle at 50% 25%,#fff 0,#f0f8f7 48%,#e7eef2 100%)}
+#ccStageIcon{font-size:clamp(48px,8vw,100px);line-height:1;margin-bottom:18px}#ccStageValue{font-size:clamp(42px,9vw,140px);font-weight:1000;line-height:1.04;letter-spacing:-.045em;max-width:92vw;overflow-wrap:anywhere;color:#17324d}#ccStageHint{margin-top:20px;font-size:clamp(14px,1.6vw,22px);font-weight:800;color:#667085}
 #toast{bottom:8px!important}
-@media(max-width:520px){#ccToolHead{padding:8px;gap:5px}.ccHeadBtn{padding:0 7px;font-size:11px}.ccHeadBtn.launcher{width:34px;font-size:17px}#ccToolTitle{font-size:12px}}
+@media(max-width:520px){#ccToolHead{padding:8px;gap:5px}.ccHeadBtn{padding:0 7px;font-size:11px}.ccHeadBtn.launcher{width:34px;font-size:17px}#ccToolTitle{font-size:12px}#ccToolStage{padding:18px}}
 `;
     html=html.replace('</style>',toolCss+'</style>');
-    html=html.replace('<body>','<body><div id="ccToolHead"><button class="ccHeadBtn launcher" id="ccToolLauncherBtn" type="button" title="Open another tool" aria-label="Open classroom tools">✦</button><div id="ccToolIcon">✦</div><div id="ccToolMeta"><div id="ccToolTitle">Classroom Tool</div><div id="ccToolStatus">Ready</div></div><button class="ccHeadBtn primary" id="ccToolOptionsBtn" type="button">••• Options</button><button class="ccHeadBtn" id="ccToolCloseBtn" type="button">×</button></div>');
+    html=html.replace('<body>','<body><div id="ccToolHead"><button class="ccHeadBtn launcher" id="ccToolLauncherBtn" type="button" title="Open another tool" aria-label="Open classroom tools">✦</button><div id="ccToolIcon">✦</div><div id="ccToolMeta"><div id="ccToolTitle">Classroom Tool</div><div id="ccToolStatus">Ready</div></div><button class="ccHeadBtn primary" id="ccToolOptionsBtn" type="button">••• Options</button><button class="ccHeadBtn" id="ccToolCloseBtn" type="button">×</button></div><main id="ccToolStage"><div id="ccStageIcon">✦</div><div id="ccStageValue">Choose an option</div><div id="ccStageHint">Select from the dropdown above.</div></main>');
     const addon=`
 <script src="transition-strip.js?v=20261003transition2"><\/script>
 <script src="brain-break-strip.js?v=20261003bb4"><\/script>
@@ -46,18 +47,44 @@ const removedDuplicates=new Set(['movement-break','end-of-lesson-self-check']);
 const tools=(typeof allTools!=='undefined'&&Array.isArray(allTools))?allTools.filter(x=>!removedDuplicates.has(x.slug)):[];
 const t=tools.find(x=>x.slug===slug);
 const title=document.getElementById('ccToolTitle'),icon=document.getElementById('ccToolIcon'),status=document.getElementById('ccToolStatus');
+const stageIcon=document.getElementById('ccStageIcon'),stageValue=document.getElementById('ccStageValue'),stageHint=document.getElementById('ccStageHint');
+let lastDisplay='Choose an option';
 try{window.fitStrip=()=>{};fitStrip=window.fitStrip;window.restoreStrip=()=>{};restoreStrip=window.restoreStrip}catch(e){}
-if(t){title.textContent=t.title;icon.textContent=t.icon;document.title=t.title+' • Classroom Companion'}else{title.textContent='Tool unavailable';status.textContent='Could not identify this tool';document.getElementById('quickbar')?.classList.add('show');const q=document.getElementById('quickScroll');if(q)q.innerHTML='<div class="quick-value">This tool could not be identified. Close this window and open it again from the ✦ launcher.</div>'}
+if(t){title.textContent=t.title;icon.textContent=t.icon;stageIcon.textContent=t.icon;stageHint.textContent=t.title;document.title=t.title+' • Classroom Companion'}else{title.textContent='Tool unavailable';status.textContent='Could not identify this tool';document.getElementById('quickbar')?.classList.add('show');const q=document.getElementById('quickScroll');if(q)q.innerHTML='<div class="quick-value">This tool could not be identified. Close this window and open it again from the ✦ launcher.</div>'}
+function currentDisplay(){
+  try{
+    if(['timer-calm-music','transition-countdown','focus-intervals','calm-reset'].includes(slug))return format(timer.sec);
+    if(slug==='noise-level')return document.getElementById('noiseVal')?.textContent||lastDisplay;
+    if(slug==='question-spinner')return document.getElementById('questionVal')?.textContent||lastDisplay;
+    if(slug==='pick-a-pupil')return document.getElementById('pickVal')?.textContent||lastDisplay;
+    if(slug==='participation-counter')return String(participation);
+    if(slug==='whole-class-goal')return String(goal);
+  }catch(e){}
+  return lastDisplay;
+}
+function updateStage(){const v=currentDisplay();if(v)stageValue.textContent=v}
 function setStatus(){
   try{
-    if(slug==='timer-calm-music'){status.textContent=format(timer.sec)+' • '+(timer.running?'Running':'Ready');return}
-    if(slug==='noise-level'){status.textContent=document.getElementById('noiseVal')?.textContent||'Ready';return}
-    if(slug==='question-spinner'){status.textContent=document.getElementById('questionVal')?.textContent||'Ready';return}
-    if(slug==='pick-a-pupil'){status.textContent=document.getElementById('pickVal')?.textContent||'Ready';return}
-    if(slug==='participation-counter'){status.textContent=participation+' responses';return}
-    if(slug==='whole-class-goal'){status.textContent=String(goal);return}
+    if(['timer-calm-music','transition-countdown','focus-intervals','calm-reset'].includes(slug)){status.textContent=format(timer.sec)+' • '+(timer.running?'Running':'Ready');updateStage();return}
+    if(slug==='noise-level'){status.textContent=document.getElementById('noiseVal')?.textContent||'Ready';updateStage();return}
+    if(slug==='question-spinner'){status.textContent=document.getElementById('questionVal')?.textContent||'Ready';updateStage();return}
+    if(slug==='pick-a-pupil'){status.textContent=document.getElementById('pickVal')?.textContent||'Ready';updateStage();return}
+    if(slug==='participation-counter'){status.textContent=participation+' responses';updateStage();return}
+    if(slug==='whole-class-goal'){status.textContent=String(goal);updateStage();return}
   }catch(e){}
   status.textContent='Ready';
+  updateStage();
+}
+async function enterPresentation(){
+  const el=document.documentElement;
+  try{
+    if(!document.fullscreenElement&&!document.webkitFullscreenElement){
+      if(el.requestFullscreen)await el.requestFullscreen();
+      else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
+    }
+  }catch(e){
+    try{window.moveTo(0,0);window.resizeTo(screen.availWidth||1280,screen.availHeight||800)}catch(_){}
+  }
 }
 function showRequestedOptions(){
   if(!t)return;
@@ -77,22 +104,34 @@ function toolWindowName(s){return 'ClassroomCompanionTool_'+String(s).replace(/[
 function openAnotherTool(other){
   if(!other)return;
   if(other.slug===slug){showRequestedOptions();return}
-  const sw=Math.max(900,screen.availWidth||1280),sh=Math.max(650,screen.availHeight||800);
+  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
+  const width=Math.min(520,sw),height=Math.min(680,sh);
+  const left=Math.max(0,Math.min(sw-width,(window.screenX||100)+42));
+  const top=Math.max(0,Math.min(sh-height,(window.screenY||60)+36));
   const url='tool-window.html?tool='+encodeURIComponent(other.slug)+'&v='+Date.now();
-  const w=window.open(url,toolWindowName(other.slug),
-    'popup=yes,width='+sw+',height='+sh+',left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no');
+  const w=window.open(url,toolWindowName(other.slug),'popup=yes,width='+width+',height='+height+',left='+left+',top='+top+',resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no');
   if(!w){showQuick('Pop-up blocked',[{type:'value',label:'Allow pop-ups for this site to open another classroom tool.'}],{withStop:false});return}
-  closeQuick();try{w.moveTo(0,0);w.resizeTo(sw,sh);w.focus()}catch(e){}
+  closeQuick();try{w.focus()}catch(e){}
 }
 function showToolLauncher(){
   if(!tools.length)return;
-  const items=tools.map(other=>({
-    label:(other.slug===slug?'● ':'')+other.icon+' '+other.title,
-    active:other.slug===slug,
-    action:()=>openAnotherTool(other)
-  }));
+  const items=tools.map(other=>({label:(other.slug===slug?'● ':'')+other.icon+' '+other.title,active:other.slug===slug,action:()=>openAnotherTool(other)}));
   showQuick('All Tools',items,{withStop:false});
 }
+const quick=document.getElementById('quickbar');
+quick.addEventListener('click',e=>{
+  const chip=e.target.closest('.quick-chip');if(!chip)return;
+  const qTitle=document.getElementById('quickTitle')?.textContent||'';
+  if(qTitle==='All Tools')return;
+  enterPresentation();
+  setTimeout(()=>{
+    const qv=document.querySelector('#quickbar .quick-value');
+    if(qv?.textContent?.trim())lastDisplay=qv.textContent.trim();
+    else{const v=currentDisplay();if(v)lastDisplay=v}
+    try{closeQuick()}catch(_){}
+    updateStage();setStatus();
+  },100);
+},true);
 document.getElementById('ccToolLauncherBtn').onclick=showToolLauncher;
 document.getElementById('ccToolOptionsBtn').onclick=showRequestedOptions;
 document.getElementById('ccToolCloseBtn').onclick=()=>window.close();
