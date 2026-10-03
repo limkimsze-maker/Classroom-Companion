@@ -53,6 +53,12 @@ launch.onclick=()=>{
         s2.src='brain-break-strip.js?v=20261003bb2';
         stripWindow.document.body.appendChild(s2);
       }
+      if(!stripWindow.document.getElementById('clockStripPatch')){
+        const s3=stripWindow.document.createElement('script');
+        s3.id='clockStripPatch';
+        s3.src='clock-strip.js?v=20261003clock1';
+        stripWindow.document.body.appendChild(s3);
+      }
     }catch(e){}
   };
   try{stripWindow.addEventListener('load',injectStripEnhancements)}catch(e){}
