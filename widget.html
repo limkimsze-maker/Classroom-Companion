@@ -6,109 +6,22 @@
 <meta name="theme-color" content="#0f766e">
 <title>Classroom Companion Strip</title>
 <style>
-:root{--teal:#0f766e;--teal2:#dff6f1;--ink:#17202a;--muted:#667085;--line:#d8e1e8;--bg:#f6f8fb}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
-button,select,input,textarea{font:inherit}
-.wrap{padding:4px;width:max-content}
-.strip{height:52px;width:max-content;max-width:810px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 5px 16px rgba(18,32,46,.08);display:flex;align-items:center;gap:4px;padding:5px 6px;white-space:nowrap;overflow:hidden}
-.brand{display:flex;align-items:center;gap:4px;font-weight:950;font-size:11px;padding-right:3px;flex:0 0 auto}
-.brand .mark{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--teal2);color:var(--teal);font-size:14px}
-.customise{height:34px;border:2px solid var(--teal);background:var(--teal2);color:#0b5b55;border-radius:8px;padding:0 8px;font-weight:950;font-size:10.5px;cursor:pointer;flex:0 0 auto}
-.customise:hover{background:#ccefe8}
-.cluster,.timer-box{display:flex;align-items:center;gap:4px;flex:0 0 auto}
-.class-select{width:92px;height:28px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 5px;font-weight:800;font-size:12px}
-.btn{height:28px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 7px;font-weight:900;color:var(--ink);cursor:pointer;font-size:12px}
-.btn:hover,.tool:hover,.shortcut:hover{background:#f8fbfc}
-.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
-.timer-box{padding-left:4px;border-left:1px solid var(--line)}
-.time{font-size:20px;line-height:1;font-weight:950;color:var(--teal);letter-spacing:-.04em;min-width:58px;text-align:center}
-.tool{height:34px;min-width:61px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 5px;display:grid;grid-template-columns:16px auto;grid-template-rows:1fr 1fr;column-gap:3px;align-items:center;text-align:left;cursor:pointer;flex:0 0 auto}
-.tool .ico{grid-row:1/3;font-size:15px}
-.tool .lab{font-size:9.5px;line-height:1;font-weight:900;align-self:end}
-.tool .val{font-size:9px;line-height:1;color:var(--teal);font-weight:950;align-self:start;max-width:68px;overflow:hidden;text-overflow:ellipsis}
-.tool.more{min-width:68px}
-#pickBtn{min-width:116px}
-#pickVal{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
-.shortcut-track{display:flex;align-items:center;gap:4px;max-width:520px;overflow-x:auto;scrollbar-width:none;flex:0 1 auto}
-.shortcut-track::-webkit-scrollbar{display:none}
-.shortcut{height:34px;max-width:104px;border:1px solid #cfd9df;background:#fff;border-radius:8px;padding:0 6px;font-size:9.5px;font-weight:900;display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
-.shortcut span:last-child{overflow:hidden;text-overflow:ellipsis}
-.drawer{display:none;position:fixed;inset:8px;background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 10px 30px rgba(18,32,46,.16);padding:14px;overflow:auto;z-index:4}
-.drawer.show{display:block}
-.drawer h2{font-size:18px;margin:0 0 6px}
-.drawer h3{font-size:13px;margin:14px 0 5px}
-.field{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;margin-bottom:8px;background:#fff}
-.names{height:145px;resize:none}
-.row{display:flex;gap:7px;flex-wrap:wrap}
-.help{font-size:11px;color:var(--muted);line-height:1.4;margin-top:5px}
-.limit{position:sticky;top:-14px;z-index:3;display:flex;justify-content:space-between;align-items:center;background:#f7fbfa;border:1px solid #cde8e2;border-radius:9px;padding:7px 9px;margin:8px 0;font-size:12px;font-weight:900;color:#0b5b55}
-.limit.full{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
-.checklist{display:grid;gap:5px;margin:8px 0 12px}
-.checkrow{display:flex;align-items:center;gap:9px;min-height:34px;border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:12px;font-weight:800;cursor:pointer}
-.checkrow input{width:17px;height:17px;accent-color:var(--teal);cursor:pointer}
-.checkrow input:disabled{cursor:not-allowed}
-.checkrow.disabled{opacity:.48;cursor:not-allowed}
-.checkrow span{flex:1}
-.search-tools{background:#fff;padding:4px 0}
-.tool-search{width:100%;height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font-size:12px}
-.category{font-size:10px;color:var(--teal);font-weight:950;text-transform:uppercase;letter-spacing:.04em;margin-top:5px}
-.drawer-actions{position:sticky;bottom:-14px;background:#fff;padding:10px 0 0;border-top:1px solid #eef2f5}
-.toast{position:fixed;left:50%;bottom:5px;transform:translateX(-50%) translateY(8px);background:#17202a;color:#fff;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;opacity:0;pointer-events:none;transition:.16s;z-index:5}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+:root{--teal:#0f766e;--teal2:#dff6f1;--ink:#17202a;--line:#d8e1e8;--bg:#f6f8fb}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}button,select{font:inherit}.wrap{padding:3px;width:max-content}.strip{height:50px;width:max-content;max-width:810px;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 4px 12px rgba(18,32,46,.07);display:flex;align-items:center;gap:4px;padding:4px 5px;white-space:nowrap;overflow:hidden}.brand{display:flex;align-items:center;gap:4px;font-weight:950;font-size:11px;padding-right:3px;flex:0 0 auto}.mark{width:23px;height:23px;border-radius:7px;display:grid;place-items:center;background:var(--teal2);color:var(--teal);font-size:13px}.customise{height:34px;border:2px solid var(--teal);background:var(--teal2);color:#0b5b55;border-radius:8px;padding:0 8px;font-weight:950;font-size:10.5px;cursor:pointer;flex:0 0 auto}.cluster,.timer-box{display:flex;align-items:center;gap:4px;flex:0 0 auto}.class-select{width:92px;height:28px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 5px;font-weight:800;font-size:12px}.btn{height:28px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 7px;font-weight:900;color:var(--ink);cursor:pointer;font-size:12px}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.timer-box{padding-left:4px;border-left:1px solid var(--line)}.time{font-size:20px;line-height:1;font-weight:950;color:var(--teal);letter-spacing:-.04em;min-width:58px;text-align:center}.tool{height:34px;min-width:61px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 5px;display:grid;grid-template-columns:16px auto;grid-template-rows:1fr 1fr;column-gap:3px;align-items:center;text-align:left;cursor:pointer;flex:0 0 auto}.tool .ico{grid-row:1/3;font-size:15px}.tool .lab{font-size:9.5px;line-height:1;font-weight:900;align-self:end}.tool .val{font-size:9px;line-height:1;color:var(--teal);font-weight:950;align-self:start;max-width:68px;overflow:hidden;text-overflow:ellipsis}.tool.more{min-width:68px}#pickBtn{min-width:116px}#pickVal{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}.shortcut-track{display:flex;align-items:center;gap:4px;max-width:420px;overflow-x:auto;scrollbar-width:none;flex:0 1 auto}.shortcut-track::-webkit-scrollbar{display:none}.shortcut{height:34px;max-width:102px;border:1px solid #cfd9df;background:#fff;border-radius:8px;padding:0 6px;font-size:9.5px;font-weight:900;display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;flex:0 0 auto}.shortcut span:last-child{overflow:hidden;text-overflow:ellipsis}.toast{position:fixed;left:50%;bottom:3px;transform:translateX(-50%) translateY(8px);background:#17202a;color:#fff;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;opacity:0;pointer-events:none;transition:.15s;z-index:5}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="strip" id="strip">
-    <div class="brand" title="Classroom Companion"><span class="mark">✦</span><span>Companion</span></div>
-    <button class="customise" id="customiseBtn" type="button">☑ Tools</button>
-    <div class="cluster" id="classTools"><select id="classSelect" class="class-select" aria-label="Choose class"><option value="">No class</option></select><button id="classBtn" class="btn" type="button">Class</button></div>
-    <div class="timer-box" id="timerTools"><div class="time" id="time">05:00</div><button id="timerStart" class="btn primary" type="button">Start</button><button id="timerReset" class="btn" type="button">Reset</button></div>
-    <button class="tool" id="pointBtn" type="button"><span class="ico">⭐</span><span class="lab">Point</span><span class="val" id="pointVal">0</span></button>
-    <button class="tool" id="pickBtn" type="button"><span class="ico">🎯</span><span class="lab">Pick pupil</span><span class="val" id="pickVal">Ready</span></button>
-    <button class="tool" id="questionBtn" type="button"><span class="ico">❓</span><span class="lab">Question</span><span class="val" id="questionVal">Why?</span></button>
-    <button class="tool" id="noiseBtn" type="button"><span class="ico">🔊</span><span class="lab">Noise</span><span class="val" id="noiseVal">Silent</span></button>
-    <div class="shortcut-track" id="shortcutTrack" aria-label="Pinned All Tools shortcuts"></div>
-    <button class="tool more" id="moreBtn" type="button"><span class="ico">•••</span><span class="lab">All Tools</span><span class="val">Open</span></button>
-  </div>
-</div>
-
-<div class="drawer" id="classDrawer">
-  <h2>Add / Update Class</h2>
-  <input id="className" class="field" placeholder="Class name, e.g. 3 Respect">
-  <textarea id="classNames" class="field names" placeholder="Paste or type one pupil name per line"></textarea>
-  <div class="row"><button id="saveClass" class="btn primary" type="button">Save Class</button><button id="closeClass" class="btn" type="button">Close</button></div>
-  <div class="help">Saved only in this browser. Adding a class is optional.</div>
-</div>
-
-<div class="drawer" id="customiseDrawer">
-  <h2>Choose tools for the strip</h2>
-  <div class="help">Choose any combination of direct controls and All Tools shortcuts. The strip stays limited to five tools so it remains compact.</div>
-  <div class="limit" id="selectionLimit"><span>Selected</span><span id="selectionCount">0 / 5</span></div>
-  <h3>Direct strip controls</h3>
-  <div class="checklist">
-    <label class="checkrow"><input type="checkbox" data-direct="class"><span>👥 Class / pupils</span></label>
-    <label class="checkrow"><input type="checkbox" data-direct="timer"><span>⏱ Timer</span></label>
-    <label class="checkrow"><input type="checkbox" data-direct="point"><span>⭐ Point</span></label>
-    <label class="checkrow"><input type="checkbox" data-direct="pick"><span>🎯 Pick a pupil</span></label>
-    <label class="checkrow"><input type="checkbox" data-direct="question"><span>❓ Question spinner</span></label>
-    <label class="checkrow"><input type="checkbox" data-direct="noise"><span>🔊 Noise level</span></label>
-    <label class="checkrow"><input type="checkbox" data-direct="more"><span>••• All Tools</span></label>
-  </div>
-  <h3>Any tool from All Tools</h3>
-  <div class="search-tools"><input id="toolSearch" class="tool-search" type="search" placeholder="Search all tools…"></div>
-  <div class="checklist" id="allToolChecklist"></div>
-  <div class="drawer-actions">
-    <div class="row">
-      <button id="clearDraft" class="btn" type="button">Clear</button>
-      <button id="restoreDefaults" class="btn" type="button">Default</button>
-      <button id="cancelCustomise" class="btn" type="button">Cancel</button>
-      <button id="doneCustomise" class="btn primary" type="button">Done</button>
-    </div>
-  </div>
-</div>
-
+<div class="wrap"><div class="strip" id="strip">
+  <div class="brand" title="Classroom Companion"><span class="mark">✦</span><span>Companion</span></div>
+  <button class="customise" id="customiseBtn" type="button">☑ Tools</button>
+  <div class="cluster" id="classTools"><select id="classSelect" class="class-select" aria-label="Choose class"><option value="">No class</option></select><button id="classBtn" class="btn" type="button">Class</button></div>
+  <div class="timer-box" id="timerTools"><div class="time" id="time">05:00</div><button id="timerStart" class="btn primary" type="button">Start</button><button id="timerReset" class="btn" type="button">Reset</button></div>
+  <button class="tool" id="pointBtn" type="button"><span class="ico">⭐</span><span class="lab">Point</span><span class="val" id="pointVal">0</span></button>
+  <button class="tool" id="pickBtn" type="button"><span class="ico">🎯</span><span class="lab">Pick pupil</span><span class="val" id="pickVal">Ready</span></button>
+  <button class="tool" id="questionBtn" type="button"><span class="ico">❓</span><span class="lab">Question</span><span class="val" id="questionVal">Why?</span></button>
+  <button class="tool" id="noiseBtn" type="button"><span class="ico">🔊</span><span class="lab">Noise</span><span class="val" id="noiseVal">Silent</span></button>
+  <div class="shortcut-track" id="shortcutTrack" aria-label="Pinned All Tools shortcuts"></div>
+  <button class="tool more" id="moreBtn" type="button"><span class="ico">•••</span><span class="lab">All Tools</span><span class="val">Open</span></button>
+</div></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
 'use strict';
@@ -119,161 +32,45 @@ const defaultDirect={class:false,timer:true,point:false,pick:true,question:true,
 const directIds={class:'classTools',timer:'timerTools',point:'pointBtn',pick:'pickBtn',question:'questionBtn',noise:'noiseBtn',more:'moreBtn'};
 const directEquivalentTitles=new Set(['Timer + Calm Music','Noise Level','Question Spinner','Pick a Pupil']);
 const allTools=[
-['⏱️','Timer + Calm Music','Focus & Time'],['🧭','Lesson Stages','Focus & Time'],['⏳','Transition Countdown','Focus & Time'],['👀','Attention Signal','Focus & Time'],['🎯','Focus Intervals','Focus & Time'],['🤸','Movement Break','Focus & Time'],['🌿','Calm / Reset','Focus & Time'],['🕘','Full-Screen Clock','Focus & Time'],['📅','Date & Day','Focus & Time'],
-['🔊','Noise Level','Classroom Management'],['🚦','Class Traffic Light','Classroom Management'],['🧩','Work Mode','Classroom Management'],['💬','Think–Pair–Share','Classroom Management'],['🖊️','Mini-Whiteboard Routine','Classroom Management'],['✅','Behaviour Expectations','Classroom Management'],['🛎️','Pre-Correction','Classroom Management'],['🆘','Help Before Teacher','Classroom Management'],['🚀','Early Finisher','Classroom Management'],['🧠','Brain Break','Classroom Management'],
-['❓','Question Spinner','Participation & Response'],['🅰️','Answer Check','Participation & Response'],['📈','Confidence Check','Participation & Response'],['🙋','Participation Counter','Participation & Response'],['📊','Engagement Snapshot','Participation & Response'],
-['🧠','KWL Chart','Thinking & Reflection'],['💭','Reflect','Thinking & Reflection'],['🖐️','End-of-Lesson Self-Check','Thinking & Reflection'],
-['✨','Quote of the Day','Class Culture & Rewards'],['🏁','Whole-Class Goal','Class Culture & Rewards'],['⭐','Rewards','Class Culture & Rewards'],
-['🎵','Soundboard','Teacher Utilities'],['📝','Observation Counter','Teacher Utilities'],['🪟','Screen Shade','Teacher Utilities'],['🔢','Random Number','Teacher Utilities'],['🎲','Dice','Teacher Utilities'],['🪙','Coin Toss','Teacher Utilities'],['🧭','Action Spinner','Teacher Utilities'],
-['🎯','Pick a Pupil','Personalised Tools'],['👥','Make Groups','Personalised Tools'],['🗓️','Daily Visual Timetable','Personalised Tools'],['📆','Weekly Visual Timetable','Personalised Tools']
-].map(([icon,title,cat])=>({icon,title,cat,slug:slugify(title)}));
+['⏱️','Timer + Calm Music'],['🧭','Lesson Stages'],['⏳','Transition Countdown'],['👀','Attention Signal'],['🎯','Focus Intervals'],['🤸','Movement Break'],['🌿','Calm / Reset'],['🕘','Full-Screen Clock'],['📅','Date & Day'],['🔊','Noise Level'],['🚦','Class Traffic Light'],['🧩','Work Mode'],['💬','Think–Pair–Share'],['🖊️','Mini-Whiteboard Routine'],['✅','Behaviour Expectations'],['🛎️','Pre-Correction'],['🆘','Help Before Teacher'],['🚀','Early Finisher'],['🧠','Brain Break'],['❓','Question Spinner'],['🅰️','Answer Check'],['📈','Confidence Check'],['🙋','Participation Counter'],['📊','Engagement Snapshot'],['🧠','KWL Chart'],['💭','Reflect'],['🖐️','End-of-Lesson Self-Check'],['✨','Quote of the Day'],['🏁','Whole-Class Goal'],['⭐','Rewards'],['🎵','Soundboard'],['📝','Observation Counter'],['🪟','Screen Shade'],['🔢','Random Number'],['🎲','Dice'],['🪙','Coin Toss'],['🧭','Action Spinner'],['🎯','Pick a Pupil'],['👥','Make Groups'],['🗓️','Daily Visual Timetable'],['📆','Weekly Visual Timetable']
+].map(([icon,title])=>({icon,title,slug:slugify(title)}));
 const pinTools=allTools.filter(t=>!directEquivalentTitles.has(t.title));
-let data=load(),prefs=loadPrefs(),draftPrefs=null;
-let timer={sec:300,base:300,running:false,id:null},pickerPool=[];
+let data=loadData(),prefs=loadPrefs(),timer={sec:300,base:300,running:false,id:null},pickerPool=[];
 let questionPrompts=['Who?','What?','When?','Where?','Why?','How?','Explain','Compare','Predict','What if…?','What evidence?','Give a reason','How do you know?','Describe'];
-let noiseLevels=['Silent','Whisper','Partner','Group','Presentation'];
-let noiseIndex=0,fullWin=null,fullWatch=null;
+let noiseLevels=['Silent','Whisper','Partner','Group','Presentation'],noiseIndex=0,fullWin=null,fullWatch=null,configWin=null;
 const $=s=>document.querySelector(s);
-
 function slugify(s){return String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
-function clonePrefs(p){return {direct:{...p.direct},pins:[...p.pins]}}
-function load(){try{return {...structuredClone(defaults),...JSON.parse(localStorage.getItem(STORE)||'{}')}}catch(e){return structuredClone(defaults)}}
-function save(){localStorage.setItem(STORE,JSON.stringify(data))}
-function loadPrefs(){try{const p=JSON.parse(localStorage.getItem(PREF_STORE)||'{}');const result={direct:{...defaultDirect,...(p.direct||{})},pins:Array.isArray(p.pins)?p.pins:[]};return enforceLimit(result)}catch(e){return {direct:{...defaultDirect},pins:[]}}}
-function savePrefs(){localStorage.setItem(PREF_STORE,JSON.stringify(prefs))}
+function loadData(){try{return {...structuredClone(defaults),...JSON.parse(localStorage.getItem(STORE)||'{}')}}catch(e){return structuredClone(defaults)}}
 function enforceLimit(p){let left=MAX_TOOLS;const order=['timer','pick','question','noise','more','class','point'];const direct={};for(const k of order){direct[k]=!!p.direct[k]&&left>0;if(direct[k])left--}const pins=[];for(const slug of (p.pins||[])){if(left<=0)break;if(pinTools.some(t=>t.slug===slug)&&!pins.includes(slug)){pins.push(slug);left--}}return {direct,pins}}
-function selectedCount(p){return Object.values(p.direct).filter(Boolean).length+p.pins.length}
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('show'),1400)}
+function loadPrefs(){try{const p=JSON.parse(localStorage.getItem(PREF_STORE)||'{}');return enforceLimit({direct:{...defaultDirect,...(p.direct||{})},pins:Array.isArray(p.pins)?p.pins:[]})}catch(e){return {direct:{...defaultDirect},pins:[]}}}
+function saveData(){localStorage.setItem(STORE,JSON.stringify(data))}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('show'),1300)}
+function escapeHtml(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function format(s){s=Math.max(0,s);return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
 function classKey(){return data.selectedClass||'_general'}
 function currentClass(){return data.classes[data.selectedClass]||null}
-function escapeHtml(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-
-function fitStrip(){
-  requestAnimationFrame(()=>{
-    try{
-      const strip=$('#strip');
-      const chromeW=Math.max(0,window.outerWidth-window.innerWidth);
-      const natural=Math.ceil(strip.scrollWidth+12+chromeW);
-      const wantedW=Math.min(830,Math.max(520,natural));
-      window.resizeTo(wantedW,176);
-    }catch(e){}
-  });
-}
+function fitStrip(){requestAnimationFrame(()=>{try{const strip=$('#strip'),chromeW=Math.max(0,window.outerWidth-window.innerWidth),natural=Math.ceil(strip.scrollWidth+10+chromeW),wantedW=Math.min(830,Math.max(430,natural));window.resizeTo(wantedW,window.outerHeight)}catch(e){}})}
 function restoreStrip(){fitStrip();try{window.focus()}catch(e){}setTimeout(()=>{try{window.focus()}catch(e){}},80)}
-
-function applyPrefs(resize=true){
-  Object.entries(directIds).forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.style.display=prefs.direct[key]?'':'none'});
-  renderPins();
-  if(resize)setTimeout(fitStrip,40);
-}
-function renderPins(){
-  const track=$('#shortcutTrack');track.innerHTML='';
-  for(const slug of prefs.pins){
-    const t=pinTools.find(x=>x.slug===slug);if(!t)continue;
-    const b=document.createElement('button');b.className='shortcut';b.type='button';b.title=`Open ${t.title} in All Tools`;
-    b.innerHTML=`<span>${t.icon}</span><span>${escapeHtml(t.title)}</span>`;b.onclick=()=>openFullTool(t.slug);track.appendChild(b);
-  }
-  track.style.display=prefs.pins.length?'flex':'none';
-}
-function updateDraftUI(){
-  const count=selectedCount(draftPrefs);
-  $('#selectionCount').textContent=`${count} / ${MAX_TOOLS}`;
-  $('#selectionLimit').classList.toggle('full',count>=MAX_TOOLS);
-  document.querySelectorAll('[data-direct]').forEach(cb=>{
-    cb.checked=!!draftPrefs.direct[cb.dataset.direct];
-    const disable=!cb.checked&&count>=MAX_TOOLS;
-    cb.disabled=disable;cb.closest('.checkrow')?.classList.toggle('disabled',disable);
-  });
-  document.querySelectorAll('[data-pin]').forEach(cb=>{
-    cb.checked=draftPrefs.pins.includes(cb.dataset.pin);
-    const disable=!cb.checked&&count>=MAX_TOOLS;
-    cb.disabled=disable;cb.closest('.checkrow')?.classList.toggle('disabled',disable);
-  });
-}
-function renderAllChecklist(q=''){
-  const box=$('#allToolChecklist');if(!box||!draftPrefs)return;
-  const query=q.trim().toLowerCase();box.innerHTML='';let last='';
-  for(const t of pinTools.filter(t=>!query||`${t.title} ${t.cat}`.toLowerCase().includes(query))){
-    if(t.cat!==last){const h=document.createElement('div');h.className='category';h.textContent=t.cat;box.appendChild(h);last=t.cat}
-    const label=document.createElement('label');label.className='checkrow';
-    label.innerHTML=`<input type="checkbox" data-pin="${t.slug}"><span>${t.icon} ${escapeHtml(t.title)}</span>`;
-    label.querySelector('input').onchange=e=>{
-      if(e.target.checked){
-        if(selectedCount(draftPrefs)>=MAX_TOOLS){e.target.checked=false;toast(`Choose up to ${MAX_TOOLS} tools`);return}
-        if(!draftPrefs.pins.includes(t.slug))draftPrefs.pins.push(t.slug);
-      }else draftPrefs.pins=draftPrefs.pins.filter(x=>x!==t.slug);
-      updateDraftUI();
-    };
-    box.appendChild(label);
-  }
-  updateDraftUI();
-}
-
-function renderClasses(){
-  const sel=$('#classSelect');
-  sel.innerHTML='<option value="">No class</option>'+Object.keys(data.classes).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-  sel.value=data.selectedClass||'';renderPoints();resetPicker();
-}
+function applyPrefs(){Object.entries(directIds).forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.style.display=prefs.direct[key]?'':'none'});renderPins();setTimeout(fitStrip,30)}
+function renderPins(){const track=$('#shortcutTrack');track.innerHTML='';for(const slug of prefs.pins){const t=pinTools.find(x=>x.slug===slug);if(!t)continue;const b=document.createElement('button');b.className='shortcut';b.type='button';b.title=`Open ${t.title} in All Tools`;b.innerHTML=`<span>${t.icon}</span><span>${escapeHtml(t.title)}</span>`;b.onclick=()=>openFullTool(t.slug);track.appendChild(b)}track.style.display=prefs.pins.length?'flex':'none'}
+function renderClasses(){const sel=$('#classSelect');sel.innerHTML='<option value="">No class</option>'+Object.keys(data.classes).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');sel.value=data.selectedClass||'';renderPoints();resetPicker()}
 function renderPoints(){$('#pointVal').textContent=data.classPoints[classKey()]||0}
 function resetPicker(){const c=currentClass();pickerPool=c?[...c.names]:[];$('#pickVal').textContent=c?'Ready':'Add class';$('#pickBtn').title=c?'Pick a pupil':'Add or select a class first'}
 function renderTimer(){$('#time').textContent=format(timer.sec)}
-
-function openClass(){
-  const c=currentClass();
-  if(c){$('#className').value=data.selectedClass;$('#classNames').value=c.names.join('\n')}
-  else{$('#className').value='';$('#classNames').value=''}
-  $('#classDrawer').classList.add('show');try{window.resizeTo(520,440)}catch(e){}
-}
-function closeClass(){$('#classDrawer').classList.remove('show');setTimeout(fitStrip,40)}
-
-function openCustomise(){
-  draftPrefs=clonePrefs(prefs);
-  $('#toolSearch').value='';
-  $('#customiseDrawer').classList.add('show');
-  document.querySelectorAll('[data-direct]').forEach(cb=>cb.onchange=()=>{
-    const key=cb.dataset.direct;
-    if(cb.checked&&selectedCount(draftPrefs)>=MAX_TOOLS){cb.checked=false;toast(`Choose up to ${MAX_TOOLS} tools`);return}
-    draftPrefs.direct[key]=cb.checked;updateDraftUI();
-  });
-  renderAllChecklist('');
-  updateDraftUI();
-  try{window.resizeTo(600,720)}catch(e){}
-}
-function exitCustomise(){$('#customiseDrawer').classList.remove('show');draftPrefs=null;setTimeout(fitStrip,40)}
-function applyCustomise(){prefs=enforceLimit(draftPrefs);savePrefs();applyPrefs(false);exitCustomise();toast('Strip updated')}
-function cancelCustomise(){exitCustomise();toast('No changes made')}
-
+function openConfig(panel){if(configWin&&!configWin.closed){configWin.focus();return}configWin=window.open(`configure.html?panel=${panel}`,'ClassroomCompanionConfigure','popup=yes,width=620,height=720,resizable=yes,scrollbars=yes');if(!configWin){toast('Allow popups to open setup');return}configWin.focus()}
 function watchFull(){clearInterval(fullWatch);fullWatch=setInterval(()=>{if(!fullWin||fullWin.closed){clearInterval(fullWatch);fullWatch=null;fullWin=null;restoreStrip();toast('Back to strip')}},250)}
-function openFullTool(slug=''){
-  if(fullWin&&!fullWin.closed){try{fullWin.postMessage({type:'classroom-companion-focus-tool',slug},location.origin);fullWin.focus();return}catch(e){}}
-  const url=slug?`full.html?focus=${encodeURIComponent(slug)}`:'full.html';
-  fullWin=window.open(url,'ClassroomCompanionFull','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');
-  if(!fullWin){toast('Allow popups to open All Tools');return}
-  fullWin.focus();watchFull();
-}
-
+function openFullTool(slug=''){if(fullWin&&!fullWin.closed){try{fullWin.postMessage({type:'classroom-companion-focus-tool',slug},location.origin);fullWin.focus();return}catch(e){}}const url=slug?`full.html?focus=${encodeURIComponent(slug)}`:'full.html';fullWin=window.open(url,'ClassroomCompanionFull','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');if(!fullWin){toast('Allow popups to open All Tools');return}fullWin.focus();watchFull()}
 $('#timerStart').onclick=()=>{timer.running=!timer.running;$('#timerStart').textContent=timer.running?'Pause':'Start';clearInterval(timer.id);if(timer.running){timer.id=setInterval(()=>{timer.sec--;renderTimer();if(timer.sec<=0){clearInterval(timer.id);timer.running=false;$('#timerStart').textContent='Start';toast('Time is up')}},1000)}};
 $('#timerReset').onclick=()=>{clearInterval(timer.id);timer.running=false;timer.sec=timer.base;$('#timerStart').textContent='Start';renderTimer()};
-$('#pointBtn').onclick=()=>{const k=classKey();data.classPoints[k]=(data.classPoints[k]||0)+1;save();renderPoints();toast('+1 point')};
-$('#pickBtn').onclick=()=>{const c=currentClass();if(!c||!c.names.length){openClass();toast('Add or select a class first');return}if(!pickerPool.length)pickerPool=[...c.names];const i=Math.floor(Math.random()*pickerPool.length),name=pickerPool.splice(i,1)[0];$('#pickVal').textContent=name;$('#pickBtn').title=name;toast(name)};
+$('#pointBtn').onclick=()=>{const k=classKey();data.classPoints[k]=(data.classPoints[k]||0)+1;saveData();renderPoints();toast('+1 point')};
+$('#pickBtn').onclick=()=>{const c=currentClass();if(!c||!c.names.length){openConfig('class');toast('Add or select a class first');return}if(!pickerPool.length)pickerPool=[...c.names];const i=Math.floor(Math.random()*pickerPool.length),name=pickerPool.splice(i,1)[0];$('#pickVal').textContent=name;$('#pickBtn').title=name;toast(name)};
 $('#questionBtn').onclick=()=>{let n=0;const id=setInterval(()=>{$('#questionVal').textContent=questionPrompts[Math.floor(Math.random()*questionPrompts.length)];if(++n>9)clearInterval(id)},65)};
 $('#noiseBtn').onclick=()=>{noiseIndex=(noiseIndex+1)%noiseLevels.length;$('#noiseVal').textContent=noiseLevels[noiseIndex];toast(noiseLevels[noiseIndex])};
-$('#moreBtn').onclick=()=>openFullTool('');
-$('#classBtn').onclick=openClass;
-$('#closeClass').onclick=closeClass;
-$('#customiseBtn').onclick=openCustomise;
-$('#doneCustomise').onclick=applyCustomise;
-$('#cancelCustomise').onclick=cancelCustomise;
-$('#toolSearch').oninput=e=>renderAllChecklist(e.target.value);
-$('#clearDraft').onclick=()=>{draftPrefs={direct:Object.fromEntries(Object.keys(defaultDirect).map(k=>[k,false])),pins:[]};renderAllChecklist($('#toolSearch').value);updateDraftUI()};
-$('#restoreDefaults').onclick=()=>{draftPrefs={direct:{...defaultDirect},pins:[]};renderAllChecklist($('#toolSearch').value);updateDraftUI()};
-$('#classSelect').onchange=e=>{data.selectedClass=e.target.value;save();renderClasses()};
-$('#saveClass').onclick=()=>{const name=$('#className').value.trim();const names=$('#classNames').value.split(/\n|,/).map(s=>s.trim()).filter(Boolean);if(!name){toast('Enter a class name');return}data.classes[name]={names};data.selectedClass=name;save();renderClasses();closeClass();toast(`${name} saved`)};
-
-window.addEventListener('message',e=>{if(e.origin!==location.origin)return;if(e.data&&e.data.type==='classroom-companion-return-to-strip'){if(fullWatch){clearInterval(fullWatch);fullWatch=null}fullWin=null;restoreStrip()}});
-window.addEventListener('storage',e=>{if(e.key===STORE){data=load();renderClasses()}if(e.key===PREF_STORE){prefs=loadPrefs();applyPrefs()}});
-renderTimer();renderClasses();applyPrefs(false);setTimeout(fitStrip,120);
+$('#moreBtn').onclick=()=>openFullTool('');$('#customiseBtn').onclick=()=>openConfig('tools');$('#classBtn').onclick=()=>openConfig('class');
+$('#classSelect').onchange=e=>{data.selectedClass=e.target.value;saveData();renderClasses()};
+window.addEventListener('message',e=>{if(e.origin!==location.origin)return;if(e.data?.type==='classroom-companion-return-to-strip'){if(fullWatch){clearInterval(fullWatch);fullWatch=null}fullWin=null;restoreStrip()}if(e.data?.type==='classroom-companion-prefs-updated'){prefs=loadPrefs();applyPrefs();configWin=null;toast('Strip updated')}if(e.data?.type==='classroom-companion-data-updated'){data=loadData();renderClasses();configWin=null;toast('Class updated')}});
+window.addEventListener('storage',e=>{if(e.key===STORE){data=loadData();renderClasses()}if(e.key===PREF_STORE){prefs=loadPrefs();applyPrefs()}});
+renderTimer();renderClasses();applyPrefs();setTimeout(fitStrip,120);
 </script>
 </body>
 </html>
