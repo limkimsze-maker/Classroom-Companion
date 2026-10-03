@@ -8,9 +8,9 @@ if(window.ClassroomCompanionEmbeddedLauncher){
 }
 let current=requestedCurrent;
 const tools=[
-['⏱️','Timer + Calm Music'],['🧭','Lesson Stages'],['⏳','Transition Countdown'],['👀','Attention Signal'],['🎯','Focus Intervals'],['🤸','Movement Break'],['🌿','Calm / Reset'],['🕘','Full-Screen Clock'],['📅','Date & Day'],
+['⏱️','Timer + Calm Music'],['🧭','Lesson Stages'],['⏳','Transition Countdown'],['👀','Attention Signal'],['🎯','Focus Intervals'],['🌿','Calm / Reset'],['🕘','Full-Screen Clock'],['📅','Date & Day'],
 ['🔊','Noise Level'],['🚦','Class Traffic Light'],['🧩','Work Mode'],['💬','Think–Pair–Share'],['🖊️','Mini-Whiteboard Routine'],['✅','Behaviour Expectations'],['🛎️','Pre-Correction'],['🆘','Help Before Teacher'],['🚀','Early Finisher'],['🧠','Brain Break'],
-['❓','Question Spinner'],['🅰️','Answer Check'],['📈','Confidence Check'],['🙋','Participation Counter'],['📊','Engagement Snapshot'],['🧠','KWL Chart'],['💭','Reflect'],['🖐️','End-of-Lesson Self-Check'],
+['❓','Question Spinner'],['🅰️','Answer Check'],['📈','Confidence Check'],['🙋','Participation Counter'],['📊','Engagement Snapshot'],['🧠','KWL Chart'],['💭','Reflect'],
 ['✨','Quote of the Day'],['🏁','Whole-Class Goal'],['⭐','Rewards'],['🎵','Soundboard'],['📝','Observation Counter'],['🪟','Screen Shade'],['🔢','Random Number'],['🎲','Dice'],['🪙','Coin Toss'],['🧭','Action Spinner'],['🎯','Pick a Pupil'],['👥','Make Groups'],['🗓️','Daily Visual Timetable'],['📆','Weekly Visual Timetable']
 ].map(([icon,title])=>({icon,title,slug:String(title).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}));
 
