@@ -25,8 +25,9 @@
 const launch=document.getElementById('launch'),status=document.getElementById('status');
 launch.onclick=()=>{
   status.classList.remove('show');
-  const stripUrl='widget.html?v=20261003-flex6';
-  const w=window.open(stripUrl,'_blank','popup=yes,width=760,height=105,resizable=yes,scrollbars=no');
+  const stripUrl='widget.html?v='+Date.now();
+  const features='popup=yes,width=760,height=80,resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no';
+  const w=window.open(stripUrl,'_blank',features);
   if(!w){status.classList.add('show');return}
   try{w.opener=null}catch(e){}
   w.focus();
