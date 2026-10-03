@@ -18,6 +18,9 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui;
     if(!r.ok)throw new Error('widget');
     let html=await r.text();
 
+    // Remove tools that duplicate richer tools before the widget is ever rendered.
+    html=html.replace("['🤸','Movement Break'],",'').replace("['🖐️','End-of-Lesson Self-Check'],",'');
+
     const criticalCss=`
 html,body{background:transparent!important;overflow:hidden!important}
 #strip{display:none!important}
@@ -88,8 +91,8 @@ function openQuoteFull(){const url='full.html?quote=1';if(fullWin&&!fullWin.clos
     const patches=`
 <script id="transitionStripPatch" src="transition-strip.js?v=20261003transition2"><\/script>
 <script id="brainBreakStripPatch" src="brain-break-strip.js?v=20261003bb4"><\/script>
-<script id="clockStripPatch" src="clock-strip.js?v=20261003clock4"><\/script>
-<script id="compactWidgetPatch" src="compact-widget.js?v=20261003compact9"><\/script>
+<script id="clockStripPatch" src="clock-strip.js?v=20261003clock5"><\/script>
+<script id="compactWidgetPatch" src="compact-widget.js?v=20261003compact10"><\/script>
 `;
     html=html.replace('</body>',patches+'</body>');
 
