@@ -17,10 +17,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui;
     const r=await fetch('widget.html?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('widget');
     let html=await r.text();
-
-    // Remove tools that duplicate richer tools before the widget is ever rendered.
     html=html.replace("['🤸','Movement Break'],",'').replace("['🖐️','End-of-Lesson Self-Check'],",'');
-
     const criticalCss=`
 html,body{background:transparent!important;overflow:hidden!important}
 #strip{display:none!important}
@@ -40,43 +37,11 @@ html,body{background:transparent!important;overflow:hidden!important}
 `;
     html=html.replace('</style>',criticalCss+mobileCss+'</style>');
     html=html.replace(/ambient-engine\.js\?v=[^\"]+/,'ambient-engine.js?v=20261003mobile1');
-
     const learnerQuotes=[
-      'You do not have to understand everything at once. Learn one step at a time.',
-      'Slow progress is still progress. Keep the next step small and clear.',
-      'Not knowing yet is the beginning of learning.',
-      'A hard question is not a stop sign. Try a different strategy.',
-      'Your first answer does not need to be perfect. It only needs to get you started.',
-      'Mistakes show you what to work on next.',
-      'When one way does not work, change the way — not the goal.',
-      'Ask for help when you need it. Strong learners do.',
-      'You can learn difficult things by breaking them into smaller parts.',
-      'Today, aim to understand one thing better than yesterday.',
-      'Getting stuck does not mean you cannot learn it. It means you need a next move.',
-      'Try, check, change, and try again. That is learning.',
-      'You are allowed to take your time. Keep thinking.',
-      'One careful step is better than rushing through ten.',
-      'If the work feels hard, choose one part you can do first.',
-      'Every time you correct a mistake, your understanding gets stronger.',
-      'You do not need to be the fastest learner. You need to keep learning.',
-      'A small success today can become confidence tomorrow.',
-      'Say what you know first. Then work out what is missing.',
-      'When you feel unsure, use a strategy instead of giving up.',
-      'Learning can feel difficult before it starts to feel familiar.',
-      'Compare your work with your last attempt, not with someone else’s.',
-      'You can pause, think, and try again.',
-      'A question you ask today can unlock something tomorrow.',
-      'Keep the parts you understand and work on one confusing part at a time.',
-      'Effort helps most when you also change your strategy.',
-      'You have learnt hard things before. Use the same patience again.',
-      'Read it again. Draw it. Say it. Try another way.',
-      'Being confused is a signal to slow down and look for the next clue.',
-      'You do not have to get it right immediately to get better at it.',
-      'Keep going until the next small step makes sense.'
+      'You do not have to understand everything at once. Learn one step at a time.','Slow progress is still progress. Keep the next step small and clear.','Not knowing yet is the beginning of learning.','A hard question is not a stop sign. Try a different strategy.','Your first answer does not need to be perfect. It only needs to get you started.','Mistakes show you what to work on next.','When one way does not work, change the way — not the goal.','Ask for help when you need it. Strong learners do.','You can learn difficult things by breaking them into smaller parts.','Today, aim to understand one thing better than yesterday.','Getting stuck does not mean you cannot learn it. It means you need a next move.','Try, check, change, and try again. That is learning.','You are allowed to take your time. Keep thinking.','One careful step is better than rushing through ten.','If the work feels hard, choose one part you can do first.','Every time you correct a mistake, your understanding gets stronger.','You do not need to be the fastest learner. You need to keep learning.','A small success today can become confidence tomorrow.','Say what you know first. Then work out what is missing.','When you feel unsure, use a strategy instead of giving up.','Learning can feel difficult before it starts to feel familiar.','Compare your work with your last attempt, not with someone else’s.','You can pause, think, and try again.','A question you ask today can unlock something tomorrow.','Keep the parts you understand and work on one confusing part at a time.','Effort helps most when you also change your strategy.','You have learnt hard things before. Use the same patience again.','Read it again. Draw it. Say it. Try another way.','Being confused is a signal to slow down and look for the next clue.','You do not have to get it right immediately to get better at it.','Keep going until the next small step makes sense.'
     ];
     const bank='const quotes='+JSON.stringify(learnerQuotes)+';';
     html=html.replace(/const quotes=\[[\s\S]*?\];\nconst expectations=/,bank+'\nconst expectations=');
-
     const helpers=`
 function dailyQuote(){const d=new Date();const day=Math.floor(new Date(d.getFullYear(),d.getMonth(),d.getDate())/86400000);return quotes[((day%quotes.length)+quotes.length)%quotes.length]}
 function chooseStripVoice(){try{const vs=speechSynthesis.getVoices()||[],female=/female|sonia|libby|hazel|serena|susan|kate|emma|emily|amy|fiona|samantha|moira|victoria/i,uk=vs.filter(v=>/^en[-_]GB$/i.test(v.lang||'')||/united kingdom|british|uk english/i.test(v.name||''));return uk.find(v=>female.test(v.name||''))||uk[0]||vs.find(v=>/^en/i.test(v.lang||'')&&female.test(v.name||''))||vs.find(v=>/^en/i.test(v.lang||''))||null}catch(e){return null}}
@@ -87,15 +52,13 @@ function openQuoteFull(){const url='full.html?quote=1';if(fullWin&&!fullWin.clos
     html=html.replace("case'quote-of-the-day':showValue('Quote',quotes[Math.floor(Math.random()*quotes.length)]);break;","case'quote-of-the-day':showValue('Quote of the Day',dailyQuote());break;");
     html=html.replace("case'reflect':choose('Reflect',reflectPrompts,x=>showValue('Reflect',x));break;case'soundboard':",`case'reflect':choose('Reflect',reflectPrompts,x=>showValue('Reflect',x));break;case'quote-of-the-day':showQuick('Quote of the Day',[{label:'🌱 Today’s Quote',primary:true,action:()=>showValue('Quote of the Day',dailyQuote())},{label:'🌷 Full Screen + Voice',action:()=>{closeQuick();openQuoteFull()}},{label:'🔊 Read Aloud',action:()=>{closeQuick();speakStripQuote()}},{label:'🎲 Another Quote',action:()=>showValue('Another Quote',quotes[Math.floor(Math.random()*quotes.length)])}]);break;case'soundboard':`);
     html=html.replace('function universalStop(){stopTimer();','function universalStop(){try{speechSynthesis?.cancel()}catch(e){}stopTimer();');
-
     const patches=`
 <script id="transitionStripPatch" src="transition-strip.js?v=20261003transition2"><\/script>
 <script id="brainBreakStripPatch" src="brain-break-strip.js?v=20261003bb4"><\/script>
-<script id="clockStripPatch" src="clock-strip.js?v=20261003clock5"><\/script>
-<script id="compactWidgetPatch" src="compact-widget.js?v=20261003compact11"><\/script>
+<script id="clockStripPatch" src="clock-strip.js?v=20261003clock6"><\/script>
+<script id="compactWidgetPatch" src="compact-widget.js?v=20261003compact12"><\/script>
 `;
     html=html.replace('</body>',patches+'</body>');
-
     document.open();document.write(html);document.close();
   }catch(e){document.body.innerHTML='<div class="boot" aria-label="Classroom Companion could not open">!</div>';console.error(e)}
 })();
