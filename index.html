@@ -31,14 +31,23 @@ launch.onclick=()=>{
   if(!w){status.classList.add('show');return}
   try{w.opener=null}catch(e){}
   w.focus();
+
+  // Chrome can ignore a small height when the popup is first created.
+  // Force the proven slim size after the window has actually opened.
+  const forceSlim=()=>{try{if(!w.closed)w.resizeTo(760,148)}catch(e){}};
+  setTimeout(forceSlim,100);
+  setTimeout(forceSlim,250);
+  setTimeout(forceSlim,450);
+
   setTimeout(()=>{
+    forceSlim();
     try{window.close()}catch(e){}
     setTimeout(()=>{
       if(!window.closed){
         document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Strip launched</h2><p>Your browser kept this launcher tab open. You can close it now; the classroom strip will continue working independently.</p></div></div>';
       }
     },180);
-  },120);
+  },650);
 };
 </script>
 </body>
