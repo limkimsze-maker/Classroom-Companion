@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Classroom Companion — Setup</title>
+<style>
+:root{--teal:#0f766e;--teal2:#dff6f1;--ink:#17202a;--muted:#667085;--line:#d8e1e8;--bg:#f6f8fb}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}.panel{width:min(600px,100%);min-height:100vh;margin:auto;background:#fff;padding:20px}.head{display:flex;align-items:center;gap:12px;margin-bottom:8px}.mark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--teal2);color:var(--teal);font-weight:950}h1{font-size:21px;margin:0}h2{font-size:14px;margin:18px 0 7px}.help{font-size:12px;line-height:1.45;color:var(--muted)}.limit{position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:center;background:#f7fbfa;border:1px solid #cde8e2;border-radius:10px;padding:9px 11px;margin:12px 0;font-size:13px;font-weight:900;color:#0b5b55}.limit.full{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.search{position:sticky;top:49px;background:#fff;padding:5px 0;z-index:2}.field{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.names{height:260px;resize:vertical}.checklist{display:grid;gap:6px;margin:8px 0 14px}.checkrow{display:flex;align-items:center;gap:10px;min-height:38px;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer}.checkrow input{width:18px;height:18px;accent-color:var(--teal)}.checkrow.disabled{opacity:.45;cursor:not-allowed}.category{margin-top:8px;font-size:10px;color:var(--teal);font-weight:950;text-transform:uppercase;letter-spacing:.05em}.actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #edf1f4;padding:12px 0 2px;display:flex;gap:8px;flex-wrap:wrap}.btn{height:36px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:0 12px;font-weight:900;cursor:pointer}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.spacer{flex:1}.hidden{display:none!important}.toast{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);background:#17202a;color:#fff;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:.15s}.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<main class="panel">
+  <div class="head"><div class="mark">✦</div><div><h1 id="title">Choose tools</h1><div class="help" id="subtitle">Choose up to five tools for your strip.</div></div></div>
+
+  <section id="toolsPanel">
+    <div class="limit" id="selectionLimit"><span>Selected</span><span id="selectionCount">0 / 5</span></div>
+    <h2>Direct strip controls</h2>
+    <div class="checklist" id="directList">
+      <label class="checkrow"><input type="checkbox" data-direct="class"><span>👥 Class / pupils</span></label>
+      <label class="checkrow"><input type="checkbox" data-direct="timer"><span>⏱ Timer</span></label>
+      <label class="checkrow"><input type="checkbox" data-direct="point"><span>⭐ Point</span></label>
+      <label class="checkrow"><input type="checkbox" data-direct="pick"><span>🎯 Pick a pupil</span></label>
+      <label class="checkrow"><input type="checkbox" data-direct="question"><span>❓ Question spinner</span></label>
+      <label class="checkrow"><input type="checkbox" data-direct="noise"><span>🔊 Noise level</span></label>
+      <label class="checkrow"><input type="checkbox" data-direct="more"><span>••• All Tools</span></label>
+    </div>
+    <h2>Any tool from All Tools</h2>
+    <div class="search"><input id="toolSearch" class="field" type="search" placeholder="Search all tools…"></div>
+    <div class="checklist" id="allToolChecklist"></div>
+    <div class="actions"><button class="btn" id="clearDraft">Clear</button><button class="btn" id="restoreDefaults">Default</button><span class="spacer"></span><button class="btn" id="cancelTools">Cancel</button><button class="btn primary" id="doneTools">Done</button></div>
+  </section>
+
+  <section id="classPanel" class="hidden">
+    <div class="help">Add or update a class. Pupil names are stored only in this browser.</div>
+    <h2>Class name</h2><input id="className" class="field" placeholder="e.g. 3 Respect">
+    <h2>Pupil names</h2><textarea id="classNames" class="field names" placeholder="Paste or type one pupil name per line"></textarea>
+    <div class="actions"><span class="spacer"></span><button class="btn" id="cancelClass">Cancel</button><button class="btn primary" id="saveClass">Save Class</button></div>
+  </section>
+</main>
+<div id="toast" class="toast"></div>
+<script>
+'use strict';
+const STORE='classroomCompanionV1',PREF_STORE='classroomCompanionStripPrefsV5',MAX_TOOLS=5;
+const defaults={classes:{},selectedClass:'',classPoints:{},pupilPoints:{},teamPoints:{},timetables:{},kwl:{k:'',w:'',l:''}};
+const defaultDirect={class:false,timer:true,point:false,pick:true,question:true,noise:true,more:true};
+const directEquivalentTitles=new Set(['Timer + Calm Music','Noise Level','Question Spinner','Pick a Pupil']);
+const allTools=[
+['⏱️','Timer + Calm Music','Focus & Time'],['🧭','Lesson Stages','Focus & Time'],['⏳','Transition Countdown','Focus & Time'],['👀','Attention Signal','Focus & Time'],['🎯','Focus Intervals','Focus & Time'],['🤸','Movement Break','Focus & Time'],['🌿','Calm / Reset','Focus & Time'],['🕘','Full-Screen Clock','Focus & Time'],['📅','Date & Day','Focus & Time'],
+['🔊','Noise Level','Classroom Management'],['🚦','Class Traffic Light','Classroom Management'],['🧩','Work Mode','Classroom Management'],['💬','Think–Pair–Share','Classroom Management'],['🖊️','Mini-Whiteboard Routine','Classroom Management'],['✅','Behaviour Expectations','Classroom Management'],['🛎️','Pre-Correction','Classroom Management'],['🆘','Help Before Teacher','Classroom Management'],['🚀','Early Finisher','Classroom Management'],['🧠','Brain Break','Classroom Management'],
+['❓','Question Spinner','Participation & Response'],['🅰️','Answer Check','Participation & Response'],['📈','Confidence Check','Participation & Response'],['🙋','Participation Counter','Participation & Response'],['📊','Engagement Snapshot','Participation & Response'],['🧠','KWL Chart','Thinking & Reflection'],['💭','Reflect','Thinking & Reflection'],['🖐️','End-of-Lesson Self-Check','Thinking & Reflection'],
+['✨','Quote of the Day','Class Culture & Rewards'],['🏁','Whole-Class Goal','Class Culture & Rewards'],['⭐','Rewards','Class Culture & Rewards'],['🎵','Soundboard','Teacher Utilities'],['📝','Observation Counter','Teacher Utilities'],['🪟','Screen Shade','Teacher Utilities'],['🔢','Random Number','Teacher Utilities'],['🎲','Dice','Teacher Utilities'],['🪙','Coin Toss','Teacher Utilities'],['🧭','Action Spinner','Teacher Utilities'],
+['🎯','Pick a Pupil','Personalised Tools'],['👥','Make Groups','Personalised Tools'],['🗓️','Daily Visual Timetable','Personalised Tools'],['📆','Weekly Visual Timetable','Personalised Tools']
+].map(([icon,title,cat])=>({icon,title,cat,slug:slugify(title)}));
+const pinTools=allTools.filter(t=>!directEquivalentTitles.has(t.title));
+const $=s=>document.querySelector(s);
+function slugify(s){return String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function escapeHtml(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('show'),1300)}
+function enforceLimit(p){let left=MAX_TOOLS;const order=['timer','pick','question','noise','more','class','point'];const direct={};for(const k of order){direct[k]=!!p.direct[k]&&left>0;if(direct[k])left--}const pins=[];for(const slug of (p.pins||[])){if(left<=0)break;if(pinTools.some(t=>t.slug===slug)&&!pins.includes(slug)){pins.push(slug);left--}}return {direct,pins}}
+function loadPrefs(){try{const p=JSON.parse(localStorage.getItem(PREF_STORE)||'{}');return enforceLimit({direct:{...defaultDirect,...(p.direct||{})},pins:Array.isArray(p.pins)?p.pins:[]})}catch(e){return {direct:{...defaultDirect},pins:[]}}}
+function selectedCount(p){return Object.values(p.direct).filter(Boolean).length+p.pins.length}
+function notify(type){try{if(window.opener&&!window.opener.closed)window.opener.postMessage({type},location.origin)}catch(e){}}
+const params=new URLSearchParams(location.search);const panel=params.get('panel')||'tools';
+
+if(panel==='class'){
+  $('#toolsPanel').classList.add('hidden');$('#classPanel').classList.remove('hidden');$('#title').textContent='Class setup';$('#subtitle').textContent='Add or update pupil names.';
+  let data;try{data={...structuredClone(defaults),...JSON.parse(localStorage.getItem(STORE)||'{}')}}catch(e){data=structuredClone(defaults)}
+  const c=data.classes[data.selectedClass];if(c){$('#className').value=data.selectedClass;$('#classNames').value=(c.names||[]).join('\n')}
+  $('#saveClass').onclick=()=>{const name=$('#className').value.trim();const names=$('#classNames').value.split(/\n|,/).map(s=>s.trim()).filter(Boolean);if(!name){toast('Enter a class name');return}data.classes[name]={names};data.selectedClass=name;localStorage.setItem(STORE,JSON.stringify(data));notify('classroom-companion-data-updated');window.close()};
+  $('#cancelClass').onclick=()=>window.close();
+}else{
+  let draft=loadPrefs();
+  function updateUI(){const count=selectedCount(draft);$('#selectionCount').textContent=`${count} / ${MAX_TOOLS}`;$('#selectionLimit').classList.toggle('full',count>=MAX_TOOLS);document.querySelectorAll('[data-direct]').forEach(cb=>{cb.checked=!!draft.direct[cb.dataset.direct];const dis=!cb.checked&&count>=MAX_TOOLS;cb.disabled=dis;cb.closest('.checkrow')?.classList.toggle('disabled',dis)});document.querySelectorAll('[data-pin]').forEach(cb=>{cb.checked=draft.pins.includes(cb.dataset.pin);const dis=!cb.checked&&count>=MAX_TOOLS;cb.disabled=dis;cb.closest('.checkrow')?.classList.toggle('disabled',dis)})}
+  function render(q=''){const box=$('#allToolChecklist'),query=q.trim().toLowerCase();box.innerHTML='';let last='';for(const t of pinTools.filter(t=>!query||`${t.title} ${t.cat}`.toLowerCase().includes(query))){if(t.cat!==last){const h=document.createElement('div');h.className='category';h.textContent=t.cat;box.appendChild(h);last=t.cat}const label=document.createElement('label');label.className='checkrow';label.innerHTML=`<input type="checkbox" data-pin="${t.slug}"><span>${t.icon} ${escapeHtml(t.title)}</span>`;label.querySelector('input').onchange=e=>{if(e.target.checked){if(selectedCount(draft)>=MAX_TOOLS){e.target.checked=false;toast(`Choose up to ${MAX_TOOLS} tools`);return}if(!draft.pins.includes(t.slug))draft.pins.push(t.slug)}else draft.pins=draft.pins.filter(x=>x!==t.slug);updateUI()};box.appendChild(label)}updateUI()}
+  document.querySelectorAll('[data-direct]').forEach(cb=>cb.onchange=()=>{const key=cb.dataset.direct;if(cb.checked&&selectedCount(draft)>=MAX_TOOLS){cb.checked=false;toast(`Choose up to ${MAX_TOOLS} tools`);return}draft.direct[key]=cb.checked;updateUI()});
+  $('#toolSearch').oninput=e=>render(e.target.value);$('#clearDraft').onclick=()=>{draft={direct:Object.fromEntries(Object.keys(defaultDirect).map(k=>[k,false])),pins:[]};render($('#toolSearch').value)};$('#restoreDefaults').onclick=()=>{draft={direct:{...defaultDirect},pins:[]};render($('#toolSearch').value)};$('#cancelTools').onclick=()=>window.close();$('#doneTools').onclick=()=>{draft=enforceLimit(draft);localStorage.setItem(PREF_STORE,JSON.stringify(draft));notify('classroom-companion-prefs-updated');window.close()};render('');
+}
+</script>
+</body>
+</html>
