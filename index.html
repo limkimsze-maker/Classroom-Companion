@@ -25,7 +25,7 @@
 const launch=document.getElementById('launch'),status=document.getElementById('status');
 launch.onclick=()=>{
   status.classList.remove('show');
-  const w=window.open('widget.html','ClassroomCompanionWidget','popup=yes,width=1010,height=178,resizable=yes,scrollbars=no');
+  const w=window.open('widget.html','ClassroomCompanionWidget','popup=yes,width=900,height=148,resizable=yes,scrollbars=no');
   if(!w){status.classList.add('show');return}
   try{w.opener=null}catch(e){}
   w.focus();
