@@ -10,7 +10,7 @@ if(new URLSearchParams(location.search).get('quote')==='1'){
   location.replace('quote.html?v=20261003direct1');
 }
 </script>
-<link rel="stylesheet" href="app.css?v=20261003q2">
+<link rel="stylesheet" href="app.css?v=20261003q3">
 <style>
 #floatBtn,#floatHint{display:none!important}
 .widget.tool-focus{outline:4px solid #0f766e;outline-offset:4px;box-shadow:0 0 0 8px rgba(15,118,110,.12),0 12px 30px rgba(15,118,110,.18)!important;transition:box-shadow .2s ease}
@@ -54,7 +54,7 @@ window.addEventListener('message',e=>{
 });
 (async()=>{
   try{
-    const V='20261003q2';
+    const V='20261003q3';
     const files=['fragment1.html','fragment2.html','fragment3.html','fragment4.html','fragment5.html'];
     const parts=await Promise.all(files.map(f=>fetch(f+'?v='+V,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(f);return r.text()})));
     document.body.innerHTML=parts.join('');
