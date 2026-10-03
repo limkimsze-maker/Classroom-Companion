@@ -63,9 +63,10 @@ const mobile=matchMedia('(max-width:700px)').matches||matchMedia('(pointer:coars
 function isQuickOpen(){return quick.classList.contains('show')}
 function isAllToolsOpen(){return isQuickOpen()&&document.getElementById('quickTitle')?.textContent==='All Tools'}
 function collapsedWidth(){return prefs.visible&&prefs.tools.length?Math.min(520,122+prefs.tools.length*56):118}
-function resizeCollapsed(){if(mobile)return;try{if(!document.fullscreenElement)window.resizeTo(collapsedWidth(),112)}catch(e){}}
-function resizeExpanded(){if(mobile)return;try{if(!document.fullscreenElement)window.resizeTo(520,680)}catch(e){}}
+function resizeCollapsed(){if(mobile)return;try{if(!document.fullscreenElement){window.resizeTo(collapsedWidth(),112);window.moveTo(8,8)}}catch(e){}}
+function resizeExpanded(){if(mobile)return;try{if(!document.fullscreenElement){window.resizeTo(520,680);window.moveTo(8,8)}}catch(e){}}
 function toolWindowName(slug){return 'ClassroomCompanionTool_'+slug.replace(/[^a-z0-9]/gi,'_')}
+function refocusLauncher(){if(mobile)return;setTimeout(()=>{try{window.moveTo(8,8);window.focus()}catch(e){}},120)}
 
 function pruneWindows(){
   for(const [slug,w] of [...toolWindows]){
@@ -87,19 +88,20 @@ function openTool(t){
     try{
       existing.focus();
       existing.postMessage({type:'classroom-companion-show-options'},location.origin);
-      closeQuick();resizeCollapsed();return;
+      closeQuick();resizeCollapsed();refocusLauncher();return;
     }catch(e){toolWindows.delete(t.slug)}
   }
   const index=toolWindows.size;
   const sw=screen.availWidth||1280,sh=screen.availHeight||800;
-  const left=Math.max(0,Math.min(sw-480,70+index*34));
-  const top=Math.max(0,Math.min(sh-560,70+index*30));
+  const baseLeft=150;
+  const left=Math.max(0,Math.min(sw-480,baseLeft+index*36));
+  const top=Math.max(0,Math.min(sh-560,24+index*32));
   const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v=20261003toolwin2';
   const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=480,height=560,left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
   if(!w){toast('Allow popups to open this tool');return}
   toolWindows.set(t.slug,w);
   try{w.focus()}catch(e){}
-  closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed();
+  closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed();refocusLauncher();
 }
 
 function showActiveTools(){
@@ -107,7 +109,7 @@ function showActiveTools(){
   const items=[];
   for(const [slug,w] of toolWindows){
     const t=tools.find(x=>x.slug===slug);if(!t)continue;
-    items.push({label:`↗ ${t.icon} ${t.title}`,action:()=>{try{w.focus();w.postMessage({type:'classroom-companion-show-options'},location.origin)}catch(e){}closeQuick();resizeCollapsed()}});
+    items.push({label:`↗ ${t.icon} ${t.title}`,action:()=>{try{w.focus();w.postMessage({type:'classroom-companion-show-options'},location.origin)}catch(e){}closeQuick();resizeCollapsed();refocusLauncher()}});
   }
   if(items.length){
     items.push({label:'Close all tool windows',stop:true,action:()=>{for(const w of toolWindows.values())try{w.close()}catch(e){}toolWindows.clear();updateActiveUI();closeQuick();resizeCollapsed()}});
