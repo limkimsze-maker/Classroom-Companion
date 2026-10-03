@@ -38,6 +38,18 @@ launch.onclick=()=>{
   if(!stripWindow){status.classList.add('show');return}
   try{stripWindow.opener=null}catch(e){}
 
+  const injectStripEnhancements=()=>{
+    try{
+      if(!stripWindow||stripWindow.closed||!stripWindow.document?.body)return;
+      if(stripWindow.document.getElementById('transitionStripPatch'))return;
+      const s=stripWindow.document.createElement('script');
+      s.id='transitionStripPatch';
+      s.src='transition-strip.js?v=20261003transition1';
+      stripWindow.document.body.appendChild(s);
+    }catch(e){}
+  };
+  try{stripWindow.addEventListener('load',injectStripEnhancements)}catch(e){}
+
   const focusStrip=()=>{
     try{
       if(!stripWindow.closed){
@@ -48,10 +60,13 @@ launch.onclick=()=>{
   };
 
   focusStrip();
-  setTimeout(focusStrip,100);
-  setTimeout(focusStrip,250);
-  setTimeout(focusStrip,450);
+  setTimeout(()=>{injectStripEnhancements();focusStrip()},100);
+  setTimeout(()=>{injectStripEnhancements();focusStrip()},300);
+  setTimeout(()=>{injectStripEnhancements();focusStrip()},700);
+  setTimeout(()=>{injectStripEnhancements();focusStrip()},1200);
+  setTimeout(()=>{injectStripEnhancements();focusStrip()},2000);
   setTimeout(()=>{
+    injectStripEnhancements();
     focusStrip();
     document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom strip is running</h2><p>This launcher stays quietly in the background so Chrome does not jump back to another page. On mobile, swipe the strip left or right to reach every tool.</p></div></div>';
     try{window.blur();stripWindow.focus()}catch(e){}
