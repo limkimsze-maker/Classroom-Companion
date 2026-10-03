@@ -33,7 +33,8 @@ launch.onclick=()=>{
   const popupWidth=mobile?Math.max(360,Math.min(sw,700)):118;
   const popupHeight=mobile?Math.max(220,Math.min(sh,360)):112;
   const stripUrl='widget-launch.html?v='+Date.now();
-  const features=`popup=yes,width=${popupWidth},height=${popupHeight},resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no`;
+  const pos=mobile?'':',left=8,top=8';
+  const features=`popup=yes,width=${popupWidth},height=${popupHeight}${pos},resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no`;
   stripWindow=window.open(stripUrl,'ClassroomCompanionStrip',features);
   if(!stripWindow){status.classList.add('show');return}
   try{stripWindow.opener=null}catch(e){}
@@ -50,7 +51,7 @@ launch.onclick=()=>{
       ensure('transitionStripPatch','transition-strip.js?v=20261003transition2');
       ensure('brainBreakStripPatch','brain-break-strip.js?v=20261003bb3');
       ensure('clockStripPatch','clock-strip.js?v=20261003clock3');
-      ensure('compactWidgetPatch','compact-widget.js?v=20261003compact6');
+      ensure('compactWidgetPatch','compact-widget.js?v=20261003compact7');
       return true;
     }catch(e){return false}
   };
@@ -60,6 +61,7 @@ launch.onclick=()=>{
       if(stripWindow.closed)return;
       const d=stripWindow.document;
       if(d?.fullscreenElement||d?.webkitFullscreenElement)return;
+      if(!mobile){try{stripWindow.moveTo(8,8)}catch(e){}}
       stripWindow.focus();
     }catch(e){}
   };
@@ -73,6 +75,7 @@ launch.onclick=()=>{
   setTimeout(focusStrip,450);
   setTimeout(()=>{
     injectStripEnhancements();
+    focusStrip();
     document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom widget is running</h2><p>Tap the small ✦ widget to choose a tool. The launcher stays quietly in the background.</p></div></div>';
     try{window.blur();if(!(stripWindow.document?.fullscreenElement||stripWindow.document?.webkitFullscreenElement))stripWindow.focus()}catch(e){}
   },900);
