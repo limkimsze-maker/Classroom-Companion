@@ -91,12 +91,16 @@ function openTool(t){
       closeQuick();resizeCollapsed();return;
     }catch(e){toolWindows.delete(t.slug)}
   }
-  const sw=Math.max(900,screen.availWidth||1280),sh=Math.max(650,screen.availHeight||800);
+  const index=toolWindows.size;
+  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
+  const width=Math.min(520,sw),height=Math.min(680,sh);
+  const left=Math.max(0,Math.min(sw-width,150+index*36));
+  const top=Math.max(0,Math.min(sh-height,24+index*32));
   const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now();
-  const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
+  const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
   if(!w){toast('Allow popups to open this tool');return}
   toolWindows.set(t.slug,w);
-  try{w.moveTo(0,0);w.resizeTo(sw,sh);w.focus()}catch(e){}
+  try{w.focus()}catch(e){}
   closeQuick();launch.classList.remove('active');updateActiveUI();resizeCollapsed();
 }
 
