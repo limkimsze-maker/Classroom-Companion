@@ -49,7 +49,7 @@ launch.onclick=()=>{
       };
       ensure('transitionStripPatch','transition-strip.js?v=20261003transition2');
       ensure('brainBreakStripPatch','brain-break-strip.js?v=20261003bb3');
-      ensure('clockStripPatch','clock-strip.js?v=20261003clock2');
+      ensure('clockStripPatch','clock-strip.js?v=20261003clock3');
       return true;
     }catch(e){return false}
   };
@@ -57,6 +57,8 @@ launch.onclick=()=>{
   const focusStrip=()=>{
     try{
       if(!stripWindow.closed){
+        const d=stripWindow.document;
+        if(d?.fullscreenElement||d?.webkitFullscreenElement)return;
         if(!mobile)stripWindow.resizeTo(popupWidth,popupHeight);
         stripWindow.focus();
       }
@@ -74,7 +76,7 @@ launch.onclick=()=>{
     injectStripEnhancements();
     focusStrip();
     document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom strip is running</h2><p>This launcher stays quietly in the background so Chrome does not jump back to another page. On mobile, swipe the strip left or right to reach every tool.</p></div></div>';
-    try{window.blur();stripWindow.focus()}catch(e){}
+    try{window.blur();if(!(stripWindow.document?.fullscreenElement||stripWindow.document?.webkitFullscreenElement))stripWindow.focus()}catch(e){}
   },900);
 };
 </script>
