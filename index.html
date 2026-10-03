@@ -27,7 +27,6 @@ let stripWindow=null;
 launch.onclick=()=>{
   status.classList.remove('show');
   if(stripWindow && !stripWindow.closed){try{stripWindow.focus()}catch(e){}return}
-
   const mobile=matchMedia('(max-width:700px)').matches||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const sw=screen.availWidth||760,sh=screen.availHeight||800;
   const popupWidth=mobile?Math.max(360,Math.min(sw,700)):118;
@@ -38,47 +37,23 @@ launch.onclick=()=>{
   stripWindow=window.open(stripUrl,'ClassroomCompanionStrip',features);
   if(!stripWindow){status.classList.add('show');return}
   try{stripWindow.opener=null}catch(e){}
-
   const injectStripEnhancements=()=>{
     try{
       if(!stripWindow||stripWindow.closed||!stripWindow.document?.body)return false;
-      const d=stripWindow.document;
-      if(!d.getElementById('shortcutTrack'))return false;
-      const ensure=(id,src)=>{
-        if(d.getElementById(id))return;
-        const s=d.createElement('script');s.id=id;s.src=src;d.body.appendChild(s);
-      };
+      const d=stripWindow.document;if(!d.getElementById('shortcutTrack'))return false;
+      const ensure=(id,src)=>{if(d.getElementById(id))return;const s=d.createElement('script');s.id=id;s.src=src;d.body.appendChild(s)};
       ensure('transitionStripPatch','transition-strip.js?v=20261003transition2');
       ensure('brainBreakStripPatch','brain-break-strip.js?v=20261003bb4');
-      ensure('clockStripPatch','clock-strip.js?v=20261003clock5');
-      ensure('compactWidgetPatch','compact-widget.js?v=20261003compact10');
+      ensure('clockStripPatch','clock-strip.js?v=20261003clock6');
+      ensure('compactWidgetPatch','compact-widget.js?v=20261003compact12');
       return true;
     }catch(e){return false}
   };
-
-  const focusStrip=()=>{
-    try{
-      if(stripWindow.closed)return;
-      const d=stripWindow.document;
-      if(d?.fullscreenElement||d?.webkitFullscreenElement)return;
-      if(!mobile){try{stripWindow.moveTo(8,8)}catch(e){}}
-      stripWindow.focus();
-    }catch(e){}
-  };
-
-  const retry=setInterval(()=>{injectStripEnhancements()},250);
-  setTimeout(()=>clearInterval(retry),10000);
+  const focusStrip=()=>{try{if(stripWindow.closed)return;const d=stripWindow.document;if(d?.fullscreenElement||d?.webkitFullscreenElement)return;if(!mobile){try{stripWindow.moveTo(8,8)}catch(e){}}stripWindow.focus()}catch(e){}};
+  const retry=setInterval(()=>{injectStripEnhancements()},250);setTimeout(()=>clearInterval(retry),10000);
   try{stripWindow.addEventListener('load',()=>{injectStripEnhancements();focusStrip()})}catch(e){}
-
-  focusStrip();
-  setTimeout(focusStrip,150);
-  setTimeout(focusStrip,450);
-  setTimeout(()=>{
-    injectStripEnhancements();
-    focusStrip();
-    document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom widget is running</h2><p>Tap the small ✦ widget to choose a tool. The launcher stays quietly in the background.</p></div></div>';
-    try{window.blur();if(!(stripWindow.document?.fullscreenElement||stripWindow.document?.webkitFullscreenElement))stripWindow.focus()}catch(e){}
-  },900);
+  focusStrip();setTimeout(focusStrip,150);setTimeout(focusStrip,450);
+  setTimeout(()=>{injectStripEnhancements();focusStrip();document.body.innerHTML='<div class="launched"><div class="box"><div class="tick">✓</div><h2>Classroom widget is running</h2><p>Tap the small ✦ widget to choose a tool. The launcher stays quietly in the background.</p></div></div>';try{window.blur();if(!(stripWindow.document?.fullscreenElement||stripWindow.document?.webkitFullscreenElement))stripWindow.focus()}catch(e){}},900);
 };
 </script>
 </body>
