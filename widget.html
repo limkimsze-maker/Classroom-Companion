@@ -49,11 +49,36 @@ function escapeHtml(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;
 function format(s){s=Math.max(0,s);return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
 function classKey(){return data.selectedClass||'_general'}
 function currentClass(){return data.classes[data.selectedClass]||null}
-function fitStrip(){requestAnimationFrame(()=>{try{const strip=$('#strip'),chromeW=Math.max(0,window.outerWidth-window.innerWidth),natural=Math.ceil(strip.scrollWidth+10+chromeW),wantedW=Math.min(830,Math.max(430,natural));window.resizeTo(wantedW,window.outerHeight)}catch(e){}})}
-function restoreStrip(){fitStrip();try{window.focus()}catch(e){}setTimeout(()=>{try{window.focus()}catch(e){}},80)}
+function fitStrip(){
+  cancelAnimationFrame(fitStrip._raf);
+  fitStrip._raf=requestAnimationFrame(()=>{
+    try{
+      const wrap=document.querySelector('.wrap');
+      if(!wrap)return;
+      const rect=wrap.getBoundingClientRect();
+      const maxInnerW=Math.max(430,(screen.availWidth||1200)-40);
+      const targetInnerW=Math.min(maxInnerW,Math.max(430,Math.ceil(rect.width+2)));
+      const targetInnerH=Math.max(56,Math.ceil(rect.height+2));
+      const dw=targetInnerW-window.innerWidth;
+      const dh=targetInnerH-window.innerHeight;
+      if(Math.abs(dw)>1||Math.abs(dh)>1)window.resizeBy(dw,dh);
+      clearTimeout(fitStrip._settle);
+      fitStrip._settle=setTimeout(()=>{
+        try{
+          const r=wrap.getBoundingClientRect();
+          const w=Math.min(maxInnerW,Math.max(430,Math.ceil(r.width+2)));
+          const h=Math.max(56,Math.ceil(r.height+2));
+          const dx=w-window.innerWidth,dy=h-window.innerHeight;
+          if(Math.abs(dx)>1||Math.abs(dy)>1)window.resizeBy(dx,dy);
+        }catch(e){}
+      },90);
+    }catch(e){}
+  });
+}
+function restoreStrip(){fitStrip();try{window.focus()}catch(e){}setTimeout(()=>{try{window.focus()}catch(e){};fitStrip()},80)}
 function applyPrefs(){Object.entries(directIds).forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.style.display=prefs.direct[key]?'':'none'});renderPins();setTimeout(fitStrip,30)}
 function renderPins(){const track=$('#shortcutTrack');track.innerHTML='';for(const slug of prefs.pins){const t=pinTools.find(x=>x.slug===slug);if(!t)continue;const b=document.createElement('button');b.className='shortcut';b.type='button';b.title=`Open ${t.title} in All Tools`;b.innerHTML=`<span>${t.icon}</span><span>${escapeHtml(t.title)}</span>`;b.onclick=()=>openFullTool(t.slug);track.appendChild(b)}track.style.display=prefs.pins.length?'flex':'none'}
-function renderClasses(){const sel=$('#classSelect');sel.innerHTML='<option value="">No class</option>'+Object.keys(data.classes).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');sel.value=data.selectedClass||'';renderPoints();resetPicker()}
+function renderClasses(){const sel=$('#classSelect');sel.innerHTML='<option value="">No class</option>'+Object.keys(data.classes).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');sel.value=data.selectedClass||'';renderPoints();resetPicker();fitStrip()}
 function renderPoints(){$('#pointVal').textContent=data.classPoints[classKey()]||0}
 function resetPicker(){const c=currentClass();pickerPool=c?[...c.names]:[];$('#pickVal').textContent=c?'Ready':'Add class';$('#pickBtn').title=c?'Pick a pupil':'Add or select a class first'}
 function renderTimer(){$('#time').textContent=format(timer.sec)}
@@ -63,14 +88,16 @@ function openFullTool(slug=''){if(fullWin&&!fullWin.closed){try{fullWin.postMess
 $('#timerStart').onclick=()=>{timer.running=!timer.running;$('#timerStart').textContent=timer.running?'Pause':'Start';clearInterval(timer.id);if(timer.running){timer.id=setInterval(()=>{timer.sec--;renderTimer();if(timer.sec<=0){clearInterval(timer.id);timer.running=false;$('#timerStart').textContent='Start';toast('Time is up')}},1000)}};
 $('#timerReset').onclick=()=>{clearInterval(timer.id);timer.running=false;timer.sec=timer.base;$('#timerStart').textContent='Start';renderTimer()};
 $('#pointBtn').onclick=()=>{const k=classKey();data.classPoints[k]=(data.classPoints[k]||0)+1;saveData();renderPoints();toast('+1 point')};
-$('#pickBtn').onclick=()=>{const c=currentClass();if(!c||!c.names.length){openConfig('class');toast('Add or select a class first');return}if(!pickerPool.length)pickerPool=[...c.names];const i=Math.floor(Math.random()*pickerPool.length),name=pickerPool.splice(i,1)[0];$('#pickVal').textContent=name;$('#pickBtn').title=name;toast(name)};
-$('#questionBtn').onclick=()=>{let n=0;const id=setInterval(()=>{$('#questionVal').textContent=questionPrompts[Math.floor(Math.random()*questionPrompts.length)];if(++n>9)clearInterval(id)},65)};
-$('#noiseBtn').onclick=()=>{noiseIndex=(noiseIndex+1)%noiseLevels.length;$('#noiseVal').textContent=noiseLevels[noiseIndex];toast(noiseLevels[noiseIndex])};
+$('#pickBtn').onclick=()=>{const c=currentClass();if(!c||!c.names.length){openConfig('class');toast('Add or select a class first');return}if(!pickerPool.length)pickerPool=[...c.names];const i=Math.floor(Math.random()*pickerPool.length),name=pickerPool.splice(i,1)[0];$('#pickVal').textContent=name;$('#pickBtn').title=name;toast(name);fitStrip()};
+$('#questionBtn').onclick=()=>{let n=0;const id=setInterval(()=>{$('#questionVal').textContent=questionPrompts[Math.floor(Math.random()*questionPrompts.length)];if(++n>9){clearInterval(id);fitStrip()}},65)};
+$('#noiseBtn').onclick=()=>{noiseIndex=(noiseIndex+1)%noiseLevels.length;$('#noiseVal').textContent=noiseLevels[noiseIndex];toast(noiseLevels[noiseIndex]);fitStrip()};
 $('#moreBtn').onclick=()=>openFullTool('');$('#customiseBtn').onclick=()=>openConfig('tools');$('#classBtn').onclick=()=>openConfig('class');
 $('#classSelect').onchange=e=>{data.selectedClass=e.target.value;saveData();renderClasses()};
 window.addEventListener('message',e=>{if(e.origin!==location.origin)return;if(e.data?.type==='classroom-companion-return-to-strip'){if(fullWatch){clearInterval(fullWatch);fullWatch=null}fullWin=null;restoreStrip()}if(e.data?.type==='classroom-companion-prefs-updated'){prefs=loadPrefs();applyPrefs();configWin=null;toast('Strip updated')}if(e.data?.type==='classroom-companion-data-updated'){data=loadData();renderClasses();configWin=null;toast('Class updated')}});
 window.addEventListener('storage',e=>{if(e.key===STORE){data=loadData();renderClasses()}if(e.key===PREF_STORE){prefs=loadPrefs();applyPrefs()}});
-renderTimer();renderClasses();applyPrefs();setTimeout(fitStrip,120);
+if('ResizeObserver'in window){new ResizeObserver(()=>fitStrip()).observe(document.querySelector('.strip'))}
+renderTimer();renderClasses();applyPrefs();
+window.addEventListener('load',()=>{fitStrip();setTimeout(fitStrip,120);setTimeout(fitStrip,320)});
 </script>
 </body>
 </html>
