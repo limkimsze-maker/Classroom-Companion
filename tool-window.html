@@ -40,10 +40,11 @@ body{padding:0!important}
 (function(){
 'use strict';
 const params=new URLSearchParams(location.search),slug=params.get('tool')||'';
-const t=(window.allTools||[]).find(x=>x.slug===slug);
+const tools=(typeof allTools!=='undefined'&&Array.isArray(allTools))?allTools:[];
+const t=tools.find(x=>x.slug===slug);
 const title=document.getElementById('ccToolTitle'),icon=document.getElementById('ccToolIcon'),status=document.getElementById('ccToolStatus');
 try{window.fitStrip=()=>{};fitStrip=window.fitStrip;window.restoreStrip=()=>{};restoreStrip=window.restoreStrip}catch(e){}
-if(t){title.textContent=t.title;icon.textContent=t.icon;document.title=t.title+' • Classroom Companion'}else{title.textContent='Unknown tool'}
+if(t){title.textContent=t.title;icon.textContent=t.icon;document.title=t.title+' • Classroom Companion'}else{title.textContent='Tool unavailable';status.textContent='Could not identify this tool';document.getElementById('quickbar')?.classList.add('show');const q=document.getElementById('quickScroll');if(q)q.innerHTML='<div class="quick-value">This tool could not be identified. Close this window and open it again from the ✦ launcher.</div>'}
 function setStatus(){
   try{
     if(slug==='timer-calm-music'){status.textContent=format(timer.sec)+' • '+(timer.running?'Running':'Ready');return}
