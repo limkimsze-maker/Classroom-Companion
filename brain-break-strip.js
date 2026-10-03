@@ -1,13 +1,25 @@
 (function(){
 'use strict';
 let brainWin=null;
+function attachLauncher(w){
+  const inject=()=>{
+    try{
+      if(!w||w.closed||!w.document?.body)return;
+      if(w.document.getElementById('ccEmbeddedLauncherScript')){w.ClassroomCompanionEmbeddedLauncher?.show('brain-break');return}
+      const s=w.document.createElement('script');s.id='ccEmbeddedLauncherScript';s.src='embedded-launcher.js?v=20261003embedded2';s.dataset.currentTool='brain-break';w.document.body.appendChild(s);
+    }catch(e){}
+  };
+  try{w.addEventListener('load',()=>setTimeout(inject,40),{once:true})}catch(e){}
+  setTimeout(inject,120);
+}
 function openBrainBreak(sec=30,sound=true,index=null){
   const q=new URLSearchParams({sec:String(sec),sound:sound?'1':'0'});if(index!==null)q.set('i',String(index));
   const url='brain-break.html?'+q.toString()+'&v=20261003bb2';
-  try{if(brainWin&&!brainWin.closed){brainWin.location.href=url;brainWin.focus();return}}catch(e){}
+  try{if(brainWin&&!brainWin.closed){brainWin.addEventListener('load',()=>attachLauncher(brainWin),{once:true});brainWin.location.href=url;brainWin.focus();return}}catch(e){}
   const w=Math.max(900,screen.availWidth||1200),h=Math.max(650,screen.availHeight||800);
   brainWin=window.open(url,'ClassroomCompanionBrainBreak',`popup=yes,width=${w},height=${h},left=0,top=0,resizable=yes,scrollbars=no`);
   if(!brainWin){toast('Allow popups to open Brain Break');return}
+  attachLauncher(brainWin);
   try{brainWin.moveTo(0,0);brainWin.resizeTo(w,h)}catch(e){}
   brainWin.focus();
 }
