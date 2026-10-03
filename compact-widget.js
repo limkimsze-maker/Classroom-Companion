@@ -96,7 +96,7 @@ function openTool(t){
   const baseLeft=150;
   const left=Math.max(0,Math.min(sw-480,baseLeft+index*36));
   const top=Math.max(0,Math.min(sh-560,24+index*32));
-  const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v=20261003toolwin2';
+  const url='tool-window.html?tool='+encodeURIComponent(t.slug)+'&v=20261003toolwin3';
   const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=480,height=560,left=${left},top=${top},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
   if(!w){toast('Allow popups to open this tool');return}
   toolWindows.set(t.slug,w);
