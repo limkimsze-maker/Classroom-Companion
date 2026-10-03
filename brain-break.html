@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<title>Brain Break</title>
+<style>
+:root{--ink:#17324d;--blue:#2563eb;--sky:#bde8ff;--grass:#8bd66d;--card:rgba(255,255,255,.93);--yellow:#ffd84d;--red:#f05b62}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}body{background:linear-gradient(#a9e1ff 0 58%,#8bd66d 58% 100%)}.scene{position:fixed;inset:0;overflow:hidden}.sun{position:absolute;right:6vw;top:5vh;width:92px;height:92px;border-radius:50%;background:#ffe66b;box-shadow:0 0 45px rgba(255,221,71,.65)}.cloud{position:absolute;font-size:clamp(50px,7vw,92px);opacity:.9;filter:drop-shadow(0 4px 6px rgba(0,0,0,.06))}.c1{left:5vw;top:7vh}.c2{left:45vw;top:11vh;transform:scale(.75)}.sports{position:absolute;inset:0;pointer-events:none}.sports span{position:absolute;font-size:clamp(28px,4vw,54px);opacity:.72;animation:float 4s ease-in-out infinite}.s1{left:6vw;bottom:9vh}.s2{right:9vw;bottom:10vh;animation-delay:-1.4s}.s3{left:18vw;top:29vh;animation-delay:-2.2s}.s4{right:20vw;top:25vh;animation-delay:-.8s}@keyframes float{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-13px) rotate(7deg)}}
+.card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1050px,92vw);min-height:min(700px,90vh);background:var(--card);border:4px solid rgba(255,255,255,.8);border-radius:36px;box-shadow:0 28px 80px rgba(24,73,105,.22);display:grid;grid-template-columns:1.05fr .95fr;gap:22px;padding:clamp(20px,3vw,38px);backdrop-filter:blur(8px)}.left{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.eyebrow{font-size:clamp(16px,2vw,24px);font-weight:1000;color:#1d7a62;letter-spacing:.06em;text-transform:uppercase}.title{font-size:clamp(34px,5vw,66px);line-height:1.03;font-weight:1000;letter-spacing:-.04em;margin:12px 0 12px}.instruction{font-size:clamp(22px,3vw,36px);font-weight:900;line-height:1.25;max-width:720px}.timer{font-size:clamp(58px,9vw,118px);font-weight:1000;color:var(--blue);letter-spacing:-.06em;line-height:1;margin-top:18px}.sound-note{font-size:14px;font-weight:850;color:#5b7087;margin-top:8px}.controls{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin-top:22px}.btn{border:0;border-radius:15px;padding:12px 17px;font:inherit;font-size:15px;font-weight:1000;cursor:pointer;background:#fff;color:var(--ink);box-shadow:0 4px 13px rgba(32,66,95,.14)}.btn.primary{background:var(--blue);color:#fff}.btn.sound{background:#e6f5ff;color:#075985}.btn.stop{background:#fff0ef;color:#b42318}.btn.close{background:#17324d;color:#fff}.btn:focus-visible{outline:4px solid var(--yellow);outline-offset:2px}
+.stage{position:relative;display:grid;place-items:center;min-height:430px}.floor{position:absolute;bottom:34px;width:76%;height:25px;border-radius:50%;background:rgba(45,94,65,.14);filter:blur(1px)}.kid{position:relative;width:230px;height:390px;transform-origin:50% 85%}.head{position:absolute;left:75px;top:12px;width:82px;height:82px;border-radius:50%;background:#ffd7b1;border:4px solid #17324d;z-index:5}.hair{position:absolute;left:72px;top:5px;width:88px;height:42px;border-radius:48px 48px 20px 20px;background:#5a3823;z-index:6}.eye{position:absolute;top:48px;width:7px;height:9px;border-radius:50%;background:#17324d;z-index:7}.e1{left:98px}.e2{left:130px}.smile{position:absolute;left:107px;top:69px;width:24px;height:10px;border-bottom:3px solid #a53b36;border-radius:50%;z-index:7}.body{position:absolute;left:65px;top:94px;width:102px;height:142px;border-radius:24px 24px 18px 18px;background:#3b82f6;border:4px solid #17324d;z-index:3}.shirt-star{position:absolute;left:103px;top:126px;font-size:30px;z-index:4}.arm,.leg{position:absolute;background:#ffd7b1;border:4px solid #17324d;border-radius:18px;transform-origin:50% 10%;z-index:2}.arm{width:28px;height:132px;top:105px}.arm.l{left:46px}.arm.r{right:42px}.leg{width:34px;height:150px;top:222px;background:#304a70}.leg.l{left:73px}.leg.r{right:68px}.shoe{position:absolute;width:58px;height:27px;border-radius:20px 25px 11px 11px;background:#ff655f;border:4px solid #17324d;top:353px;z-index:3}.shoe.l{left:55px}.shoe.r{right:46px}.motion-lines{position:absolute;inset:0;pointer-events:none}.motion-lines span{position:absolute;width:46px;height:5px;border-radius:999px;background:#ffd84d;opacity:0}.m1{left:6px;top:170px;transform:rotate(-22deg)}.m2{right:4px;top:170px;transform:rotate(22deg)}.m3{left:90px;bottom:0}
+.kid.march{animation:bounce .55s ease-in-out infinite}.kid.march .leg.l{animation:legF .55s ease-in-out infinite}.kid.march .leg.r{animation:legB .55s ease-in-out infinite}.kid.march .arm.l{animation:armB .55s ease-in-out infinite}.kid.march .arm.r{animation:armF .55s ease-in-out infinite}.kid.stretch .arm.l{animation:stretchL 1.8s ease-in-out infinite}.kid.stretch .arm.r{animation:stretchR 1.8s ease-in-out infinite}.kid.balance{animation:balance 2s ease-in-out infinite}.kid.balance .leg.r{animation:kneeUp 2s ease-in-out infinite}.kid.roll .arm.l{animation:rollL 1.2s linear infinite}.kid.roll .arm.r{animation:rollR 1.2s linear infinite}.kid.jump{animation:jump .8s ease-in-out infinite}.kid.jump .arm.l{animation:jumpArmL .8s ease-in-out infinite}.kid.jump .arm.r{animation:jumpArmR .8s ease-in-out infinite}.kid.shake .arm.l,.kid.shake .arm.r{animation:shake .18s linear infinite}.kid.figure8 .arm.r{animation:figure8 1.6s ease-in-out infinite}.kid.toes{animation:toeBend 1.8s ease-in-out infinite;transform-origin:50% 58%}.kid.toes .arm.l,.kid.toes .arm.r{animation:armsDown 1.8s ease-in-out infinite}@keyframes bounce{50%{transform:translateY(-12px)}}@keyframes legF{50%{transform:rotate(-30deg)}}@keyframes legB{50%{transform:rotate(32deg)}}@keyframes armF{50%{transform:rotate(-38deg)}}@keyframes armB{50%{transform:rotate(38deg)}}@keyframes stretchL{0%,100%{transform:rotate(20deg)}50%{transform:rotate(155deg)}}@keyframes stretchR{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(-155deg)}}@keyframes balance{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(3deg)}}@keyframes kneeUp{0%,100%{transform:rotate(0)}50%{transform:rotate(-72deg)}}@keyframes rollL{to{transform:rotate(360deg)}}@keyframes rollR{to{transform:rotate(-360deg)}}@keyframes jump{0%,100%{transform:translateY(0)}50%{transform:translateY(-52px)}}@keyframes jumpArmL{50%{transform:rotate(150deg)}}@keyframes jumpArmR{50%{transform:rotate(-150deg)}}@keyframes shake{0%,100%{transform:rotate(-15deg)}50%{transform:rotate(15deg)}}@keyframes figure8{0%{transform:rotate(-25deg) translateX(0)}25%{transform:rotate(-75deg) translateX(22px)}50%{transform:rotate(-25deg) translateX(0)}75%{transform:rotate(30deg) translateX(-20px)}100%{transform:rotate(-25deg) translateX(0)}}@keyframes toeBend{0%,100%{transform:rotate(0)}50%{transform:rotate(48deg) translateY(8px)}}@keyframes armsDown{50%{transform:rotate(40deg)}}
+.running .motion-lines span{opacity:.9;animation:flash .55s ease-in-out infinite alternate}@keyframes flash{to{opacity:.2;transform:scaleX(.65)}}
+@media(max-width:780px){.card{grid-template-columns:1fr;min-height:94vh;padding:18px;overflow:auto}.stage{min-height:300px}.kid{transform:scale(.72);height:330px}.running .kid{transform:scale(.72)}.timer{margin-top:8px}.controls{margin-bottom:12px}}
+@media(prefers-reduced-motion:reduce){.kid,.kid *,.sports span,.motion-lines span{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="sun"></div><div class="cloud c1">☁️</div><div class="cloud c2">☁️</div>
+  <div class="sports"><span class="s1">⚽</span><span class="s2">🏀</span><span class="s3">🏸</span><span class="s4">⭐</span></div>
+  <main class="card" id="card">
+    <section class="left">
+      <div class="eyebrow">⚡ Brain Break ⚡</div>
+      <div class="title" id="breakTitle">March & Move</div>
+      <div class="instruction" id="instruction">March quietly on the spot.</div>
+      <div class="timer" id="timer">00:30</div>
+      <div class="sound-note" id="soundNote">🏃 Sporty beat on</div>
+      <div class="controls">
+        <button class="btn primary" id="start">▶ Start</button>
+        <button class="btn sound" id="sound">♫ Sound On</button>
+        <button class="btn" id="next">🎲 Next</button>
+        <button class="btn stop" id="stop">■ Stop</button>
+        <button class="btn close" id="close">✕ Close</button>
+      </div>
+    </section>
+    <section class="stage" id="stage">
+      <div class="floor"></div>
+      <div class="kid march" id="kid" aria-label="Animated cartoon pupil demonstrating the movement">
+        <div class="hair"></div><div class="head"></div><div class="eye e1"></div><div class="eye e2"></div><div class="smile"></div>
+        <div class="body"></div><div class="shirt-star">⭐</div>
+        <div class="arm l"></div><div class="arm r"></div><div class="leg l"></div><div class="leg r"></div><div class="shoe l"></div><div class="shoe r"></div>
+        <div class="motion-lines"><span class="m1"></span><span class="m2"></span><span class="m3"></span></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+'use strict';
+const activities=[
+ {title:'March & Move',text:'March quietly on the spot.',motion:'march',sec:30},
+ {title:'Reach for the Sky',text:'Reach both arms high, then relax. Keep moving!',motion:'stretch',sec:30},
+ {title:'Balance Challenge',text:'Balance on one foot. Switch halfway through.',motion:'balance',sec:30},
+ {title:'Shoulder Roll',text:'Roll your shoulders slowly and loosen up.',motion:'roll',sec:30},
+ {title:'Star Jump Energy',text:'Do gentle star jumps with plenty of space.',motion:'jump',sec:30},
+ {title:'Shake It Out',text:'Shake your hands and arms, then your legs.',motion:'shake',sec:30},
+ {title:'Figure 8',text:'Trace a giant figure 8 in the air.',motion:'figure8',sec:30},
+ {title:'Touch Your Toes',text:'Reach down toward your toes, then stand tall.',motion:'toes',sec:30}
+];
+const params=new URLSearchParams(location.search);let index=Number(params.get('i'));if(!Number.isInteger(index)||index<0||index>=activities.length)index=Math.floor(Math.random()*activities.length);let remaining=Math.max(10,Math.min(180,Number(params.get('sec'))||activities[index].sec));let base=remaining,running=false,id=null,soundOn=params.get('sound')!=='0';let ac=null,beatTimer=null,beatStep=0;
+const $=s=>document.querySelector(s);
+function fmt(s){return `00:${String(Math.max(0,s)).padStart(2,'0')}`}
+function render(){const a=activities[index];$('#breakTitle').textContent=a.title;$('#instruction').textContent=a.text;$('#kid').className='kid '+a.motion;$('#timer').textContent=fmt(remaining);$('#sound').textContent=soundOn?'♫ Sound On':'🔇 Sound Off';$('#soundNote').textContent=soundOn?'🏃 Sporty beat on':'🔇 Sporty beat off';$('#start').textContent=running?'⏸ Pause':'▶ Start';$('#card').classList.toggle('running',running)}
+function tone(freq,dur=.07,vol=.05,type='sine'){if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(vol,ac.currentTime+.008);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+dur);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur+.02)}
+function noiseHit(vol=.035,dur=.045){if(!ac)return;const len=Math.floor(ac.sampleRate*dur),buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();f.type='highpass';f.frequency.value=3800;g.gain.value=vol;src.buffer=buf;src.connect(f);f.connect(g);g.connect(ac.destination);src.start()}
+function beat(){if(!soundOn||!running||!ac)return;beatStep=(beatStep+1)%8;if(beatStep%2===0)tone(92,.08,.055,'triangle');if(beatStep===2||beatStep===6)tone(180,.05,.03,'square');noiseHit(beatStep%2?.022:.032,.035);if(beatStep===0||beatStep===4)tone(523,.06,.018,'sine')}
+async function startBeat(){if(!soundOn)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ac=ac||new AC();await ac.resume();clearInterval(beatTimer);beat();beatTimer=setInterval(beat,remaining<=10?180:250)}
+function stopBeat(){clearInterval(beatTimer);beatTimer=null}
+async function start(){if(running){pause();return}running=true;render();await startBeat();clearInterval(id);id=setInterval(()=>{remaining--;$('#timer').textContent=fmt(remaining);if(remaining===10&&soundOn){clearInterval(beatTimer);beatTimer=setInterval(beat,180)}if(remaining<=0){finish()}},1000)}
+function pause(){running=false;clearInterval(id);id=null;stopBeat();render()}
+function finish(){running=false;clearInterval(id);id=null;stopBeat();remaining=0;render();try{if(ac){tone(660,.12,.06);setTimeout(()=>tone(880,.18,.06),130)}}catch(e){}$('#instruction').textContent='Great! Take a breath and get ready to learn.'}
+function stop(){running=false;clearInterval(id);id=null;stopBeat();remaining=base;render()}
+function next(){stop();index=(index+1+Math.floor(Math.random()*(activities.length-1)))%activities.length;base=remaining=activities[index].sec;render();start()}
+function closeMe(){stop();try{if(window.opener&&!window.opener.closed){window.opener.focus();window.opener.postMessage({type:'classroom-companion-return-to-strip'},location.origin)}}catch(e){}window.close();setTimeout(()=>history.back(),120)}
+$('#start').onclick=start;$('#stop').onclick=stop;$('#next').onclick=next;$('#sound').onclick=async()=>{soundOn=!soundOn;if(soundOn&&running)await startBeat();else stopBeat();render()};$('#close').onclick=closeMe;window.addEventListener('beforeunload',stopBeat);render();
+// Start immediately when opened from a direct user action. If the browser blocks audio, animation/countdown still work and Sound can be tapped once.
+setTimeout(()=>start(),80);
+</script>
+</body>
+</html>
