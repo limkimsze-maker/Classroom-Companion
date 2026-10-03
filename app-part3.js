@@ -22,9 +22,42 @@
 
   $('#kwlOpen').onclick=()=>{overlay('','','<div class="full-k-w-l"><section><h3>K — What we know</h3><textarea id="kwlK" placeholder="Type pupils’ ideas live…"></textarea></section><section><h3>W — What we want to know</h3><textarea id="kwlW" placeholder="What are we wondering?"></textarea></section><section><h3>L — What we learnt</h3><textarea id="kwlL" placeholder="Return here at the end…"></textarea></section></div>');$('#kwlK').value=data.kwl.k||'';$('#kwlW').value=data.kwl.w||'';$('#kwlL').value=data.kwl.l||'';['K','W','L'].forEach(x=>$('#kwl'+x).addEventListener('input',()=>{data.kwl[x.toLowerCase()]=$('#kwl'+x).value;saveData()}))};
 
-  function quoteIndex(){const d=new Date();return Math.floor(new Date(d.getFullYear(),d.getMonth(),d.getDate())/86400000)%quoteBank.length}
-  function setQuote(i){const q=quoteBank[i%quoteBank.length];$('#dailyQuote').textContent=q[0];$('#quoteSource').textContent='Evidence basis: '+q[1]+'.'}
-  setQuote(quoteIndex());$('#quoteNew').onclick=()=>setQuote(Math.floor(Math.random()*quoteBank.length));$('#quoteFull').onclick=()=>overlay($('#dailyQuote').textContent,$('#quoteSource').textContent);
+  const learnerQuotes=[
+    'You do not have to understand everything at once. Learn one step at a time.',
+    'Slow progress is still progress. Keep the next step small and clear.',
+    'Not knowing yet is the beginning of learning.',
+    'A hard question is not a stop sign. Try a different strategy.',
+    'Your first answer does not need to be perfect. It only needs to get you started.',
+    'Mistakes show you what to work on next.',
+    'When one way does not work, change the way — not the goal.',
+    'Ask for help when you need it. Strong learners do.',
+    'You can learn difficult things by breaking them into smaller parts.',
+    'Today, aim to understand one thing better than yesterday.',
+    'Getting stuck does not mean you cannot learn it. It means you need a next move.',
+    'Try, check, change, and try again. That is learning.',
+    'You are allowed to take your time. Keep thinking.',
+    'One careful step is better than rushing through ten.',
+    'If the work feels hard, choose one part you can do first.',
+    'Every time you correct a mistake, your understanding gets stronger.',
+    'You do not need to be the fastest learner. You need to keep learning.',
+    'A small success today can become confidence tomorrow.',
+    'Say what you know first. Then work out what is missing.',
+    'When you feel unsure, use a strategy instead of giving up.',
+    'Learning can feel difficult before it starts to feel familiar.',
+    'Compare your work with your last attempt, not with someone else’s.',
+    'You can pause, think, and try again.',
+    'A question you ask today can unlock something tomorrow.',
+    'Keep the parts you understand and work on one confusing part at a time.',
+    'Effort helps most when you also change your strategy.',
+    'You have learnt hard things before. Use the same patience again.',
+    'Read it again. Draw it. Say it. Try another way.',
+    'Being confused is a signal to slow down and look for the next clue.',
+    'You do not have to get it right immediately to get better at it.',
+    'Keep going until the next small step makes sense.'
+  ];
+  function quoteIndex(){const d=new Date();return Math.floor(new Date(d.getFullYear(),d.getMonth(),d.getDate())/86400000)%learnerQuotes.length}
+  function setQuote(i){const q=learnerQuotes[((i%learnerQuotes.length)+learnerQuotes.length)%learnerQuotes.length];$('#dailyQuote').textContent=q;$('#quoteSource').textContent='Learning focus: confidence, persistence and helpful strategies.'}
+  setQuote(quoteIndex());$('#quoteNew').onclick=()=>setQuote(Math.floor(Math.random()*learnerQuotes.length));$('#quoteFull').onclick=()=>overlay($('#dailyQuote').textContent,$('#quoteSource').textContent);
 
   function renderGoal(){goal=Math.max(0,Math.min(10,goal));$('#goalScore').textContent=goal;$('#goalBar').style.width=`${goal*10}%`;if(goal===10){chime();toast('Class goal reached! ⭐')}}
   $('#goalPlus').onclick=()=>{goal++;renderGoal()};$('#goalReset').onclick=()=>{goal=0;renderGoal()};
