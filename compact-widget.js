@@ -8,7 +8,8 @@ if(!oldStrip||!oldWrap||!quick||typeof allTools==='undefined')return;
 
 const TOOLBAR_STORE='classroomCompanionCompactToolbarV1';
 const MAX_PINNED=5;
-const tools=[...new Map(allTools.map(t=>[t.slug,t])).values()];
+const REMOVED_DUPLICATES=new Set(['movement-break','end-of-lesson-self-check']);
+const tools=[...new Map(allTools.filter(t=>!REMOVED_DUPLICATES.has(t.slug)).map(t=>[t.slug,t])).values()];
 const toolWindows=new Map();
 
 function loadPrefs(){
