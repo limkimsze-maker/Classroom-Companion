@@ -41,7 +41,8 @@ body{padding:0!important}
 (function(){
 'use strict';
 const params=new URLSearchParams(location.search),slug=params.get('tool')||'';
-const tools=(typeof allTools!=='undefined'&&Array.isArray(allTools))?allTools:[];
+const removedDuplicates=new Set(['movement-break','end-of-lesson-self-check']);
+const tools=(typeof allTools!=='undefined'&&Array.isArray(allTools))?allTools.filter(x=>!removedDuplicates.has(x.slug)):[];
 const t=tools.find(x=>x.slug===slug);
 const title=document.getElementById('ccToolTitle'),icon=document.getElementById('ccToolIcon'),status=document.getElementById('ccToolStatus');
 try{window.fitStrip=()=>{};fitStrip=window.fitStrip;window.restoreStrip=()=>{};restoreStrip=window.restoreStrip}catch(e){}
