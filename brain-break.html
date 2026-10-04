@@ -76,30 +76,31 @@ $('#start').onclick=start;$('#stop').onclick=stop;$('#next').onclick=next;$('#so
 // Force visible character motion with requestAnimationFrame so Brain Break still animates
 // even when the browser or Windows suppresses CSS animation.
 const kidEl=$('#kid'),armL=$('#kid .arm.l'),armR=$('#kid .arm.r'),legL=$('#kid .leg.l'),legR=$('#kid .leg.r');
+function forceTransform(el,value){el.style.setProperty('transform',value,'important')}
 function motionFrame(ms){
-  const t=ms/1000,motion=activities[index].motion,mobileScale=innerWidth<=780?.72:1;
+  const t=ms/1000,motion=activities[index].motion,mobileScale=(innerWidth<=780)?0.72:1;
   let kid=`scale(${mobileScale})`;
-  armL.style.transform='rotate(0deg)';armR.style.transform='rotate(0deg)';legL.style.transform='rotate(0deg)';legR.style.transform='rotate(0deg)';
+  forceTransform(armL,'rotate(0deg)');forceTransform(armR,'rotate(0deg)');forceTransform(legL,'rotate(0deg)');forceTransform(legR,'rotate(0deg)');
   if(running){
     if(motion==='march'){
-      const p=Math.sin(t*Math.PI*2/.55);kid+=` translateY(${-6-6*p}px)`;armL.style.transform=`rotate(${38*p}deg)`;armR.style.transform=`rotate(${-38*p}deg)`;legL.style.transform=`rotate(${-30*p}deg)`;legR.style.transform=`rotate(${30*p}deg)`;
+      const p=Math.sin(t*Math.PI*2/.55);kid+=` translateY(${-6-6*p}px)`;forceTransform(armL,`rotate(${38*p}deg)`);forceTransform(armR,`rotate(${-38*p}deg)`);forceTransform(legL,`rotate(${-30*p}deg)`);forceTransform(legR,`rotate(${30*p}deg)`);
     }else if(motion==='stretch'){
-      const p=(1-Math.cos(t*Math.PI*2/1.8))/2;armL.style.transform=`rotate(${20+135*p}deg)`;armR.style.transform=`rotate(${-20-135*p}deg)`;
+      const p=(1-Math.cos(t*Math.PI*2/1.8))/2;forceTransform(armL,`rotate(${20+135*p}deg)`);forceTransform(armR,`rotate(${-20-135*p}deg)`);
     }else if(motion==='balance'){
-      const p=(1-Math.cos(t*Math.PI*2/2))/2;kid+=` rotate(${-2+5*p}deg)`;legR.style.transform=`rotate(${-72*p}deg)`;
+      const p=(1-Math.cos(t*Math.PI*2/2))/2;kid+=` rotate(${-2+5*p}deg)`;forceTransform(legR,`rotate(${-72*p}deg)`);
     }else if(motion==='roll'){
-      const a=(t*300)%360;armL.style.transform=`rotate(${a}deg)`;armR.style.transform=`rotate(${-a}deg)`;
+      const a=(t*300)%360;forceTransform(armL,`rotate(${a}deg)`);forceTransform(armR,`rotate(${-a}deg)`);
     }else if(motion==='jump'){
-      const p=(1-Math.cos(t*Math.PI*2/.8))/2;kid+=` translateY(${-52*p}px)`;armL.style.transform=`rotate(${150*p}deg)`;armR.style.transform=`rotate(${-150*p}deg)`;
+      const p=(1-Math.cos(t*Math.PI*2/.8))/2;kid+=` translateY(${-52*p}px)`;forceTransform(armL,`rotate(${150*p}deg)`);forceTransform(armR,`rotate(${-150*p}deg)`);
     }else if(motion==='shake'){
-      const p=Math.sin(t*Math.PI*2/.18);armL.style.transform=`rotate(${15*p}deg)`;armR.style.transform=`rotate(${-15*p}deg)`;legL.style.transform=`rotate(${-8*p}deg)`;legR.style.transform=`rotate(${8*p}deg)`;
+      const p=Math.sin(t*Math.PI*2/.18);forceTransform(armL,`rotate(${15*p}deg)`);forceTransform(armR,`rotate(${-15*p}deg)`);forceTransform(legL,`rotate(${-8*p}deg)`);forceTransform(legR,`rotate(${8*p}deg)`);
     }else if(motion==='figure8'){
-      const p=Math.sin(t*Math.PI*2/1.6),q=Math.sin(t*Math.PI*4/1.6);armR.style.transform=`rotate(${-25+50*p}deg) translateX(${20*q}px)`;
+      const p=Math.sin(t*Math.PI*2/1.6),q=Math.sin(t*Math.PI*4/1.6);forceTransform(armR,`rotate(${-25+50*p}deg) translateX(${20*q}px)`);
     }else if(motion==='toes'){
-      const p=(1-Math.cos(t*Math.PI*2/1.8))/2;kid+=` rotate(${48*p}deg) translateY(${8*p}px)`;armL.style.transform=`rotate(${40*p}deg)`;armR.style.transform=`rotate(${40*p}deg)`;
+      const p=(1-Math.cos(t*Math.PI*2/1.8))/2;kid+=` rotate(${48*p}deg) translateY(${8*p}px)`;forceTransform(armL,`rotate(${40*p}deg)`);forceTransform(armR,`rotate(${40*p}deg)`);
     }
   }
-  kidEl.style.transform=kid;
+  forceTransform(kidEl,kid);
   requestAnimationFrame(motionFrame);
 }
 requestAnimationFrame(motionFrame);
