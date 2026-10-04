@@ -23,6 +23,9 @@ let realPromise=null;const proxy={recognize:async function(){if(!realPromise){tr
 ;(function(){
  if(window.Support?.slug!=='daily-visual-timetable'||window.__ttViewLoader)return;
  window.__ttViewLoader=true;
+ const profile=document.createElement('script');
+ profile.src='timetable-profile-selector.js?v=20261004profiles1';
+ document.body.appendChild(profile);
  const s=document.createElement('script');
  s.src='timetable-view-enhancement.js?v=20261004view3';
  s.onload=()=>{
