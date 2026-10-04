@@ -31,7 +31,7 @@
         <button class="btn sound" id="sound">♫ Sound On</button>
         <button class="btn" id="next">🎲 Next</button>
         <button class="btn stop" id="stop">■ Stop</button>
-        <button class="btn close" id="close">✕ Close</button>
+        <button class="btn close" id="close">← Main</button>
       </div>
     </section>
     <section class="stage" id="stage">
@@ -71,7 +71,7 @@ function pause(){running=false;clearInterval(id);id=null;stopBeat();render()}
 function finish(){running=false;clearInterval(id);id=null;stopBeat();remaining=0;render();try{if(ac){tone(660,.12,.06);setTimeout(()=>tone(880,.18,.06),130)}}catch(e){}$('#instruction').textContent='Great! Take a breath and get ready to learn.'}
 function stop(){running=false;clearInterval(id);id=null;stopBeat();remaining=base;render()}
 function next(){stop();index=(index+1+Math.floor(Math.random()*(activities.length-1)))%activities.length;base=remaining=activities[index].sec;render();start()}
-function closeMe(){stop();try{if(window.opener&&!window.opener.closed){window.opener.focus();window.opener.postMessage({type:'classroom-companion-return-to-strip'},location.origin)}}catch(e){}window.close();setTimeout(()=>history.back(),120)}
+function closeMe(){stop();location.href='./'}
 $('#start').onclick=start;$('#stop').onclick=stop;$('#next').onclick=next;$('#sound').onclick=async()=>{soundOn=!soundOn;if(soundOn&&running)await startBeat();else stopBeat();render()};$('#close').onclick=closeMe;window.addEventListener('beforeunload',stopBeat);render();
 // Start immediately when opened from a direct user action. If the browser blocks audio, animation/countdown still work and Sound can be tapped once.
 setTimeout(()=>start(),80);
