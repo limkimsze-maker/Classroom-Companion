@@ -7,7 +7,7 @@ const CORE=[
  {slug:'transition-countdown',icon:'⏳',title:'Transition Countdown',hint:'Move safely and be ready.'},
  {slug:'attention-signal',icon:'👀',title:'Attention Signal',hint:'A clear cue to stop, look and listen.'},
  {slug:'noise-level',icon:'🔊',title:'Noise Level',hint:'Show pupils the voice level expected.'},
- {slug:'question-spinner',icon:'❓',title:'Question Spinner',hint:'Prompt deeper thinking and explanations.'},
+ {slug:'question-spinner',icon:'💬',title:'Sentence Starters',hint:'Simple ways to start an answer.'},
  {slug:'confidence-check',icon:'📈',title:'Confidence Check',hint:'A safe way for pupils to show how learning is going.'},
  {slug:'pick-a-pupil',icon:'🎯',title:'Pick a Pupil',hint:'Invite participation fairly from your class.'},
  {slug:'make-groups',icon:'👥',title:'Make Groups',hint:'Create random groups quickly from the class list.'},
@@ -67,4 +67,5 @@ function speak(text){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtt
 function attachLauncher(){const s=document.createElement('script');s.src='embedded-launcher.js?v=20261003core13';s.dataset.currentTool=slug;document.body.appendChild(s)}
 window.addEventListener('storage',e=>{if((slug==='pick-a-pupil'||slug==='make-groups')&&(e.key===MASTER_STORE||e.key===CC_STORE))location.reload()});
 window.Support={slug,tool,CORE,$,panel,esc,safe,toast,fmt,CC_STORE,MASTER_STORE,TIMETABLE_STORE,classData,classNames,selectedClass,setSelectedClass,masterRows,openClassSetup,classControls,bindClassControls,timetableKey,loadTimetable,saveTimetable,tone,chime,tickTone,speak,attachLauncher};
+if(slug==='question-spinner'){const ss=document.createElement('script');ss.src='sentence-starters.js?v=20261004ss1';document.body.appendChild(ss)}
 })();
