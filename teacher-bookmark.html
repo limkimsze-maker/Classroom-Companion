@@ -17,7 +17,7 @@
 <div class="warn"><b>Important:</b> Do not bookmark <code>widget-launch.html</code> as a normal webpage. A normal URL bookmark opens a full tab instead of the teacher palette.</div>
 <p class="small">The 16 Classroom Companion tools are unchanged. After a successful test launch, this setup page closes itself so only the teacher palette remains.</p></main>
 <script>
-const toolbarUrl='https://limkimsze-maker.github.io/Classroom-Companion/widget-launch.html';
+const toolbarUrl=new URL('widget-launch.html',location.href).href;
 function openPalette(){
   var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8,u=toolbarUrl+'?v='+Date.now();
   var x=window.open(u,'ClassroomCompanionStrip','popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no');
