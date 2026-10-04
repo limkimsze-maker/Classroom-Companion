@@ -1,21 +1,48 @@
 (function(){
 'use strict';
 const S=window.Support;
-if(!S||S.slug!=='daily-visual-timetable'||window.__ttIntuitiveFlow)return;
-window.__ttIntuitiveFlow=true;
+if(!S||S.slug!=='daily-visual-timetable'||window.__ttSimpleMode)return;
+window.__ttSimpleMode=true;
+const STORE='classroomCompanionWeeklyTimetableV1';
 const $=s=>document.querySelector(s);
-const PROFILE='classroomCompanionTimetableProfilesV1';
-const DEFAULT='My Timetable';
-const clean=v=>String(v??'').replace(/\s+/g,' ').trim();
-const safe=(raw,f)=>S.safe(raw,f)||f;
-function close(){document.querySelector('.ttFlowOverlay')?.remove()}
-function ensureFallback(){const d=S.classData();d.classes=d.classes||{};if(!d.classes[DEFAULT]){d.classes[DEFAULT]={};localStorage.setItem(S.CC_STORE,JSON.stringify(d))}const p=safe(localStorage.getItem(PROFILE),{});if(p[DEFAULT]?.type!=='teacher'){p[DEFAULT]={...(p[DEFAULT]||{}),type:'teacher'};localStorage.setItem(PROFILE,JSON.stringify(p))}}
-function createProfile(name,type){name=clean(name);if(!name)return false;const d=S.classData();d.classes=d.classes||{};if(!d.classes[name])d.classes[name]={};d.selectedClass=name;localStorage.setItem(S.CC_STORE,JSON.stringify(d));const p=safe(localStorage.getItem(PROFILE),{});p[name]={...(p[name]||{}),type:type==='teacher'?'teacher':'class'};localStorage.setItem(PROFILE,JSON.stringify(p));return true}
-function style(){if($('#ttFlowStyle'))return;const s=document.createElement('style');s.id='ttFlowStyle';s.textContent='.ttFlowOverlay{position:fixed;inset:0;z-index:2147483647;background:rgba(15,23,42,.48);display:grid;place-items:center;padding:18px}.ttFlowCard{width:min(520px,100%);background:#fff;border:1px solid #d8e1e8;border-radius:24px;padding:24px;box-shadow:0 28px 80px rgba(15,23,42,.25);text-align:left}.ttFlowCard h2{margin:0 0 8px;color:#17324d}.ttFlowCard p{color:#667085;font-weight:750}.ttFlowField{display:grid;gap:6px;margin:14px 0}.ttFlowField label{font-size:12px;font-weight:1000;color:#435466}.ttFlowField input,.ttFlowField select{width:100%;min-height:48px;border:1px solid #cfdbe1;border-radius:12px;padding:10px 12px;background:#fff;color:#17324d;font-weight:900}.ttFlowButtons{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.ttFlowChoice{width:100%;margin:6px 0;border:1px solid #d8e1e8;border-radius:14px;background:#fff;padding:13px 15px;text-align:left;color:#17324d;font-weight:1000}.ttFlowChoice span{display:block;color:#667085;font-size:12px;font-weight:750;margin-top:3px}';document.head.appendChild(s)}
-function openNew(){close();const o=document.createElement('div');o.className='ttFlowOverlay';o.innerHTML='<div class="ttFlowCard"><h2>New timetable</h2><p>Create another class or teacher timetable.</p><div class="ttFlowField"><label>Timetable for</label><select id="ttFlowType"><option value="class">👥 Class</option><option value="teacher">👨‍🏫 Teacher</option></select></div><div class="ttFlowField"><label>Name</label><input id="ttFlowName" type="text" autocomplete="off" placeholder="e.g. 3C or Mr Lim"></div><div class="ttFlowButtons"><button class="btn" id="ttFlowCancel">Cancel</button><button class="btn primary" id="ttFlowCreate">＋ Create timetable</button></div></div>';document.body.appendChild(o);const name=o.querySelector('#ttFlowName'),type=o.querySelector('#ttFlowType');o.onclick=e=>{if(e.target===o)close()};o.querySelector('#ttFlowCancel').onclick=close;o.querySelector('#ttFlowCreate').onclick=()=>{const n=clean(name.value);if(!n){name.focus();return}createProfile(n,type.value);close();location.reload()};name.onkeydown=e=>{if(e.key==='Enter')o.querySelector('#ttFlowCreate').click();if(e.key==='Escape')close()};setTimeout(()=>name.focus(),20)}
-function quickEdit(){close();const b=$('#ttEditWeek');if(b){b.click();return}$('#ttNavWeek')?.click();setTimeout(()=>$('#ttEditWeek')?.click(),120)}
-function replaceShot(){close();const show=()=>{const d=$('#ttImportDrawer');if(d){d.hidden=false;d.scrollIntoView({behavior:'smooth',block:'start'});return true}return false};if(!show()){$('#ttNavToday')?.click();setTimeout(show,120)}}
-function openEdit(){close();const o=document.createElement('div');o.className='ttFlowOverlay';o.innerHTML='<div class="ttFlowCard"><h2>Edit timetable</h2><p>Choose what you want to change.</p><button class="ttFlowChoice" id="ttFlowQuick">✏️ Quick edit subjects<span>Change individual lesson cells.</span></button><button class="ttFlowChoice" id="ttFlowReplace">📷 Replace from screenshot<span>Paste or choose a newer timetable screenshot.</span></button><div class="ttFlowButtons"><button class="btn" id="ttFlowClose">Cancel</button></div></div>';document.body.appendChild(o);o.onclick=e=>{if(e.target===o)close()};o.querySelector('#ttFlowClose').onclick=close;o.querySelector('#ttFlowQuick').onclick=quickEdit;o.querySelector('#ttFlowReplace').onclick=replaceShot}
-function bind(){const label=$('.ttProfileLabel');if(label&&label.textContent!=='Viewing')label.textContent='Viewing';const add=$('#addClassInline');if(add&&!add.dataset.ttFlowBound){const b=add.cloneNode(true);b.dataset.ttFlowBound='1';b.textContent='＋ New';b.title='Create another timetable';b.onclick=e=>{e.preventDefault();openNew()};add.replaceWith(b)}const edit=$('#ttNavUpdate');if(edit&&!edit.dataset.ttFlowBound){const b=edit.cloneNode(true);b.dataset.ttFlowBound='1';b.textContent='✏️ Edit';b.title='Edit this timetable';b.onclick=e=>{e.preventDefault();openEdit()};edit.replaceWith(b)}}
-ensureFallback();style();bind();setInterval(bind,500);
+function safe(raw,f){return S.safe(raw,f)||f}
+function all(){return safe(localStorage.getItem(STORE),{})}
+function selected(){return String(S.selectedClass()||'').trim()}
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.body.appendChild(s)})}
+function deleteTimetable(){
+  const name=selected(),data=window.ClassroomTimetableData?.load?.();
+  const key=String(data?.className||name||'').trim();
+  if(!key)return;
+  if(!confirm(`Delete ${key} timetable?`))return;
+  const a=all();delete a[key];localStorage.setItem(STORE,JSON.stringify(a));
+  const d=S.classData();d.classes=d.classes||{};
+  const c=d.classes[key],hasNames=Array.isArray(c?.names)&&c.names.length;
+  if(!hasNames)delete d.classes[key];
+  const next=Object.keys(a)[0]||'';d.selectedClass=next;localStorage.setItem(S.CC_STORE,JSON.stringify(d));
+  location.reload();
+}
+function tidy(){
+  document.getElementById('classBtn')?.classList.add('hidden');
+  const add=$('#addClassInline');if(add)add.style.display='none';
+  const bar=document.querySelector('.classBar'),sel=$('#classSelect'),keys=new Set(Object.keys(all()));
+  if(sel){
+    [...sel.options].forEach(o=>{if(!keys.has(o.value))o.remove()});
+    if(!sel.options.length){sel.style.display='none';if(bar)bar.style.display='none'}
+    else{sel.style.display='';if(bar)bar.style.display='flex'}
+  }else if(bar&&!keys.size)bar.style.display='none';
+  document.querySelectorAll('.ttCell').forEach(i=>{if(!i.dataset.scFixed&&String(i.value||'').trim().toUpperCase()==='SCIENCE'){i.dataset.scFixed='1';i.value='SC';i.dispatchEvent(new Event('input',{bubbles:true}))}});
+  const T=window.ClassroomTimetableData,data=T?.load?.();
+  if(data&&bar&&!$('#ttDeleteSimple')){
+    const b=document.createElement('button');b.id='ttDeleteSimple';b.className='btn danger';b.type='button';b.textContent='🗑️ Delete timetable';b.onclick=deleteTimetable;bar.appendChild(b);
+  }
+}
+async function boot(){
+  try{
+    await loadScript('timetable-screenshot.js?v=20261004simple1');
+    await loadScript('timetable-print.js?v=20261004simple1');
+    await loadScript('timetable-subject-aliases.js?v=20261004simple1');
+  }catch(e){console.error(e)}
+  tidy();setInterval(tidy,500);
+}
+boot();
 })();
