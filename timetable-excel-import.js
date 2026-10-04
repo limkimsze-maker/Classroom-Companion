@@ -23,5 +23,8 @@ let realPromise=null;const proxy={recognize:async function(){if(!realPromise){tr
 ;(function(){
  if(window.Support?.slug!=='daily-visual-timetable'||window.__ttViewLoader)return;
  window.__ttViewLoader=true;
- const s=document.createElement('script');s.src='timetable-view-enhancement.js?v=20261004view1';document.body.appendChild(s);
+ const s=document.createElement('script');
+ s.src='timetable-view-enhancement.js?v=20261004view2';
+ s.onload=()=>{const v=document.createElement('script');v.src='timetable-daily-vertical.js?v=20261004vertical1';document.body.appendChild(v)};
+ document.body.appendChild(s);
 })();
