@@ -46,5 +46,4 @@ function attachLauncher(){const s=document.createElement('script');s.src='embedd
 window.addEventListener('storage',e=>{if((slug==='pick-a-pupil'||slug==='make-groups')&&(e.key===MASTER_STORE||e.key===CC_STORE))location.reload()});
 window.Support={slug,tool,CORE,$,panel,esc,safe,toast,fmt,CC_STORE,MASTER_STORE,TIMETABLE_STORE,classData,classNames,selectedClass,setSelectedClass,masterRows,openClassSetup,classControls,bindClassControls,timetableKey,loadTimetable,saveTimetable,tone,chime,tickTone,speak,attachLauncher};
 if(slug==='question-spinner'){const ss=document.createElement('script');ss.src='sentence-starters.js?v=20261004ss1';document.body.appendChild(ss)}
-if(slug==='attention-signal'){const ab=document.createElement('script');ab.src='attention-bell.js?v=20261004bell3';document.body.appendChild(ab)}
 })();
