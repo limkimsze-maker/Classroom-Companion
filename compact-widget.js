@@ -17,6 +17,8 @@ const CORE=[
  {slug:'quote-of-the-day',icon:'✨',title:'Quote of the Day',hint:'Encouragement when learning feels hard.'},
  {slug:'class-organisation',icon:'🗂️',title:'Class Organisation',hint:'Master sheet, duties, roles and dismissal.'},
  {slug:'daily-duty-roster',icon:'🧹',title:'Daily Duty Roster',hint:'Show who is helping the class today.'},
+ {slug:'pupil-reward-points',icon:'⭐',title:'Pupil Reward Points',hint:'Recognise positive learning behaviours.'},
+ {slug:'group-reward-points',icon:'🏆',title:'Group Reward Points',hint:'Reward teamwork and group effort.'},
  {slug:'daily-visual-timetable',icon:'🗓️',title:'Daily Visual Timetable',hint:'Make the day predictable.'}
 ];
 const toolWindows=new Map();
@@ -40,8 +42,9 @@ function prune(){for(const [slug,w] of [...toolWindows])try{if(!w||w.closed)tool
 function openTool(t){
  prune();const existing=toolWindows.get(t.slug);if(existing){try{existing.focus();closeMenu();return}catch(e){toolWindows.delete(t.slug)}}
  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
- const directPages={'class-organisation':'class-organisation.html','daily-duty-roster':'daily-duty-roster.html'};
- const url=directPages[t.slug]?directPages[t.slug]+'?v='+Date.now():'support-tool.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now();
+ const directPages={'class-organisation':'class-organisation.html','daily-duty-roster':'daily-duty-roster.html','pupil-reward-points':'reward-points.html?mode=pupil','group-reward-points':'reward-points.html?mode=group'};
+ const base=directPages[t.slug];
+ const url=base?base+(base.includes('?')?'&':'?')+'v='+Date.now():'support-tool.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now();
  const w=window.open(url,toolWindowName(t.slug),`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
  if(!w){try{toast('Allow pop-ups to open the tool')}catch(e){}return}toolWindows.set(t.slug,w);try{w.focus()}catch(e){}closeMenu()
 }
