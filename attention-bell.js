@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-if(window.__attentionBellInstalledV6)return;
+if(window.__attentionBellInstalledV7)return;
 const S=window.Support;
 if(!S||S.slug!=='attention-signal')return;
 
@@ -8,42 +8,24 @@ function install(){
   const btn=document.getElementById('signalBtn');
   const signal=document.getElementById('signal');
   if(!btn||!signal)return false;
-  if(window.__attentionBellInstalledV6)return true;
-  window.__attentionBellInstalledV6=true;
+  if(window.__attentionBellInstalledV7)return true;
+  window.__attentionBellInstalledV7=true;
 
   const extra=signal.nextElementSibling;
   if(extra&&extra.classList.contains('supportText'))extra.remove();
 
-  if(!document.getElementById('attentionGooglyStyleV6')){
+  if(!document.getElementById('attentionGooglyStyleV7')){
     const style=document.createElement('style');
-    style.id='attentionGooglyStyleV6';
+    style.id='attentionGooglyStyleV7';
     style.textContent=`
       .attentionGooglyEyes{display:none!important}
       .attentionSignalStack{display:grid!important;justify-items:center!important;gap:16px!important;margin:0 auto 24px!important}
-      .attentionEyes{display:flex!important;align-items:center!important;justify-content:center!important;gap:18px!important;min-height:92px!important;transform-origin:center;filter:drop-shadow(0 6px 10px rgba(23,50,77,.12))}
-      .attentionEye{display:block!important;width:clamp(66px,7.5vw,108px)!important;height:clamp(82px,9vw,132px)!important;border-radius:50%!important;background:#fff!important;border:5px solid #17324d!important;position:relative!important;overflow:hidden!important;box-shadow:inset 0 -7px 0 rgba(15,118,110,.06)!important}
-      .attentionPupil{display:block!important;position:absolute!important;width:38%!important;aspect-ratio:1!important;border-radius:50%!important;background:#17324d!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%);animation:attentionPupilLookV6 3.2s ease-in-out infinite}
-      .attentionEye:nth-child(2) .attentionPupil{animation-delay:-.08s}
+      .attentionEyes{display:flex!important;align-items:center!important;justify-content:center!important;gap:18px!important;min-height:92px!important;transform-origin:center!important;filter:drop-shadow(0 6px 10px rgba(23,50,77,.12))}
+      .attentionEye{display:block!important;width:clamp(72px,8vw,112px)!important;height:clamp(88px,9.5vw,136px)!important;border-radius:50%!important;background:#fff!important;border:5px solid #17324d!important;position:relative!important;overflow:hidden!important;box-shadow:inset 0 -7px 0 rgba(15,118,110,.06)!important}
+      .attentionPupil{display:block!important;position:absolute!important;width:38%!important;aspect-ratio:1!important;border-radius:50%!important;background:#17324d!important;transform:translate(-50%,-50%)!important;transition:left .12s ease,top .12s ease!important;animation:none!important}
       .attentionPupil::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:#fff;left:18%;top:14%}
-      .attentionEyes.counting{animation:attentionEyesWiggleV6 .28s ease-in-out infinite alternate}
-      .attentionEyes.counting .attentionPupil{animation:attentionPupilDartV6 .44s ease-in-out infinite}
-      .attentionEyes.settle .attentionPupil{animation:none!important;transform:translate(-50%,-50%)!important}
-      @keyframes attentionEyesWiggleV6{0%{transform:translateX(-7px) rotate(-3deg)}100%{transform:translateX(7px) rotate(3deg)}}
-      @keyframes attentionPupilLookV6{
-        0%,12%{transform:translate(-50%,-50%)}
-        22%,34%{transform:translate(-78%,-58%)}
-        44%,56%{transform:translate(-24%,-42%)}
-        66%,76%{transform:translate(-60%,-24%)}
-        86%,100%{transform:translate(-50%,-50%)}
-      }
-      @keyframes attentionPupilDartV6{
-        0%{transform:translate(-78%,-58%)}
-        25%{transform:translate(-22%,-58%)}
-        50%{transform:translate(-22%,-24%)}
-        75%{transform:translate(-78%,-24%)}
-        100%{transform:translate(-78%,-58%)}
-      }
-      @media (prefers-reduced-motion:reduce){.attentionEyes,.attentionPupil{animation:none!important}}
+      .attentionEyes.counting{animation:attentionEyesWiggleV7 .26s ease-in-out infinite alternate!important}
+      @keyframes attentionEyesWiggleV7{0%{transform:translateX(-5px) rotate(-2deg)}100%{transform:translateX(5px) rotate(2deg)}}
     `;
     document.head.appendChild(style);
   }
@@ -70,8 +52,50 @@ function install(){
     if(!eyes.querySelector('.attentionEye'))eyes.innerHTML='<div class="attentionEye"><div class="attentionPupil"></div></div><div class="attentionEye"><div class="attentionPupil"></div></div>';
   }
 
+  const pupils=[...eyes.querySelectorAll('.attentionPupil')];
   let busy=false;
   let bellLoop=null;
+  let eyeLoop=null;
+  let moveIndex=0;
+
+  const positions=[
+    [28,48],[72,48],[50,28],[50,72],[30,30],[70,70],[70,30],[30,70],[50,50]
+  ];
+
+  function movePupils(x,y,opposite=false){
+    pupils.forEach((p,i)=>{
+      const px=opposite&&i===1?100-x:x;
+      p.style.setProperty('left',px+'%','important');
+      p.style.setProperty('top',y+'%','important');
+    });
+  }
+
+  function centreEyes(){movePupils(50,50,false)}
+
+  function stopEyeMovement(){
+    if(eyeLoop){clearInterval(eyeLoop);eyeLoop=null}
+  }
+
+  function startIdleEyes(){
+    stopEyeMovement();
+    centreEyes();
+    eyeLoop=setInterval(()=>{
+      const p=positions[moveIndex++%positions.length];
+      movePupils(p[0],p[1],false);
+    },850);
+  }
+
+  function startCountdownEyes(){
+    stopEyeMovement();
+    moveIndex=0;
+    const dart=[[24,45],[76,45],[50,24],[50,74],[28,28],[72,28],[72,68],[28,68]];
+    const move=()=>{
+      const p=dart[moveIndex++%dart.length];
+      movePupils(p[0],p[1],false);
+    };
+    move();
+    eyeLoop=setInterval(move,170);
+  }
 
   function schoolBellStrike(){
     S.tone(820,.15,.085,'square',0);
@@ -91,16 +115,18 @@ function install(){
   }
 
   function stopBell(){
-    if(bellLoop){clearInterval(bellLoop);bellLoop=null;}
+    if(bellLoop){clearInterval(bellLoop);bellLoop=null}
   }
+
+  startIdleEyes();
 
   btn.onclick=()=>{
     if(busy)return;
     busy=true;
     const seq=['3','2','1','Eyes here'];
     let i=0;
-    eyes.classList.remove('settle');
     eyes.classList.add('counting');
+    startCountdownEyes();
     startBell();
 
     function next(){
@@ -113,12 +139,13 @@ function install(){
         setTimeout(next,650);
       }else{
         stopBell();
+        stopEyeMovement();
         eyes.classList.remove('counting');
-        eyes.classList.add('settle');
+        centreEyes();
         setTimeout(()=>{
           signal.classList.remove('pulse');
-          eyes.classList.remove('settle');
           busy=false;
+          startIdleEyes();
         },900);
       }
     }
