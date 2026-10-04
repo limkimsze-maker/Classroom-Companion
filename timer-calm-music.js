@@ -1,16 +1,50 @@
 (function(){
 'use strict';
 const S=window.Support;
-if(!S||S.slug!=='timer-calm-music'||window.__timerCalmV3)return;
-window.__timerCalmV3=true;
+if(!S||S.slug!=='timer-calm-music'||window.__timerCalmV4)return;
 
 function install(){
   const panel=S.panel||document.getElementById('panel');
   if(!panel)return false;
+  window.__timerCalmV4=true;
 
-  let base=300,sec=base,running=false,timerId=null,music=true,musicId=null,noteIndex=0;
-  let calmCtx=null;
-  const notes=[262,330,392,330]; // C-E-G-E calm loop used before.
+  let base=300,sec=base,running=false,timerId=null,music=true;
+  const notes=[261.63,329.63,392.00,329.63];
+
+  function makeCalmWavUrl(){
+    const sampleRate=16000;
+    const beat=0.9;
+    const totalSeconds=beat*notes.length;
+    const sampleCount=Math.floor(sampleRate*totalSeconds);
+    const dataBytes=sampleCount*2;
+    const buf=new ArrayBuffer(44+dataBytes);
+    const view=new DataView(buf);
+    const write=(off,str)=>{for(let i=0;i<str.length;i++)view.setUint8(off+i,str.charCodeAt(i));};
+    write(0,'RIFF');view.setUint32(4,36+dataBytes,true);write(8,'WAVE');write(12,'fmt ');
+    view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);
+    view.setUint32(24,sampleRate,true);view.setUint32(28,sampleRate*2,true);
+    view.setUint16(32,2,true);view.setUint16(34,16,true);write(36,'data');view.setUint32(40,dataBytes,true);
+    for(let i=0;i<sampleCount;i++){
+      const t=i/sampleRate;
+      const slot=Math.min(notes.length-1,Math.floor(t/beat));
+      const local=t-slot*beat;
+      const f=notes[slot];
+      const attack=Math.min(1,local/.08);
+      const release=Math.min(1,(beat-local)/.20);
+      const env=Math.max(0,Math.min(attack,release));
+      const fundamental=Math.sin(2*Math.PI*f*local);
+      const harmonic=.14*Math.sin(2*Math.PI*f*2*local);
+      const low=.10*Math.sin(2*Math.PI*(f/2)*local);
+      const sample=(fundamental+harmonic+low)*env*.42;
+      view.setInt16(44+i*2,Math.max(-1,Math.min(1,sample))*32767,true);
+    }
+    return URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));
+  }
+
+  const calmAudio=new Audio(makeCalmWavUrl());
+  calmAudio.loop=true;
+  calmAudio.preload='auto';
+  calmAudio.volume=.55;
 
   panel.innerHTML=`
     <div class="eyebrow">Focus time</div>
@@ -30,58 +64,6 @@ function install(){
   const start=document.getElementById('start');
   const musicBtn=document.getElementById('music');
 
-  async function audio(){
-    const AC=window.AudioContext||window.webkitAudioContext;
-    if(!AC)throw new Error('Audio unavailable');
-    if(!calmCtx)calmCtx=new AC();
-    if(calmCtx.state==='suspended')await calmCtx.resume();
-    return calmCtx;
-  }
-
-  async function playNote(){
-    if(!running||!music)return;
-    try{
-      const c=await audio();
-      const now=c.currentTime;
-      const f=notes[noteIndex++%notes.length];
-      const master=c.createGain();
-      master.gain.setValueAtTime(.0001,now);
-      master.gain.exponentialRampToValueAtTime(.075,now+.035);
-      master.gain.exponentialRampToValueAtTime(.0001,now+.72);
-      master.connect(c.destination);
-
-      const o1=c.createOscillator();
-      o1.type='sine';
-      o1.frequency.setValueAtTime(f,now);
-      o1.connect(master);
-      o1.start(now);
-      o1.stop(now+.75);
-
-      const o2=c.createOscillator();
-      const g2=c.createGain();
-      o2.type='sine';
-      o2.frequency.setValueAtTime(f*2,now);
-      g2.gain.value=.16;
-      o2.connect(g2);g2.connect(master);
-      o2.start(now);o2.stop(now+.58);
-    }catch(e){
-      S.toast('Sound could not start');
-    }
-  }
-
-  function stopMusic(){
-    if(musicId){clearInterval(musicId);musicId=null;}
-  }
-
-  async function startMusic(){
-    stopMusic();
-    if(!running||!music)return;
-    try{await audio();}catch(e){S.toast('Sound is unavailable');return;}
-    noteIndex=0;
-    await playNote();
-    musicId=setInterval(playNote,900);
-  }
-
   function draw(){
     time.textContent=S.fmt(sec);
     ring.style.setProperty('--progress',`${base?Math.max(0,sec/base*100):100}%`);
@@ -90,24 +72,39 @@ function install(){
     musicBtn.setAttribute('aria-pressed',music?'true':'false');
   }
 
-  function stop(){
+  function pauseAudio(){
+    calmAudio.pause();
+  }
+
+  async function playAudio(restart=false){
+    if(!music||!running)return;
+    try{
+      if(restart)calmAudio.currentTime=0;
+      await calmAudio.play();
+    }catch(e){
+      S.toast('Sound was blocked. Tap Calm music Off, then On.');
+    }
+  }
+
+  function stop(resetMusic=false){
     if(timerId){clearInterval(timerId);timerId=null;}
     running=false;
-    stopMusic();
+    pauseAudio();
+    if(resetMusic)calmAudio.currentTime=0;
     draw();
   }
 
   async function go(){
-    if(running){stop();return;}
+    if(running){stop(false);return;}
     if(sec<=0)sec=base;
     running=true;
     draw();
-    if(music)await startMusic();
+    if(music)await playAudio(calmAudio.currentTime===0);
     timerId=setInterval(()=>{
       sec--;
       draw();
       if(sec<=0){
-        stop();
+        stop(true);
         S.chime();
         S.toast('Time is up');
       }
@@ -115,17 +112,18 @@ function install(){
   }
 
   document.querySelectorAll('[data-min]').forEach(b=>b.onclick=()=>{
-    stop();
+    stop(true);
     base=sec=Number(b.dataset.min)*60;
     draw();
   });
 
-  start.onclick=()=>{go();};
-  document.getElementById('reset').onclick=()=>{stop();sec=base;draw();};
+  start.onclick=go;
+  document.getElementById('reset').onclick=()=>{stop(true);sec=base;draw();};
   musicBtn.onclick=async()=>{
     music=!music;
     draw();
-    if(running){music?await startMusic():stopMusic();}
+    if(!music){pauseAudio();return;}
+    if(running)await playAudio(false);
   };
 
   draw();
