@@ -14,6 +14,32 @@ function profileType(name){const p=readProfiles();return p[name]?.type||(name===
 function rememberProfile(name,type){const p=readProfiles();p[name]={...(p[name]||{}),type:type==='teacher'?'teacher':'class'};writeProfiles(p)}
 function clean(v){return String(v??'').replace(/\s+/g,' ').trim()}
 
+function installSubjectAliases(){
+  const T=window.ClassroomTimetableData;
+  if(!T||T.__subjectAliasesInstalled)return;
+  T.__subjectAliasesInstalled=true;
+  const oldIcon=T.icon;
+  T.icon=function(subject){
+    const s=clean(subject).toUpperCase();
+    if(!s)return'✏️';
+    if(/^(RECESS|BREAK)$/.test(s))return'🍎';
+    if(/^(MATH|MATHS|MATHEMATICS)$/.test(s))return'🔢';
+    if(/^(SC|SCI|SCIENCE)$/.test(s))return'🔬';
+    if(/^(SS|SOCIAL STUDIES)$/.test(s))return'🌏';
+    if(/^MUSIC$/.test(s))return'🎵';
+    if(/^ART$/.test(s))return'🎨';
+    if(/^(PE|PHYSICAL EDUCATION)$/.test(s))return'⚽';
+    if(/^(MTL|MOTHER TONGUE|CHINESE|CL|HCL|MALAY|ML|TAMIL|TL)$/.test(s))return'🗣️';
+    if(/^(EL|ENGLISH|ENGLISH LANGUAGE|LSP)$/.test(s))return'📚';
+    if(/^(FTGP|FORM TEACHER GUIDANCE PERIOD|CCE)$/.test(s))return'🌟';
+    if(/^(ASSEMBLY|ASSEMB)$/.test(s))return'🏫';
+    if(/^POP$/.test(s))return'🧩';
+    if(/^(PAL|PROGRAMME FOR ACTIVE LEARNING)$/.test(s))return'🎯';
+    if(/^(ICT|COMPUTING|COMPUTER|ROBOTICS)$/.test(s))return'💻';
+    return oldIcon?oldIcon(subject):'✏️';
+  };
+}
+
 function ensureNamedProfile(name,type='class',selectIt=false){
   name=clean(name);
   if(!name)return false;
@@ -114,6 +140,7 @@ function decorateSelector(){
   document.querySelectorAll('.ttBar label b').forEach(b=>{if(b.textContent.trim()==='Class')b.textContent='Timetable name'});
 }
 
+installSubjectAliases();
 seedTeacherProfile();
 injectStyles();
 const observer=new MutationObserver(()=>requestAnimationFrame(decorateSelector));
