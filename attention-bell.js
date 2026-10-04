@@ -9,18 +9,20 @@ function install(){
   const extra=signal.nextElementSibling;
   if(extra&&extra.classList.contains('supportText'))extra.remove();
   let busy=false;
-  function bell(){
-    const strikes=[0,.34,.68];
-    strikes.forEach(delay=>{
-      S.tone(880,.32,.075,'triangle',delay);
-      S.tone(1320,.24,.045,'sine',delay+.01);
-      S.tone(1760,.14,.025,'sine',delay+.02);
+  function schoolBell(){
+    // Fast alternating metallic strikes to imitate a traditional electric school bell.
+    const hits=[0,.12,.24,.36,.48,.60,.72,.84,.96,1.08];
+    hits.forEach((delay,i)=>{
+      const base=i%2?940:820;
+      S.tone(base,.16,.085,'square',delay);
+      S.tone(base*1.5,.13,.045,'triangle',delay+.008);
+      S.tone(base*2,.09,.022,'sine',delay+.014);
     });
   }
   btn.onclick=()=>{
     if(busy)return;
     busy=true;
-    bell();
+    schoolBell();
     const seq=['3','2','1','Eyes here'];
     let i=0;
     setTimeout(function next(){
@@ -31,7 +33,7 @@ function install(){
       i++;
       if(i<seq.length)setTimeout(next,650);
       else setTimeout(()=>{signal.classList.remove('pulse');busy=false},800);
-    },850);
+    },1250);
   };
   return true;
 }
