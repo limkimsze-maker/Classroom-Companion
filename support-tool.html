@@ -19,16 +19,7 @@
 <script src="support-core.js?v=20261004core2"></script>
 <script src="support-tools.js?v=20261003core1"></script>
 <script src="pick-spinner-enhancement.js?v=20261004pick5"></script>
-<script src="timetable-enhancement-v4.js?v=20261004ocr5"></script>
-<script src="timetable-profile-selector.js?v=20261004ocr5"></script>
-<script src="timetable-excel-import.js?v=20261004ocr5"></script>
-<script src="timetable-intuitive-flow.js?v=20261004flow2"></script>
-<script>
-(function(){
- if(new URLSearchParams(location.search).get('tool')!=='daily-visual-timetable')return;
- function fix(){document.querySelectorAll('.ttCell').forEach(i=>{if(String(i.value||'').trim().toUpperCase()==='SCX'){i.value='SC';i.dispatchEvent(new Event('input',{bubbles:true}))}})}
- const panel=document.getElementById('panel');if(!panel)return;new MutationObserver(()=>requestAnimationFrame(fix)).observe(panel,{childList:true,subtree:true});setTimeout(fix,0);
-})();
-</script>
+<script src="timetable-excel-import.js?v=20261004simple1"></script>
+<script src="timetable-intuitive-flow.js?v=20261004simple1"></script>
 </body>
 </html>
