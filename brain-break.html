@@ -72,6 +72,38 @@ function stop(){running=false;clearInterval(id);id=null;stopBeat();remaining=bas
 function next(){stop();index=(index+1+Math.floor(Math.random()*(activities.length-1)))%activities.length;base=remaining=activities[index].sec;render();start()}
 function closeMe(){stop();location.href='./'}
 $('#start').onclick=start;$('#stop').onclick=stop;$('#next').onclick=next;$('#sound').onclick=async()=>{soundOn=!soundOn;if(soundOn&&running)await startBeat();else stopBeat();render()};$('#close').onclick=closeMe;window.addEventListener('beforeunload',stopBeat);render();
+
+// Force visible character motion with requestAnimationFrame so Brain Break still animates
+// even when the browser or Windows suppresses CSS animation.
+const kidEl=$('#kid'),armL=$('#kid .arm.l'),armR=$('#kid .arm.r'),legL=$('#kid .leg.l'),legR=$('#kid .leg.r');
+function motionFrame(ms){
+  const t=ms/1000,motion=activities[index].motion,mobileScale=innerWidth<=780?.72:1;
+  let kid=`scale(${mobileScale})`;
+  armL.style.transform='rotate(0deg)';armR.style.transform='rotate(0deg)';legL.style.transform='rotate(0deg)';legR.style.transform='rotate(0deg)';
+  if(running){
+    if(motion==='march'){
+      const p=Math.sin(t*Math.PI*2/.55);kid+=` translateY(${-6-6*p}px)`;armL.style.transform=`rotate(${38*p}deg)`;armR.style.transform=`rotate(${-38*p}deg)`;legL.style.transform=`rotate(${-30*p}deg)`;legR.style.transform=`rotate(${30*p}deg)`;
+    }else if(motion==='stretch'){
+      const p=(1-Math.cos(t*Math.PI*2/1.8))/2;armL.style.transform=`rotate(${20+135*p}deg)`;armR.style.transform=`rotate(${-20-135*p}deg)`;
+    }else if(motion==='balance'){
+      const p=(1-Math.cos(t*Math.PI*2/2))/2;kid+=` rotate(${-2+5*p}deg)`;legR.style.transform=`rotate(${-72*p}deg)`;
+    }else if(motion==='roll'){
+      const a=(t*300)%360;armL.style.transform=`rotate(${a}deg)`;armR.style.transform=`rotate(${-a}deg)`;
+    }else if(motion==='jump'){
+      const p=(1-Math.cos(t*Math.PI*2/.8))/2;kid+=` translateY(${-52*p}px)`;armL.style.transform=`rotate(${150*p}deg)`;armR.style.transform=`rotate(${-150*p}deg)`;
+    }else if(motion==='shake'){
+      const p=Math.sin(t*Math.PI*2/.18);armL.style.transform=`rotate(${15*p}deg)`;armR.style.transform=`rotate(${-15*p}deg)`;legL.style.transform=`rotate(${-8*p}deg)`;legR.style.transform=`rotate(${8*p}deg)`;
+    }else if(motion==='figure8'){
+      const p=Math.sin(t*Math.PI*2/1.6),q=Math.sin(t*Math.PI*4/1.6);armR.style.transform=`rotate(${-25+50*p}deg) translateX(${20*q}px)`;
+    }else if(motion==='toes'){
+      const p=(1-Math.cos(t*Math.PI*2/1.8))/2;kid+=` rotate(${48*p}deg) translateY(${8*p}px)`;armL.style.transform=`rotate(${40*p}deg)`;armR.style.transform=`rotate(${40*p}deg)`;
+    }
+  }
+  kidEl.style.transform=kid;
+  requestAnimationFrame(motionFrame);
+}
+requestAnimationFrame(motionFrame);
+
 // Start immediately when opened from a direct user action. If the browser blocks audio, animation/countdown still work and Sound can be tapped once.
 setTimeout(()=>start(),80);
 </script>
