@@ -3,7 +3,7 @@
 const S=window.Support;
 if(S?.slug==='daily-visual-timetable'){
  const load=src=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.body.appendChild(s)});
- load('timetable-enhancement.js?v=20261004tt2').then(()=>load('timetable-print.js?v=20261004tt1')).catch(()=>S.toast('Could not load timetable tools. Refresh and try again.'));
+ load('timetable-enhancement.js?v=20261004tt3').then(()=>load('timetable-print.js?v=20261004tt1')).catch(()=>S.toast('Could not load timetable tools. Refresh and try again.'));
  return;
 }
 if(!S||S.slug!=='pick-a-pupil')return;
