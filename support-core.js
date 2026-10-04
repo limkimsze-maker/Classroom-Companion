@@ -19,42 +19,20 @@ const CORE=[
 const tool=CORE.find(x=>x.slug===slug)||CORE[0],$=s=>document.querySelector(s),panel=$('#panel');
 $('#toolIcon').textContent=tool.icon;$('#toolTitle').textContent=tool.title;$('#toolHint').textContent=tool.hint;document.title=tool.title+' • Classroom Companion';
 $('#closeBtn').onclick=()=>window.close();
-function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[m]))}
 function safe(raw,fallback){try{return JSON.parse(raw)||fallback}catch(e){return fallback}}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('show'),1500)}
 function fmt(sec){sec=Math.max(0,Math.floor(sec));return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`}
 function classData(){return safe(localStorage.getItem(CC_STORE),{})||{classes:{},selectedClass:''}}
 function masterStore(){return safe(localStorage.getItem(MASTER_STORE),{})||{}}
 function hasPupils(rows){return Array.isArray(rows)&&rows.some(r=>String(r?.pupil||'').trim())}
-function classNames(){
- const configured=Object.keys(classData().classes||{}),store=masterStore(),names=[];
- if(hasPupils(store._general))names.push('General');
- for(const name of configured)if(!names.includes(name))names.push(name);
- for(const key of Object.keys(store))if(key!=='_general'&&hasPupils(store[key])&&!names.includes(key))names.push(key);
- return names;
-}
+function classNames(){const configured=Object.keys(classData().classes||{}),store=masterStore(),names=[];if(hasPupils(store._general))names.push('General');for(const name of configured)if(!names.includes(name))names.push(name);for(const key of Object.keys(store))if(key!=='_general'&&hasPupils(store[key])&&!names.includes(key))names.push(key);return names}
 function selectedClass(){const d=classData(),names=classNames();return d.selectedClass&&names.includes(d.selectedClass)?d.selectedClass:(names[0]||'')}
 function setSelectedClass(name){const d=classData();d.classes=d.classes||{};d.selectedClass=name==='General'?'':name;localStorage.setItem(CC_STORE,JSON.stringify(d))}
-function masterRows(name=selectedClass()){
- const key=!name||name==='General'?'_general':name,store=masterStore(),rows=store[key];
- if(hasPupils(rows))return rows.filter(r=>String(r?.pupil||'').trim());
- if(!name||name==='General')return[];
- const d=classData(),c=d.classes?.[name],names=Array.isArray(c?.names)?c.names:Array.isArray(c)?c:[];
- return names.map((p,i)=>({index:String(i+1),pupil:typeof p==='string'?p:(p?.name||p?.pupil||''),group:''})).filter(r=>r.pupil)
-}
-function openClassSetup(){
- const w=window.open('configure.html?panel=class&v='+Date.now(),'ClassroomCompanionConfigure','popup=yes,width=620,height=720,resizable=yes,scrollbars=yes');
- if(!w)toast('Allow pop-ups to add a class');else try{w.focus()}catch(e){}
-}
-function classControls(){
- $('#classBtn').classList.remove('hidden');$('#classBtn').onclick=openClassSetup;
- const names=classNames(),sel=selectedClass();
- return `<div class="classBar">${names.length?`<select class="classSelect" id="classSelect">${names.map(n=>`<option ${n===sel?'selected':''}>${esc(n)}</option>`).join('')}</select>`:'<span class="supportText" style="margin:0;font-size:15px">No class yet.</span>'}<button class="btn soft" id="addClassInline">＋ Add class</button></div>`
-}
-function bindClassControls(onChange){
- $('#addClassInline')?.addEventListener('click',openClassSetup);
- $('#classSelect')?.addEventListener('change',e=>{setSelectedClass(e.target.value);onChange?.()})
-}
+function masterRows(name=selectedClass()){const key=!name||name==='General'?'_general':name,store=masterStore(),rows=store[key];if(hasPupils(rows))return rows.filter(r=>String(r?.pupil||'').trim());if(!name||name==='General')return[];const d=classData(),c=d.classes?.[name],names=Array.isArray(c?.names)?c.names:Array.isArray(c)?c:[];return names.map((p,i)=>({index:String(i+1),pupil:typeof p==='string'?p:(p?.name||p?.pupil||''),group:''})).filter(r=>r.pupil)}
+function openClassSetup(){const w=window.open('configure.html?panel=class&v='+Date.now(),'ClassroomCompanionConfigure','popup=yes,width=620,height=720,resizable=yes,scrollbars=yes');if(!w)toast('Allow pop-ups to add a class');else try{w.focus()}catch(e){}}
+function classControls(){$('#classBtn').classList.remove('hidden');$('#classBtn').onclick=openClassSetup;const names=classNames(),sel=selectedClass();return `<div class="classBar">${names.length?`<select class="classSelect" id="classSelect">${names.map(n=>`<option ${n===sel?'selected':''}>${esc(n)}</option>`).join('')}</select>`:'<span class="supportText" style="margin:0;font-size:15px">No class yet.</span>'}<button class="btn soft" id="addClassInline">＋ Add class</button></div>`}
+function bindClassControls(onChange){$('#addClassInline')?.addEventListener('click',openClassSetup);$('#classSelect')?.addEventListener('change',e=>{setSelectedClass(e.target.value);onChange?.()})}
 function timetableKey(){const name=selectedClass();return !name||name==='General'?'_general':name}
 function loadTimetable(){const all=safe(localStorage.getItem(TIMETABLE_STORE),{})||{};return Array.isArray(all[timetableKey()])?all[timetableKey()]:[]}
 function saveTimetable(rows){const all=safe(localStorage.getItem(TIMETABLE_STORE),{})||{};all[timetableKey()]=rows;localStorage.setItem(TIMETABLE_STORE,JSON.stringify(all))}
@@ -68,5 +46,5 @@ function attachLauncher(){const s=document.createElement('script');s.src='embedd
 window.addEventListener('storage',e=>{if((slug==='pick-a-pupil'||slug==='make-groups')&&(e.key===MASTER_STORE||e.key===CC_STORE))location.reload()});
 window.Support={slug,tool,CORE,$,panel,esc,safe,toast,fmt,CC_STORE,MASTER_STORE,TIMETABLE_STORE,classData,classNames,selectedClass,setSelectedClass,masterRows,openClassSetup,classControls,bindClassControls,timetableKey,loadTimetable,saveTimetable,tone,chime,tickTone,speak,attachLauncher};
 if(slug==='question-spinner'){const ss=document.createElement('script');ss.src='sentence-starters.js?v=20261004ss1';document.body.appendChild(ss)}
-if(slug==='attention-signal'){const ab=document.createElement('script');ab.src='attention-bell.js?v=20261004bell1';document.body.appendChild(ab)}
+if(slug==='attention-signal'){const ab=document.createElement('script');ab.src='attention-bell.js?v=20261004bell2';document.body.appendChild(ab)}
 })();
