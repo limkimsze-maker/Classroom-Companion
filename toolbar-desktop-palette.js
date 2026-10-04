@@ -33,7 +33,7 @@ function init(){
  #ccSmartBar .ccHoverLabel,#ccSmartBar .ccLegend{display:none!important}
  #ccSmartBar .ccBrand{grid-column:1!important;grid-row:1!important;width:46px!important;height:46px!important;flex:none!important}
  #ccPaletteTitle{grid-column:2!important;grid-row:1!important;min-width:0;color:#17324d;font:1000 14px/1.05 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.01em}
- #ccPaletteTitle span{display:block;margin-top:3px;color:#667085;font-size:9px;font-weight:800;letter-spacing:0}
+ #ccPaletteTitle span{display:block;margin-top:3px;color:#667085;font-size:9px;font-weight:800;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  #ccSmartBar .ccCollapse{grid-column:3!important;grid-row:1!important;width:34px!important;height:42px!important;flex:none!important;font-size:0!important;border-radius:11px!important}
  #ccSmartBar .ccCollapse::before{content:'‹';font-size:18px;font-weight:1000}
  #ccSmartBar .ccRail{grid-column:1/4!important;grid-row:2!important;width:100%!important;min-width:0!important;max-width:none!important;height:100%!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(8,minmax(52px,1fr))!important;gap:6px!important;padding:0!important;overflow:hidden!important;align-items:stretch!important}
@@ -46,7 +46,7 @@ function init(){
  #ccSmartBar.collapsed .ccBrand{display:grid!important;grid-column:1!important;grid-row:1!important;width:50px!important;height:50px!important;place-self:start!important}
  #ccSmartBar.collapsed #ccPaletteTitle,#ccSmartBar.collapsed .ccRail,#ccSmartBar.collapsed .ccCollapse{display:none!important}
  `;document.head.appendChild(style);
- let title=document.getElementById('ccPaletteTitle');if(!title){title=document.createElement('div');title.id='ccPaletteTitle';title.innerHTML='Classroom Companion<span>Teacher tools</span>';bar.insertBefore(title,rail)}
+ let title=document.getElementById('ccPaletteTitle');if(!title){title=document.createElement('div');title.id='ccPaletteTitle';title.innerHTML='Classroom Companion<span>Teacher tools • Created by Lim Kim Sze</span>';bar.insertBefore(title,rail)}
  rail.querySelectorAll('.ccTool').forEach(b=>{const n=b.querySelector('.ccToolName');if(n)n.textContent=SHORT[b.dataset.slug]||n.textContent});
  const screenBox=()=>({left:Number.isFinite(screen.availLeft)?screen.availLeft:0,top:Number.isFinite(screen.availTop)?screen.availTop:0,w:screen.availWidth||1280,h:screen.availHeight||800});
  function fit(){
