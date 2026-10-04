@@ -18,6 +18,7 @@ function install(){
     const style=document.createElement('style');
     style.id='attentionGooglyStyle';
     style.textContent=`
+      .attentionGooglyEyes{display:none!important}
       .attentionSignalStack{display:grid;justify-items:center;gap:16px;margin:0 auto 24px}
       .attentionEyes{display:flex;align-items:center;justify-content:center;gap:18px;min-height:92px;transform-origin:center;filter:drop-shadow(0 6px 10px rgba(23,50,77,.12))}
       .attentionEye{width:clamp(66px,7.5vw,108px);height:clamp(82px,9vw,132px);border-radius:50%;background:#fff;border:5px solid #17324d;position:relative;overflow:hidden;box-shadow:inset 0 -7px 0 rgba(15,118,110,.06)}
