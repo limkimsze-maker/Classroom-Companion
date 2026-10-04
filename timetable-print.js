@@ -15,3 +15,4 @@ function preview(data,opt){S.panel.innerHTML=`<div id="tpRoot"><div class="eyebr
 function print(data,opt){let s=$('#tpPage');if(!s){s=document.createElement('style');s.id='tpPage';document.head.appendChild(s)}s.textContent=`@page{size:A4 ${opt.orientation==='portrait'?'portrait':'landscape'};margin:8mm}`;document.body.classList.add('ttPrintMode');const done=()=>{document.body.classList.remove('ttPrintMode');window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);window.print();setTimeout(()=>document.body.classList.remove('ttPrintMode'),1600)}
 styles();window.ClassroomTimetablePrint={open:settings};
 })();
+;(function(){if(window.Support?.slug!=='daily-visual-timetable')return;const s=document.createElement('script');s.src='timetable-upload-hotfix.js?v=20261004hf1';document.body.appendChild(s)})();
