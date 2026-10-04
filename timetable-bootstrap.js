@@ -1,0 +1,1 @@
+(function(){'use strict';const S=window.Support;if(!S||S.slug!=='daily-visual-timetable')return;const s=document.createElement('script');s.src='timetable-upload-hotfix.js?v=20261004hf2';document.body.appendChild(s)})();
