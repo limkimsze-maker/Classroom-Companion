@@ -25,5 +25,6 @@ let realPromise=null;const proxy={recognize:async function(){if(!realPromise){tr
  window.__ttViewLoader=true;
  const s=document.createElement('script');
  s.src='timetable-view-enhancement.js?v=20261004view3';
+ s.onload=()=>{const p=document.createElement('script');p.src='timetable-daily-projection.js?v=20261004proj1';document.body.appendChild(p)};
  document.body.appendChild(s);
 })();
