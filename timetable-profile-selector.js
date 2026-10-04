@@ -13,7 +13,6 @@ function writeProfiles(v){localStorage.setItem(PROFILE_STORE,JSON.stringify(v||{
 function profileType(name){const p=readProfiles();return p[name]?.type||(name===DEFAULT_TEACHER?'teacher':'class')}
 function rememberProfile(name,type){const p=readProfiles();p[name]={...(p[name]||{}),type:type==='teacher'?'teacher':'class'};writeProfiles(p)}
 function clean(v){return String(v??'').replace(/\s+/g,' ').trim()}
-function esc(v){return S.esc?S.esc(v):String(v??'')}
 
 function ensureNamedProfile(name,type='class',selectIt=false){
   name=clean(name);
@@ -87,12 +86,18 @@ function decorateSelector(){
   const select=bar.querySelector('#classSelect');
   if(select){
     select.setAttribute('aria-label','Choose timetable');
+    const existing=new Set([...select.options].map(o=>o.dataset.ttRawName||o.value));
+    for(const name of S.classNames()){
+      if(existing.has(name))continue;
+      const opt=document.createElement('option');opt.value=name;opt.dataset.ttRawName=name;select.appendChild(opt);
+    }
     [...select.options].forEach(opt=>{
       const raw=opt.dataset.ttRawName||opt.value||opt.textContent.replace(/^[^A-Za-z0-9]+/,'').trim();
       opt.dataset.ttRawName=raw;
       opt.value=raw;
       opt.textContent=(profileType(raw)==='teacher'?'👨‍🏫 ':'👥 ')+raw;
     });
+    const chosen=S.selectedClass();if(chosen)select.value=chosen;
     if(!bar.querySelector('.ttProfileLabel')){
       const label=document.createElement('span');label.className='ttProfileLabel';label.textContent='Timetable';bar.insertBefore(label,select);
     }
