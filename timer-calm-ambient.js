@@ -18,11 +18,11 @@
     if(!ctx){
       ctx=new C();
       compressor=ctx.createDynamicsCompressor();
-      compressor.threshold.value=-22;
-      compressor.knee.value=18;
-      compressor.ratio.value=2.2;
+      compressor.threshold.value=-24;
+      compressor.knee.value=20;
+      compressor.ratio.value=2.4;
       compressor.attack.value=.08;
-      compressor.release.value=.8;
+      compressor.release.value=.9;
       master=ctx.createGain();
       master.gain.value=.0001;
       master.connect(compressor);
@@ -53,9 +53,9 @@
   function startAir(){
     airSource=ctx.createBufferSource();airSource.buffer=makeAirBuffer();airSource.loop=true;
     airFilter=ctx.createBiquadFilter();airFilter.type='bandpass';airFilter.frequency.value=520;airFilter.Q.value=.28;
-    airGain=ctx.createGain();airGain.gain.value=.018;
+    airGain=ctx.createGain();airGain.gain.value=.024;
     airLfo=ctx.createOscillator();airLfo.type='sine';airLfo.frequency.value=.055;
-    airLfoGain=ctx.createGain();airLfoGain.gain.value=.006;
+    airLfoGain=ctx.createGain();airLfoGain.gain.value=.007;
     airLfo.connect(airLfoGain);airLfoGain.connect(airGain.gain);
     airSource.connect(airFilter);airFilter.connect(airGain);airGain.connect(master);
     airSource.start();airLfo.start();
@@ -72,8 +72,8 @@
     osc.type='triangle';osc.frequency.value=freq;osc.detune.value=detune;
     filter.type='lowpass';filter.frequency.value=900;filter.Q.value=.35;
     g.gain.setValueAtTime(.0001,start);
-    g.gain.exponentialRampToValueAtTime(.012,start+3.2);
-    g.gain.setValueAtTime(.012,start+Math.max(3.4,duration-5));
+    g.gain.exponentialRampToValueAtTime(.017,start+3.2);
+    g.gain.setValueAtTime(.017,start+Math.max(3.4,duration-5));
     g.gain.exponentialRampToValueAtTime(.0001,start+duration);
     osc.connect(filter);filter.connect(g);
     if(p){p.pan.value=pan;g.connect(p);p.connect(master)}else g.connect(master);
@@ -97,7 +97,7 @@
     o1.type='sine';o2.type='sine';o1.frequency.value=freq;o2.frequency.value=freq*2.01;
     filter.type='lowpass';filter.frequency.value=2200;filter.Q.value=.2;
     g.gain.setValueAtTime(.0001,start);
-    g.gain.exponentialRampToValueAtTime(.022,start+.08);
+    g.gain.exponentialRampToValueAtTime(.031,start+.08);
     g.gain.exponentialRampToValueAtTime(.0001,start+5.5);
     o1.connect(g);o2.connect(g);g.connect(filter);
     if(p){p.pan.value=((bellIndex%5)-2)*.12;filter.connect(p);p.connect(master)}else filter.connect(master);
@@ -124,7 +124,7 @@
     startAir();
     master.gain.cancelScheduledValues(now);
     master.gain.setValueAtTime(.0001,now);
-    master.gain.exponentialRampToValueAtTime(.78,now+2.5);
+    master.gain.exponentialRampToValueAtTime(1.16,now+2.5);
     schedule();scheduler=setInterval(schedule,3000);
     return true;
   }
@@ -134,7 +134,7 @@
     playing=false;clearInterval(scheduler);scheduler=null;
     const now=ctx.currentTime;
     master.gain.cancelScheduledValues(now);
-    master.gain.setValueAtTime(Math.max(.0001,master.gain.value||.78),now);
+    master.gain.setValueAtTime(Math.max(.0001,master.gain.value||1.16),now);
     master.gain.exponentialRampToValueAtTime(.0001,now+fade);
     setTimeout(()=>{
       try{airSource?.stop();airLfo?.stop()}catch(e){}
