@@ -15,12 +15,33 @@
 <a id="bookmark" class="bookmark" href="#">✦ Classroom Companion</a><div class="hint">Drag this button to the bookmarks bar</div>
 <button class="test" id="test" type="button">Test the toolbar now</button>
 <div class="warn"><b>Important:</b> Do not bookmark <code>widget-launch.html</code> as a normal webpage. A normal URL bookmark opens a full tab instead of the teacher palette.</div>
-<p class="small">The 16 Classroom Companion tools are unchanged. Chrome enforces a minimum popup width, so the desktop layout now uses that space efficiently with 2 columns instead of leaving a blank strip.</p></main>
+<p class="small">The 16 Classroom Companion tools are unchanged. After a successful test launch, this setup page closes itself so only the teacher palette remains.</p></main>
 <script>
 const toolbarUrl='https://limkimsze-maker.github.io/Classroom-Management-System/widget-launch.html';
+function openPalette(){
+  var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8,u=toolbarUrl+'?v='+Date.now();
+  var x=window.open(u,'ClassroomCompanionStrip','popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no');
+  if(x){try{x.focus()}catch(e){};return x}
+  return null;
+}
 function popupCode(){return `(function(){var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8,u='${toolbarUrl}?v='+Date.now(),x=window.open(u,'ClassroomCompanionStrip','popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no');if(x)x.focus();})();`}
+function closeSetupPage(){
+  setTimeout(()=>{
+    try{window.close()}catch(e){}
+    setTimeout(()=>{
+      try{
+        if(history.length>1)history.back();
+        else location.replace('about:blank');
+      }catch(e){}
+    },350);
+  },450);
+}
 const bookmark=document.getElementById('bookmark');bookmark.href='javascript:'+popupCode();
-document.getElementById('test').onclick=()=>{try{eval(popupCode())}catch(e){alert('Please allow pop-ups for this site, then try again.')}};
+document.getElementById('test').onclick=()=>{
+  const x=openPalette();
+  if(!x){alert('Please allow pop-ups for this site, then try again.');return}
+  closeSetupPage();
+};
 </script>
 </body>
 </html>
