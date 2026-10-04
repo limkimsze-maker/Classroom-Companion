@@ -20,3 +20,8 @@ async function shortTextPass(real,image){let worker=null;try{worker=await real.c
 function loadReal(){return new Promise(async(ok,no)=>{for(const src of CDN){try{await new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)});if(window.Tesseract&&window.Tesseract!==proxy)return ok(window.Tesseract)}catch(e){}}no(new Error('The screenshot reader could not load.'))})}
 let realPromise=null;const proxy={recognize:async function(){if(!realPromise){try{delete window.Tesseract}catch(e){}realPromise=loadReal()}const real=await realPromise;let out=await real.recognize.apply(real,arguments);out=repair(out);if(!hasPE(out)){const extra=await shortTextPass(real,arguments[0]);if(extra){out=mergeWords(out,extra);out=repair(out)}}return out}};window.Tesseract=proxy;
 })();
+;(function(){
+ if(window.Support?.slug!=='daily-visual-timetable'||window.__ttViewLoader)return;
+ window.__ttViewLoader=true;
+ const s=document.createElement('script');s.src='timetable-view-enhancement.js?v=20261004view1';document.body.appendChild(s);
+})();
