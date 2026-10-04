@@ -41,6 +41,7 @@ async function boot(){
     await loadScript('timetable-screenshot.js?v=20261004simple1');
     await loadScript('timetable-print.js?v=20261004simple1');
     await loadScript('timetable-subject-aliases.js?v=20261004simple1');
+    await loadScript('timetable-side-layout.js?v=20261004layout1');
   }catch(e){console.error(e)}
   tidy();setInterval(tidy,500);
 }
