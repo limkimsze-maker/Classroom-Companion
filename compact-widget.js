@@ -8,7 +8,7 @@ const CORE=[
  {slug:'transition-countdown',icon:'⏳',title:'Transition Countdown',hint:'Move safely and be ready.'},
  {slug:'attention-signal',icon:'👀',title:'Attention Signal',hint:'Stop, look and listen.'},
  {slug:'noise-level',icon:'🔊',title:'Noise Level',hint:'Show the expected voice level.'},
- {slug:'question-spinner',icon:'❓',title:'Question Spinner',hint:'Prompt deeper thinking.'},
+ {slug:'question-spinner',icon:'💬',title:'Sentence Starters',hint:'Simple ways to start an answer.'},
  {slug:'confidence-check',icon:'📈',title:'Confidence Check',hint:'Show what support is needed.'},
  {slug:'pick-a-pupil',icon:'🎯',title:'Pick a Pupil',hint:'Invite participation fairly.'},
  {slug:'make-groups',icon:'👥',title:'Make Groups',hint:'Create groups from the class list.'},
