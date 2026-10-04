@@ -1,5 +1,6 @@
 (function(){
 'use strict';
+if(window.__attentionBellInstalled)return;
 const S=window.Support;
 if(!S||S.slug!=='attention-signal')return;
 
@@ -7,6 +8,8 @@ function install(){
   const btn=document.getElementById('signalBtn');
   const signal=document.getElementById('signal');
   if(!btn||!signal)return false;
+  if(window.__attentionBellInstalled)return true;
+  window.__attentionBellInstalled=true;
 
   const extra=signal.nextElementSibling;
   if(extra&&extra.classList.contains('supportText'))extra.remove();
@@ -15,32 +18,38 @@ function install(){
     const style=document.createElement('style');
     style.id='attentionGooglyStyle';
     style.textContent=`
-      .attentionSignalStack{display:grid;justify-items:center;gap:12px;margin:0 auto 20px}
-      .attentionGooglyEyes{font-size:clamp(70px,9vw,120px);line-height:1;transform-origin:50% 55%;user-select:none;filter:drop-shadow(0 5px 8px rgba(23,50,77,.10))}
-      .attentionGooglyEyes.wiggle{animation:attentionEyesWiggle .34s ease-in-out infinite alternate}
-      @keyframes attentionEyesWiggle{
-        0%{transform:translateX(-8px) rotate(-5deg) scale(1)}
-        50%{transform:translateX(2px) rotate(2deg) scale(1.04)}
-        100%{transform:translateX(8px) rotate(5deg) scale(1)}
-      }
-      @media (prefers-reduced-motion:reduce){.attentionGooglyEyes.wiggle{animation:none}}
+      .attentionSignalStack{display:grid;justify-items:center;gap:16px;margin:0 auto 24px}
+      .attentionEyes{display:flex;align-items:center;justify-content:center;gap:18px;min-height:92px;transform-origin:center;filter:drop-shadow(0 6px 10px rgba(23,50,77,.12))}
+      .attentionEye{width:clamp(66px,7.5vw,108px);height:clamp(82px,9vw,132px);border-radius:50%;background:#fff;border:5px solid #17324d;position:relative;overflow:hidden;box-shadow:inset 0 -7px 0 rgba(15,118,110,.06)}
+      .attentionPupil{position:absolute;width:38%;aspect-ratio:1;border-radius:50%;background:#17324d;left:50%;top:50%;transform:translate(-50%,-50%);transition:transform .15s ease}
+      .attentionPupil::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:#fff;left:18%;top:14%}
+      .attentionEyes.wiggle{animation:attentionEyesWiggle .32s ease-in-out infinite alternate}
+      .attentionEyes.wiggle .attentionEye:first-child .attentionPupil{animation:attentionPupilLeft .48s ease-in-out infinite alternate}
+      .attentionEyes.wiggle .attentionEye:last-child .attentionPupil{animation:attentionPupilRight .48s ease-in-out infinite alternate}
+      @keyframes attentionEyesWiggle{0%{transform:translateX(-9px) rotate(-4deg)}100%{transform:translateX(9px) rotate(4deg)}}
+      @keyframes attentionPupilLeft{0%{transform:translate(-72%,-50%)}100%{transform:translate(-28%,-50%)}}
+      @keyframes attentionPupilRight{0%{transform:translate(-28%,-50%)}100%{transform:translate(-72%,-50%)}}
+      @media (prefers-reduced-motion:reduce){.attentionEyes.wiggle,.attentionEyes.wiggle .attentionPupil{animation:none!important}}
     `;
     document.head.appendChild(style);
   }
 
   let stack=document.getElementById('attentionSignalStack');
-  let eyes=document.getElementById('attentionGooglyEyes');
   if(!stack){
     stack=document.createElement('div');
     stack.id='attentionSignalStack';
     stack.className='attentionSignalStack';
     signal.parentNode.insertBefore(stack,signal);
     stack.appendChild(signal);
+  }
+
+  let eyes=document.getElementById('attentionEyes');
+  if(!eyes){
     eyes=document.createElement('div');
-    eyes.id='attentionGooglyEyes';
-    eyes.className='attentionGooglyEyes';
+    eyes.id='attentionEyes';
+    eyes.className='attentionEyes';
     eyes.setAttribute('aria-hidden','true');
-    eyes.textContent='👀';
+    eyes.innerHTML='<div class="attentionEye"><div class="attentionPupil"></div></div><div class="attentionEye"><div class="attentionPupil"></div></div>';
     stack.appendChild(eyes);
   }
 
@@ -48,7 +57,6 @@ function install(){
   let bellLoop=null;
 
   function schoolBellStrike(){
-    // Metallic alternating hits for a traditional electric school-bell effect.
     S.tone(820,.15,.085,'square',0);
     S.tone(1230,.12,.045,'triangle',.006);
     S.tone(1640,.08,.022,'sine',.012);
@@ -83,11 +91,9 @@ function install(){
       void signal.offsetWidth;
       signal.classList.add('pulse');
       i++;
-
       if(i<seq.length){
         setTimeout(next,650);
       }else{
-        // The bell rings for the full 3-2-1 countdown, then stops on “Eyes here”.
         stopBell();
         setTimeout(()=>{
           signal.classList.remove('pulse');
@@ -96,12 +102,11 @@ function install(){
         },900);
       }
     }
-
     next();
   };
   return true;
 }
 
 let tries=0;
-const id=setInterval(()=>{tries++;if(install()||tries>30)clearInterval(id)},50);
+const id=setInterval(()=>{tries++;if(install()||tries>80)clearInterval(id)},50);
 })();
