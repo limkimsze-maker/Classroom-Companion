@@ -11,119 +11,156 @@ const WEEK_STORE='classroomCompanionWeeklyTimetableV1';
 const HIDDEN_STORE='classroomCompanionHiddenTimetablesV1';
 
 function clean(v){return String(v??'').replace(/\s+/g,' ').trim()}
-function hidden(){return S.safe(localStorage.getItem(HIDDEN_STORE),[])||[]}
-function writeHidden(a){localStorage.setItem(HIDDEN_STORE,JSON.stringify([...new Set(a.filter(Boolean))]))}
+function safe(raw,f){return S.safe(raw,f)}
+function hidden(){return safe(localStorage.getItem(HIDDEN_STORE),[])||[]}
+function writeHidden(a){localStorage.setItem(HIDDEN_STORE,JSON.stringify([...new Set((a||[]).filter(Boolean))]))}
 function unhide(name){writeHidden(hidden().filter(x=>x!==name))}
 function selected(){return clean(S.selectedClass())||DEFAULT_TEACHER}
-function closeModal(){document.querySelector('.ttFlowOverlay')?.remove()}
+function closeModal(){document.querySelectorAll('.ttFlowOverlay').forEach(x=>x.remove())}
+function readProfiles(){return safe(localStorage.getItem(PROFILE_STORE),{})||{}}
+function writeProfiles(v){localStorage.setItem(PROFILE_STORE,JSON.stringify(v||{}))}
 
-function patchClassNames(){
-  if(S.__ttOriginalClassNames)return;
-  S.__ttOriginalClassNames=S.classNames.bind(S);
-  S.classNames=function(){const h=new Set(hidden());return S.__ttOriginalClassNames().filter(n=>n===DEFAULT_TEACHER||!h.has(n))};
+function ensureTeacherFallback(){
+  const d=S.classData();d.classes=d.classes||{};
+  if(!d.classes[DEFAULT_TEACHER])d.classes[DEFAULT_TEACHER]={};
+  localStorage.setItem(S.CC_STORE,JSON.stringify(d));
+  const p=readProfiles();p[DEFAULT_TEACHER]={...(p[DEFAULT_TEACHER]||{}),type:'teacher'};writeProfiles(p);
+}
+
+function createProfile(name,type){
+  name=clean(name);if(!name)return false;
+  const d=S.classData();d.classes=d.classes||{};
+  if(!d.classes[name])d.classes[name]={};
+  d.selectedClass=name;localStorage.setItem(S.CC_STORE,JSON.stringify(d));
+  const p=readProfiles();p[name]={...(p[name]||{}),type:type==='teacher'?'teacher':'class'};writeProfiles(p);
+  unhide(name);return true;
 }
 
 function ensureVisibleSelection(){
-  const cur=selected(),h=new Set(hidden());
-  if(cur===DEFAULT_TEACHER||!h.has(cur))return;
-  const d=S.classData();d.classes=d.classes||{};
-  if(!d.classes[DEFAULT_TEACHER])d.classes[DEFAULT_TEACHER]={};
-  d.selectedClass=DEFAULT_TEACHER;
-  localStorage.setItem(S.CC_STORE,JSON.stringify(d));
+  ensureTeacherFallback();
+  const cur=selected();if(cur===DEFAULT_TEACHER||!hidden().includes(cur))return;
+  const d=S.classData();d.selectedClass=DEFAULT_TEACHER;localStorage.setItem(S.CC_STORE,JSON.stringify(d));
 }
 
 function injectStyle(){
   if($('#ttFlowStyle'))return;
   const s=document.createElement('style');s.id='ttFlowStyle';s.textContent=`
-  .ttFlowOverlay{position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:2147483646;display:grid;place-items:center;padding:18px;backdrop-filter:blur(5px)}
-  .ttFlowCard{width:min(530px,100%);background:#fff;border:1px solid #d8e1e8;border-radius:24px;padding:24px;box-shadow:0 28px 80px rgba(15,23,42,.24);text-align:left}
+  .ttFlowOverlay{position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:2147483647;display:grid;place-items:center;padding:18px;backdrop-filter:blur(5px);pointer-events:auto}
+  .ttFlowCard{width:min(540px,100%);max-height:calc(100vh - 36px);overflow:auto;background:#fff;border:1px solid #d8e1e8;border-radius:24px;padding:24px;box-shadow:0 28px 80px rgba(15,23,42,.24);text-align:left;pointer-events:auto}
   .ttFlowCard h2{margin:0 0 6px;color:#17324d;font-size:27px;letter-spacing:-.02em}.ttFlowCard>p{margin:0 0 18px;color:#667085;font-weight:750;line-height:1.45}
-  .ttFlowChoices{display:grid;gap:10px}.ttFlowChoice{width:100%;border:1px solid #d8e1e8;border-radius:16px;background:#fff;padding:14px 16px;text-align:left;color:#17324d;font-weight:1000;font-size:15px}
+  .ttFlowField{display:grid;gap:6px;margin:13px 0}.ttFlowField label{font-size:12px;font-weight:1000;color:#435466;text-transform:uppercase;letter-spacing:.06em}
+  .ttFlowField input,.ttFlowField select{display:block;width:100%;min-height:48px;border:1px solid #cfdbe1;border-radius:12px;padding:10px 12px;background:#fff;color:#17324d;font-weight:900;pointer-events:auto;user-select:text;outline:none}
+  .ttFlowField input:focus,.ttFlowField select:focus{border-color:#4fb8ab;box-shadow:0 0 0 4px rgba(15,118,110,.12)}
+  .ttFlowChoices{display:grid;gap:10px}.ttFlowChoice{width:100%;border:1px solid #d8e1e8;border-radius:16px;background:#fff;padding:14px 16px;text-align:left;color:#17324d;font-weight:1000;font-size:15px;pointer-events:auto}
   .ttFlowChoice:hover{background:#f3fbf9;border-color:#80cfc4;transform:translateY(-1px)}.ttFlowChoice span{display:block;font-size:12px;color:#667085;font-weight:750;margin-top:4px;line-height:1.35}
   .ttFlowDanger{margin-top:18px;padding-top:16px;border-top:1px solid #edf1f3}.ttFlowDanger .ttFlowChoice{color:#b42318;background:#fff8f7;border-color:#f0c2bd}.ttFlowDanger .ttFlowChoice span{color:#8f4b44}
-  .ttFlowDanger .ttFlowChoice:disabled{opacity:.48;cursor:not-allowed;transform:none}.ttFlowCancel{display:flex;justify-content:flex-end;margin-top:16px}
+  .ttFlowDanger .ttFlowChoice:disabled{opacity:.48;cursor:not-allowed;transform:none}.ttFlowButtons{display:flex;justify-content:flex-end;gap:9px;margin-top:20px;flex-wrap:wrap}
   .ttManagedNav #ttNavUpdate{min-width:94px}.ttWeekActions.ttFlowHiddenActions{display:none!important}
+  @media(max-width:620px){.ttFlowCard{padding:20px;border-radius:20px}}
   `;document.head.appendChild(s);
 }
 
 function openNew(){
-  const P=window.ClassroomTimetableProfiles;
-  if(!P?.openAddDialog)return;
-  P.openAddDialog();
-  setTimeout(()=>{
-    const o=document.querySelector('.ttProfileOverlay');if(!o)return;
-    const h=o.querySelector('h2');if(h)h.textContent='New timetable';
-    const p=o.querySelector('p');if(p)p.textContent='Create another timetable to switch between. It can be for a class or for a teacher.';
-    const lab=o.querySelector('label[for="ttProfileType"]');if(lab)lab.textContent='Timetable for';
-    const save=o.querySelector('#ttProfileSave');
-    if(save){
-      save.textContent='＋ Create timetable';
-      const old=save.onclick;
-      save.onclick=function(e){const n=clean(o.querySelector('#ttProfileName')?.value);if(n)unhide(n);return old?.call(this,e)};
-    }
-  },0);
+  closeModal();
+  const o=document.createElement('div');o.className='ttFlowOverlay';
+  o.innerHTML=`<div class="ttFlowCard" role="dialog" aria-modal="true" aria-labelledby="ttNewTitle">
+    <h2 id="ttNewTitle">New timetable</h2>
+    <p>Create another timetable, then add its timetable screenshot.</p>
+    <div class="ttFlowField"><label for="ttNewType">Timetable for</label><select id="ttNewType"><option value="class">👥 Class</option><option value="teacher">👨‍🏫 Teacher</option></select></div>
+    <div class="ttFlowField"><label for="ttNewName">Name</label><input id="ttNewName" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. 3C or Mr Lim"></div>
+    <div class="ttFlowButtons"><button type="button" class="btn" id="ttNewCancel">Cancel</button><button type="button" class="btn primary" id="ttNewCreate">＋ Create timetable</button></div>
+  </div>`;
+  document.body.appendChild(o);
+  const type=o.querySelector('#ttNewType'),name=o.querySelector('#ttNewName'),create=o.querySelector('#ttNewCreate');
+  o.addEventListener('mousedown',e=>{if(e.target===o)closeModal()});
+  o.querySelector('#ttNewCancel').onclick=closeModal;
+  type.onchange=()=>{if(type.value==='teacher'&&!clean(name.value))name.placeholder='e.g. Mr Lim';else if(type.value==='class')name.placeholder='e.g. 3C'};
+  create.onclick=()=>{
+    const n=clean(name.value);if(!n){name.focus();name.select();return}
+    createProfile(n,type.value);closeModal();S.toast?.('Timetable created');setTimeout(()=>location.reload(),120);
+  };
+  name.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();create.click()}else if(e.key==='Escape'){e.preventDefault();closeModal()}});
+  setTimeout(()=>{name.focus();name.click()},40);
+}
+
+function waitFor(selector,fn,limit=40){let n=0;const id=setInterval(()=>{const el=$(selector);if(el){clearInterval(id);fn(el)}else if(++n>=limit)clearInterval(id)},50)}
+
+function quickEdit(){
+  closeModal();
+  const edit=$('#ttEditWeek');if(edit){edit.click();return}
+  const week=$('#ttNavWeek');if(week){week.click();waitFor('#ttEditWeek',b=>b.click())}
+}
+
+function replaceFromScreenshot(){
+  closeModal();
+  const show=()=>{const d=$('#ttImportDrawer');if(!d)return false;d.hidden=false;setTimeout(()=>d.scrollIntoView({behavior:'smooth',block:'start'}),30);return true};
+  if(show())return;
+  const today=$('#ttNavToday');if(today){today.click();waitFor('#ttImportDrawer',()=>show())}
 }
 
 function deleteCurrent(){
   const name=selected();
-  if(name===DEFAULT_TEACHER){alert('“My Timetable” is kept as the built-in fallback. You can edit or replace its contents, but it cannot be deleted.');return}
-  if(!confirm(`Delete “${name}” timetable?\n\nThis removes the saved timetable from this browser. Your pupil/class roster is not deleted.`))return;
+  if(name===DEFAULT_TEACHER){alert('“My Timetable” is the built-in fallback and cannot be deleted. You can edit or replace its contents.');return}
+  if(!confirm(`Delete “${name}” timetable?\n\nOnly its timetable is removed. Any class/pupil roster with the same name is kept.`))return;
 
   writeHidden([...hidden(),name]);
-  const profiles=S.safe(localStorage.getItem(PROFILE_STORE),{})||{};delete profiles[name];localStorage.setItem(PROFILE_STORE,JSON.stringify(profiles));
+  const p=readProfiles();delete p[name];writeProfiles(p);
   const store=window.ClassroomTimetableData?.STORE||WEEK_STORE;
-  const all=S.safe(localStorage.getItem(store),{})||{};delete all[name];localStorage.setItem(store,JSON.stringify(all));
+  const a=safe(localStorage.getItem(store),{})||{};delete a[name];localStorage.setItem(store,JSON.stringify(a));
 
-  const d=S.classData();d.classes=d.classes||{};if(!d.classes[DEFAULT_TEACHER])d.classes[DEFAULT_TEACHER]={};
-  const next=S.classNames().find(n=>n!==name)||DEFAULT_TEACHER;d.selectedClass=next;localStorage.setItem(S.CC_STORE,JSON.stringify(d));
-  S.toast?.('Timetable deleted');setTimeout(()=>location.reload(),160);
+  ensureTeacherFallback();
+  const d=S.classData(),blocked=new Set(hidden()),names=Object.keys(d.classes||{}).filter(n=>n!==name&&!blocked.has(n));
+  d.selectedClass=names[0]||DEFAULT_TEACHER;localStorage.setItem(S.CC_STORE,JSON.stringify(d));
+  closeModal();S.toast?.('Timetable deleted');setTimeout(()=>location.reload(),140);
 }
 
-function quickEdit(){
-  closeModal();
-  $('#ttNavWeek')?.click();
-  let tries=0;const timer=setInterval(()=>{const b=$('#ttEditWeek');if(b){clearInterval(timer);b.click()}else if(++tries>30)clearInterval(timer)},50);
-}
-
-function openEdit(originalUpdate){
+function openEdit(){
   closeModal();
   const name=selected(),canDelete=name!==DEFAULT_TEACHER;
-  const o=document.createElement('div');o.className='ttFlowOverlay';o.innerHTML=`<div class="ttFlowCard" role="dialog" aria-modal="true" aria-labelledby="ttFlowTitle">
-    <h2 id="ttFlowTitle">Edit ${name.replace(/[&<>]/g,'')}</h2>
+  const o=document.createElement('div');o.className='ttFlowOverlay';
+  o.innerHTML=`<div class="ttFlowCard" role="dialog" aria-modal="true" aria-labelledby="ttEditTitle">
+    <h2 id="ttEditTitle">Edit ${name.replace(/[&<>]/g,'')}</h2>
     <p>Choose what you want to change.</p>
     <div class="ttFlowChoices">
-      <button class="ttFlowChoice" id="ttFlowQuick">✏️ Quick edit subjects<span>Change individual lesson cells in the weekly timetable.</span></button>
-      <button class="ttFlowChoice" id="ttFlowReplace">📷 Replace from screenshot<span>Paste or choose a newer timetable screenshot and replace this timetable.</span></button>
+      <button type="button" class="ttFlowChoice" id="ttFlowQuick">✏️ Quick edit subjects<span>Change individual lesson cells directly.</span></button>
+      <button type="button" class="ttFlowChoice" id="ttFlowReplace">📷 Replace from screenshot<span>Paste or choose a newer screenshot for this timetable.</span></button>
     </div>
-    <div class="ttFlowDanger"><button class="ttFlowChoice" id="ttFlowDelete" ${canDelete?'':'disabled'}>🗑️ Delete this timetable<span>${canDelete?'Remove this timetable only. Your class/pupil roster is kept.':'My Timetable is the built-in fallback and is kept.'}</span></button></div>
-    <div class="ttFlowCancel"><button class="btn" id="ttFlowCancel">Cancel</button></div>
+    <div class="ttFlowDanger"><button type="button" class="ttFlowChoice" id="ttFlowDelete" ${canDelete?'':'disabled'}>🗑️ Delete this timetable<span>${canDelete?'Remove this timetable only. The class/pupil roster is kept.':'My Timetable is the built-in fallback.'}</span></button></div>
+    <div class="ttFlowButtons"><button type="button" class="btn" id="ttFlowCancel">Cancel</button></div>
   </div>`;
   document.body.appendChild(o);
-  o.addEventListener('click',e=>{if(e.target===o)closeModal()});
-  $('#ttFlowCancel').onclick=closeModal;
-  $('#ttFlowQuick').onclick=quickEdit;
-  $('#ttFlowReplace').onclick=()=>{closeModal();originalUpdate?.()};
-  if(canDelete)$('#ttFlowDelete').onclick=deleteCurrent;
+  o.addEventListener('mousedown',e=>{if(e.target===o)closeModal()});
+  o.querySelector('#ttFlowCancel').onclick=closeModal;
+  o.querySelector('#ttFlowQuick').onclick=quickEdit;
+  o.querySelector('#ttFlowReplace').onclick=replaceFromScreenshot;
+  if(canDelete)o.querySelector('#ttFlowDelete').onclick=deleteCurrent;
+}
+
+function filterHiddenOptions(){
+  const h=new Set(hidden());document.querySelectorAll('#classSelect option').forEach(opt=>{if(opt.value!==DEFAULT_TEACHER&&h.has(opt.value))opt.remove()});
+}
+
+function bindNewButton(){
+  const old=$('#addClassInline');if(!old)return;
+  if(old.dataset.ttFlowBound==='1'){old.textContent='＋ New';old.title='Create another timetable';return}
+  const b=old.cloneNode(true);b.dataset.ttFlowBound='1';b.dataset.ttProfileBound='1';b.textContent='＋ New';b.title='Create another timetable';b.type='button';
+  b.onclick=e=>{e.preventDefault();e.stopPropagation();openNew()};old.replaceWith(b);
+}
+
+function bindEditButton(){
+  const old=$('#ttNavUpdate');if(!old)return;
+  if(old.dataset.ttFlowBound==='1'){old.textContent='✏️ Edit';old.title='Edit, replace or delete this timetable';return}
+  const b=old.cloneNode(true);b.dataset.ttFlowBound='1';b.textContent='✏️ Edit';b.title='Edit, replace or delete this timetable';b.type='button';
+  b.onclick=e=>{e.preventDefault();e.stopPropagation();openEdit()};old.replaceWith(b);
 }
 
 function decorate(){
   const label=$('.ttProfileLabel');if(label)label.textContent='Viewing';
-  const add=$('#addClassInline');if(add){add.textContent='＋ New';add.title='Create another timetable';if(!add.dataset.ttFlowNew){add.dataset.ttFlowNew='1';add.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();openNew()},true)}}
-
-  const edit=$('#ttNavUpdate');
-  if(edit&&!edit.dataset.ttFlowEdit){
-    edit.dataset.ttFlowEdit='1';edit.textContent='✏️ Edit';edit.title='Edit, replace or delete this timetable';
-    const original=edit.onclick;
-    edit.onclick=e=>{e?.preventDefault?.();openEdit(()=>original?.call(edit,e))};
-  }else if(edit)edit.textContent='✏️ Edit';
-
-  const weekQuick=$('#ttEditWeek');
-  if(weekQuick){const actions=weekQuick.closest('.ttWeekActions');if(actions)actions.classList.add('ttFlowHiddenActions')}
-
-  document.querySelectorAll('#classSelect option').forEach(opt=>{if(hidden().includes(opt.value)&&opt.value!==DEFAULT_TEACHER)opt.remove()});
+  bindNewButton();bindEditButton();filterHiddenOptions();
+  const weekQuick=$('#ttEditWeek');if(weekQuick){const actions=weekQuick.closest('.ttWeekActions');if(actions)actions.classList.add('ttFlowHiddenActions')}
 }
 
-patchClassNames();ensureVisibleSelection();injectStyle();
+ensureVisibleSelection();injectStyle();
 const observer=new MutationObserver(()=>requestAnimationFrame(decorate));observer.observe(S.panel,{childList:true,subtree:true});
 decorate();
 })();
