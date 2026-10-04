@@ -1,9 +1,10 @@
 (function(){
 'use strict';
-if(window.__classroomDesktopPaletteV1)return;
-window.__classroomDesktopPaletteV1=true;
-const coarse=matchMedia('(pointer:coarse)').matches||matchMedia('(max-width:700px)').matches;
-if(coarse)return;
+if(window.__classroomDesktopPaletteV2)return;
+window.__classroomDesktopPaletteV2=true;
+const ua=navigator.userAgent||'';
+const isMobileDevice=/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+if(isMobileDevice)return;
 const SHORT={
  'timer-calm-music':'Timer',
  'transition-countdown':'Transition',
