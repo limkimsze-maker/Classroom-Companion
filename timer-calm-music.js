@@ -1,8 +1,8 @@
 (function(){
 'use strict';
 const S=window.Support;
-if(!S||S.slug!=='timer-calm-music'||window.__timerCalmV1)return;
-window.__timerCalmV1=true;
+if(!S||S.slug!=='timer-calm-music'||window.__timerCalmV2)return;
+window.__timerCalmV2=true;
 
 function install(){
   const panel=S.panel||document.getElementById('panel');
@@ -32,7 +32,7 @@ function install(){
   function playNote(){
     if(!running||!music)return;
     const f=notes[noteIndex++%notes.length];
-    S.tone(f,.55,.028,'sine');
+    S.tone(f,.68,.055,'sine');
   }
 
   function stopMusic(){
@@ -44,7 +44,7 @@ function install(){
     if(!running||!music)return;
     noteIndex=0;
     playNote();
-    musicId=setInterval(playNote,850);
+    musicId=setInterval(playNote,900);
   }
 
   function draw(){
@@ -67,6 +67,7 @@ function install(){
     if(sec<=0)sec=base;
     running=true;
     draw();
+    // Start the first calm note directly from the user's Start click.
     startMusic();
     timerId=setInterval(()=>{
       sec--;
@@ -98,5 +99,5 @@ function install(){
 }
 
 let tries=0;
-const id=setInterval(()=>{tries++;if(install()||tries>40)clearInterval(id)},50);
+const id=setInterval(()=>{tries++;if(install()||tries>60)clearInterval(id)},50);
 })();
