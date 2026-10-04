@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-if(window.__classroomToolbarInlineNamesV1)return;
-window.__classroomToolbarInlineNamesV1=true;
+if(window.__classroomToolbarInlineNamesV2)return;
+window.__classroomToolbarInlineNamesV2=true;
 function init(){
   const bar=document.getElementById('ccSmartBar');
   if(!bar){setTimeout(init,60);return}
@@ -19,7 +19,16 @@ function init(){
   #ccSmartBar .ccTool:hover,#ccSmartBar .ccTool:focus-visible{width:190px!important;flex-basis:190px!important;justify-content:flex-start!important;gap:8px!important;transform:translateY(-1px)!important;z-index:20!important}
   #ccSmartBar .ccTool:hover .ccToolName,#ccSmartBar .ccTool:focus-visible .ccToolName{max-width:145px;opacity:1;margin-left:1px}
   #ccSmartBar .ccTool::after{left:21px!important;transform:none!important}
-  @media(max-width:700px),(pointer:coarse){#ccSmartBar .ccTool:hover,#ccSmartBar .ccTool:focus-visible{width:42px!important;flex-basis:42px!important;justify-content:center!important;gap:0!important}#ccSmartBar .ccTool .ccToolName{display:none!important}}
+  @media(max-width:700px),(pointer:coarse){
+    #ccSmartBar{padding:6px!important;align-items:center!important}
+    #ccSmartBar .ccRail{gap:5px!important;align-items:center!important;padding:1px!important}
+    #ccSmartBar .ccTool,#ccSmartBar .ccTool:hover,#ccSmartBar .ccTool:focus-visible{width:78px!important;height:60px!important;flex:0 0 78px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:4px!important;padding:5px 4px!important;transform:none!important}
+    #ccSmartBar .ccTool .ccToolIcon{flex:0 0 auto!important;font-size:23px!important;line-height:1!important}
+    #ccSmartBar .ccTool .ccToolName{display:block!important;max-width:70px!important;width:70px!important;opacity:1!important;margin:0!important;white-space:normal!important;overflow:hidden!important;text-overflow:ellipsis!important;text-align:center!important;font-size:8.5px!important;line-height:1.05!important;font-weight:900!important;color:#17324d!important;max-height:18px!important}
+    #ccSmartBar .ccTool::after{left:50%!important;bottom:2px!important;transform:translateX(-50%)!important}
+    #ccSmartBar .ccBrand{height:60px!important;width:44px!important;flex:0 0 44px!important}
+    #ccSmartBar .ccCollapse{height:60px!important;width:38px!important;flex:0 0 38px!important}
+  }
   `;
   document.head.appendChild(style);
   bar.querySelectorAll('.ccTool').forEach(b=>{
