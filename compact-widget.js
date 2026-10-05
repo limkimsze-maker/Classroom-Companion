@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-if(window.__classroomSmartToolbarV3)return;
-window.__classroomSmartToolbarV3=true;
+if(window.__classroomSmartToolbarV4)return;
+window.__classroomSmartToolbarV4=true;
 const TOOLS=[
  {slug:'timer-calm-music',icon:'⏱️',title:'Timer + Calm Music',mode:'mini'},
  {slug:'transition-countdown',icon:'⏳',title:'Transition Countdown',mode:'mini'},
@@ -38,19 +38,19 @@ const root=document.createElement('div');root.id='ccSmartBar';root.innerHTML=`<d
 const rail=document.getElementById('ccRail'),legend=document.getElementById('ccLegend'),hoverLabel=document.getElementById('ccHoverLabel');
 let hoverHideTimer=null;function showHoverName(name){clearTimeout(hoverHideTimer);hoverLabel.textContent=name;hoverLabel.classList.add('show')}function hideHoverName(){clearTimeout(hoverHideTimer);hoverHideTimer=setTimeout(()=>hoverLabel.classList.remove('show'),40)}
 for(const t of TOOLS){const b=document.createElement('button');b.type='button';b.className='ccTool '+t.mode;b.dataset.slug=t.slug;b.textContent=t.icon;const detail=t.title+' • '+(t.mode==='mini'?'Mini':t.mode==='half'?'Half screen':'Full screen')+(t.mode==='full'?'':' • tap again to expand / restore');b.setAttribute('aria-label',detail);b.addEventListener('mouseenter',()=>showHoverName(t.title));b.addEventListener('mouseleave',hideHoverName);b.addEventListener('focus',()=>showHoverName(t.title));b.addEventListener('blur',hideHoverName);b.onclick=()=>openTool(t);rail.appendChild(b)}
-const entries=new Map();const slots={mini:null,half:null,full:null};
+const entries=new Map();
 const mobile=matchMedia('(max-width:700px)').matches||matchMedia('(pointer:coarse)').matches;
 function screenBox(){return{left:Number.isFinite(screen.availLeft)?screen.availLeft:0,top:Number.isFinite(screen.availTop)?screen.availTop:0,w:screen.availWidth||1280,h:screen.availHeight||800}}
 function layout(mode){const s=screenBox();if(mode==='full')return{x:s.left,y:s.top,w:s.w,h:s.h};if(mode==='half'){const w=Math.max(560,Math.round(s.w*.48));return{x:s.left+s.w-w,y:s.top,w,h:s.h}}const w=Math.min(500,Math.max(390,Math.round(s.w*.29))),h=Math.min(390,Math.max(285,Math.round(s.h*.32)));return{x:s.left+s.w-w-10,y:s.top+10,w,h}}
+function positionedLayout(mode){const spec=layout(mode),s=screenBox();let n=0;for(const e of entries.values()){try{if(e.mode===mode&&e.w&&!e.w.closed)n++}catch(err){}}if(mode==='mini'){const step=n%5;spec.x=Math.max(s.left+8,spec.x-step*26);spec.y=Math.min(s.top+s.h-spec.h-8,spec.y+step*26)}else if(mode==='half'){const step=n%3;spec.x=Math.max(s.left+8,spec.x-step*28);spec.y=Math.min(s.top+s.h-spec.h-8,spec.y+step*28)}return spec}
 function toolbarLayout(){const s=screenBox(),w=Math.min(960,Math.max(720,s.w-24)),h=118;return{x:s.left+Math.max(8,Math.round((s.w-w)/2)),y:s.top+s.h-h-8,w,h}}
 function applyWindow(w,spec){if(!w||w.closed)return;try{w.resizeTo(spec.w,spec.h);w.moveTo(spec.x,spec.y);w.focus()}catch(e){}}
 function urlFor(t){const base=directPages[t.slug];return base?base+(base.includes('?')?'&':'?')+'v='+Date.now():'support-tool.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now()}
 function btn(slug){return rail.querySelector(`[data-slug="${slug}"]`)}
-function clearEntry(slug){const e=entries.get(slug);if(!e)return;if(slots[e.mode]===slug)slots[e.mode]=null;entries.delete(slug);btn(slug)?.classList.remove('active','expanded')}
-function closeSlot(mode,except){const slug=slots[mode];if(!slug||slug===except)return;const e=entries.get(slug);try{if(e?.w&&!e.w.closed)e.w.close()}catch(err){}clearEntry(slug)}
+function clearEntry(slug){const e=entries.get(slug);if(!e)return;entries.delete(slug);btn(slug)?.classList.remove('active','expanded')}
 function prune(){for(const [slug,e] of [...entries]){let closed=true;try{closed=!e.w||e.w.closed}catch(err){}if(closed)clearEntry(slug)}}
 function toggleExisting(t,e){if(t.mode==='full'){try{e.w.focus()}catch(err){}return}e.expanded=!e.expanded;const spec=e.expanded?layout('full'):layout(t.mode);applyWindow(e.w,spec);btn(t.slug)?.classList.toggle('expanded',e.expanded);legend.textContent=e.expanded?`${t.title}: full screen • tap icon again to restore`:`${t.title}: ${t.mode==='mini'?'mini':'half screen'} • tap icon again to expand`;setTimeout(()=>legend.textContent='teal mini • blue half • gold full',2400)}
-function openTool(t){prune();const old=entries.get(t.slug);if(old){toggleExisting(t,old);return}closeSlot(t.mode,t.slug);const spec=layout(t.mode),name='ClassroomCompanion_'+t.mode;let w=null;try{w=window.open(urlFor(t),name,`popup=yes,width=${spec.w},height=${spec.h},left=${spec.x},top=${spec.y},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`)}catch(e){}if(!w){legend.textContent='Allow pop-ups to open Classroom Companion tools';return}const entry={w,mode:t.mode,expanded:false};entries.set(t.slug,entry);slots[t.mode]=t.slug;btn(t.slug)?.classList.add('active');setTimeout(()=>applyWindow(w,spec),120);setTimeout(()=>applyWindow(w,spec),600)}
+function openTool(t){prune();const old=entries.get(t.slug);if(old){toggleExisting(t,old);return}const spec=positionedLayout(t.mode),name='ClassroomCompanion_'+t.slug.replace(/[^a-z0-9]/gi,'_');let w=null;try{w=window.open(urlFor(t),name,`popup=yes,width=${spec.w},height=${spec.h},left=${spec.x},top=${spec.y},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`)}catch(e){}if(!w){legend.textContent='Allow pop-ups to open Classroom Companion tools';return}const entry={w,mode:t.mode,expanded:false};entries.set(t.slug,entry);btn(t.slug)?.classList.add('active');legend.textContent=`${t.title} open • close its window when finished`;setTimeout(()=>legend.textContent='teal mini • blue half • gold full',2200);setTimeout(()=>applyWindow(w,spec),120);setTimeout(()=>applyWindow(w,spec),600)}
 let collapsed=false;function setToolbarSize(){if(mobile)return;try{if(collapsed){window.resizeTo(84,82);const s=screenBox();window.moveTo(s.left+8,s.top+s.h-90)}else{const t=toolbarLayout();window.resizeTo(t.w,t.h);window.moveTo(t.x,t.y)}}catch(e){}}
 document.getElementById('ccCollapse').onclick=()=>{collapsed=true;hoverLabel.classList.remove('show');root.classList.add('collapsed');setToolbarSize()};document.getElementById('ccBrand').onclick=()=>{if(!collapsed)return;collapsed=false;root.classList.remove('collapsed');setToolbarSize()};
 setInterval(prune,800);setTimeout(setToolbarSize,80);setTimeout(setToolbarSize,500);
