@@ -5,10 +5,49 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <title>Classroom Companion</title>
-<meta http-equiv="refresh" content="0;url=teacher-bookmark.html">
-<script>location.replace('teacher-bookmark.html');</script>
+<style>
+:root{--teal:#0f766e;--teal2:#dff6f1;--navy:#17324d;--ink:#17202a;--muted:#667085;--line:#d8e1e8}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#eff8f6,#f7f9fc 55%,#edf3f8);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}
+.card{width:min(820px,100%);background:#fff;border:1px solid var(--line);border-radius:28px;padding:32px;box-shadow:0 24px 60px rgba(18,32,46,.12)}
+.logo{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;background:var(--teal2);color:var(--teal);font-size:29px;font-weight:1000;margin-bottom:16px}
+h1{margin:0 0 8px;font-size:clamp(30px,5vw,42px);letter-spacing:-.04em;color:var(--navy)}
+.lead{margin:0;color:var(--muted);font-size:16px;line-height:1.55}
+.choose{margin:26px 0 12px;font-size:13px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;color:var(--teal)}
+.languages{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.lang{display:flex;align-items:center;gap:14px;min-height:82px;padding:15px 17px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#fff,#f7fbfa);color:var(--navy);text-decoration:none;box-shadow:0 5px 15px rgba(18,32,46,.05);transition:.14s ease}
+.lang:hover,.lang:focus-visible{transform:translateY(-2px);border-color:#79c8bc;box-shadow:0 10px 22px rgba(15,118,110,.10);outline:none}
+.lang.primary{background:linear-gradient(145deg,#0f766e,#0b5f59);border-color:#0f766e;color:#fff}
+.icon{width:46px;height:46px;flex:0 0 46px;border-radius:14px;display:grid;place-items:center;background:#eef7f5;font-size:23px;font-weight:1000}.primary .icon{background:rgba(255,255,255,.16)}
+.name{font-size:18px;font-weight:1000;line-height:1.15}.sub{margin-top:4px;font-size:12px;font-weight:800;opacity:.72}
+.note{margin:22px 0 0;padding-top:17px;border-top:1px solid #edf1f4;color:var(--muted);font-size:12px;line-height:1.55;text-align:center}.note strong{color:var(--navy)}
+@media(max-width:640px){.card{padding:24px 18px;border-radius:22px}.languages{grid-template-columns:1fr}.lang{min-height:74px}}
+</style>
+<script src="https://cdn.counter.dev/script.js" data-id="825e93b6-ce99-40ef-8bcc-125f13297433" data-utcoffset="8"></script>
 </head>
 <body>
-<p><a href="teacher-bookmark.html">Open Classroom Companion teacher setup</a></p>
+<main class="card">
+  <div class="logo">✦</div>
+  <h1>Classroom Companion</h1>
+  <p class="lead">One set of classroom support tools, available in four languages. Choose your preferred language to continue.</p>
+
+  <div class="choose">Choose a language</div>
+  <div class="languages">
+    <a class="lang primary" href="teacher-bookmark.html">
+      <div class="icon">EN</div><div><div class="name">English</div><div class="sub">Main edition</div></div>
+    </a>
+    <a class="lang" href="/Classroom-Companion-Chinese-Edition/">
+      <div class="icon">中</div><div><div class="name">中文</div><div class="sub">Chinese Edition</div></div>
+    </a>
+    <a class="lang" href="/Classroom-Companion-Malay-Edition/">
+      <div class="icon">BM</div><div><div class="name">Bahasa Melayu</div><div class="sub">Edisi Bahasa Melayu</div></div>
+    </a>
+    <a class="lang" href="/Classroom-Companion-Tamil-Edition/">
+      <div class="icon">த</div><div><div class="name">தமிழ்</div><div class="sub">தமிழ் பதிப்பு</div></div>
+    </a>
+  </div>
+
+  <div class="note"><strong>English remains the main edition.</strong> The four versions use the same Classroom Companion concept and teacher-facing workflow.</div>
+</main>
 </body>
 </html>
