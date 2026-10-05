@@ -1,13 +1,13 @@
 (function(){
 'use strict';
 const S=window.Support;
-if(!S||S.slug!=='timer-calm-music'||window.__timerCalmV5)return;
+if(!S||S.slug!=='timer-calm-music'||window.__timerCalmV6)return;
 
 function install(){
   const panel=S.panel||document.getElementById('panel');
   const ambient=window.TimerCalmAmbient;
   if(!panel||!ambient)return false;
-  window.__timerCalmV5=true;
+  window.__timerCalmV6=true;
 
   let base=300,sec=base,running=false,timerId=null,music=true;
 
@@ -16,7 +16,7 @@ function install(){
     <div class="timerRing" id="ring"><div class="timerValue" id="time">05:00</div></div>
     <div class="supportText">See how much time is left. Work calmly, one step at a time.</div>
     <div class="controls">
-      ${[1,3,5,10,15].map(m=>`<button class="btn" data-min="${m}">${m} min</button>`).join('')}
+      ${[0.5,1,3,5,10,15].map(m=>`<button class="btn" data-min="${m}">${m<1?'30 sec':m+' min'}</button>`).join('')}
       <button class="btn soft" id="music">♫ Calm music: On</button>
     </div>
     <div class="controls" style="margin-top:12px">
