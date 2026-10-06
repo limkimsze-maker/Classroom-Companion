@@ -1,8 +1,8 @@
 (function(){
 'use strict';
 const S=window.Support;
-if(!S||S.slug!=='noise-level'||window.__noiseShushV2)return;
-window.__noiseShushV2=true;
+if(!S||S.slug!=='noise-level'||window.__noiseShushV3)return;
+window.__noiseShushV3=true;
 
 const AUDIO_SRC='bredorantes-shushing-150148.mp3';
 let audio=null;
@@ -20,9 +20,9 @@ function install(){
   if(!panel||!badge||!noiseBig)return false;
   if(document.getElementById('noiseShushWrap'))return true;
 
-  if(!document.getElementById('noiseShushStyleV2')){
+  if(!document.getElementById('noiseShushStyleV3')){
     const style=document.createElement('style');
-    style.id='noiseShushStyleV2';
+    style.id='noiseShushStyleV3';
     style.textContent=`
       .noiseMainContent{display:grid;grid-template-columns:auto auto;align-items:center;justify-content:center;column-gap:18px;row-gap:4px}
       #noiseSilentEmoji{font-size:clamp(72px,9vw,104px);line-height:1;filter:drop-shadow(0 5px 7px rgba(23,50,77,.10));transform:translateY(2px)}
@@ -61,6 +61,7 @@ function install(){
 
   audio=new Audio(AUDIO_SRC);
   audio.preload='auto';
+  audio.loop=true;
 
   const wrap=document.createElement('div');
   wrap.id='noiseShushWrap';
@@ -69,9 +70,15 @@ function install(){
   btn.className='btn soft';
   btn.type='button';
   btn.textContent='🔊 Play shush';
-  btn.setAttribute('aria-label','Play shushing sound for Silent mode');
+  btn.setAttribute('aria-label','Play repeating shushing sound for Silent mode');
   wrap.appendChild(btn);
   badge.insertAdjacentElement('afterend',wrap);
+
+  function resetButton(){
+    btn.classList.remove('playing');
+    btn.textContent='🔊 Play shush';
+    btn.setAttribute('aria-label','Play repeating shushing sound for Silent mode');
+  }
 
   function updateSilentUi(){
     const silent=(noiseBig.textContent||'').trim()==='Silent';
@@ -80,8 +87,7 @@ function install(){
     if(noiseSub)noiseSub.style.gridColumn='1 / -1';
     if(!silent){
       stopAudio();
-      btn.classList.remove('playing');
-      btn.textContent='🔊 Play shush';
+      resetButton();
     }
   }
 
@@ -89,24 +95,18 @@ function install(){
     if(!audio)return;
     if(!audio.paused){
       stopAudio();
-      btn.classList.remove('playing');
-      btn.textContent='🔊 Play shush';
+      resetButton();
       return;
     }
     try{audio.currentTime=0;}catch(e){}
     const p=audio.play();
     btn.classList.add('playing');
     btn.textContent='■ Stop shush';
-    if(p&&typeof p.catch==='function')p.catch(()=>{
-      btn.classList.remove('playing');
-      btn.textContent='🔊 Play shush';
-    });
+    btn.setAttribute('aria-label','Stop repeating shushing sound');
+    if(p&&typeof p.catch==='function')p.catch(()=>resetButton());
   });
 
-  audio.addEventListener('ended',()=>{
-    btn.classList.remove('playing');
-    btn.textContent='🔊 Play shush';
-  });
+  audio.addEventListener('error',resetButton);
 
   panel.addEventListener('click',e=>{
     if(e.target.closest('[data-i]'))setTimeout(updateSilentUi,0);
