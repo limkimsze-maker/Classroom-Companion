@@ -6,16 +6,28 @@ window.__noiseDetectorV1=true;
 
 const STORE='classroomCompanionNoiseLimitsV1';
 const DEFAULTS={Silent:18,Whisper:28,Partner:42,Group:58,Presentation:72};
+const MODE_NAMES=['Silent','Whisper','Partner','Group','Presentation'];
 let limits=loadLimits();
 let stream=null,audioCtx=null,analyser=null,data=null,raf=0,running=false;
 let smoothLevel=0,aboveSince=0,quietSince=0,state='off';
+window.__ccNoiseDetectorState='off';
 
 function loadLimits(){
   try{return {...DEFAULTS,...JSON.parse(localStorage.getItem(STORE)||'{}')}}catch(e){return {...DEFAULTS}}
 }
 function saveLimits(){try{localStorage.setItem(STORE,JSON.stringify(limits))}catch(e){}}
-function currentMode(){return (document.getElementById('noiseBig')?.textContent||'Silent').trim()}
+function currentMode(){
+  const active=document.querySelector('.choice.active[data-i]');
+  const i=active?Number(active.dataset.i):NaN;
+  if(Number.isInteger(i)&&MODE_NAMES[i])return MODE_NAMES[i];
+  const text=(document.getElementById('noiseBig')?.textContent||'Silent').trim();
+  return MODE_NAMES.includes(text)?text:'Silent';
+}
 function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+function announceState(next){
+  window.__ccNoiseDetectorState=next;
+  try{window.dispatchEvent(new CustomEvent('cc-noise-detector-state',{detail:{state:next,level:Math.round(smoothLevel),mode:currentMode()}}))}catch(e){}
+}
 function stopDetector(){
   running=false;cancelAnimationFrame(raf);raf=0;
   try{stream?.getTracks().forEach(t=>t.stop())}catch(e){}
@@ -27,7 +39,9 @@ function stopDetector(){
   const live=document.getElementById('noiseLiveValue');if(live)live.textContent='—';
 }
 function setState(next){
+  const changed=state!==next;
   state=next;
+  if(changed)announceState(next);
   const badge=document.getElementById('noiseDetectorStatus');
   const noiseBadge=document.querySelector('.noiseBadge');
   if(!badge||!noiseBadge)return;
@@ -87,7 +101,7 @@ async function startDetector(){
   if(running){stopDetector();return}
   const btn=document.getElementById('noiseDetectorToggle');
   try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});
     audioCtx=new (window.AudioContext||window.webkitAudioContext)();
     const source=audioCtx.createMediaStreamSource(stream);
     analyser=audioCtx.createAnalyser();
