@@ -42,10 +42,10 @@ function setState(next){
 }
 function updateModeUi(){
   const mode=currentMode();
-  const limit=limits[mode]??DEFAULTS[mode]??40;
+  const limit=clamp(limits[mode]??DEFAULTS[mode]??40,0,100);
   const label=document.getElementById('noiseLimitLabel');
   const slider=document.getElementById('noiseLimitSlider');
-  if(label)label.textContent=mode+' limit: '+limit;
+  if(label)label.textContent=mode+' limit: '+limit+' / 100';
   if(slider)slider.value=limit;
   aboveSince=0;quietSince=0;
 }
@@ -63,7 +63,7 @@ function measure(){
   smoothLevel=smoothLevel? smoothLevel*.82+level*.18 : level;
 
   const mode=currentMode();
-  const limit=limits[mode]??40;
+  const limit=clamp(limits[mode]??40,0,100);
   const now=performance.now();
   const meter=document.getElementById('noiseMeterFill');
   const live=document.getElementById('noiseLiveValue');
@@ -126,20 +126,23 @@ function install(){
       .noiseDetectorStatus.near{font-size:clamp(21px,2.5vw,34px);color:#9a6700}
       .noiseDetectorStatus.loud{font-size:clamp(28px,4vw,58px);line-height:1;color:#c62828;text-transform:uppercase;animation:noiseWarnPulse .85s ease-in-out infinite alternate}
       @keyframes noiseWarnPulse{to{transform:scale(1.035)}}
-      #noiseDetectorControls{max-width:900px;margin:0 auto 18px;padding:12px 14px;border:1px solid #dce6ea;border-radius:18px;background:#fbfdfd;box-shadow:0 6px 18px rgba(18,32,46,.045)}
-      .noiseDetectorTop{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
-      #noiseDetectorToggle{min-height:44px}
+      #noiseDetectorControls{max-width:1050px;margin:0 auto 18px;padding:15px 18px;border:1px solid #dce6ea;border-radius:20px;background:#fbfdfd;box-shadow:0 6px 18px rgba(18,32,46,.045)}
+      .noiseDetectorTop{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+      #noiseDetectorToggle{min-height:48px;padding-left:18px;padding-right:18px}
       #noiseDetectorToggle.running{background:#17324d;border-color:#17324d;color:#fff}
-      .noiseLimitBox{display:flex;align-items:center;gap:10px;flex:1 1 360px;max-width:580px;min-width:260px}
-      #noiseLimitLabel{min-width:118px;text-align:right;font-size:13px;font-weight:1000;color:#17324d}
-      #noiseLimitSlider{width:100%;accent-color:#0f766e}
-      .noiseLive{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:9px}
-      .noiseMeter{width:min(620px,82%);height:12px;border-radius:999px;background:linear-gradient(90deg,#d7f3e4 0 45%,#ffedb8 45% 70%,#ffd0d0 70% 100%);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(23,50,77,.08)}
+      .noiseLimitBox{display:flex;align-items:center;gap:14px;flex:1 1 560px;max-width:780px;min-width:360px}
+      #noiseLimitLabel{min-width:150px;text-align:right;font-size:14px;font-weight:1000;color:#17324d}
+      #noiseLimitSlider{width:100%;height:34px;accent-color:#0f766e;cursor:pointer}
+      #noiseLimitSlider::-webkit-slider-runnable-track{height:10px;border-radius:999px;background:linear-gradient(90deg,#d7f3e4,#ffedb8 62%,#ffd0d0)}
+      #noiseLimitSlider::-webkit-slider-thumb{margin-top:-6px;width:22px;height:22px}
+      .noiseScale{display:flex;justify-content:space-between;margin:2px 0 0 164px;font-size:11px;font-weight:850;color:#667085}
+      .noiseLive{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:10px}
+      .noiseMeter{width:min(780px,88%);height:14px;border-radius:999px;background:linear-gradient(90deg,#d7f3e4 0 45%,#ffedb8 45% 70%,#ffd0d0 70% 100%);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(23,50,77,.08)}
       #noiseMeterFill{height:100%;width:0;background:#17324d;opacity:.72;border-radius:999px;transition:width .09s linear}
-      #noiseLiveValue{font-size:12px;font-weight:1000;color:#667085;min-width:24px}
-      .noiseDetectorHint{margin-top:7px;font-size:11px;line-height:1.3;color:#667085;font-weight:750}
+      #noiseLiveValue{font-size:13px;font-weight:1000;color:#667085;min-width:28px}
+      .noiseDetectorHint{margin-top:8px;font-size:11px;line-height:1.3;color:#667085;font-weight:750}
       @media(max-width:760px){
-        #noiseDetectorControls{padding:10px;margin-bottom:12px}.noiseLimitBox{min-width:100%;display:grid;grid-template-columns:1fr}.noiseLimitBox #noiseLimitLabel{text-align:center;min-width:0}.noiseMeter{width:80%}
+        #noiseDetectorControls{padding:12px;margin-bottom:12px}.noiseLimitBox{min-width:100%;display:grid;grid-template-columns:1fr}.noiseLimitBox #noiseLimitLabel{text-align:center;min-width:0}.noiseScale{margin-left:0}.noiseMeter{width:82%}#noiseLimitSlider{height:40px}
       }
     `;
     document.head.appendChild(style);
@@ -151,7 +154,7 @@ function install(){
 
   const controls=document.createElement('div');
   controls.id='noiseDetectorControls';
-  controls.innerHTML=`<div class="noiseDetectorTop"><button class="btn soft" id="noiseDetectorToggle">🎤 Start detector</button><div class="noiseLimitBox"><span id="noiseLimitLabel"></span><input id="noiseLimitSlider" type="range" min="5" max="95" step="1"></div></div><div class="noiseLive"><div class="noiseMeter"><div id="noiseMeterFill"></div></div><span id="noiseLiveValue">—</span></div><div class="noiseDetectorHint">Teacher sets a separate limit for each voice mode. Settings are saved on this device.</div>`;
+  controls.innerHTML=`<div class="noiseDetectorTop"><button class="btn soft" id="noiseDetectorToggle">🎤 Start detector</button><div class="noiseLimitBox"><span id="noiseLimitLabel"></span><input id="noiseLimitSlider" type="range" min="0" max="100" step="1"></div></div><div class="noiseScale"><span>Very quiet</span><span>More tolerant</span></div><div class="noiseLive"><div class="noiseMeter"><div id="noiseMeterFill"></div></div><span id="noiseLiveValue">—</span></div><div class="noiseDetectorHint">Teacher sets a separate limit for each voice mode. Settings are saved on this device.</div>`;
   const shush=document.getElementById('noiseShushWrap');
   (shush||noiseBadge).insertAdjacentElement('afterend',controls);
 
