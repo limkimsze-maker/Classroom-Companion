@@ -18,19 +18,28 @@
 <div class="mobileNote">On mobile, tap the button below to open the toolbar directly. The desktop bookmark setup is hidden because mobile browsers do not use the same bookmark-bar workflow.</div>
 <button class="test" id="test" type="button">Open the toolbar now</button>
 <div class="warn"><b>Important:</b> Do not bookmark <code>widget-launch.html</code> as a normal webpage. A normal URL bookmark opens a full tab instead of the teacher palette.</div>
-<p class="small">The 16 Classroom Companion tools are unchanged. On desktop, a successful test opens the teacher palette in its own window. On mobile, the toolbar opens directly in the current tab.</p>
+<p class="small">The 16 Classroom Companion tools are unchanged. On desktop, a successful test opens the teacher palette in its own window. If you previously installed the bookmark, drag this updated button onto the bookmarks bar once to replace the older opener.</p>
 <div class="credit">Created by <strong>Lim Kim Sze</strong></div></main>
 <script>
 const toolbarUrl=new URL('widget-launch.html',location.href).href;
 const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)||matchMedia('(max-width:700px)').matches||matchMedia('(pointer:coarse)').matches;
+function popupFeatures(){
+  var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8;
+  return 'popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no';
+}
 function openPalette(){
   if(isMobile){location.href=toolbarUrl+'?v='+Date.now();return window}
-  var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8,u=toolbarUrl+'?v='+Date.now();
-  var x=window.open(u,'ClassroomCompanionStrip','popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no');
-  if(x){try{x.focus()}catch(e){};return x}
-  return null;
+  var u=toolbarUrl+'?v='+Date.now(),x=null;
+  try{x=window.open('about:blank','ClassroomCompanionStrip',popupFeatures())}catch(e){}
+  if(!x)return null;
+  try{x.location.href=u}catch(e){try{x.location=u}catch(err){}}
+  try{x.focus()}catch(e){}
+  setTimeout(()=>{try{x.focus()}catch(e){}},80);
+  return x;
 }
-function popupCode(){return `(function(){var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8,u='${toolbarUrl}?v='+Date.now(),x=window.open(u,'ClassroomCompanionStrip','popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no');if(x)x.focus();})();`}
+function popupCode(){
+  return `(function(){var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8,u='${toolbarUrl}?v='+Date.now(),f='popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no',x=null;try{x=window.open('about:blank','ClassroomCompanionStrip',f)}catch(e){}if(!x){alert('Classroom Companion was blocked. Please allow pop-ups for this page, then click the bookmark again.');return}try{x.location.href=u}catch(e){try{x.location=u}catch(_){} }try{x.focus()}catch(e){}setTimeout(function(){try{x.focus()}catch(e){}},80)})();`;
+}
 function closeSetupPage(){
   setTimeout(()=>{
     try{window.close()}catch(e){}
