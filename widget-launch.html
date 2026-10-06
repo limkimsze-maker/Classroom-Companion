@@ -35,7 +35,7 @@ async function launchToolbar(){
     if(!mobile){
       html=html.replace('</head>','<style id="ccToolbarBootCloak">body{visibility:hidden!important}</style></head>');
     }
-    html=html.replace('</body>','<script id="compactWidgetPatch" src="compact-widget.js?v=20261005toolbar4"><\/script><script id="toolbarInlineNames" src="toolbar-inline-names.js?v=20261004inline2"><\/script><script id="toolbarDesktopPalette" src="toolbar-desktop-palette.js?v=20261006stable1"><\/script><script id="toolbarLanguageSwitcher" src="toolbar-language-switcher.js?v=20261005lang1"><\/script><script id="miniPipLayer" src="mini-pip.js?v=20261006pip9"><\/script><script>setTimeout(function(){var c=document.getElementById("ccToolbarBootCloak");if(c)c.remove()},1800)<\/script></body>');
+    html=html.replace('</body>','<script id="toolbarStability" src="toolbar-stability.js?v=20261006stable2"><\/script><script id="compactWidgetPatch" src="compact-widget.js?v=20261005toolbar4"><\/script><script id="toolbarInlineNames" src="toolbar-inline-names.js?v=20261004inline2"><\/script><script id="toolbarDesktopPalette" src="toolbar-desktop-palette.js?v=20261006stable1"><\/script><script id="toolbarLanguageSwitcher" src="toolbar-language-switcher.js?v=20261005lang1"><\/script><script id="miniPipLayer" src="mini-pip.js?v=20261006pip9"><\/script><script>setTimeout(function(){var c=document.getElementById("ccToolbarBootCloak");if(c)c.remove()},1800)<\/script></body>');
     document.open();document.write(html);document.close();
   }catch(e){
     document.body.innerHTML='<div class="boot" aria-label="Classroom Companion could not open">!</div><button class="retry" id="retryToolbar" type="button">↻ Retry toolbar</button>';
