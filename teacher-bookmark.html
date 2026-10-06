@@ -13,51 +13,30 @@
 <body>
 <main class="card"><div class="logo">✦</div><h1>Classroom Companion</h1><p>Teacher bookmark setup. This bookmark opens the 16-tool Classroom Companion as a compact teacher palette on the left of your screen, keeping the lesson visible.</p>
 <div class="languages" aria-label="Choose language"><a class="lang active" href="teacher-bookmark.html">English</a><a class="lang" href="/Classroom-Companion-Chinese-Edition/">中文</a><a class="lang" href="/Classroom-Companion-Malay-Edition/">Bahasa Melayu</a><a class="lang" href="/Classroom-Companion-Tamil-Edition/">தமிழ்</a></div>
-<div class="steps"><div class="step"><div class="num">1</div><div><b>Show your bookmarks bar</b><br><span>In Chrome, use Ctrl + Shift + B if it is hidden.</span></div></div><div class="step"><div class="num">2</div><div><b>Drag the button below onto the bookmarks bar.</b></div></div><div class="step"><div class="num">3</div><div><b>During a lesson, click “Classroom Companion”.</b><br><span>A compact 2-column teacher palette opens on the left. Each tool shows its icon and short name.</span></div></div></div>
-<a id="bookmark" class="bookmark" href="#">✦ Classroom Companion</a><div class="hint">Drag this button to the bookmarks bar</div>
-<div class="mobileNote">On mobile, tap the button below to open the toolbar directly. The desktop bookmark setup is hidden because mobile browsers do not use the same bookmark-bar workflow.</div>
+<div class="steps"><div class="step"><div class="num">1</div><div><b>Show your bookmarks bar</b><br><span>In Chrome, use Ctrl + Shift + B if it is hidden.</span></div></div><div class="step"><div class="num">2</div><div><b>Drag the button below onto the bookmarks bar.</b></div></div><div class="step"><div class="num">3</div><div><b>During a lesson, click “Classroom Companion”.</b><br><span>A fresh teacher palette opens on the left each time.</span></div></div></div>
+<a id="bookmark" class="bookmark" href="#">✦ Classroom Companion</a><div class="hint">Drag this updated button to the bookmarks bar</div>
+<div class="mobileNote">On mobile, tap the button below to open the toolbar directly. Desktop bookmarklets are intended for normal web pages.</div>
 <button class="test" id="test" type="button">Open the toolbar now</button>
-<div class="warn"><b>Important:</b> Do not bookmark <code>widget-launch.html</code> as a normal webpage. A normal URL bookmark opens a full tab instead of the teacher palette.</div>
-<p class="small">The 16 Classroom Companion tools are unchanged. On desktop, a successful test opens the teacher palette in its own window. If you previously installed the bookmark, drag this updated button onto the bookmarks bar once to replace the older opener.</p>
+<div class="warn"><b>Important:</b> Replace any older Classroom Companion bookmark with this updated one. Chrome does not run JavaScript bookmarklets on internal pages such as the New Tab page, Settings, or the Chrome Web Store.</div>
+<p class="small">The 16 tools are unchanged. This version deliberately opens a fresh popup instead of reusing an old named popup, which avoids stale collapsed or hidden toolbar windows.</p>
 <div class="credit">Created by <strong>Lim Kim Sze</strong></div></main>
 <script>
 const toolbarUrl=new URL('widget-launch.html',location.href).href;
 const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)||matchMedia('(max-width:700px)').matches||matchMedia('(pointer:coarse)').matches;
-function popupFeatures(){
-  var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8;
-  return 'popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no';
-}
-function openPalette(){
+function features(){const sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8;return `popup=yes,width=${w},height=${h},left=${l},top=${t},resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no`}
+function openFresh(){
   if(isMobile){location.href=toolbarUrl+'?v='+Date.now();return window}
-  var u=toolbarUrl+'?v='+Date.now(),x=null;
-  try{x=window.open('about:blank','ClassroomCompanionStrip',popupFeatures())}catch(e){}
+  let x=null;try{x=window.open('about:blank','_blank',features())}catch(e){}
   if(!x)return null;
-  try{x.location.href=u}catch(e){try{x.location=u}catch(err){}}
+  try{x.location.replace(toolbarUrl+'?v='+Date.now())}catch(e){try{x.location.href=toolbarUrl+'?v='+Date.now()}catch(_){} }
   try{x.focus()}catch(e){}
-  setTimeout(()=>{try{x.focus()}catch(e){}},80);
   return x;
 }
 function popupCode(){
-  return `(function(){var sw=screen.availWidth||1280,sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8,u='${toolbarUrl}?v='+Date.now(),f='popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no',x=null;try{x=window.open('about:blank','ClassroomCompanionStrip',f)}catch(e){}if(!x){alert('Classroom Companion was blocked. Please allow pop-ups for this page, then click the bookmark again.');return}try{x.location.href=u}catch(e){try{x.location=u}catch(_){} }try{x.focus()}catch(e){}setTimeout(function(){try{x.focus()}catch(e){}},80)})();`;
-}
-function closeSetupPage(){
-  setTimeout(()=>{
-    try{window.close()}catch(e){}
-    setTimeout(()=>{
-      try{
-        if(history.length>1)history.back();
-        else location.replace('about:blank');
-      }catch(e){}
-    },350);
-  },450);
+  return `(function(){var sh=screen.availHeight||800,w=330,h=Math.min(720,Math.max(600,sh-40)),l=(screen.availLeft||0)+8,t=(screen.availTop||0)+8,f='popup=yes,width='+w+',height='+h+',left='+l+',top='+t+',resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no',x=null;try{x=window.open('about:blank','_blank',f)}catch(e){}if(!x){alert('Classroom Companion was blocked. Please allow pop-ups and try again.');return}try{x.location.replace('${toolbarUrl}?v='+Date.now())}catch(e){try{x.location.href='${toolbarUrl}?v='+Date.now()}catch(_){} }try{x.focus()}catch(e){}})();`;
 }
 const bookmark=document.getElementById('bookmark');bookmark.href='javascript:'+popupCode();
-document.getElementById('test').onclick=()=>{
-  if(isMobile){location.href=toolbarUrl+'?v='+Date.now();return}
-  const x=openPalette();
-  if(!x){alert('Please allow pop-ups for this site, then try again.');return}
-  closeSetupPage();
-};
+document.getElementById('test').onclick=()=>{const x=openFresh();if(!x)alert('Please allow pop-ups for this site, then try again.');};
 </script>
 </body>
 </html>
