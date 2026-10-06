@@ -12,6 +12,14 @@ function stopAudio(){
   try{audio.pause();audio.currentTime=0;}catch(e){}
 }
 
+function loadDetector(){
+  if(document.getElementById('noiseDetectorScript'))return;
+  const script=document.createElement('script');
+  script.id='noiseDetectorScript';
+  script.src='noise-detector.js?v=20261006detector1';
+  document.body.appendChild(script);
+}
+
 function install(){
   const panel=S.panel||document.getElementById('panel');
   const badge=document.querySelector('.noiseBadge');
@@ -119,5 +127,13 @@ function install(){
 }
 
 let tries=0;
-const id=setInterval(()=>{tries++;if(install()||tries>100)clearInterval(id)},50);
+const id=setInterval(()=>{
+  tries++;
+  if(install()){
+    clearInterval(id);
+    loadDetector();
+  }else if(tries>100){
+    clearInterval(id);
+  }
+},50);
 })();
