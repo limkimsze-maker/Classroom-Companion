@@ -1,8 +1,8 @@
 (function(){
 'use strict';
 const S=window.Support;
-if(!S||S.slug!=='noise-level'||window.__noiseShushV3)return;
-window.__noiseShushV3=true;
+if(!S||S.slug!=='noise-level'||window.__noiseShushV4)return;
+window.__noiseShushV4=true;
 
 const AUDIO_SRC='bredorantes-shushing-150148.mp3';
 let audio=null;
@@ -12,11 +12,16 @@ function stopAudio(){
   try{audio.pause();audio.currentTime=0;}catch(e){}
 }
 
-function loadDetector(){
-  if(document.getElementById('noiseDetectorScript'))return;
+function loadDetector(force=false){
+  if(document.getElementById('noiseDetectorControls'))return;
+  const old=document.getElementById('noiseDetectorScript');
+  if(old&&!force)return;
+  if(old)old.remove();
+  if(force&&!document.getElementById('noiseDetectorControls'))window.__noiseDetectorV1=false;
   const script=document.createElement('script');
   script.id='noiseDetectorScript';
-  script.src='noise-detector.js?v=20261006detector1';
+  script.src='noise-detector.js?v=20261006detector2&t='+Date.now();
+  script.onerror=()=>{try{script.remove()}catch(e){};setTimeout(()=>loadDetector(true),350)};
   document.body.appendChild(script);
 }
 
@@ -28,9 +33,9 @@ function install(){
   if(!panel||!badge||!noiseBig)return false;
   if(document.getElementById('noiseShushWrap'))return true;
 
-  if(!document.getElementById('noiseShushStyleV3')){
+  if(!document.getElementById('noiseShushStyleV4')){
     const style=document.createElement('style');
-    style.id='noiseShushStyleV3';
+    style.id='noiseShushStyleV4';
     style.textContent=`
       .noiseMainContent{display:grid;grid-template-columns:auto auto;align-items:center;justify-content:center;column-gap:18px;row-gap:4px}
       #noiseSilentEmoji{font-size:clamp(72px,9vw,104px);line-height:1;filter:drop-shadow(0 5px 7px rgba(23,50,77,.10));transform:translateY(2px)}
@@ -126,12 +131,14 @@ function install(){
   return true;
 }
 
+loadDetector();
 let tries=0;
 const id=setInterval(()=>{
   tries++;
   if(install()){
     clearInterval(id);
-    loadDetector();
+    setTimeout(()=>loadDetector(true),80);
+    setTimeout(()=>loadDetector(true),500);
   }else if(tries>100){
     clearInterval(id);
   }
