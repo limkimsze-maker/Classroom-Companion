@@ -10,9 +10,9 @@ function install(){
   window.__timerCalmV8=true;
   document.body.classList.add('ccTimerCompact');
 
-  if(!document.getElementById('ccTimerCompactStyle')){
+  if(!document.getElementById('ccTimerCompactStyleV8')){
     const style=document.createElement('style');
-    style.id='ccTimerCompactStyle';
+    style.id='ccTimerCompactStyleV8';
     style.textContent=`
       body.ccTimerCompact{overflow:hidden!important;background:radial-gradient(circle at 50% 0,#fff 0,#eef8f6 46%,#e5eef1 100%)!important}
       body.ccTimerCompact .shell{height:100vh;min-height:0;padding:4px;overflow:hidden}
