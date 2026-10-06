@@ -74,6 +74,17 @@ async function openFloating(button){
     frame.title=title;
     frame.allow='autoplay';
     frame.style.cssText='display:block;width:100%;height:100%;border:0;margin:0;padding:0;background:#fff;';
+    if(slug==='timer-calm-music'){
+      frame.addEventListener('load',()=>{
+        try{
+          const fd=frame.contentDocument;
+          if(!fd)return;
+          const fresh=fd.createElement('script');
+          fresh.src='timer-calm-music.js?v='+Date.now();
+          fd.body.appendChild(fresh);
+        }catch(e){}
+      },{once:true});
+    }
     d.body.appendChild(frame);
 
     const onClose=()=>{
