@@ -15,38 +15,44 @@ function install(){
     style.id='ccTimerCompactStyleV10';
     style.textContent=`
       body.ccTimerCompact{
-        --timerPink:#ff2f92;
-        --timerPinkDark:#c91565;
-        --timerPinkSoft:#ffe3f0;
+        --timerPink:#66bf86;
+        --timerPinkDark:#2f7d4c;
+        --timerPinkSoft:#e3f5e9;
         overflow:hidden!important;
-        background:radial-gradient(circle at 48% -10%,#fff 0,#fff4f9 46%,#edf4f6 100%)!important
+        background:radial-gradient(circle at 48% -10%,#fff 0,#f2fbf5 46%,#eaf3ed 100%)!important
       }
       body.ccTimerCompact .shell{height:100vh;min-height:0;padding:4px;overflow:hidden}
-      body.ccTimerCompact .top{width:100%;margin:0 auto 4px;padding:4px 6px;min-height:36px;border-radius:12px;border-color:#f3c6da;box-shadow:0 5px 14px rgba(61,31,46,.08)}
-      body.ccTimerCompact .toolIcon{width:30px;height:30px;border-radius:9px;font-size:16px;background:linear-gradient(145deg,var(--timerPink),#ff65ad);color:#fff;box-shadow:0 5px 12px rgba(255,47,146,.22)}
+      body.ccTimerCompact .top{width:100%;margin:0 auto 4px;padding:4px 6px;min-height:36px;border-radius:12px;border-color:#c8e5d2;box-shadow:0 5px 14px rgba(38,86,55,.08)}
+      body.ccTimerCompact .toolIcon{width:30px;height:30px;border-radius:9px;font-size:16px;background:linear-gradient(145deg,var(--timerPink),#83d5a0);color:#fff;box-shadow:0 5px 12px rgba(72,164,105,.20)}
       body.ccTimerCompact .toolTitle{font-size:13.5px;line-height:1.05}
       body.ccTimerCompact .toolHint{display:none}
       body.ccTimerCompact .topActions .btn{width:30px;height:30px;min-height:30px;padding:0;border-radius:9px;font-size:15px}
       body.ccTimerCompact .topActions .label{display:none}
       body.ccTimerCompact .stage{min-height:0;width:100%;margin:0;align-items:stretch}
-      body.ccTimerCompact .panel{width:100%;height:100%;min-height:0;margin:0;padding:7px;border-radius:15px;overflow:hidden;background:linear-gradient(145deg,#fff 0,#fff8fb 58%,#fff1f7 100%);border-color:#f2c6d9;box-shadow:0 8px 22px rgba(217,31,114,.10)}
+      body.ccTimerCompact .panel{width:100%;height:100%;min-height:0;margin:0;padding:7px;border-radius:15px;overflow:hidden;background:linear-gradient(145deg,#fff 0,#f8fcf9 58%,#edf8f1 100%);border-color:#cce7d5;box-shadow:0 8px 22px rgba(58,145,88,.10)}
       body.ccTimerCompact .timerCompactGrid{height:100%;width:100%;display:grid;grid-template-columns:minmax(150px,.98fr) minmax(184px,1.02fr);gap:11px;align-items:center}
       body.ccTimerCompact .timerVisual{min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
       body.ccTimerCompact .timerVisual .eyebrow{font-size:10px;letter-spacing:.15em;margin:0 0 4px;color:var(--timerPinkDark)}
-      body.ccTimerCompact .timerRing{width:min(52vw,calc(100vh - 78px),218px);min-width:152px;max-width:218px;margin:0;background:conic-gradient(var(--timerPink) var(--progress,100%),#f8dce9 0)!important;box-shadow:0 10px 24px rgba(255,47,146,.20),0 0 0 1px rgba(255,47,146,.05)}
-      body.ccTimerCompact .timerRing::before{inset:9px;background:#fff;border-radius:50%;box-shadow:inset 0 0 0 1px #f8d7e6}
+      body.ccTimerCompact .timerRing{width:min(52vw,calc(100vh - 78px),218px);min-width:152px;max-width:218px;margin:0;background:conic-gradient(var(--timerPink) var(--progress,100%),#dceee2 0)!important;box-shadow:0 10px 24px rgba(72,164,105,.18),0 0 0 1px rgba(72,164,105,.06)}
+      body.ccTimerCompact .timerRing::before{inset:9px;background:#fff;border-radius:50%;box-shadow:inset 0 0 0 1px #dcebe1}
       body.ccTimerCompact .timerValue{font-size:clamp(44px,12vw,62px);letter-spacing:-.065em;color:#17324d}
-      body.ccTimerCompact .timerMicro{margin-top:5px;color:#705c66;font-size:10.5px;line-height:1.15;font-weight:850;text-align:center;white-space:nowrap}
+      body.ccTimerCompact .timerMicro{margin-top:5px;color:#5f7165;font-size:10.5px;line-height:1.15;font-weight:850;text-align:center;white-space:nowrap}
       body.ccTimerCompact .timerActions{min-width:0;display:grid;gap:7px;align-content:center}
       body.ccTimerCompact .timerPresets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-      body.ccTimerCompact .timerPresets .btn{min-height:40px;padding:6px 4px;border-radius:11px;font-size:12.5px;line-height:1;font-weight:1000;background:#fff;border-color:#e5c7d4;color:#17324d;box-shadow:0 2px 7px rgba(57,39,48,.05)}
-      body.ccTimerCompact .timerPresets .btn:hover{border-color:#ff86bc;background:#fff8fb;transform:none}
-      body.ccTimerCompact .timerPresets .btn.selected{background:var(--timerPinkSoft);border-color:var(--timerPink);color:#a91759;box-shadow:inset 0 0 0 1px rgba(255,47,146,.15)}
-      body.ccTimerCompact .timerMusic{width:100%;min-height:42px;padding:7px 9px;border-radius:11px;font-size:12px;line-height:1.05;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff0f7!important;border-color:#ffb6d6!important;color:#9d1851!important}
+      body.ccTimerCompact .timerPresets .btn{min-height:40px;padding:6px 4px;border-radius:11px;font-size:12.5px;line-height:1;font-weight:1000;background:#fff;border-color:#cfe1d4;color:#17324d;box-shadow:0 2px 7px rgba(39,70,49,.05)}
+      body.ccTimerCompact .timerPresets .btn:hover{border-color:#91d4a9;background:#f5fbf7;transform:none}
+      body.ccTimerCompact .timerPresets .btn.selected{background:var(--timerPinkSoft);border-color:var(--timerPink);color:#277a49;box-shadow:inset 0 0 0 1px rgba(72,164,105,.14)}
+      body.ccTimerCompact .timerMusic{width:100%;min-height:42px;padding:7px 9px;border-radius:11px;font-size:12px;line-height:1.05;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#edf9f1!important;border-color:#a9dcb9!important;color:#2f7750!important}
       body.ccTimerCompact .timerMainControls{display:grid;grid-template-columns:1.12fr .88fr;gap:7px}
       body.ccTimerCompact .timerMainControls .btn{min-height:44px;padding:7px 8px;border-radius:11px;font-size:13px;line-height:1;font-weight:1000}
-      body.ccTimerCompact .timerMainControls .btn.primary{background:linear-gradient(145deg,var(--timerPink),#e82180)!important;border-color:var(--timerPink)!important;color:#fff!important;box-shadow:0 5px 12px rgba(255,47,146,.20)}
-      body.ccTimerCompact .timerStatus{min-height:12px;color:#705c66;font-size:10px;line-height:1.15;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+      body.ccTimerCompact .timerMainControls .btn.primary{background:linear-gradient(145deg,var(--timerPink),#48a469)!important;border-color:var(--timerPink)!important;color:#fff!important;box-shadow:0 5px 12px rgba(72,164,105,.20)}
+      body.ccTimerCompact .timerStatus{min-height:12px;color:#5f7165;font-size:10px;line-height:1.15;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+
+      /* Keep the same calm green palette in the dedicated fullscreen layout. */
+      html body.ccTrueFullscreenLayout.ccTimerCompact .panel{background:linear-gradient(145deg,#fff 0,#f4fbf6 54%,#e5f5ea 100%)!important;border-color:#c9e6d3!important}
+      html body.ccTrueFullscreenLayout.ccTimerCompact .timerRing{box-shadow:0 20px 46px rgba(72,164,105,.20),0 0 0 1px rgba(72,164,105,.07)!important}
+      html body.ccTrueFullscreenLayout.ccTimerCompact .top{border-color:#c8e5d2!important}
+
       @media(max-width:370px){
         body.ccTimerCompact .timerCompactGrid{grid-template-columns:minmax(138px,.96fr) minmax(170px,1.04fr);gap:7px}
         body.ccTimerCompact .timerRing{width:min(49vw,calc(100vh - 80px));min-width:136px}
