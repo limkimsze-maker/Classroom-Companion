@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-if(window.__classroomMiniPiPV8)return;
-window.__classroomMiniPiPV8=true;
+if(window.__classroomMiniPiPV9)return;
+window.__classroomMiniPiPV9=true;
 
 const api=window.documentPictureInPicture;
 if(!api||typeof api.requestWindow!=='function')return;
@@ -78,6 +78,16 @@ function injectFullscreenLayout(frame){
     fd.body.appendChild(s);
   }catch(e){}
 }
+function injectFreshNoise(frame){
+  try{
+    const fd=frame.contentDocument;if(!fd)return;
+    const old=fd.getElementById('ccFreshNoiseLayer');if(old)old.remove();
+    const s=fd.createElement('script');
+    s.id='ccFreshNoiseLayer';
+    s.src='noise-shush.js?v='+Date.now();
+    fd.body.appendChild(s);
+  }catch(e){}
+}
 function buildFullscreenWindow(win,slug,title){
   const d=win.document;
   d.open();
@@ -93,7 +103,12 @@ function buildFullscreenWindow(win,slug,title){
   frame.allow='autoplay; fullscreen';
   frame.setAttribute('allowfullscreen','');
   frame.style.cssText='position:absolute;inset:0;display:block;width:100%;height:100%;border:0;margin:0;padding:0;background:#fff;';
-  if(isCompactShowcase(slug))frame.addEventListener('load',()=>injectFullscreenLayout(frame),{once:true});
+  if(isCompactShowcase(slug)||slug==='noise-level'){
+    frame.addEventListener('load',()=>{
+      if(isCompactShowcase(slug))injectFullscreenLayout(frame);
+      if(slug==='noise-level')injectFreshNoise(frame);
+    },{once:true});
+  }
   d.body.appendChild(frame);
 
   const controls=d.createElement('div');
@@ -204,15 +219,18 @@ async function openFloating(button){
     frame.src=toolUrl(slug);frame.title=title;frame.allow='autoplay; fullscreen';
     frame.setAttribute('allowfullscreen','');
     frame.style.cssText='display:block;width:100%;height:100%;border:0;margin:0;padding:0;background:#fff;';
-    if(isCompactShowcase(slug)){
+    if(isCompactShowcase(slug)||slug==='noise-level'){
       frame.addEventListener('load',()=>{
-        enforceCompactSize(win,slug);
-        try{
-          const fd=frame.contentDocument;if(!fd)return;
-          const fresh=fd.createElement('script');
-          fresh.src=(slug==='timer-calm-music'?'timer-calm-music.js':'transition-compact-design.js')+'?v='+Date.now();
-          fd.body.appendChild(fresh);
-        }catch(e){}
+        if(isCompactShowcase(slug)){
+          enforceCompactSize(win,slug);
+          try{
+            const fd=frame.contentDocument;if(!fd)return;
+            const fresh=fd.createElement('script');
+            fresh.src=(slug==='timer-calm-music'?'timer-calm-music.js':'transition-compact-design.js')+'?v='+Date.now();
+            fd.body.appendChild(fresh);
+          }catch(e){}
+        }
+        if(slug==='noise-level')injectFreshNoise(frame);
       },{once:true});
     }
     d.body.appendChild(frame);
