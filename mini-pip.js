@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-if(window.__classroomMiniPiPV1)return;
-window.__classroomMiniPiPV1=true;
+if(window.__classroomMiniPiPV2)return;
+window.__classroomMiniPiPV2=true;
 
 const api=window.documentPictureInPicture;
 if(!api||typeof api.requestWindow!=='function')return;
@@ -18,6 +18,11 @@ function toolName(button){
 
 function toolUrl(slug){
   return 'support-tool.html?tool='+encodeURIComponent(slug)+'&v='+Date.now();
+}
+
+function pipSize(slug){
+  if(slug==='timer-calm-music')return{width:344,height:256};
+  return{width:430,height:320};
 }
 
 function clearActive(){
@@ -50,7 +55,7 @@ async function openFloating(button){
     }
 
     const title=toolName(button);
-    const win=await api.requestWindow({width:430,height:320});
+    const win=await api.requestWindow(pipSize(slug));
     if(!win)throw new Error('No Picture-in-Picture window returned');
 
     pipWindow=win;
