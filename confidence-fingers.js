@@ -1,8 +1,8 @@
 (function(){
 'use strict';
 const S=window.Support;
-if(!S||S.slug!=='confidence-check'||window.__confidenceFingersV4)return;
-window.__confidenceFingersV4=true;
+if(!S||S.slug!=='confidence-check'||window.__confidenceFingersV5)return;
+window.__confidenceFingersV5=true;
 
 function hand(n){
   const common='fill="#ffd7b5" stroke="#17324d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"';
@@ -55,21 +55,55 @@ function install(){
   const panel=S.panel||document.getElementById('panel');
   if(!panel)return false;
 
-  if(!document.getElementById('confidenceFingersStyleV4')){
+  document.body.classList.add('ccConfidenceFit');
+
+  if(!document.getElementById('confidenceFingersStyleV5')){
     const style=document.createElement('style');
-    style.id='confidenceFingersStyleV4';
+    style.id='confidenceFingersStyleV5';
     style.textContent=`
-      .fingerGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:1000px;margin:24px auto 0}
-      .fingerCard{min-height:218px;border:1px solid var(--line);border-radius:25px;background:#fff;padding:18px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 7px 20px rgba(18,32,46,.05)}
-      .fingerVisuals{display:flex;align-items:center;justify-content:center;gap:12px;min-height:98px;margin-bottom:8px}
-      .confidencePic{font-size:56px;line-height:1;display:block;filter:drop-shadow(0 3px 3px rgba(23,50,77,.08))}
-      .cartoonHand{width:86px;height:86px;display:block;overflow:visible;filter:drop-shadow(0 4px 4px rgba(23,50,77,.10))}
-      .fingerCount{display:inline-flex;align-items:center;gap:5px;margin-bottom:7px;padding:5px 10px;border-radius:999px;background:var(--teal2);color:var(--teal);font-size:13px;font-weight:1000}
-      .fingerLabel{font-size:20px;line-height:1.15;font-weight:1000;color:var(--navy)}
-      .fingerSub{font-size:13px;line-height:1.3;color:var(--muted);font-weight:800;margin-top:8px}
-      .fingerInstruction{font-size:clamp(17px,2vw,25px);line-height:1.4;color:var(--muted);font-weight:850;max-width:900px;margin:0 auto}
-      .fingerMax{display:inline-block;margin-top:10px;padding:7px 12px;border-radius:999px;background:var(--teal2);color:var(--teal);font-size:13px;font-weight:1000}
-      @media(max-width:760px){.fingerGrid{grid-template-columns:repeat(2,1fr);gap:12px}.fingerCard{min-height:198px;padding:14px 8px}.fingerVisuals{gap:6px;min-height:86px}.confidencePic{font-size:45px}.cartoonHand{width:72px;height:72px}.fingerLabel{font-size:17px}.fingerSub{font-size:12px}}
+      body.ccConfidenceFit{overflow:hidden!important;background:radial-gradient(circle at 50% 0,#fff 0,#f4fbfa 46%,#e9f2f3 100%)!important}
+      body.ccConfidenceFit .shell{height:100vh;min-height:0;padding:10px;overflow:hidden}
+      body.ccConfidenceFit .top{margin:0 auto 10px;border-radius:18px;padding:9px 11px;box-shadow:0 8px 24px rgba(18,32,46,.07)}
+      body.ccConfidenceFit .toolIcon{width:46px;height:46px;border-radius:14px;font-size:24px}
+      body.ccConfidenceFit .toolTitle{font-size:18px}
+      body.ccConfidenceFit .toolHint{font-size:11px}
+      body.ccConfidenceFit .topActions .btn{min-height:42px;padding:8px 12px}
+      body.ccConfidenceFit .stage{min-height:0;margin:0;align-items:flex-start;overflow:hidden}
+      body.ccConfidenceFit .panel{width:min(900px,100%);height:auto;max-height:100%;margin:0 auto;padding:18px 20px 20px;border-radius:26px;overflow:hidden;box-shadow:0 16px 42px rgba(18,32,46,.10);background:linear-gradient(155deg,#fff 0,#fbfefd 58%,#f2faf8 100%)}
+      body.ccConfidenceFit .panel>.eyebrow{font-size:11px;margin:0 0 4px;letter-spacing:.14em}
+      body.ccConfidenceFit .panel>.hero{font-size:clamp(30px,4.5vw,44px);line-height:1.02;margin:0 auto 6px;letter-spacing:-.04em}
+      .fingerInstruction{font-size:clamp(14px,1.9vw,18px);line-height:1.3;color:var(--muted);font-weight:850;max-width:760px;margin:0 auto}
+      .fingerMax{display:inline-flex;align-items:center;margin-top:8px;padding:6px 11px;border-radius:999px;background:var(--teal2);color:var(--teal);font-size:12px;font-weight:1000}
+      .fingerGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:780px;margin:13px auto 0}
+      .fingerCard{min-width:0;min-height:158px;border:1px solid #d7e3e8;border-radius:22px;background:#fff;padding:12px 14px;display:grid;grid-template-columns:112px minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:12px;align-items:center;text-align:left;box-shadow:0 7px 20px rgba(18,32,46,.055);position:relative;overflow:hidden}
+      .fingerCard:before{content:'';position:absolute;inset:0 auto 0 0;width:5px;border-radius:22px 0 0 22px;background:#9dd9d0}
+      .fingerCard:nth-child(1):before{background:#ff7da6}.fingerCard:nth-child(2):before{background:#8bcf69}.fingerCard:nth-child(3):before{background:#38b98b}.fingerCard:nth-child(4):before{background:#69a9ff}
+      .fingerVisuals{grid-column:1;grid-row:1/4;display:flex;align-items:center;justify-content:center;gap:3px;min-height:0;margin:0}
+      .confidencePic{font-size:38px;line-height:1;display:block;filter:drop-shadow(0 3px 3px rgba(23,50,77,.08))}
+      .cartoonHand{width:64px;height:64px;display:block;overflow:visible;filter:drop-shadow(0 4px 4px rgba(23,50,77,.10))}
+      .fingerCount{grid-column:2;justify-self:start;display:inline-flex;align-items:center;gap:5px;margin:0 0 3px;padding:5px 9px;border-radius:999px;background:var(--teal2);color:var(--teal);font-size:12px;font-weight:1000}
+      .fingerLabel{grid-column:2;font-size:clamp(17px,2.2vw,21px);line-height:1.08;font-weight:1000;color:var(--navy);overflow-wrap:anywhere}
+      .fingerSub{grid-column:2;font-size:12px;line-height:1.2;color:var(--muted);font-weight:800;margin-top:5px;overflow-wrap:anywhere}
+      @media(max-height:700px) and (min-width:600px){
+        body.ccConfidenceFit .shell{padding:6px}
+        body.ccConfidenceFit .top{margin-bottom:6px;padding:6px 8px}
+        body.ccConfidenceFit .toolIcon{width:38px;height:38px;font-size:20px}
+        body.ccConfidenceFit .toolHint{display:none}
+        body.ccConfidenceFit .panel{padding:12px 16px 14px}
+        body.ccConfidenceFit .panel>.hero{font-size:32px}
+        .fingerInstruction{font-size:14px}.fingerMax{margin-top:5px;padding:4px 9px;font-size:11px}
+        .fingerGrid{gap:8px;margin-top:8px}.fingerCard{min-height:128px;padding:9px 11px;grid-template-columns:96px minmax(0,1fr);column-gap:8px}
+        .confidencePic{font-size:31px}.cartoonHand{width:55px;height:55px}.fingerLabel{font-size:17px}.fingerSub{font-size:11px}.fingerCount{font-size:11px;padding:4px 8px}
+      }
+      @media(max-width:599px){
+        body.ccConfidenceFit{overflow-y:auto!important}
+        body.ccConfidenceFit .shell{height:auto;min-height:100vh;overflow:visible}
+        body.ccConfidenceFit .stage{overflow:visible}
+        body.ccConfidenceFit .panel{overflow:visible}
+        .fingerGrid{grid-template-columns:1fr}
+        .fingerCard{grid-template-columns:96px minmax(0,1fr);min-height:138px}
+        .confidencePic{font-size:34px}.cartoonHand{width:58px;height:58px}
+      }
     `;
     document.head.appendChild(style);
   }
