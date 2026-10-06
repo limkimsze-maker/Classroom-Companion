@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-if(window.__classroomDesktopPaletteV2)return;
-window.__classroomDesktopPaletteV2=true;
+if(window.__classroomDesktopPaletteV3)return;
+window.__classroomDesktopPaletteV3=true;
 const ua=navigator.userAgent||'';
 const isMobileDevice=/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 if(isMobileDevice)return;
@@ -23,9 +23,14 @@ const SHORT={
  'group-reward-points':'Group Points',
  'daily-visual-timetable':'Timetable'
 };
+function reveal(){
+  const cloak=document.getElementById('ccToolbarBootCloak');
+  if(cloak)cloak.remove();
+  document.documentElement.classList.add('ccToolbarReady');
+}
 function init(){
  const bar=document.getElementById('ccSmartBar'),rail=document.getElementById('ccRail'),brand=document.getElementById('ccBrand'),collapse=document.getElementById('ccCollapse');
- if(!bar||!rail||!brand||!collapse){setTimeout(init,60);return}
+ if(!bar||!rail||!brand||!collapse){setTimeout(init,40);return}
  const old=document.getElementById('ccVerticalLeftStyle');if(old)old.remove();
  const style=document.createElement('style');style.id='ccDesktopPaletteStyle';style.textContent=`
  html,body{margin:0!important;padding:0!important;overflow:hidden!important;background:transparent!important;width:100%!important;height:100%!important}
@@ -57,7 +62,12 @@ function init(){
    try{window.resizeTo(outW,outH);window.moveTo(s.left+8,s.top+8)}catch(e){}
  }
  const mo=new MutationObserver(()=>setTimeout(fit,40));mo.observe(bar,{attributes:true,attributeFilter:['class']});
- [80,260,700,1300].forEach(ms=>setTimeout(fit,ms));
+ fit();
+ setTimeout(()=>{
+   fit();
+   requestAnimationFrame(()=>requestAnimationFrame(reveal));
+ },90);
+ setTimeout(fit,500);
 }
 init();
 })();
