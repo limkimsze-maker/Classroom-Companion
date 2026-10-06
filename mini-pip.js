@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-if(window.__classroomMiniPiPV5)return;
-window.__classroomMiniPiPV5=true;
+if(window.__classroomMiniPiPV6)return;
+window.__classroomMiniPiPV6=true;
 
 const api=window.documentPictureInPicture;
 if(!api||typeof api.requestWindow!=='function')return;
@@ -10,8 +10,7 @@ let pipWindow=null;
 let pipSlug=null;
 let pipButton=null;
 let opening=false;
-let expanded=false;
-let expandButton=null;
+let fullscreenWindow=null;
 
 function toolName(button){
   const label=(button.getAttribute('aria-label')||'').trim();
@@ -20,14 +19,9 @@ function toolName(button){
 function toolUrl(slug){return 'support-tool.html?tool='+encodeURIComponent(slug)+'&v='+Date.now();}
 function isCompactShowcase(slug){return slug==='timer-calm-music'||slug==='transition-countdown';}
 function pipSize(slug){return isCompactShowcase(slug)?{width:344,height:256,preferInitialWindowPlacement:true}:{width:430,height:320};}
-function restoreSize(slug){const s=pipSize(slug);return{width:s.width,height:s.height};}
-function expandedSize(){
-  const sw=screen.availWidth||1280,sh=screen.availHeight||800;
-  return{width:Math.max(760,Math.min(sw-36,1440)),height:Math.max(560,Math.min(sh-72,960))};
-}
 function clearActive(){
   if(pipButton)pipButton.classList.remove('active','expanded');
-  pipWindow=null;pipSlug=null;pipButton=null;expandButton=null;expanded=false;
+  pipWindow=null;pipSlug=null;pipButton=null;
 }
 function fallback(button){button.dataset.ccPipBypass='1';button.click();}
 function resizeFloating(win,size){
@@ -35,46 +29,152 @@ function resizeFloating(win,size){
   try{win.resizeTo(size.width,size.height)}catch(e){}
 }
 function enforceCompactSize(win,slug){
-  if(!isCompactShowcase(slug)||!win||expanded)return;
-  const size=restoreSize(slug);
-  const resize=()=>resizeFloating(win,size);
+  if(!isCompactShowcase(slug)||!win)return;
+  const size=pipSize(slug);
+  const resize=()=>resizeFloating(win,{width:size.width,height:size.height});
   resize();setTimeout(resize,80);setTimeout(resize,260);
 }
-function updateExpandUi(){
-  if(!expandButton)return;
-  expandButton.textContent=expanded?'↙':'⛶';
-  expandButton.title=expanded?'Restore compact size':'Expand tool';
-  expandButton.setAttribute('aria-label',expanded?'Restore compact size':'Expand tool');
-  pipButton?.classList.toggle('expanded',expanded);
+function screenSize(){
+  const s=window.screen||{};
+  return{
+    width:Math.max(800,s.availWidth||s.width||1280),
+    height:Math.max(600,s.availHeight||s.height||800),
+    left:Number.isFinite(s.availLeft)?s.availLeft:0,
+    top:Number.isFinite(s.availTop)?s.availTop:0
+  };
 }
-function toggleExpand(){
-  if(!pipWindow||pipWindow.closed||!pipSlug)return;
-  expanded=!expanded;
-  resizeFloating(pipWindow,expanded?expandedSize():restoreSize(pipSlug));
-  updateExpandUi();
-  try{pipWindow.focus()}catch(e){}
+function styleButton(button,primary=false){
+  button.style.cssText=[
+    'height:42px','min-width:42px','padding:0 13px','border-radius:12px',
+    'border:1px solid '+(primary?'#0f766e':'#cad7df'),
+    'background:'+(primary?'#0f766e':'rgba(255,255,255,.97)'),
+    'color:'+(primary?'#fff':'#17324d'),
+    'font:900 14px/1 system-ui','cursor:pointer','box-shadow:0 5px 16px rgba(18,32,46,.14)',
+    'display:flex','align-items:center','justify-content:center','gap:6px','white-space:nowrap'
+  ].join(';');
 }
-function addExpandControl(win,title){
+function updateFullscreenButton(win,button){
+  if(!win||win.closed||!button)return;
+  const active=!!win.document.fullscreenElement;
+  button.textContent=active?'↙ Exit full screen':'⛶ Full screen';
+  button.title=active?'Exit full screen':'Enter full screen';
+  button.setAttribute('aria-label',active?'Exit full screen':'Enter full screen');
+}
+async function toggleRealFullscreen(win,button){
+  if(!win||win.closed)return;
+  try{
+    if(win.document.fullscreenElement){await win.document.exitFullscreen();}
+    else if(win.document.documentElement.requestFullscreen){await win.document.documentElement.requestFullscreen({navigationUI:'hide'});}
+  }catch(e){}
+  updateFullscreenButton(win,button);
+}
+function buildFullscreenWindow(win,slug,title){
+  const d=win.document;
+  d.open();
+  d.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title></head><body></body></html>');
+  d.close();
+  d.title=title+' • Full screen';
+  d.documentElement.style.cssText='margin:0;width:100%;height:100%;overflow:hidden;background:#0b1520;';
+  d.body.style.cssText='margin:0;width:100%;height:100%;overflow:hidden;background:#fff;position:relative;';
+
+  const frame=d.createElement('iframe');
+  frame.src=toolUrl(slug);
+  frame.title=title;
+  frame.allow='autoplay; fullscreen';
+  frame.setAttribute('allowfullscreen','');
+  frame.style.cssText='position:absolute;inset:0;display:block;width:100%;height:100%;border:0;margin:0;padding:0;background:#fff;';
+  d.body.appendChild(frame);
+
+  const controls=d.createElement('div');
+  controls.style.cssText='position:fixed;top:10px;right:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;';
+
+  const fs=d.createElement('button');
+  fs.type='button';
+  styleButton(fs,true);
+  fs.textContent='⛶ Full screen';
+  fs.title='Enter full screen';
+  fs.setAttribute('aria-label','Enter full screen');
+  fs.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleRealFullscreen(win,fs)});
+
+  const close=d.createElement('button');
+  close.type='button';
+  styleButton(close,false);
+  close.textContent='✕';
+  close.title='Close';
+  close.setAttribute('aria-label','Close full screen tool');
+  close.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();try{win.close()}catch(err){}});
+
+  controls.append(fs,close);
+  d.body.appendChild(controls);
+
+  const hint=d.createElement('div');
+  hint.textContent='If Chrome keeps its bars visible, click “⛶ Full screen” once.';
+  hint.style.cssText='position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:2147483646;background:rgba(23,50,77,.92);color:#fff;padding:9px 14px;border-radius:999px;font:800 12px/1.2 system-ui;box-shadow:0 5px 18px rgba(0,0,0,.18);opacity:0;transition:opacity .18s;pointer-events:none;';
+  d.body.appendChild(hint);
+
+  d.addEventListener('fullscreenchange',()=>{
+    updateFullscreenButton(win,fs);
+    if(d.fullscreenElement)hint.style.opacity='0';
+  });
+
+  setTimeout(()=>{
+    if(!win.closed&&!d.fullscreenElement){hint.style.opacity='1';setTimeout(()=>{hint.style.opacity='0'},3500);}
+  },500);
+
+  return fs;
+}
+function openTrueFullscreen(slug,title){
+  const s=screenSize();
+  const name='ClassroomCompanionFull_'+slug.replace(/[^a-z0-9_-]/gi,'_');
+  const features=[
+    'popup=yes','resizable=yes','scrollbars=no','menubar=no','toolbar=no','location=no','status=no',
+    'left='+s.left,'top='+s.top,'width='+s.width,'height='+s.height
+  ].join(',');
+
+  let win=null;
+  try{win=window.open('',name,features)}catch(e){}
+  if(!win){
+    if(pipWindow&&!pipWindow.closed){resizeFloating(pipWindow,{width:s.width-20,height:s.height-70});}
+    return false;
+  }
+
+  fullscreenWindow=win;
+  try{win.moveTo(s.left,s.top)}catch(e){}
+  try{win.resizeTo(s.width,s.height)}catch(e){}
+  const fsButton=buildFullscreenWindow(win,slug,title);
+  try{win.focus()}catch(e){}
+
+  /* Best-effort one-click true fullscreen. Chrome may require the second click
+     on our in-window button; the window itself still opens screen-sized. */
+  try{
+    const p=win.document.documentElement.requestFullscreen&&win.document.documentElement.requestFullscreen({navigationUI:'hide'});
+    if(p&&typeof p.then==='function')p.then(()=>updateFullscreenButton(win,fsButton)).catch(()=>{});
+  }catch(e){}
+
+  setTimeout(()=>{
+    if(pipWindow&&!pipWindow.closed){try{pipWindow.close()}catch(e){}}
+  },120);
+  return true;
+}
+function addFullscreenControl(win,title,slug){
   const d=win.document;
   const b=d.createElement('button');
   b.type='button';
   b.textContent='⛶';
-  b.title='Expand tool';
-  b.setAttribute('aria-label','Expand tool');
+  b.title='Full screen';
+  b.setAttribute('aria-label','Open tool full screen');
   b.style.cssText='position:fixed;top:7px;right:48px;z-index:2147483647;width:31px;height:31px;border:1px solid #cbd8df;border-radius:9px;background:rgba(255,255,255,.97);color:#17324d;font:900 17px/1 system-ui;display:grid;place-items:center;cursor:pointer;box-shadow:0 3px 10px rgba(18,32,46,.10);padding:0;';
   b.addEventListener('mouseenter',()=>{b.style.background='#eef7ff';b.style.borderColor='#82bdf2'});
   b.addEventListener('mouseleave',()=>{b.style.background='rgba(255,255,255,.97)';b.style.borderColor='#cbd8df'});
-  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleExpand()});
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openTrueFullscreen(slug,title)});
   d.body.appendChild(b);
-  expandButton=b;
-  updateExpandUi();
 }
 
 async function openFloating(button){
   if(opening)return;
   const slug=button.dataset.slug;
   if(!slug)return;
-  if(pipWindow&&!pipWindow.closed&&pipSlug===slug){toggleExpand();return;}
+  if(pipWindow&&!pipWindow.closed&&pipSlug===slug){try{pipWindow.focus()}catch(e){}return;}
 
   opening=true;
   try{
@@ -84,7 +184,7 @@ async function openFloating(button){
     if(!win)throw new Error('No Picture-in-Picture window returned');
     enforceCompactSize(win,slug);
 
-    pipWindow=win;pipSlug=slug;pipButton=button;expanded=false;button.classList.add('active');
+    pipWindow=win;pipSlug=slug;pipButton=button;button.classList.add('active');
     const d=win.document;
     d.title=title;
     d.documentElement.style.cssText='margin:0;width:100%;height:100%;overflow:hidden;background:#fff;';
@@ -92,7 +192,8 @@ async function openFloating(button){
     d.body.replaceChildren();
 
     const frame=d.createElement('iframe');
-    frame.src=toolUrl(slug);frame.title=title;frame.allow='autoplay';
+    frame.src=toolUrl(slug);frame.title=title;frame.allow='autoplay; fullscreen';
+    frame.setAttribute('allowfullscreen','');
     frame.style.cssText='display:block;width:100%;height:100%;border:0;margin:0;padding:0;background:#fff;';
     if(isCompactShowcase(slug)){
       frame.addEventListener('load',()=>{
@@ -106,7 +207,7 @@ async function openFloating(button){
       },{once:true});
     }
     d.body.appendChild(frame);
-    addExpandControl(win,title);
+    addFullscreenControl(win,title,slug);
 
     win.addEventListener('pagehide',()=>{if(pipWindow===win)clearActive();},{once:true});
   }catch(err){
