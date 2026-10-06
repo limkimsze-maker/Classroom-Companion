@@ -1,15 +1,75 @@
 (function(){
 'use strict';
 const S=window.Support;
-if(!S||S.slug!=='noise-level'||window.__noiseShushV4)return;
-window.__noiseShushV4=true;
+if(!S||S.slug!=='noise-level'||window.__noiseShushV5)return;
+window.__noiseShushV5=true;
 
 const AUDIO_SRC='bredorantes-shushing-150148.mp3';
+const SOUND_STORE='classroomCompanionNoiseShushSoundV1';
 let audio=null;
+let soundEnabled=loadSoundEnabled();
+let detectorState=window.__ccNoiseDetectorState||'off';
+let unlocking=false;
 
-function stopAudio(){
+function loadSoundEnabled(){
+  try{
+    const saved=localStorage.getItem(SOUND_STORE);
+    return saved===null?true:saved==='true';
+  }catch(e){return true}
+}
+function saveSoundEnabled(){try{localStorage.setItem(SOUND_STORE,String(soundEnabled))}catch(e){}}
+function stopAudio(reset=true){
   if(!audio)return;
-  try{audio.pause();audio.currentTime=0;}catch(e){}
+  try{audio.pause();if(reset)audio.currentTime=0;}catch(e){}
+}
+function shouldShush(){return soundEnabled&&(detectorState==='near'||detectorState==='loud')}
+function updateButton(){
+  const btn=document.getElementById('noiseShushBtn');
+  if(!btn)return;
+  btn.textContent=soundEnabled?'♫ Sound On':'🔇 Sound Off';
+  btn.classList.toggle('soundOff',!soundEnabled);
+  btn.classList.toggle('playing',!!audio&&!audio.paused&&shouldShush());
+  btn.setAttribute('aria-pressed',String(soundEnabled));
+  btn.setAttribute('aria-label',soundEnabled?'Turn automatic shushing sound off':'Turn automatic shushing sound on');
+}
+function syncAudio(){
+  if(!audio)return;
+  if(!shouldShush()){
+    stopAudio();
+    updateButton();
+    return;
+  }
+  if(!audio.paused){updateButton();return}
+  try{audio.currentTime=0;}catch(e){}
+  const p=audio.play();
+  updateButton();
+  if(p&&typeof p.catch==='function')p.catch(()=>updateButton());
+}
+function unlockAudio(){
+  if(!audio||unlocking)return;
+  unlocking=true;
+  const oldVolume=audio.volume;
+  try{
+    audio.volume=0;
+    const p=audio.play();
+    if(p&&typeof p.then==='function'){
+      p.then(()=>{
+        try{audio.pause();audio.currentTime=0;audio.volume=oldVolume}catch(e){}
+        unlocking=false;
+        syncAudio();
+      }).catch(()=>{
+        try{audio.volume=oldVolume}catch(e){}
+        unlocking=false;
+      });
+    }else{
+      try{audio.pause();audio.currentTime=0;audio.volume=oldVolume}catch(e){}
+      unlocking=false;
+      syncAudio();
+    }
+  }catch(e){
+    try{audio.volume=oldVolume}catch(err){}
+    unlocking=false;
+  }
 }
 
 function loadDetector(force=false){
@@ -20,7 +80,7 @@ function loadDetector(force=false){
   if(force&&!document.getElementById('noiseDetectorControls'))window.__noiseDetectorV1=false;
   const script=document.createElement('script');
   script.id='noiseDetectorScript';
-  script.src='noise-detector.js?v=20261006detector2&t='+Date.now();
+  script.src='noise-detector.js?v=20261006detector3&t='+Date.now();
   script.onerror=()=>{try{script.remove()}catch(e){};setTimeout(()=>loadDetector(true),350)};
   document.body.appendChild(script);
 }
@@ -33,16 +93,15 @@ function install(){
   if(!panel||!badge||!noiseBig)return false;
   if(document.getElementById('noiseShushWrap'))return true;
 
-  if(!document.getElementById('noiseShushStyleV4')){
+  if(!document.getElementById('noiseShushStyleV5')){
     const style=document.createElement('style');
-    style.id='noiseShushStyleV4';
+    style.id='noiseShushStyleV5';
     style.textContent=`
       .noiseMainContent{display:grid;grid-template-columns:auto auto;align-items:center;justify-content:center;column-gap:18px;row-gap:4px}
       #noiseSilentEmoji{font-size:clamp(72px,9vw,104px);line-height:1;filter:drop-shadow(0 5px 7px rgba(23,50,77,.10));transform:translateY(2px)}
       #noiseSilentEmoji.hidden{display:none!important}
       .noiseMainContent #noiseSub{grid-column:1/-1}
       #noiseShushWrap{display:flex;justify-content:center;margin:-4px auto 18px;transition:.18s ease}
-      #noiseShushWrap.hidden{display:none!important}
       #noiseShushBtn{
         min-height:46px;padding:10px 18px;border-radius:14px;border:1px solid #9dd9d0;
         background:linear-gradient(145deg,#f7fffd,#dff6f1);color:#0a5d57;
@@ -50,6 +109,7 @@ function install(){
       }
       #noiseShushBtn:hover{transform:translateY(-1px);border-color:#63c8b9;background:#eefbf8}
       #noiseShushBtn.playing{background:#17324d;border-color:#17324d;color:#fff;box-shadow:0 8px 20px rgba(23,50,77,.18)}
+      #noiseShushBtn.soundOff{background:#fff3f1;border-color:#f0b1a9;color:#b42318;box-shadow:none}
       @media(min-width:1200px) and (min-height:700px){
         #noiseSilentEmoji{font-size:clamp(96px,8vw,132px)}
         .noiseMainContent{column-gap:26px}
@@ -75,6 +135,7 @@ function install(){
   audio=new Audio(AUDIO_SRC);
   audio.preload='auto';
   audio.loop=true;
+  audio.volume=.65;
 
   const wrap=document.createElement('div');
   wrap.id='noiseShushWrap';
@@ -82,44 +143,37 @@ function install(){
   btn.id='noiseShushBtn';
   btn.className='btn soft';
   btn.type='button';
-  btn.textContent='🔊 Play shush';
-  btn.setAttribute('aria-label','Play repeating shushing sound for Silent mode');
   wrap.appendChild(btn);
   badge.insertAdjacentElement('afterend',wrap);
 
-  function resetButton(){
-    btn.classList.remove('playing');
-    btn.textContent='🔊 Play shush';
-    btn.setAttribute('aria-label','Play repeating shushing sound for Silent mode');
-  }
-
   function updateSilentUi(){
-    const silent=(noiseBig.textContent||'').trim()==='Silent';
-    wrap.classList.toggle('hidden',!silent);
+    const active=document.querySelector('.choice.active[data-i]');
+    const silent=active?Number(active.dataset.i)===0:(noiseBig.textContent||'').trim()==='Silent';
     emoji.classList.toggle('hidden',!silent);
     if(noiseSub)noiseSub.style.gridColumn='1 / -1';
-    if(!silent){
-      stopAudio();
-      resetButton();
-    }
   }
 
   btn.addEventListener('click',()=>{
-    if(!audio)return;
-    if(!audio.paused){
-      stopAudio();
-      resetButton();
-      return;
-    }
-    try{audio.currentTime=0;}catch(e){}
-    const p=audio.play();
-    btn.classList.add('playing');
-    btn.textContent='■ Stop shush';
-    btn.setAttribute('aria-label','Stop repeating shushing sound');
-    if(p&&typeof p.catch==='function')p.catch(()=>resetButton());
+    soundEnabled=!soundEnabled;
+    saveSoundEnabled();
+    if(soundEnabled)unlockAudio();
+    else stopAudio();
+    updateButton();
+    syncAudio();
   });
 
-  audio.addEventListener('error',resetButton);
+  document.addEventListener('pointerdown',e=>{
+    if(soundEnabled&&e.target.closest?.('#noiseDetectorToggle'))unlockAudio();
+  },true);
+
+  window.addEventListener('cc-noise-detector-state',e=>{
+    detectorState=e.detail?.state||'off';
+    syncAudio();
+  });
+
+  audio.addEventListener('play',updateButton);
+  audio.addEventListener('pause',updateButton);
+  audio.addEventListener('error',()=>{stopAudio();updateButton()});
 
   panel.addEventListener('click',e=>{
     if(e.target.closest('[data-i]'))setTimeout(updateSilentUi,0);
@@ -127,7 +181,10 @@ function install(){
 
   const observer=new MutationObserver(updateSilentUi);
   observer.observe(noiseBig,{childList:true,characterData:true,subtree:true});
+  window.addEventListener('pagehide',()=>stopAudio(),{once:true});
   updateSilentUi();
+  updateButton();
+  syncAudio();
   return true;
 }
 
