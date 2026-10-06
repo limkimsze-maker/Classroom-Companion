@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-if(window.__classroomMiniPiPV6)return;
-window.__classroomMiniPiPV6=true;
+if(window.__classroomMiniPiPV7)return;
+window.__classroomMiniPiPV7=true;
 
 const api=window.documentPictureInPicture;
 if(!api||typeof api.requestWindow!=='function')return;
@@ -16,7 +16,9 @@ function toolName(button){
   const label=(button.getAttribute('aria-label')||'').trim();
   return (label.split(' • ')[0]||label||'Classroom Companion').trim();
 }
-function toolUrl(slug){return 'support-tool.html?tool='+encodeURIComponent(slug)+'&v='+Date.now();}
+function toolUrl(slug,display){
+  return 'support-tool.html?tool='+encodeURIComponent(slug)+(display?'&display='+encodeURIComponent(display):'')+'&v='+Date.now();
+}
 function isCompactShowcase(slug){return slug==='timer-calm-music'||slug==='transition-countdown';}
 function pipSize(slug){return isCompactShowcase(slug)?{width:344,height:256,preferInitialWindowPlacement:true}:{width:430,height:320};}
 function clearActive(){
@@ -78,7 +80,7 @@ function buildFullscreenWindow(win,slug,title){
   d.body.style.cssText='margin:0;width:100%;height:100%;overflow:hidden;background:#fff;position:relative;';
 
   const frame=d.createElement('iframe');
-  frame.src=toolUrl(slug);
+  frame.src=toolUrl(slug,'fullscreen');
   frame.title=title;
   frame.allow='autoplay; fullscreen';
   frame.setAttribute('allowfullscreen','');
@@ -144,8 +146,6 @@ function openTrueFullscreen(slug,title){
   const fsButton=buildFullscreenWindow(win,slug,title);
   try{win.focus()}catch(e){}
 
-  /* Best-effort one-click true fullscreen. Chrome may require the second click
-     on our in-window button; the window itself still opens screen-sized. */
   try{
     const p=win.document.documentElement.requestFullscreen&&win.document.documentElement.requestFullscreen({navigationUI:'hide'});
     if(p&&typeof p.then==='function')p.then(()=>updateFullscreenButton(win,fsButton)).catch(()=>{});
