@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-if(window.__classroomMiniPiPV7)return;
-window.__classroomMiniPiPV7=true;
+if(window.__classroomMiniPiPV8)return;
+window.__classroomMiniPiPV8=true;
 
 const api=window.documentPictureInPicture;
 if(!api||typeof api.requestWindow!=='function')return;
@@ -70,6 +70,14 @@ async function toggleRealFullscreen(win,button){
   }catch(e){}
   updateFullscreenButton(win,button);
 }
+function injectFullscreenLayout(frame){
+  try{
+    const fd=frame.contentDocument;if(!fd)return;
+    const s=fd.createElement('script');
+    s.src='fullscreen-tool-layout.js?v='+Date.now();
+    fd.body.appendChild(s);
+  }catch(e){}
+}
 function buildFullscreenWindow(win,slug,title){
   const d=win.document;
   d.open();
@@ -85,6 +93,7 @@ function buildFullscreenWindow(win,slug,title){
   frame.allow='autoplay; fullscreen';
   frame.setAttribute('allowfullscreen','');
   frame.style.cssText='position:absolute;inset:0;display:block;width:100%;height:100%;border:0;margin:0;padding:0;background:#fff;';
+  if(isCompactShowcase(slug))frame.addEventListener('load',()=>injectFullscreenLayout(frame),{once:true});
   d.body.appendChild(frame);
 
   const controls=d.createElement('div');
