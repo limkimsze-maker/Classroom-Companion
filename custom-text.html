@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Custom Text • Classroom Companion</title>
+<style>
+:root{--teal:#0f766e;--teal2:#e7f7f4;--navy:#17324d;--ink:#17202a;--muted:#667085;--line:#d8e1e8;--red:#b42318}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 50% 8%,#fff 0,#f2f8f7 38%,#e8f0f3 100%);color:var(--ink)}button,input,textarea{font:inherit}button{cursor:pointer}.shell{min-height:100vh;padding:14px;display:flex;flex-direction:column;gap:12px}.top{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:20px;padding:10px 12px;box-shadow:0 10px 30px rgba(18,32,46,.08)}.icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:var(--teal2);font-size:25px;flex:none}.meta{min-width:0;flex:1}.title{font-size:19px;font-weight:1000;color:var(--navy);letter-spacing:-.02em}.hint{font-size:11px;color:var(--muted);font-weight:800;margin-top:2px}.saved{font-size:10px;font-weight:900;padding:6px 9px;border-radius:999px;background:#edf8f5;color:var(--teal);white-space:nowrap}.stage{flex:1;display:flex;align-items:stretch;justify-content:center;min-height:0}.card{width:min(1050px,100%);background:rgba(255,255,255,.98);border:1px solid var(--line);border-radius:26px;padding:clamp(18px,3vw,32px);box-shadow:0 18px 55px rgba(18,32,46,.12);display:flex;flex-direction:column;min-height:0}.editor{display:grid;gap:13px;flex:1;min-height:0}.field{display:grid;gap:6px;text-align:left}.field span{font-size:12px;font-weight:950;color:#3d5265}.field input,.field textarea{width:100%;border:1px solid #cfd9e0;border-radius:14px;background:#fff;color:var(--navy);padding:11px 13px;font-weight:800;outline:none}.field input:focus,.field textarea:focus{border-color:#5ebdaf;box-shadow:0 0 0 4px rgba(15,118,110,.10)}.field input{min-height:46px;font-size:17px}.field textarea{min-height:230px;resize:vertical;font-size:20px;line-height:1.45}.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.btn{min-height:42px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--navy);padding:8px 13px;font-weight:950}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.btn.soft{background:var(--teal2);border-color:#9dd9d0;color:#0a5d57}.btn.danger{background:#fff3f1;border-color:#f0b1a9;color:var(--red)}.present{flex:1;min-height:0;display:flex;flex-direction:column}.presentBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:10px}.sizeLabel{font-size:11px;font-weight:900;color:var(--muted);margin-right:auto}.display{flex:1;min-height:300px;border:1px solid #d6e5e1;border-radius:24px;background:linear-gradient(145deg,#fff,#f4faf8);padding:clamp(24px,5vw,58px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:auto}.displayTitle{margin:0 0 16px;color:var(--teal);font-size:clamp(22px,4vw,44px);line-height:1.08;font-weight:1000;letter-spacing:-.03em;overflow-wrap:anywhere}.displayBody{margin:0;max-width:1000px;color:var(--navy);font-size:var(--custom-size,48px);line-height:1.28;font-weight:900;white-space:pre-wrap;overflow-wrap:anywhere}.empty{color:var(--muted);font-size:18px;font-weight:850}.tip{font-size:11px;color:var(--muted);font-weight:750;margin-top:3px}.hidden{display:none!important}.display:fullscreen{border:0;border-radius:0;background:#fff;padding:7vw}.display:fullscreen .displayBody{font-size:max(var(--custom-size,48px),5vw)}
+@media(max-width:700px){.shell{padding:8px}.top{border-radius:16px}.saved{display:none}.card{border-radius:20px;padding:16px}.field textarea{min-height:190px;font-size:18px}.actions{justify-content:stretch}.actions .btn{flex:1}.display{min-height:240px;padding:24px 16px}.presentBar .btn{padding:7px 10px}.displayBody{font-size:var(--custom-size,38px)}}
+</style>
+<script src="https://cdn.counter.dev/script.js" data-id="825e93b6-ce99-40ef-8bcc-125f13297433" data-utcoffset="8"></script>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="icon">📝</div>
+    <div class="meta"><div class="title">Custom Text / Instructions</div><div class="hint">Type anything you want pupils to see.</div></div>
+    <div class="saved" id="savedState">Saved on this device</div>
+  </header>
+  <main class="stage">
+    <section class="card">
+      <div class="editor" id="editor">
+        <label class="field"><span>Heading (optional)</span><input id="heading" maxlength="100" placeholder="e.g. What to do now"></label>
+        <label class="field"><span>Instructions / text</span><textarea id="bodyText" maxlength="3000" placeholder="Type your lesson instructions, learning objective, question, reminder or any message here..."></textarea></label>
+        <div class="tip">Your latest text is saved automatically in this browser. Press Ctrl + Enter to show it.</div>
+        <div class="actions"><button class="btn danger" id="clearBtn" type="button">Clear</button><button class="btn primary" id="showBtn" type="button">Show to class</button></div>
+      </div>
+
+      <div class="present hidden" id="present">
+        <div class="presentBar"><span class="sizeLabel">Text size</span><button class="btn" id="smallerBtn" type="button" aria-label="Make text smaller">A−</button><button class="btn" id="largerBtn" type="button" aria-label="Make text larger">A+</button><button class="btn soft" id="fullBtn" type="button">Full screen</button><button class="btn" id="editBtn" type="button">Edit</button></div>
+        <div class="display" id="display" tabindex="0">
+          <h1 class="displayTitle" id="displayTitle"></h1>
+          <div class="displayBody" id="displayBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+'use strict';
+const KEY='classroom-companion-custom-text-v1';
+const heading=document.getElementById('heading'),bodyText=document.getElementById('bodyText'),editor=document.getElementById('editor'),present=document.getElementById('present'),display=document.getElementById('display'),displayTitle=document.getElementById('displayTitle'),displayBody=document.getElementById('displayBody'),savedState=document.getElementById('savedState');
+let fontSize=48,saveTimer=null;
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(!x)return;heading.value=x.heading||'';bodyText.value=x.body||'';fontSize=Number(x.fontSize)||48;}catch{}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({heading:heading.value,body:bodyText.value,fontSize}));savedState.textContent='Saved on this device';}catch{savedState.textContent='Could not save';}}
+function queueSave(){savedState.textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(save,250)}
+function applySize(){fontSize=Math.max(24,Math.min(92,fontSize));displayBody.style.setProperty('--custom-size',fontSize+'px');save()}
+function show(){const h=heading.value.trim(),b=bodyText.value.trim();displayTitle.textContent=h;displayTitle.hidden=!h;displayBody.textContent=b||'Type some text first, then choose Show to class.';displayBody.classList.toggle('empty',!b);editor.classList.add('hidden');present.classList.remove('hidden');applySize();}
+function edit(){present.classList.add('hidden');editor.classList.remove('hidden');bodyText.focus()}
+heading.addEventListener('input',queueSave);bodyText.addEventListener('input',queueSave);
+document.getElementById('showBtn').onclick=show;document.getElementById('editBtn').onclick=edit;
+document.getElementById('smallerBtn').onclick=()=>{fontSize-=6;applySize()};document.getElementById('largerBtn').onclick=()=>{fontSize+=6;applySize()};
+document.getElementById('clearBtn').onclick=()=>{if(!confirm('Clear the saved custom text?'))return;heading.value='';bodyText.value='';fontSize=48;save();bodyText.focus()};
+document.getElementById('fullBtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await display.requestFullscreen();}catch{}};
+document.addEventListener('fullscreenchange',()=>{document.getElementById('fullBtn').textContent=document.fullscreenElement?'Exit full screen':'Full screen'});
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();show()}else if(e.key==='Escape'&&!document.fullscreenElement&&!present.classList.contains('hidden'))edit()});
+load();applySize();
+</script>
+</body>
+</html>
