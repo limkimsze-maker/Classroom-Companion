@@ -5,45 +5,67 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Classroom Companion Toolbar</title>
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:system-ui}.boot{position:fixed;left:6px;top:6px;width:50px;height:50px;border:2px solid #0f766e;border-radius:15px;background:#0f766e;color:#fff;display:grid;place-items:center;font-size:22px;font-weight:1000;box-shadow:0 8px 22px rgba(15,118,110,.28)}.retry{position:fixed;left:66px;top:10px;min-height:42px;padding:0 14px;border:1px solid #9dd9d0;border-radius:12px;background:#fff;color:#0a5d57;font:900 13px/1 system-ui;cursor:pointer;box-shadow:0 7px 18px rgba(18,32,46,.10)}
+:root{--teal:#0f766e;--teal2:#e7f7f4;--navy:#17324d;--line:#d7e4e2;--muted:#64748b;--gold:#f59e0b;--blue:#6478b5}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--navy)}body{padding:0}.palette{position:fixed;inset:0;background:rgba(255,255,255,.985);border:1px solid #cfe0de;border-radius:20px;box-shadow:0 18px 44px rgba(18,32,46,.22);display:flex;flex-direction:column;overflow:hidden}.head{padding:14px 14px 11px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #edf2f2}.brand{width:42px;height:42px;border-radius:13px;background:var(--teal);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:1000;flex:none}.meta{min-width:0;flex:1}.title{font-size:17px;font-weight:1000;letter-spacing:-.02em}.sub{font-size:10px;color:var(--muted);font-weight:800;margin-top:2px}.status{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#f1f5f4;color:#42615d;white-space:nowrap}.grid{padding:11px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:auto;flex:1}.tool{min-height:58px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,#fff,#f7fbfa);display:grid;grid-template-columns:36px 1fr 8px;gap:8px;align-items:center;padding:8px 9px;text-align:left;cursor:pointer;box-shadow:0 4px 11px rgba(18,32,46,.04);transition:.12s ease;color:var(--navy)}.tool:hover,.tool:focus-visible{transform:translateY(-1px);border-color:#79c8bc;box-shadow:0 8px 18px rgba(15,118,110,.10);outline:none}.tool.active{background:#eaf8f5;border-color:#0f766e}.tool.expanded{outline:2px solid #f59e0b;outline-offset:1px}.icon{font-size:25px;line-height:1}.name{font-size:12px;font-weight:1000;line-height:1.15;color:var(--navy)}.modeDot{width:7px;height:7px;border-radius:99px}.mini .modeDot{background:var(--teal)}.half .modeDot{background:var(--blue)}.full .modeDot{background:var(--gold)}.foot{border-top:1px solid #edf2f2;padding:8px 11px;display:flex;align-items:center;gap:8px}.legend{font-size:9px;color:#71807e;font-weight:850;line-height:1.35;flex:1}.close{border:0;border-radius:10px;background:#f2f5f5;color:#49605e;font-weight:1000;padding:7px 10px;cursor:pointer}.toast{position:absolute;left:10px;right:10px;bottom:52px;background:#17324d;color:#fff;border-radius:12px;padding:8px 10px;font-size:11px;font-weight:850;text-align:center;opacity:0;transform:translateY(5px);pointer-events:none;transition:.18s}.toast.show{opacity:1;transform:none}@media(max-width:500px){.palette{border-radius:0}.grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px;gap:6px}.tool{min-height:54px;padding:7px}.name{font-size:11px}.head{padding:10px}.status{display:none}}
 </style>
 <script src="https://cdn.counter.dev/script.js" data-id="825e93b6-ce99-40ef-8bcc-125f13297433" data-utcoffset="8"></script>
 </head>
-<body><div class="boot" aria-label="Opening Classroom Companion toolbar">✦</div>
+<body>
+<div class="palette" id="ccSmartBar">
+  <header class="head"><div class="brand">✦</div><div class="meta" id="ccPaletteTitle"><div class="title">Classroom Companion</div><span class="sub">Teacher tools • Created by Lim Kim Sze</span></div><div class="status" id="status">Checking…</div></header>
+  <main class="grid" id="grid"></main>
+  <div class="toast" id="toast"></div>
+  <footer class="foot"><div class="legend">Teal: mini • Blue: half • Gold: full<br>Mini tools float above Chrome where supported.</div><button class="close" id="closeBtn">Close</button></footer>
+</div>
 <script>
-async function getWidgetHtml(){
-  let lastErr=null;
-  for(let attempt=0;attempt<3;attempt++){
-    try{
-      const r=await fetch('widget.html?v='+Date.now(),{cache:'no-store'});
-      if(!r.ok)throw new Error('widget '+r.status);
-      return await r.text();
-    }catch(e){
-      lastErr=e;
-      if(attempt<2)await new Promise(resolve=>setTimeout(resolve,140*(attempt+1)));
-    }
-  }
-  throw lastErr||new Error('widget unavailable');
+'use strict';
+const TOOLS=[
+ {slug:'timer-calm-music',icon:'⏱️',title:'Timer + Calm Music',mode:'mini'},
+ {slug:'transition-countdown',icon:'⏳',title:'Transition Countdown',mode:'mini'},
+ {slug:'attention-signal',icon:'👀',title:'Attention Signal',mode:'mini'},
+ {slug:'noise-level',icon:'🔊',title:'Noise Level',mode:'mini'},
+ {slug:'question-spinner',icon:'💬',title:'Sentence Starters',mode:'half'},
+ {slug:'confidence-check',icon:'📈',title:'Confidence Check',mode:'half'},
+ {slug:'pick-a-pupil',icon:'🎯',title:'Pick a Pupil',mode:'mini'},
+ {slug:'make-groups',icon:'👥',title:'Make Groups',mode:'half'},
+ {slug:'brain-break',icon:'🧠',title:'Brain Break',mode:'full'},
+ {slug:'reflect',icon:'💭',title:'Reflect',mode:'half'},
+ {slug:'quote-of-the-day',icon:'✨',title:'Quote of the Day',mode:'full'},
+ {slug:'class-organisation',icon:'🗂️',title:'Class Organisation',mode:'full'},
+ {slug:'daily-duty-roster',icon:'🧹',title:'Daily Duty Roster',mode:'full'},
+ {slug:'pupil-reward-points',icon:'⭐',title:'Pupil Reward Points',mode:'half'},
+ {slug:'group-reward-points',icon:'🏆',title:'Group Reward Points',mode:'half'},
+ {slug:'daily-visual-timetable',icon:'🗓️',title:'Daily Visual Timetable',mode:'full'}
+];
+const DIRECT={
+ 'class-organisation':'class-organisation.html',
+ 'daily-duty-roster':'daily-duty-roster.html',
+ 'pupil-reward-points':'reward-points.html?mode=pupil',
+ 'group-reward-points':'reward-points.html?mode=group'
+};
+const grid=document.getElementById('grid'),toast=document.getElementById('toast'),status=document.getElementById('status');
+const buttons=new Map(),windows=new Map(),expanded=new Map();
+const hasPiP=!!(window.documentPictureInPicture&&typeof window.documentPictureInPicture.requestWindow==='function');
+status.textContent=hasPiP?'✓ Floating mini':'Standard windows';status.style.background=hasPiP?'#e7f7f4':'#fff4df';status.style.color=hasPiP?'#0f766e':'#8a5b00';
+function say(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toast.classList.remove('show'),1800)}
+function toolUrl(t){const base=DIRECT[t.slug];if(base)return base+(base.includes('?')?'&':'?')+'v='+Date.now();return 'support-tool.html?tool='+encodeURIComponent(t.slug)+'&v='+Date.now()}
+function screenBox(){return{left:Number.isFinite(screen.availLeft)?screen.availLeft:0,top:Number.isFinite(screen.availTop)?screen.availTop:0,w:screen.availWidth||1280,h:screen.availHeight||800}}
+function spec(mode){const s=screenBox();if(mode==='full')return{x:s.left+6,y:s.top+6,w:Math.max(900,s.w-12),h:Math.max(650,s.h-12)};if(mode==='half'){const w=Math.max(620,Math.round(s.w*.52));return{x:s.left+s.w-w-8,y:s.top+8,w,h:Math.max(600,s.h-16)}}const w=Math.min(500,Math.max(410,Math.round(s.w*.3))),h=Math.min(390,Math.max(300,Math.round(s.h*.34)));return{x:s.left+s.w-w-10,y:s.top+10,w,h}}
+function mark(slug,on){buttons.get(slug)?.classList.toggle('active',!!on)}
+function toggleExisting(t,w){if(t.mode==='full'){try{w.focus()}catch(e){};return}const on=!expanded.get(t.slug);expanded.set(t.slug,on);const s=spec(on?'full':t.mode);try{w.resizeTo(s.w,s.h);w.moveTo(s.x,s.y);w.focus()}catch(e){}buttons.get(t.slug)?.classList.toggle('expanded',on)}
+function openPopup(t){
+  const old=windows.get(t.slug);if(old){try{if(!old.closed){toggleExisting(t,old);return}}catch(e){}}
+  expanded.set(t.slug,false);const s=spec(t.mode),name='ClassroomCompanionEN_'+t.slug.replace(/[^a-z0-9]/gi,'_');
+  const w=window.open(toolUrl(t),name,`popup=yes,width=${s.w},height=${s.h},left=${s.x},top=${s.y},resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);
+  if(!w){say('Please allow pop-ups');return}
+  windows.set(t.slug,w);mark(t.slug,true);try{w.focus()}catch(e){}
+  setTimeout(()=>{try{w.resizeTo(s.w,s.h);w.moveTo(s.x,s.y)}catch(e){}},120);
 }
-async function launchToolbar(){
-  try{
-    let html=await getWidgetHtml();
-    const ua=navigator.userAgent||'';
-    const mobile=/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)||matchMedia('(max-width:700px)').matches||matchMedia('(pointer:coarse)').matches;
-    const cloak=`html,body{background:transparent!important;overflow:hidden!important}#strip{display:none!important}`;
-    html=html.replace('</style>',cloak+'</style>');
-    if(!mobile){
-      html=html.replace('</head>','<style id="ccToolbarBootCloak">body{visibility:hidden!important}</style></head>');
-    }
-    html=html.replace('</body>','<script id="toolbarStability" src="toolbar-stability.js?v=20261006stable3"><\/script><script id="compactWidgetPatch" src="compact-widget.js?v=20261005toolbar4"><\/script><script id="toolbarInlineNames" src="toolbar-inline-names.js?v=20261004inline2"><\/script><script id="toolbarDesktopPalette" src="toolbar-desktop-palette.js?v=20261006stable1"><\/script><script id="toolbarLanguageSwitcher" src="toolbar-language-switcher.js?v=20261005lang1"><\/script><script id="miniPipLayer" src="mini-pip.js?v=20261006pip9"><\/script><script>setTimeout(function(){var c=document.getElementById("ccToolbarBootCloak");if(c)c.remove()},1800)<\/script></body>');
-    document.open();document.write(html);document.close();
-  }catch(e){
-    document.body.innerHTML='<div class="boot" aria-label="Classroom Companion could not open">!</div><button class="retry" id="retryToolbar" type="button">↻ Retry toolbar</button>';
-    const b=document.getElementById('retryToolbar');if(b)b.onclick=()=>location.reload();
-    console.error(e);
-  }
-}
-launchToolbar();
+function openTool(t){openPopup(t)}
+for(const t of TOOLS){const b=document.createElement('button');b.type='button';b.className='ccTool tool '+t.mode;b.dataset.slug=t.slug;b.innerHTML=`<span class="icon">${t.icon}</span><span class="name">${t.title}</span><span class="modeDot"></span>`;b.setAttribute('aria-label',t.title+' • '+t.mode);b.onclick=()=>openTool(t);grid.appendChild(b);buttons.set(t.slug,b)}
+setInterval(()=>{for(const [slug,w] of [...windows]){let closed=true;try{closed=!w||w.closed}catch(e){}if(closed){windows.delete(slug);expanded.delete(slug);mark(slug,false);buttons.get(slug)?.classList.remove('expanded')}}},900);
+document.getElementById('closeBtn').onclick=()=>window.close();
 </script>
+<script src="toolbar-language-switcher.js?v=20261005lang1"></script>
+<script src="mini-pip.js?v=20261006pip9"></script>
 </body>
 </html>
