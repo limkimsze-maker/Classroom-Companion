@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>Whiteboard • Classroom Companion</title>
+<style>
+:root{--teal:#0f766e;--teal2:#e7f7f4;--navy:#17324d;--muted:#667085;--line:#d8e1e8;--red:#b42318}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#eef4f5;color:var(--navy)}button,input{font:inherit}button{cursor:pointer}.shell{height:100%;display:flex;flex-direction:column;padding:10px;gap:9px}.top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:17px;padding:8px 10px;box-shadow:0 8px 22px rgba(18,32,46,.08);flex:none}.brand{display:flex;align-items:center;gap:8px;margin-right:auto}.icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--teal2);font-size:22px}.meta strong{display:block;font-size:16px;font-weight:1000;letter-spacing:-.02em}.meta span{display:block;font-size:10px;color:var(--muted);font-weight:800;margin-top:1px}.tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.btn{min-height:38px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--navy);padding:7px 10px;font-size:12px;font-weight:950}.btn:hover,.btn:focus-visible{border-color:#73c8bc;outline:none}.btn.active{background:var(--teal);border-color:var(--teal);color:#fff}.btn.soft{background:var(--teal2);border-color:#9dd9d0;color:#0a5d57}.btn.danger{background:#fff3f1;border-color:#efb4ad;color:var(--red)}.btn:disabled{opacity:.42;cursor:not-allowed}.colors{display:flex;align-items:center;gap:5px;padding:3px 5px;border:1px solid #e3e9ed;border-radius:12px;background:#f8fafb}.colour{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #ccd5db;cursor:pointer;padding:0}.colour.active{box-shadow:0 0 0 3px #0f766e}.sizeControl{display:flex;align-items:center;gap:6px;padding:0 4px}.sizeControl span{font-size:10px;font-weight:900;color:var(--muted)}.sizeControl input{width:82px;accent-color:var(--teal)}.sizeValue{min-width:26px;text-align:center;font-size:10px;font-weight:950;color:var(--navy)}.boardWrap{position:relative;flex:1;min-height:0;border:1px solid #cfd9de;border-radius:18px;overflow:hidden;background-color:#fff;box-shadow:0 10px 28px rgba(18,32,46,.08)}.boardWrap.grid{background-image:linear-gradient(#e8eef1 1px,transparent 1px),linear-gradient(90deg,#e8eef1 1px,transparent 1px);background-size:32px 32px}.boardWrap::after{content:'Whiteboard';position:absolute;right:12px;bottom:9px;font-size:10px;font-weight:900;color:#a7b3ba;pointer-events:none;user-select:none}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}.mode{position:absolute;left:10px;bottom:9px;padding:5px 8px;border-radius:999px;background:rgba(23,50,77,.82);color:#fff;font-size:10px;font-weight:900;pointer-events:none;backdrop-filter:blur(4px)}.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(8px);background:#17324d;color:#fff;padding:8px 13px;border-radius:999px;font-size:11px;font-weight:900;opacity:0;pointer-events:none;transition:.18s;z-index:100}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:800px){.shell{padding:6px;gap:6px}.top{border-radius:14px;padding:7px}.meta span{display:none}.tools{width:100%}.brand{width:100%;margin-right:0}.btn{min-height:36px;padding:6px 8px}.boardWrap{border-radius:14px}.sizeControl{margin-left:auto}.colors{order:10}.colour{width:27px;height:27px}}
+</style>
+<script src="https://cdn.counter.dev/script.js" data-id="825e93b6-ce99-40ef-8bcc-125f13297433" data-utcoffset="8"></script>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand"><div class="icon">✏️</div><div class="meta"><strong>Whiteboard</strong><span>Write, draw and explain to the class.</span></div></div>
+    <div class="tools" role="toolbar" aria-label="Whiteboard tools">
+      <button class="btn active" id="penBtn" type="button">✏️ Pen</button>
+      <button class="btn" id="eraserBtn" type="button">⌫ Eraser</button>
+      <div class="colors" aria-label="Pen colour">
+        <button class="colour active" type="button" data-colour="#17324d" style="background:#17324d" aria-label="Navy"></button>
+        <button class="colour" type="button" data-colour="#2563eb" style="background:#2563eb" aria-label="Blue"></button>
+        <button class="colour" type="button" data-colour="#dc2626" style="background:#dc2626" aria-label="Red"></button>
+        <button class="colour" type="button" data-colour="#15803d" style="background:#15803d" aria-label="Green"></button>
+        <button class="colour" type="button" data-colour="#7c3aed" style="background:#7c3aed" aria-label="Purple"></button>
+      </div>
+      <label class="sizeControl"><span>Thickness</span><input id="size" type="range" min="2" max="24" step="1" value="5" aria-label="Pen thickness"><b class="sizeValue" id="sizeValue">5</b></label>
+      <button class="btn" id="undoBtn" type="button" disabled>↶ Undo</button>
+      <button class="btn soft" id="gridBtn" type="button" aria-pressed="true">▦ Grid</button>
+      <button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
+      <button class="btn danger" id="clearBtn" type="button">Clear</button>
+    </div>
+  </header>
+  <main class="boardWrap grid" id="boardWrap">
+    <canvas id="board" aria-label="Interactive whiteboard"></canvas>
+    <div class="mode" id="modeBadge">Pen · navy · 5 px</div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+const canvas=document.getElementById('board'),wrap=document.getElementById('boardWrap'),ctx=canvas.getContext('2d');
+const penBtn=document.getElementById('penBtn'),eraserBtn=document.getElementById('eraserBtn'),undoBtn=document.getElementById('undoBtn'),gridBtn=document.getElementById('gridBtn'),fullBtn=document.getElementById('fullBtn'),clearBtn=document.getElementById('clearBtn'),size=document.getElementById('size'),sizeValue=document.getElementById('sizeValue'),modeBadge=document.getElementById('modeBadge'),toast=document.getElementById('toast');
+let strokes=[],current=null,tool='pen',colour='#17324d',drawing=false,grid=true,cssW=1,cssH=1;
+function say(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toast.classList.remove('show'),1400)}
+function colourName(c){return c==='#17324d'?'navy':c==='#2563eb'?'blue':c==='#dc2626'?'red':c==='#15803d'?'green':'purple'}
+function syncUi(){penBtn.classList.toggle('active',tool==='pen');eraserBtn.classList.toggle('active',tool==='eraser');undoBtn.disabled=strokes.length===0;sizeValue.textContent=size.value;modeBadge.textContent=tool==='eraser'?`Eraser · ${Math.max(12,Number(size.value)*2)} px`:`Pen · ${colourName(colour)} · ${size.value} px`;gridBtn.setAttribute('aria-pressed',String(grid));gridBtn.textContent=grid?'▦ Grid':'□ Blank';document.querySelectorAll('.colour').forEach(b=>b.classList.toggle('active',b.dataset.colour===colour));}
+function resize(){const r=wrap.getBoundingClientRect();cssW=Math.max(1,r.width);cssH=Math.max(1,r.height);const dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';ctx.setTransform(dpr,0,0,dpr,0,0);redraw();}
+function xy(p){return{x:p.x*cssW,y:p.y*cssH}}
+function drawStroke(s){if(!s.points.length)return;ctx.save();ctx.globalCompositeOperation=s.erase?'destination-out':'source-over';ctx.strokeStyle=s.erase?'rgba(0,0,0,1)':s.colour;ctx.fillStyle=s.erase?'rgba(0,0,0,1)':s.colour;ctx.lineWidth=s.size;ctx.lineCap='round';ctx.lineJoin='round';if(s.points.length===1){const p=xy(s.points[0]);ctx.beginPath();ctx.arc(p.x,p.y,s.size/2,0,Math.PI*2);ctx.fill();ctx.restore();return}ctx.beginPath();const first=xy(s.points[0]);ctx.moveTo(first.x,first.y);for(let i=1;i<s.points.length;i++){const p=xy(s.points[i]);ctx.lineTo(p.x,p.y)}ctx.stroke();ctx.restore();}
+function redraw(){ctx.clearRect(0,0,cssW,cssH);for(const s of strokes)drawStroke(s);if(current)drawStroke(current)}
+function pointFromEvent(e){const r=canvas.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}}
+function start(e){if(e.button!==undefined&&e.button!==0)return;drawing=true;canvas.setPointerCapture?.(e.pointerId);current={erase:tool==='eraser',colour,size:tool==='eraser'?Math.max(12,Number(size.value)*2):Number(size.value),points:[pointFromEvent(e)]};redraw();e.preventDefault()}
+function move(e){if(!drawing||!current)return;const p=pointFromEvent(e),last=current.points.at(-1);if(!last||Math.hypot((p.x-last.x)*cssW,(p.y-last.y)*cssH)>=1.5){current.points.push(p);redraw()}e.preventDefault()}
+function end(e){if(!drawing||!current)return;drawing=false;strokes.push(current);current=null;syncUi();redraw();try{canvas.releasePointerCapture?.(e.pointerId)}catch{}e.preventDefault()}
+canvas.addEventListener('pointerdown',start);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
+penBtn.onclick=()=>{tool='pen';syncUi()};eraserBtn.onclick=()=>{tool='eraser';syncUi()};
+document.querySelectorAll('.colour').forEach(b=>b.onclick=()=>{colour=b.dataset.colour;tool='pen';syncUi()});
+size.oninput=syncUi;
+undoBtn.onclick=()=>{if(strokes.length){strokes.pop();redraw();syncUi();say('Last stroke undone')}};
+gridBtn.onclick=()=>{grid=!grid;wrap.classList.toggle('grid',grid);syncUi()};
+clearBtn.onclick=()=>{if(!strokes.length)return;if(confirm('Clear the whole whiteboard?')){strokes=[];current=null;redraw();syncUi();say('Whiteboard cleared')}};
+fullBtn.onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch{say('Full screen is not available here')}};
+document.addEventListener('fullscreenchange',()=>{fullBtn.textContent=document.fullscreenElement?'↙ Exit full screen':'⛶ Full screen';setTimeout(resize,60)});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undoBtn.click()}else if(e.key==='e'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName)){tool='eraser';syncUi()}else if(e.key==='p'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName)){tool='pen';syncUi()}});
+new ResizeObserver(()=>resize()).observe(wrap);window.addEventListener('resize',resize);syncUi();requestAnimationFrame(resize);
+</script>
+</body>
+</html>
