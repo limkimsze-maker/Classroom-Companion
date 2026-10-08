@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
 <meta charset="utf-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <title>Custom Text • Classroom Companion</title>
@@ -22,17 +23,17 @@
   <main class="stage">
     <section class="card">
       <div class="editor" id="editor">
-        <label class="field"><span>Heading (optional)</span><input id="heading" maxlength="100" placeholder="e.g. What to do now"></label>
-        <label class="field"><span>Instructions / text</span><textarea id="bodyText" maxlength="3000" placeholder="Type your lesson instructions, learning objective, question, reminder or any message here..."></textarea></label>
+        <label class="field"><span>Heading (optional)</span><input class="notranslate" translate="no" id="heading" maxlength="100" placeholder="e.g. What to do now"></label>
+        <label class="field"><span>Instructions / text</span><textarea class="notranslate" translate="no" id="bodyText" maxlength="3000" placeholder="Type your lesson instructions, learning objective, question, reminder or any message here..."></textarea></label>
         <div class="tip">Your latest text is saved automatically in this browser. Press Ctrl + Enter to show it.</div>
         <div class="actions"><button class="btn danger" id="clearBtn" type="button">Clear</button><button class="btn primary" id="showBtn" type="button">Show to class</button></div>
       </div>
 
       <div class="present hidden" id="present">
         <div class="presentBar"><span class="sizeLabel">Text size</span><button class="btn" id="smallerBtn" type="button" aria-label="Make text smaller">A−</button><button class="btn" id="largerBtn" type="button" aria-label="Make text larger">A+</button><button class="btn soft" id="fullBtn" type="button">Full screen</button><button class="btn" id="editBtn" type="button">Edit</button></div>
-        <div class="display" id="display" tabindex="0">
-          <h1 class="displayTitle" id="displayTitle"></h1>
-          <div class="displayBody" id="displayBody"></div>
+        <div class="display notranslate" translate="no" id="display" tabindex="0">
+          <h1 class="displayTitle notranslate" translate="no" id="displayTitle"></h1>
+          <div class="displayBody notranslate" translate="no" id="displayBody"></div>
         </div>
       </div>
     </section>
