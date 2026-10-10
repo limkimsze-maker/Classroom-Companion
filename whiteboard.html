@@ -77,5 +77,6 @@ document.addEventListener('fullscreenchange',()=>{syncUi();setTimeout(resize,60)
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undoBtn.click()}else if(e.key==='e'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName)){tool='eraser';syncUi()}else if(e.key==='p'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName)){tool='pen';syncUi()}else if(e.key==='t'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName)){tool='text';syncUi()}});
 new ResizeObserver(()=>resize()).observe(wrap);window.addEventListener('resize',resize);syncUi();requestAnimationFrame(resize);
 </script>
+<script src="whiteboard-text-drag.js?v=20261011drag1"></script>
 </body>
 </html>
