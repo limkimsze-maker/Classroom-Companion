@@ -147,4 +147,5 @@ function openTool(t){if(t.slug===current){closeMenu();return}const sw=screen.ava
 function show(next=''){current=String(next||'').trim();render();root.classList.remove('ccHidden');installClassManager();installDutyDayPicker()}function hide(){closeMenu();root.classList.add('ccHidden')}
 btn.onclick=e=>{e.stopPropagation();if(menu.classList.contains('show'))closeMenu();else{render();menu.classList.add('show');btn.classList.add('active')}};root.querySelector('.ccEmbeddedClose').onclick=e=>{e.stopPropagation();closeMenu()};menu.onclick=e=>e.stopPropagation();document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menu.classList.contains('show'))closeMenu()},true);
 window.ClassroomCompanionEmbeddedLauncher={show,hide,openTool};show(current);
+const fullTools=document.createElement('script');fullTools.src='embedded-launcher-full-tools.js?v=20261010full2';fullTools.dataset.ccFullTools='1';document.body.appendChild(fullTools);
 })();
