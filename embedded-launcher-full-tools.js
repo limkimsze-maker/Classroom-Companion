@@ -12,16 +12,16 @@ const META={
 };
 function lang(){const x=(document.documentElement.lang||'en').toLowerCase();return x.startsWith('zh')?'zh':x.startsWith('ms')?'ms':x.startsWith('ta')?'ta':'en'}
 function label(meta){return meta[lang()]||meta.en}
-function directOpen(slug){const m=META[slug];if(!m)return;const sw=screen.availWidth||1280,sh=screen.availHeight||800;const sep=m.url.includes('?')?'&':'?';const url=m.url+sep+'v='+Date.now();const w=window.open(url,'ClassroomCompanionTool_'+slug.replace(/[^a-z0-9]/gi,'_'),`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);if(w)try{w.focus()}catch(e){}
- const menu=document.getElementById('ccEmbeddedMenu'),btn=document.getElementById('ccEmbeddedButton');menu?.classList.remove('show');btn?.classList.remove('active')}
-function make(slug){const m=META[slug],a=label(m),b=document.createElement('button');b.type='button';b.className='ccEmbeddedTool';b.dataset.ccSlug=slug;b.innerHTML=`<span class="ccIcon">${m.icon}</span><span class="ccTitle"></span><span class="ccHint"></span>`;b.onclick=e=>{e.stopPropagation();directOpen(slug)};return b}
+function directOpen(slug){const m=META[slug];if(!m)return;const sw=screen.availWidth||1280,sh=screen.availHeight||800,sep=m.url.includes('?')?'&':'?',url=m.url+sep+'v='+Date.now();const w=window.open(url,'ClassroomCompanionTool_'+slug.replace(/[^a-z0-9]/gi,'_'),`popup=yes,width=${sw},height=${sh},left=0,top=0,resizable=yes,scrollbars=yes,toolbar=no,location=no,menubar=no,status=no`);if(w)try{w.focus()}catch(e){}const menu=document.getElementById('ccEmbeddedMenu'),btn=document.getElementById('ccEmbeddedButton');menu?.classList.remove('show');btn?.classList.remove('active')}
+function make(slug){const m=META[slug],b=document.createElement('button');b.type='button';b.className='ccEmbeddedTool';b.dataset.ccSlug=slug;b.innerHTML=`<span class="ccIcon">${m.icon}</span><span class="ccTitle"></span><span class="ccHint"></span>`;b.onclick=e=>{e.stopPropagation();directOpen(slug)};return b}
 let busy=false,lastList=null,observer=null;
 function sync(){if(busy)return;const list=document.getElementById('ccEmbeddedList');if(!list)return;if(list!==lastList){observer?.disconnect();lastList=list;observer=new MutationObserver(()=>setTimeout(sync,0));observer.observe(list,{childList:true})}busy=true;try{
- let nodes=[...list.children];if(nodes.length===LEGACY.length&&!nodes.some(x=>x.dataset.ccSlug))nodes.forEach((b,i)=>b.dataset.ccSlug=LEGACY[i]);
+ const initial=[...list.children];if(initial.length===LEGACY.length&&!initial.some(x=>x.dataset.ccSlug))initial.forEach((b,i)=>b.dataset.ccSlug=LEGACY[i]);
  const by=new Map([...list.children].filter(x=>x.dataset.ccSlug).map(x=>[x.dataset.ccSlug,x]));
  for(const slug of Object.keys(META))if(!by.has(slug)){const b=make(slug);by.set(slug,b)}
- for(const slug of Object.keys(META)){const b=by.get(slug),m=META[slug],a=label(m);if(b){b.querySelector('.ccTitle').textContent=a[0];b.querySelector('.ccHint').textContent=a[1]}}
- for(const slug of ORDER){const b=by.get(slug);if(b)list.appendChild(b)}
+ for(const slug of Object.keys(META)){const b=by.get(slug),a=label(META[slug]);if(b){const t=b.querySelector('.ccTitle'),h=b.querySelector('.ccHint');if(t&&t.textContent!==a[0])t.textContent=a[0];if(h&&h.textContent!==a[1])h.textContent=a[1]}}
+ const desired=ORDER.map(slug=>by.get(slug)).filter(Boolean),current=[...list.children];
+ if(desired.length!==current.length||desired.some((b,i)=>current[i]!==b))for(const b of desired)list.appendChild(b);
  }finally{busy=false}}
 let tries=0;const timer=setInterval(()=>{sync();if(++tries>240)clearInterval(timer)},250);setTimeout(sync,0);
 })();
