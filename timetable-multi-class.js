@@ -15,7 +15,7 @@ function renameSelected(){
  const entered=prompt('New name for timetable '+oldName+':',oldName);
  if(entered===null)return;
  const newName=entered.trim();
- if(!newName||newName.length>60||/[<>\\x00-\\x1f]/.test(newName))return alert('Enter a valid class name (1–60 characters).');
+ if(!newName||newName.length>60||(/[<>]/.test(newName)||Array.from(newName).some(c=>c.charCodeAt(0)<32)))return alert('Enter a valid class name (1–60 characters).');
  if(newName===oldName)return;
  if(Object.prototype.hasOwnProperty.call(a,newName))return alert('A timetable named '+newName+' already exists. No changes were made.');
  if(!confirm('Rename timetable '+oldName+' to '+newName+'?\\nThis changes the timetable label only. Other class records and reward points will not be renamed.'))return;
