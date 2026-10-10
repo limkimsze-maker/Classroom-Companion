@@ -26,7 +26,9 @@ function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.era
 function looksLikeCounter(s){
  if(!rawInk(s))return false;
  const b=box(s),pw=b.w*cssW,ph=b.h*cssH;
- if(pw<9||ph<9||pw>190||ph>190)return false;
+ // In explicit Counters mode, drawn size should not determine counter size.
+ // Accept a much larger rough circle, then normalise it to the fixed counter size.
+ if(pw<9||ph<9||pw>420||ph>420)return false;
  const aspect=Math.min(pw,ph)/Math.max(pw,ph);
  if(aspect<.30)return false;
  const diag=Math.hypot(pw,ph),close=closure(s),len=length(s);
