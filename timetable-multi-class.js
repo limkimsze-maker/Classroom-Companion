@@ -9,6 +9,33 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 function choose(n){const d=S.classData();d.classes=d.classes||{};if(!d.classes[n])d.classes[n]={};d.selectedClass=n;localStorage.setItem(S.CC_STORE,JSON.stringify(d));location.reload()}
 function download(v,filename){const b=new Blob([JSON.stringify(v,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=(filename||'classroom-companion-all-timetables')+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
 function exportAll(){const a=read();if(!Object.keys(a).length)return alert('No saved class timetables yet.');download({app:'Classroom Companion',schema:1,kind:'all-timetables',created:new Date().toISOString(),data:a})}
+function renameSelected(){
+ const a=read(),oldName=document.querySelector('#ccTimetableClasses select')?.value||S.selectedClass();
+ if(!Object.prototype.hasOwnProperty.call(a,oldName))return alert('Select a saved class timetable first.');
+ const entered=prompt('New name for timetable '+oldName+':',oldName);
+ if(entered===null)return;
+ const newName=entered.trim();
+ if(!newName||newName.length>60||/[<>\\x00-\\x1f]/.test(newName))return alert('Enter a valid class name (1–60 characters).');
+ if(newName===oldName)return;
+ if(Object.prototype.hasOwnProperty.call(a,newName))return alert('A timetable named '+newName+' already exists. No changes were made.');
+ if(!confirm('Rename timetable '+oldName+' to '+newName+'?\\nThis changes the timetable label only. Other class records and reward points will not be renamed.'))return;
+ const d=S.classData(),updated={...a};
+ updated[newName]={...a[oldName],className:newName};
+ delete updated[oldName];
+ const updatedClasses={...d,classes:{...(d.classes||{})},selectedClass:newName};
+ if(!updatedClasses.classes[newName])updatedClasses.classes[newName]={};
+ const previousTimetables=localStorage.getItem(KEY),previousClasses=localStorage.getItem(S.CC_STORE);
+ try{
+  exportAll();
+  localStorage.setItem(KEY,JSON.stringify(updated));
+  localStorage.setItem(S.CC_STORE,JSON.stringify(updatedClasses));
+ }catch(e){
+  try{if(previousTimetables===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,previousTimetables);
+  if(previousClasses===null)localStorage.removeItem(S.CC_STORE);else localStorage.setItem(S.CC_STORE,previousClasses)}catch(_){}
+  return alert('Rename failed: '+e.message);
+ }
+ alert('Timetable renamed to '+newName+'. The page will reload.');location.reload();
+}
 function exportSelected(){
  const a=read(),name=document.querySelector('#ccTimetableClasses select')?.value||S.selectedClass();
  if(!a[name])return alert('Select a saved class timetable first.');
@@ -46,7 +73,7 @@ function importBackup(mode){
 function render(){const panel=S.panel;if(!panel)return;const oldButtons=document.getElementById('ccBackupControls');if(oldButtons)oldButtons.style.display='none';const a=read(),names=Object.keys(a),existing=document.getElementById('ccTimetableClasses');if(existing)return;const bar=document.createElement('div');bar.id='ccTimetableClasses';bar.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;margin:0 0 14px;background:#eff8f6;border:1px solid #c9e2dc;border-radius:14px;color:#17324d;font:800 13px system-ui';
 const label=document.createElement('span');label.textContent='Saved classes:';bar.append(label);
 const sel=document.createElement('select');sel.style.cssText='min-height:36px;max-width:180px;border:1px solid #b9d3ce;border-radius:8px;padding:5px;background:white';sel.innerHTML=names.length?names.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join(''):'<option>No timetables yet</option>';sel.disabled=!names.length;const selected=S.selectedClass();if(names.includes(selected))sel.value=selected;else if(names.length)sel.value=names[0];sel.onchange=()=>choose(sel.value);bar.append(sel);
-for(const [name,fn] of [['⬇ Export Selected Class',exportSelected],['⬆ Import Selected Class',()=>importBackup('selected')],['⬇ Export All',exportAll],['⬆ Import All',()=>importBackup('all')]]){const b=document.createElement('button');b.type='button';b.textContent=name;b.style.cssText='min-height:36px;border:1px solid #b9d3ce;border-radius:8px;background:white;padding:5px 9px;font:800 12px system-ui;cursor:pointer';b.onclick=fn;bar.append(b)}
+for(const [name,fn] of [['✏️ Rename Class Timetable',renameSelected],['⬇ Export Selected Class',exportSelected],['⬆ Import Selected Class',()=>importBackup('selected')],['⬇ Export All',exportAll],['⬆ Import All',()=>importBackup('all')]]){const b=document.createElement('button');b.type='button';b.textContent=name;b.style.cssText='min-height:36px;border:1px solid #b9d3ce;border-radius:8px;background:white;padding:5px 9px;font:800 12px system-ui;cursor:pointer';b.onclick=fn;bar.append(b)}
 const note=document.createElement('span');note.textContent='Add another class by pasting its timetable screenshot and saving under a new class name.';note.style.cssText='font-size:11px;color:#506b69';bar.append(note);panel.insertBefore(bar,panel.firstChild)}
 setInterval(render,650);render();
 })();
