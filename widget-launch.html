@@ -6,6 +6,7 @@
 <title>Classroom Companion Toolbar</title>
 <style>
 :root{--teal:#0f766e;--teal2:#e7f7f4;--navy:#17324d;--line:#d7e4e2;--muted:#64748b;--gold:#f59e0b;--blue:#6478b5;--surface:#ffffff;--surface2:#f8fbfa}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--navy)}body{padding:0}.palette{position:fixed;inset:0;background:linear-gradient(180deg,#ffffff 0%,#fbfdfd 100%);border:1px solid #d6e5e2;border-radius:20px;box-shadow:0 22px 55px rgba(18,32,46,.20),0 2px 8px rgba(18,32,46,.06);display:flex;flex-direction:column;overflow:hidden}.head{padding:14px 14px 11px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #eaf0ef;background:linear-gradient(180deg,#ffffff 0%,#fbfdfc 100%)}.brand{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#12877e,#0a665f);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:1000;flex:none;box-shadow:0 7px 16px rgba(15,118,110,.20),inset 0 1px 0 rgba(255,255,255,.22)}.meta{min-width:0;flex:1}.title{font-size:17px;font-weight:1000;letter-spacing:-.025em;color:#153149}.sub{font-size:10px;color:#72817f;font-weight:800;margin-top:2px}.status{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#f1f5f4;color:#42615d;white-space:nowrap;border:1px solid rgba(15,118,110,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.75)}.grid{padding:11px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:auto;flex:1;scrollbar-width:thin;scrollbar-color:#c6d8d4 transparent}.grid::-webkit-scrollbar{width:8px}.grid::-webkit-scrollbar-thumb{background:#c6d8d4;border-radius:999px;border:2px solid transparent;background-clip:padding-box}.tool{min-height:58px;border:1px solid #dbe7e4;border-radius:15px;background:linear-gradient(145deg,#ffffff,#f8fbfa);display:grid;grid-template-columns:36px 1fr 8px;gap:8px;align-items:center;padding:8px 9px;text-align:left;cursor:pointer;box-shadow:0 3px 10px rgba(18,32,46,.045),inset 0 1px 0 rgba(255,255,255,.9);transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease,background .12s ease;color:var(--navy)}.tool:hover,.tool:focus-visible{transform:translateY(-1px);border-color:#73c7bb;box-shadow:0 9px 20px rgba(15,118,110,.11),inset 0 1px 0 rgba(255,255,255,.95);outline:none;background:#ffffff}.tool.active{background:linear-gradient(145deg,#effaf7,#e5f6f2);border-color:#4bb7a7;box-shadow:0 7px 17px rgba(15,118,110,.10)}.tool.expanded{outline:2px solid #f59e0b;outline-offset:1px}.icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:20px;line-height:1;background:#f1f7f6;border:1px solid #e1ecea;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}.mini .icon{background:#eff9f6}.half .icon{background:#f2f4fb}.full .icon{background:#fff8e9}.name{font-size:12px;font-weight:1000;line-height:1.15;color:#18334d;letter-spacing:-.005em}.modeDot{width:7px;height:7px;border-radius:99px;box-shadow:0 0 0 3px rgba(23,50,77,.045)}.mini .modeDot{background:var(--teal)}.half .modeDot{background:var(--blue)}.full .modeDot{background:var(--gold)}.foot{border-top:1px solid #eaf0ef;padding:8px 11px;display:flex;align-items:center;gap:8px;background:#fbfdfc}.legend{font-size:9px;color:#748481;font-weight:850;line-height:1.35;flex:1}.close{border:1px solid #e0e8e6;border-radius:10px;background:#f4f7f6;color:#49605e;font-weight:1000;padding:7px 10px;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}.close:hover,.close:focus-visible{background:#eaf4f2;border-color:#c9ded9;outline:none}.toast{position:absolute;left:10px;right:10px;bottom:52px;background:#17324d;color:#fff;border-radius:12px;padding:8px 10px;font-size:11px;font-weight:850;text-align:center;opacity:0;transform:translateY(5px);pointer-events:none;transition:.18s;box-shadow:0 8px 22px rgba(18,32,46,.18)}.toast.show{opacity:1;transform:none}@media(max-width:500px){.palette{border-radius:0}.grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px;gap:6px}.tool{min-height:54px;padding:7px}.name{font-size:11px}.head{padding:10px}.status{display:none}}
+.toolSlot{position:relative;min-width:0}.toolSlot>.tool{width:100%;height:100%;padding-right:31px}.pinTool{position:absolute;right:7px;top:7px;width:25px;height:27px;border:0;border-radius:8px;background:transparent;color:#879995;font-size:20px;cursor:pointer;display:grid;place-items:center}.pinTool:hover,.pinTool:focus-visible{background:#eaf5f2;outline:2px solid #0f766e}.pinTool[aria-pressed="true"]{color:#b97805}.faveHeading{grid-column:1/-1;font-size:12px;font-weight:950;color:#0b665f;padding:4px 3px 0}.allHeading{grid-column:1/-1;font-size:11px;font-weight:900;color:#667085;padding:5px 3px 0}
 </style>
 <script src="https://cdn.counter.dev/script.js" data-id="825e93b6-ce99-40ef-8bcc-125f13297433" data-utcoffset="8"></script>
 </head>
@@ -65,7 +66,33 @@ function openPopup(t){
   setTimeout(()=>{try{w.resizeTo(s.w,s.h);w.moveTo(s.x,s.y)}catch(e){}},120);
 }
 function openTool(t){openPopup(t)}
-for(const t of TOOLS){const b=document.createElement('button');b.type='button';b.className='ccTool tool '+t.mode;b.dataset.slug=t.slug;b.innerHTML=`<span class="icon">${t.icon}</span><span class="name">${t.title}</span><span class="modeDot"></span>`;b.setAttribute('aria-label',t.title+' • '+t.mode);b.onclick=()=>openTool(t);grid.appendChild(b);buttons.set(t.slug,b)}
+// Launcher-only favourites: preserve the original tool buttons and their launch handlers.
+const FAV_KEY='classroomCompanionLauncherFavouritesEN_v1';
+let favourites=[];
+try{const saved=JSON.parse(localStorage.getItem(FAV_KEY)||'[]');if(Array.isArray(saved))favourites=saved.filter(x=>TOOLS.some(t=>t.slug===x)).slice(0,18)}catch(e){}
+const slots=new Map(),pins=new Map();
+function heading(label,cls){const h=document.createElement('div');h.className=cls;h.textContent=label;return h}
+function renderFavourites(){
+  const selected=TOOLS.filter(t=>favourites.includes(t.slug));
+  const others=TOOLS.filter(t=>!favourites.includes(t.slug));
+  const fragment=document.createDocumentFragment();
+  if(selected.length)fragment.appendChild(heading('★ My Favourites','faveHeading'));
+  for(const t of selected)fragment.appendChild(slots.get(t.slug));
+  if(selected.length)fragment.appendChild(heading('All Tools','allHeading'));
+  for(const t of others)fragment.appendChild(slots.get(t.slug));
+  grid.replaceChildren(fragment);
+  for(const t of TOOLS){const on=favourites.includes(t.slug),pin=pins.get(t.slug);pin.textContent=on?'★':'☆';pin.setAttribute('aria-pressed',String(on));pin.setAttribute('aria-label',(on?'Remove ':'Add ')+t.title+(on?' from favourites':' to favourites'));pin.title=on?'Remove from favourites':'Add to favourites'}
+}
+for(const t of TOOLS){
+  const slot=document.createElement('div');slot.className='toolSlot';
+  const b=document.createElement('button');b.type='button';b.className='ccTool tool '+t.mode;b.dataset.slug=t.slug;
+  b.innerHTML=`<span class="icon">${t.icon}</span><span class="name">${t.title}</span><span class="modeDot"></span>`;
+  b.setAttribute('aria-label',t.title+' • '+t.mode);b.onclick=()=>openTool(t);
+  const pin=document.createElement('button');pin.type='button';pin.className='pinTool';
+  pin.onclick=()=>{const on=favourites.includes(t.slug);favourites=on?favourites.filter(x=>x!==t.slug):[...favourites,t.slug];try{localStorage.setItem(FAV_KEY,JSON.stringify(favourites))}catch(e){}renderFavourites();say(on?'Removed from favourites':'Added to favourites')};
+  slot.append(b,pin);slots.set(t.slug,slot);pins.set(t.slug,pin);buttons.set(t.slug,b);
+}
+renderFavourites();
 setInterval(()=>{for(const [slug,w] of [...windows]){let closed=true;try{closed=!w||w.closed}catch(e){}if(closed){windows.delete(slug);expanded.delete(slug);mark(slug,false);buttons.get(slug)?.classList.remove('expanded')}}},900);
 document.getElementById('closeBtn').onclick=()=>window.close();
 </script>
