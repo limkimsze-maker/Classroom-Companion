@@ -64,7 +64,7 @@ function boot(){
  if(document.getElementById('ccBackupControls'))return true;
  const wrap=document.createElement('span');wrap.id='ccBackupControls';wrap.style.cssText='display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap';
  for(const [label,fn] of [['⬇ Export',exportData],['⬆ Import',pick]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.title=(label.includes('Export')?'Download':'Restore')+' this tool\'s saved data';b.style.cssText='font:800 11px system-ui;border:1px solid #cbd5d1;background:#fff;color:#17324d;border-radius:9px;padding:7px 8px;cursor:pointer';b.onclick=fn;wrap.append(b)}
- if(isCustom)host.append(wrap);else if(isEditable)host.append(wrap);else host.insertBefore(wrap,host.firstChild);
+ if(isCustom)host.append(wrap);else if(isEditable&&page==='quote.html'){wrap.style.cssText+=';position:fixed;left:62px;top:12px;z-index:2147483646';document.body.append(wrap)}else if(isEditable)host.append(wrap);else host.insertBefore(wrap,host.firstChild);
  return true;
 }
 let attempts=0;const timer=setInterval(()=>{if(boot()||++attempts>100)clearInterval(timer)},100);
