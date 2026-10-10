@@ -21,7 +21,7 @@ function getClass(){return isTimetable?(window.Support?.selectedClass?.()||windo
 function classKey(){const c=getClass();return !c||c==='General'?'_general':c}
 function current(){const value=parse(localStorage.getItem(key));if(isReward){const all=validObject(value)?value:{};const v=all[classKey()]||{};return {className:getClass(),scores:v[mode==='pupil'?'pupils':'groups']||{},history:(Array.isArray(v.history)?v.history:[]).filter(h=>h.kind===(mode==='pupil'?'pupils':'groups'))}}if(isTimetable){const all=validObject(value)?value:{};return {className:getClass(),timetable:all[getClass()]||null}}return value}
 function download(obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='classroom-companion-'+kind+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000)}
-function exportData(){if(isTimetable&&!current().timetable){alert('No saved timetable for this class to export.');return}download({app:'Classroom Companion',schema:1,kind,edition,created:new Date().toISOString(),data:current()})}
+function exportData(){if(isTimetable&&!current().timetable){alert('No saved timetable for this class to export.');return false}download({app:'Classroom Companion',schema:1,kind,edition,created:new Date().toISOString(),data:current()});return true}
 function validate(data){
  if(isReward)return validObject(data)&&validObject(data.scores)&&Array.isArray(data.history)&&typeof data.className==='string'&&Object.values(data.scores).every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0)&&data.history.every(h=>validObject(h)&&h.kind===(mode==='pupil'?'pupils':'groups'));
  if(isTimetable)return validObject(data)&&typeof data.className==='string'&&validObject(data.timetable)&&typeof data.timetable.className==='string'&&data.className===data.timetable.className;
@@ -49,7 +49,7 @@ function pick(){
    const summary=isReward?Object.keys(obj.data.scores).length+' score entries':isTimetable?'timetable for '+obj.data.className:isCustom?'custom text and font size':obj.data.length+' saved prompts';
    if(!confirm('Restore '+summary+' from '+f.name+'? Existing data for this section will be replaced. Other tools will not be changed.'))return;
    // Automatic pre-restore safety copy, downloaded before any write.
-   exportData();
+   if(isTimetable&&current().timetable){if(!exportData())throw Error('Safety backup failed')}else if(!isTimetable)exportData();
    restoreData(obj.data);
    alert('Restore completed. The previous data was downloaded as a safety copy. This page will reload.');
    location.reload();
