@@ -43,5 +43,6 @@ function draw(){configureMode();let list=entities(),q=$('#search').value.trim().
 klass=selected();buildClassSelect();configureMode();draw();
 $('#grid').onclick=e=>{const b=e.target.closest('[data-delta]');if(b)adjust(b.dataset.key,Number(b.dataset.delta))};$('#classSelect').onchange=e=>{klass=e.target.value;setSelected(klass);draw()};$('#search').oninput=draw;$('#sort').onchange=draw;$('#undo').onclick=undo;$('#reset').onclick=resetPoints;$('#pupilTab').onclick=()=>{if(mode!=='pupil')location.href='reward-points.html?mode=pupil'};$('#groupTab').onclick=()=>{if(mode!=='group')location.href='reward-points.html?mode=group'};$('#editBtn').onclick=()=>location.href='class-organisation.html?v='+Date.now();$('#mainBtn').onclick=()=>location.href='./';window.addEventListener('storage',e=>{if([MASTER_STORE,CC_STORE,REWARD_STORE].includes(e.key)){klass=selected();buildClassSelect();draw()}});
 </script>
+<script src="tool-backup.js?v=20261010b1"></script>
 </body>
 </html>
