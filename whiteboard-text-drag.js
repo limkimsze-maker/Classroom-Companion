@@ -11,7 +11,7 @@ const labels={
 const lang=(typeof edition==='string'&&labels[edition])?edition:'en',X=labels[lang];
 const baseRedraw=redraw,baseSync=syncUi,baseStart=typeof start==='function'?start:null,baseMove=typeof move==='function'?move:null,baseEnd=typeof end==='function'?end:null;
 const clone=v=>JSON.parse(JSON.stringify(v));
-let selected=null,dragMode='',pointerId=null,startPoint=null,startObject=null,pendingHistory=null,history=[];
+let selected=null,dragMode='',startPoint=null,startObject=null,pendingHistory=null,history=[];
 
 const selectBtn=document.createElement('button');
 selectBtn.className='btn';selectBtn.id='selectBtn';selectBtn.type='button';selectBtn.textContent=X.select;
@@ -29,6 +29,7 @@ function drawSelection(){if(!selected||selected.type!=='text'||!strokes.includes
 redraw=function(){baseRedraw();drawSelection()};
 syncUi=function(){
  baseSync();
+ undoBtn.disabled=history.length===0;
  selectBtn.classList.toggle('active',tool==='select');
  if(tool==='select'){
   penBtn.classList.remove('active');textBtn.classList.remove('active');eraserBtn.classList.remove('active');
@@ -55,10 +56,10 @@ function down(e){
  const p=point(e);
  if(tool==='select'){
   if(selected&&hitHandle(p,selected)){
-   dragMode='resize';pointerId=e.pointerId;startPoint=p;startObject={x:selected.x,y:selected.y,size:selected.size};pendingHistory=clone(strokes);try{canvas.setPointerCapture?.(e.pointerId)}catch{};updateCursor(p);e.preventDefault();return;
+   dragMode='resize';startPoint=p;startObject={x:selected.x,y:selected.y,size:selected.size};pendingHistory=clone(strokes);try{canvas.setPointerCapture?.(e.pointerId)}catch{};updateCursor(p);e.preventDefault();return;
   }
   const hit=hitText(p);choose(hit);
-  if(hit){dragMode='move';pointerId=e.pointerId;startPoint=p;startObject={x:hit.x,y:hit.y,size:hit.size};pendingHistory=clone(strokes);try{canvas.setPointerCapture?.(e.pointerId)}catch{};updateCursor(p);e.preventDefault();return}
+  if(hit){dragMode='move';startPoint=p;startObject={x:hit.x,y:hit.y,size:hit.size};pendingHistory=clone(strokes);try{canvas.setPointerCapture?.(e.pointerId)}catch{};updateCursor(p);e.preventDefault();return}
   e.preventDefault();return;
  }
  if(tool==='text'){
@@ -68,7 +69,7 @@ function down(e){
   }
   e.preventDefault();return;
  }
- if(baseStart){remember();baseStart(e)}
+ if(baseStart){remember();baseStart(e);syncUi()}
 }
 function drag(e){
  const p=point(e);
@@ -87,9 +88,9 @@ function up(e){
  if(dragMode){
   const changed=selected&&(Math.abs(selected.x-startObject.x)>0.0005||Math.abs(selected.y-startObject.y)>0.0005||selected.size!==startObject.size);
   if(changed&&pendingHistory){history.push(pendingHistory);if(history.length>100)history.shift()}
-  dragMode='';pointerId=null;startPoint=null;startObject=null;pendingHistory=null;try{canvas.releasePointerCapture?.(e.pointerId)}catch{};redraw();syncUi();e.preventDefault();return;
+  dragMode='';startPoint=null;startObject=null;pendingHistory=null;try{canvas.releasePointerCapture?.(e.pointerId)}catch{};redraw();syncUi();e.preventDefault();return;
  }
- if(baseEnd)baseEnd(e)
+ if(baseEnd){baseEnd(e);syncUi()}
 }
 function editSelected(){
  if(!selected||selected.type!=='text')return;
@@ -109,7 +110,7 @@ penBtn.onclick=()=>switchTool('pen');textBtn.onclick=()=>switchTool('text');eras
 
 document.querySelectorAll('.colour').forEach(b=>{b.onclick=()=>{const next=b.dataset.colour;if(tool==='select'&&selected?.type==='text'){if(selected.colour!==next){remember();selected.colour=next;colour=next;redraw();syncUi()}return}colour=next;if(tool==='eraser')tool='pen';syncUi()}});
 
-size.oninput=()=>{if(tool==='select'&&selected?.type==='text'){const n=fontSize();if(selected.size!==n){selected.size=n;redraw()}syncUi();return}syncUi()};
+size.oninput=()=>{if(tool==='select'&&selected?.type==='text'){selected.size=fontSize();redraw();syncUi();return}syncUi()};
 
 undoBtn.onclick=()=>{if(!history.length)return;const snap=history.pop();restore(snap);say(L.undoDone)};
 clearBtn.onclick=()=>{if(!strokes.length)return;if(confirm(L.clearAsk)){remember();strokes=[];selected=null;current=null;redraw();syncUi();say(L.cleared)}};
