@@ -27,6 +27,7 @@ function stopSpeech(){try{synth?.cancel()}catch(e){}$('pause').textContent='⏸ 
 function closeQuote(){stopSpeech();location.href='./'}
 $('read').onclick=speak;$('pause').onclick=()=>{if(!synth)return;if(synth.paused){synth.resume();$('pause').textContent='⏸ Pause'}else if(synth.speaking){synth.pause();$('pause').textContent='▶ Resume'}else speak()};$('stop').onclick=stopSpeech;$('another').onclick=()=>{let i=currentIndex;while(i===currentIndex)i=Math.floor(Math.random()*quotes.length);showQuote(i);speak()};$('close').onclick=closeQuote;window.addEventListener('beforeunload',stopSpeech);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeQuote()});showQuote(dayIndex());setTimeout(speak,120);
 </script>
-<script src="tool-backup.js?v=20261010b1"></script>
+<script src="editable-content-settings.js?v=20261010backup1"></script>
+<script src="tool-backup.js?v=20261010b5"></script>
 </body>
 </html>
