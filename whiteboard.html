@@ -7,77 +7,38 @@
 <title>Whiteboard • Classroom Companion</title>
 <style>
 :root{--teal:#0f766e;--teal2:#e7f7f4;--navy:#17324d;--muted:#667085;--line:#d8e1e8;--red:#b42318}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#eef4f5;color:var(--navy)}button,input{font:inherit}button{cursor:pointer}.shell{height:100%;display:flex;flex-direction:column;padding:10px;gap:9px}.top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:17px;padding:8px 10px;box-shadow:0 8px 22px rgba(18,32,46,.08);flex:none}.brand{display:flex;align-items:center;gap:8px;margin-right:auto}.icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--teal2);font-size:22px}.meta strong{display:block;font-size:16px;font-weight:1000;letter-spacing:-.02em}.meta span{display:block;font-size:10px;color:var(--muted);font-weight:800;margin-top:1px}.tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.btn{min-height:38px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--navy);padding:7px 10px;font-size:12px;font-weight:950}.btn:hover,.btn:focus-visible{border-color:#73c8bc;outline:none}.btn.active{background:var(--teal);border-color:var(--teal);color:#fff}.btn.soft{background:var(--teal2);border-color:#9dd9d0;color:#0a5d57}.btn.danger{background:#fff3f1;border-color:#efb4ad;color:var(--red)}.btn:disabled{opacity:.42;cursor:not-allowed}.colors{display:flex;align-items:center;gap:5px;padding:3px 5px;border:1px solid #e3e9ed;border-radius:12px;background:#f8fafb}.colour{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #ccd5db;cursor:pointer;padding:0}.colour.active{box-shadow:0 0 0 3px #0f766e}.sizeControl{display:flex;align-items:center;gap:6px;padding:0 4px}.sizeControl span{font-size:10px;font-weight:900;color:var(--muted)}.sizeControl input{width:82px;accent-color:var(--teal)}.sizeValue{min-width:26px;text-align:center;font-size:10px;font-weight:950;color:var(--navy)}.boardWrap{position:relative;flex:1;min-height:0;border:1px solid #cfd9de;border-radius:18px;overflow:hidden;background-color:#fff;box-shadow:0 10px 28px rgba(18,32,46,.08)}.boardWrap.grid{background-image:linear-gradient(#e8eef1 1px,transparent 1px),linear-gradient(90deg,#e8eef1 1px,transparent 1px);background-size:32px 32px}.boardWrap::after{content:attr(data-watermark);position:absolute;right:12px;bottom:9px;font-size:10px;font-weight:900;color:#a7b3ba;pointer-events:none;user-select:none}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}.mode{position:absolute;left:10px;bottom:9px;padding:5px 8px;border-radius:999px;background:rgba(23,50,77,.82);color:#fff;font-size:10px;font-weight:900;pointer-events:none;backdrop-filter:blur(4px)}.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(8px);background:#17324d;color:#fff;padding:8px 13px;border-radius:999px;font-size:11px;font-weight:900;opacity:0;pointer-events:none;transition:.18s;z-index:100}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#eef4f5;color:var(--navy)}button,input,select,textarea{font:inherit}button{cursor:pointer}.shell{height:100%;display:flex;flex-direction:column;padding:10px;gap:9px}.top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:17px;padding:8px 10px;box-shadow:0 8px 22px rgba(18,32,46,.08);flex:none}.brand{display:flex;align-items:center;gap:8px;margin-right:auto}.icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--teal2);font-size:22px}.meta strong{display:block;font-size:16px;font-weight:1000;letter-spacing:-.02em}.meta span{display:block;font-size:10px;color:var(--muted);font-weight:800;margin-top:1px}.tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.btn{min-height:38px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--navy);padding:7px 10px;font-size:12px;font-weight:950}.btn:hover,.btn:focus-visible{border-color:#73c8bc;outline:none}.btn.active{background:var(--teal);border-color:var(--teal);color:#fff}.btn.soft{background:var(--teal2);border-color:#9dd9d0;color:#0a5d57}.btn.danger{background:#fff3f1;border-color:#efb4ad;color:var(--red)}.btn:disabled{opacity:.42;cursor:not-allowed}.colors{display:flex;align-items:center;gap:5px;padding:3px 5px;border:1px solid #e3e9ed;border-radius:12px;background:#f8fafb}.colour{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #ccd5db;cursor:pointer;padding:0}.colour.active{box-shadow:0 0 0 3px #0f766e}.sizeControl{display:flex;align-items:center;gap:6px;padding:0 4px}.sizeControl span{font-size:10px;font-weight:900;color:var(--muted)}.sizeControl input{width:82px;accent-color:var(--teal)}.sizeValue{min-width:26px;text-align:center;font-size:10px;font-weight:950;color:var(--navy)}.boardWrap{position:relative;flex:1;min-height:0;border:1px solid #cfd9de;border-radius:18px;overflow:hidden;background-color:#fff;box-shadow:0 10px 28px rgba(18,32,46,.08)}.boardWrap.grid{background-image:linear-gradient(#e8eef1 1px,transparent 1px),linear-gradient(90deg,#e8eef1 1px,transparent 1px);background-size:32px 32px}.boardWrap::after{content:attr(data-watermark);position:absolute;right:12px;bottom:9px;font-size:10px;font-weight:900;color:#a7b3ba;pointer-events:none;user-select:none}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}.mode{position:absolute;left:10px;bottom:9px;padding:5px 8px;border-radius:999px;background:rgba(23,50,77,.82);color:#fff;font-size:10px;font-weight:900;pointer-events:none;backdrop-filter:blur(4px)}.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(8px);background:#17324d;color:#fff;padding:8px 13px;border-radius:999px;font-size:11px;font-weight:900;opacity:0;pointer-events:none;transition:.18s;z-index:100}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:800px){.shell{padding:6px;gap:6px}.top{border-radius:14px;padding:7px}.meta span{display:none}.tools{width:100%}.brand{width:100%;margin-right:0}.btn{min-height:36px;padding:6px 8px}.boardWrap{border-radius:14px}.sizeControl{margin-left:auto}.colors{order:10}.colour{width:27px;height:27px}}
 </style>
 <script src="https://cdn.counter.dev/script.js" data-id="825e93b6-ce99-40ef-8bcc-125f13297433" data-utcoffset="8"></script>
 </head>
 <body>
 <div class="shell">
-  <header class="top">
-    <div class="brand"><div class="icon">✏️</div><div class="meta"><strong id="boardTitle">Whiteboard</strong><span id="boardSubtitle">Write, draw and explain to the class.</span></div></div>
-    <div class="tools" role="toolbar" aria-label="Whiteboard tools">
-      <button class="btn active" id="penBtn" type="button">✏️ Pen</button>
-      <button class="btn" id="textBtn" type="button">T Text</button>
-      <button class="btn" id="eraserBtn" type="button">⌫ Eraser</button>
-      <div class="colors" aria-label="Pen colour">
-        <button class="colour active" type="button" data-colour="#17324d" style="background:#17324d" aria-label="Navy"></button>
-        <button class="colour" type="button" data-colour="#2563eb" style="background:#2563eb" aria-label="Blue"></button>
-        <button class="colour" type="button" data-colour="#dc2626" style="background:#dc2626" aria-label="Red"></button>
-        <button class="colour" type="button" data-colour="#15803d" style="background:#15803d" aria-label="Green"></button>
-        <button class="colour" type="button" data-colour="#7c3aed" style="background:#7c3aed" aria-label="Purple"></button>
-      </div>
-      <label class="sizeControl"><span id="sizeLabel">Thickness</span><input id="size" type="range" min="2" max="24" step="1" value="5" aria-label="Pen thickness"><b class="sizeValue" id="sizeValue">5</b></label>
-      <button class="btn" id="undoBtn" type="button" disabled>↶ Undo</button>
-      <button class="btn soft" id="gridBtn" type="button" aria-pressed="true">▦ Grid</button>
-      <button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
-      <button class="btn danger" id="clearBtn" type="button">Clear</button>
-    </div>
-  </header>
-  <main class="boardWrap grid" id="boardWrap" data-watermark="Whiteboard">
-    <canvas id="board" aria-label="Interactive whiteboard"></canvas>
-    <div class="mode" id="modeBadge">Pen · navy · 5 px</div>
-  </main>
+<header class="top">
+<div class="brand"><div class="icon">✏️</div><div class="meta"><strong id="boardTitle">Whiteboard</strong><span id="boardSubtitle">Write, draw and explain to the class.</span></div></div>
+<div class="tools" role="toolbar" aria-label="Whiteboard tools">
+<button class="btn active" id="penBtn" type="button">✏️ Pen</button>
+<button class="btn" id="textBtn" type="button">T Text</button>
+<button class="btn" id="eraserBtn" type="button">⌫ Eraser</button>
+<div class="colors" aria-label="Pen colour">
+<button class="colour active" type="button" data-colour="#17324d" style="background:#17324d" aria-label="Navy"></button>
+<button class="colour" type="button" data-colour="#2563eb" style="background:#2563eb" aria-label="Blue"></button>
+<button class="colour" type="button" data-colour="#dc2626" style="background:#dc2626" aria-label="Red"></button>
+<button class="colour" type="button" data-colour="#15803d" style="background:#15803d" aria-label="Green"></button>
+<button class="colour" type="button" data-colour="#7c3aed" style="background:#7c3aed" aria-label="Purple"></button>
+</div>
+<label class="sizeControl"><span id="sizeLabel">Thickness</span><input id="size" type="range" min="2" max="24" step="1" value="5" aria-label="Pen thickness"><b class="sizeValue" id="sizeValue">5</b></label>
+<button class="btn" id="undoBtn" type="button" disabled>↶ Undo</button>
+<button class="btn soft" id="gridBtn" type="button" aria-pressed="true">▦ Grid</button>
+<button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
+<button class="btn danger" id="clearBtn" type="button">Clear</button>
+</div>
+</header>
+<main class="boardWrap grid" id="boardWrap" data-watermark="Whiteboard"><canvas id="board" aria-label="Interactive whiteboard"></canvas><div class="mode" id="modeBadge">Pen · navy · 5 px</div></main>
 </div>
 <div class="toast" id="toast"></div>
-<script>
-'use strict';
-const I18N={
- en:{lang:'en',title:'Whiteboard',subtitle:'Write, draw and explain to the class.',pen:'✏️ Pen',text:'T Text',eraser:'⌫ Eraser',thickness:'Thickness',textSize:'Text size',undo:'↶ Undo',grid:'▦ Grid',blank:'□ Blank',full:'⛶ Full screen',exitFull:'↙ Exit full screen',clear:'Clear',watermark:'Whiteboard',prompt:'Type the text to place on the whiteboard:',undoDone:'Last action undone',cleared:'Whiteboard cleared',clearAsk:'Clear the whole whiteboard?',fullFail:'Full screen is not available here',penWord:'Pen',textWord:'Text',eraserWord:'Eraser',colours:{'#17324d':'navy','#2563eb':'blue','#dc2626':'red','#15803d':'green','#7c3aed':'purple'}},
- zh:{lang:'zh-SG',title:'白板',subtitle:'书写、绘图并向全班讲解。',pen:'✏️ 画笔',text:'T 文字',eraser:'⌫ 橡皮擦',thickness:'粗细',textSize:'字号',undo:'↶ 撤销',grid:'▦ 方格',blank:'□ 空白',full:'⛶ 全屏',exitFull:'↙ 退出全屏',clear:'清除',watermark:'白板',prompt:'请输入要放在白板上的文字：',undoDone:'已撤销上一步',cleared:'白板已清除',clearAsk:'清除整块白板吗？',fullFail:'这里无法使用全屏模式',penWord:'画笔',textWord:'文字',eraserWord:'橡皮擦',colours:{'#17324d':'深蓝','#2563eb':'蓝','#dc2626':'红','#15803d':'绿','#7c3aed':'紫'}},
- ms:{lang:'ms-SG',title:'Papan Putih',subtitle:'Tulis, lukis dan terangkan kepada kelas.',pen:'✏️ Pen',text:'T Teks',eraser:'⌫ Pemadam',thickness:'Ketebalan',textSize:'Saiz teks',undo:'↶ Buat asal',grid:'▦ Grid',blank:'□ Kosong',full:'⛶ Skrin penuh',exitFull:'↙ Keluar skrin penuh',clear:'Kosongkan',watermark:'Papan Putih',prompt:'Taip teks untuk diletakkan pada papan putih:',undoDone:'Tindakan terakhir dibuat asal',cleared:'Papan putih dikosongkan',clearAsk:'Kosongkan seluruh papan putih?',fullFail:'Skrin penuh tidak tersedia di sini',penWord:'Pen',textWord:'Teks',eraserWord:'Pemadam',colours:{'#17324d':'biru tua','#2563eb':'biru','#dc2626':'merah','#15803d':'hijau','#7c3aed':'ungu'}},
- ta:{lang:'ta-SG',title:'வெண்பலகை',subtitle:'எழுதி, வரைந்து, வகுப்பிற்கு விளக்குங்கள்.',pen:'✏️ பேனா',text:'T உரை',eraser:'⌫ அழிப்பான்',thickness:'தடிமன்',textSize:'உரை அளவு',undo:'↶ செயல்நீக்கு',grid:'▦ கட்டம்',blank:'□ வெற்று',full:'⛶ முழுத் திரை',exitFull:'↙ முழுத் திரையிலிருந்து வெளியேறு',clear:'அழி',watermark:'வெண்பலகை',prompt:'வெண்பலகையில் இட வேண்டிய உரையைத் தட்டச்சு செய்யுங்கள்:',undoDone:'கடைசி செயல் செயல்நீக்கப்பட்டது',cleared:'வெண்பலகை அழிக்கப்பட்டது',clearAsk:'முழு வெண்பலகையையும் அழிக்கவா?',fullFail:'முழுத் திரை இங்கு கிடைக்கவில்லை',penWord:'பேனா',textWord:'உரை',eraserWord:'அழிப்பான்',colours:{'#17324d':'கருநீலம்','#2563eb':'நீலம்','#dc2626':'சிவப்பு','#15803d':'பச்சை','#7c3aed':'ஊதா'}}
-};
-const edition=(new URLSearchParams(location.search).get('edition')||'en').toLowerCase();const L=I18N[edition]||I18N.en;document.documentElement.lang=L.lang;document.title=L.title+' • Classroom Companion';
-const canvas=document.getElementById('board'),wrap=document.getElementById('boardWrap'),ctx=canvas.getContext('2d');
-const penBtn=document.getElementById('penBtn'),textBtn=document.getElementById('textBtn'),eraserBtn=document.getElementById('eraserBtn'),undoBtn=document.getElementById('undoBtn'),gridBtn=document.getElementById('gridBtn'),fullBtn=document.getElementById('fullBtn'),clearBtn=document.getElementById('clearBtn'),size=document.getElementById('size'),sizeValue=document.getElementById('sizeValue'),sizeLabel=document.getElementById('sizeLabel'),modeBadge=document.getElementById('modeBadge'),toast=document.getElementById('toast');
-document.getElementById('boardTitle').textContent=L.title;document.getElementById('boardSubtitle').textContent=L.subtitle;penBtn.textContent=L.pen;textBtn.textContent=L.text;eraserBtn.textContent=L.eraser;undoBtn.textContent=L.undo;clearBtn.textContent=L.clear;wrap.dataset.watermark=L.watermark;
-let strokes=[],current=null,tool='pen',colour='#17324d',drawing=false,grid=true,cssW=1,cssH=1;
-function say(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toast.classList.remove('show'),1400)}
-function colourName(c){return L.colours[c]||c}
-function fontSize(){return Math.max(18,Number(size.value)*3)}
-function syncUi(){penBtn.classList.toggle('active',tool==='pen');textBtn.classList.toggle('active',tool==='text');eraserBtn.classList.toggle('active',tool==='eraser');undoBtn.disabled=strokes.length===0;sizeLabel.textContent=tool==='text'?L.textSize:L.thickness;sizeValue.textContent=tool==='text'?fontSize():size.value;modeBadge.textContent=tool==='eraser'?`${L.eraserWord} · ${Math.max(12,Number(size.value)*2)} px`:tool==='text'?`${L.textWord} · ${colourName(colour)} · ${fontSize()} px`:`${L.penWord} · ${colourName(colour)} · ${size.value} px`;gridBtn.setAttribute('aria-pressed',String(grid));gridBtn.textContent=grid?L.grid:L.blank;fullBtn.textContent=document.fullscreenElement?L.exitFull:L.full;canvas.style.cursor=tool==='text'?'text':'crosshair';document.querySelectorAll('.colour').forEach(b=>b.classList.toggle('active',b.dataset.colour===colour));}
-function resize(){const r=wrap.getBoundingClientRect();cssW=Math.max(1,r.width);cssH=Math.max(1,r.height);const dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';ctx.setTransform(dpr,0,0,dpr,0,0);redraw();}
-function xy(p){return{x:p.x*cssW,y:p.y*cssH}}
-function drawStroke(s){if(s.type==='text'){const p=xy(s);ctx.save();ctx.globalCompositeOperation='source-over';ctx.fillStyle=s.colour;ctx.font=`700 ${s.size}px Inter,system-ui,sans-serif`;ctx.textBaseline='top';ctx.fillText(s.text,p.x,p.y);ctx.restore();return}if(!s.points?.length)return;ctx.save();ctx.globalCompositeOperation=s.erase?'destination-out':'source-over';ctx.strokeStyle=s.erase?'rgba(0,0,0,1)':s.colour;ctx.fillStyle=s.erase?'rgba(0,0,0,1)':s.colour;ctx.lineWidth=s.size;ctx.lineCap='round';ctx.lineJoin='round';if(s.points.length===1){const p=xy(s.points[0]);ctx.beginPath();ctx.arc(p.x,p.y,s.size/2,0,Math.PI*2);ctx.fill();ctx.restore();return}ctx.beginPath();const first=xy(s.points[0]);ctx.moveTo(first.x,first.y);for(let i=1;i<s.points.length;i++){const p=xy(s.points[i]);ctx.lineTo(p.x,p.y)}ctx.stroke();ctx.restore();}
-function redraw(){ctx.clearRect(0,0,cssW,cssH);for(const s of strokes)drawStroke(s);if(current)drawStroke(current)}
-function pointFromEvent(e){const r=canvas.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}}
-function start(e){if(e.button!==undefined&&e.button!==0)return;if(tool==='text'){const p=pointFromEvent(e),text=prompt(L.prompt,'');if(text&&text.trim()){strokes.push({type:'text',x:p.x,y:p.y,text:text.trim(),colour,size:fontSize()});redraw();syncUi()}e.preventDefault();return}drawing=true;canvas.setPointerCapture?.(e.pointerId);current={erase:tool==='eraser',colour,size:tool==='eraser'?Math.max(12,Number(size.value)*2):Number(size.value),points:[pointFromEvent(e)]};redraw();e.preventDefault()}
-function move(e){if(!drawing||!current)return;const p=pointFromEvent(e),last=current.points.at(-1);if(!last||Math.hypot((p.x-last.x)*cssW,(p.y-last.y)*cssH)>=1.5){current.points.push(p);redraw()}e.preventDefault()}
-function end(e){if(!drawing||!current)return;drawing=false;strokes.push(current);current=null;syncUi();redraw();try{canvas.releasePointerCapture?.(e.pointerId)}catch{}e.preventDefault()}
-canvas.addEventListener('pointerdown',start);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
-penBtn.onclick=()=>{tool='pen';syncUi()};textBtn.onclick=()=>{tool='text';syncUi()};eraserBtn.onclick=()=>{tool='eraser';syncUi()};
-document.querySelectorAll('.colour').forEach(b=>b.onclick=()=>{colour=b.dataset.colour;if(tool==='eraser')tool='pen';syncUi()});
-size.oninput=syncUi;
-undoBtn.onclick=()=>{if(strokes.length){strokes.pop();redraw();syncUi();say(L.undoDone)}};
-gridBtn.onclick=()=>{grid=!grid;wrap.classList.toggle('grid',grid);syncUi()};
-clearBtn.onclick=()=>{if(!strokes.length)return;if(confirm(L.clearAsk)){strokes=[];current=null;redraw();syncUi();say(L.cleared)}};
-fullBtn.onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch{say(L.fullFail)}};
-document.addEventListener('fullscreenchange',()=>{syncUi();setTimeout(resize,60)});
-document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undoBtn.click()}else if(e.key==='e'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName)){tool='eraser';syncUi()}else if(e.key==='p'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName)){tool='pen';syncUi()}else if(e.key==='t'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName)){tool='text';syncUi()}});
-new ResizeObserver(()=>resize()).observe(wrap);window.addEventListener('resize',resize);syncUi();requestAnimationFrame(resize);
-</script>
-<script src="whiteboard-text-drag.js?v=20261011image2"></script>
+<script src="whiteboard-core.js?v=20261011-0534-core1"></script>
+<script src="whiteboard-text-drag.js?v=20261011-0534-wordbox1"></script>
 <script src="whiteboard-right-click-paste.js?v=20261011-rcpaste-2215"></script>
 </body>
 </html>
