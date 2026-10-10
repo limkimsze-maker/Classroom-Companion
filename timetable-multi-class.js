@@ -25,8 +25,8 @@ function importAll(){
      !Object.entries(incoming).every(([n,v])=>n.trim()&&v&&typeof v==='object'&&!Array.isArray(v)&&v.className===n&&Array.isArray(v.times)&&v.days&&typeof v.days==='object'))
      throw Error('The timetable backup has missing or invalid class data.');
    const old=read(),names=Object.keys(incoming),over=names.filter(n=>Object.prototype.hasOwnProperty.call(old,n));
-   const msg='Backup contains '+names.length+' class timetable(s): '+names.join(', ')+'.\\n'+
-     (over.length?'Existing timetables that would be replaced: '+over.join(', ')+'.\\n':'No existing class timetables will be replaced.\\n')+
+   const msg='Backup contains '+names.length+' class timetable(s): '+names.join(', ')+'.\n'+
+     (over.length?'Existing timetables that would be replaced: '+over.join(', ')+'.\n':'No existing class timetables will be replaced.\n')+
      'Other saved classes will remain unchanged. Restore these classes?';
    if(!confirm(msg))return;
    if(Object.keys(old).length)exportAll();
