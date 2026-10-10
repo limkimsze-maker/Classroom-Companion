@@ -8,7 +8,7 @@ const isTimetable=page==='support-tool.html'&&slug==='daily-visual-timetable';
 const isCustom=page==='custom-text.html';
 const isEditable=page==='support-tool.html'&&['question-spinner','reflect'].includes(slug)||page==='quote.html';
 if(!isReward&&!isTimetable&&!isCustom&&!isEditable)return;
-const rewardKey='classroomCompanionRewardPointsV1',timetableKey='classroomCompanionSupportTimetableV1',customKey='classroom-companion-custom-text-v1';
+const rewardKey='classroomCompanionRewardPointsV1',timetableKey='classroomCompanionWeeklyTimetableV1',customKey='classroom-companion-custom-text-v1';
 const mode=isReward?(p.get('mode')==='group'?'group':'pupil'):null;
 const type=page==='quote.html'?'quote':slug==='reflect'?'reflection':'sentence';
 const edition=/Chinese-Edition/i.test(location.pathname)?'zh':/Malay-Edition/i.test(location.pathname)?'ms':/Tamil-Edition/i.test(location.pathname)?'ta':'en';
@@ -17,14 +17,14 @@ const kind=isReward?'reward-'+mode:isTimetable?'timetable':isCustom?'custom-text
 const key=isReward?rewardKey:isTimetable?timetableKey:isCustom?customKey:editKey;
 function parse(raw){try{return JSON.parse(raw)}catch(e){return null}}
 function validObject(x){return !!x&&typeof x==='object'&&!Array.isArray(x)}
-function getClass(){return document.getElementById('classSelect')?.value||'General'}
+function getClass(){return isTimetable?(window.Support?.selectedClass?.()||window.ClassroomTimetableData?.load?.()?.className||'General'):(document.getElementById('classSelect')?.value||'General')}
 function classKey(){const c=getClass();return !c||c==='General'?'_general':c}
-function current(){const value=parse(localStorage.getItem(key));if(isReward){const all=validObject(value)?value:{};const v=all[classKey()]||{};return {className:getClass(),scores:v[mode==='pupil'?'pupils':'groups']||{},history:(Array.isArray(v.history)?v.history:[]).filter(h=>h.kind===(mode==='pupil'?'pupils':'groups'))}}return value}
+function current(){const value=parse(localStorage.getItem(key));if(isReward){const all=validObject(value)?value:{};const v=all[classKey()]||{};return {className:getClass(),scores:v[mode==='pupil'?'pupils':'groups']||{},history:(Array.isArray(v.history)?v.history:[]).filter(h=>h.kind===(mode==='pupil'?'pupils':'groups'))}}if(isTimetable){const all=validObject(value)?value:{};return {className:getClass(),timetable:all[getClass()]||null}}return value}
 function download(obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='classroom-companion-'+kind+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000)}
-function exportData(){download({app:'Classroom Companion',schema:1,kind,edition,created:new Date().toISOString(),data:current()})}
+function exportData(){if(isTimetable&&!current().timetable){alert('No saved timetable for this class to export.');return}download({app:'Classroom Companion',schema:1,kind,edition,created:new Date().toISOString(),data:current()})}
 function validate(data){
  if(isReward)return validObject(data)&&validObject(data.scores)&&Array.isArray(data.history)&&typeof data.className==='string'&&Object.values(data.scores).every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0)&&data.history.every(h=>validObject(h)&&h.kind===(mode==='pupil'?'pupils':'groups'));
- if(isTimetable)return validObject(data)&&Object.values(data).every(Array.isArray);
+ if(isTimetable)return validObject(data)&&typeof data.className==='string'&&validObject(data.timetable)&&typeof data.timetable.className==='string'&&data.className===data.timetable.className;
  if(isCustom)return validObject(data)&&typeof data.heading==='string'&&typeof data.body==='string'&&Number.isFinite(Number(data.fontSize));
  return Array.isArray(data)&&data.length>0&&data.every(x=>typeof x==='string');
 }
@@ -35,7 +35,7 @@ function restoreData(data){
    const all=parse(old)||{},c=classKey(),v=validObject(all[c])?all[c]:{pupils:{},groups:{},history:[]},field=mode==='pupil'?'pupils':'groups';
    v[field]=data.scores;v.history=(Array.isArray(v.history)?v.history:[]).filter(h=>h.kind!==field).concat(data.history).slice(-100);all[c]=v;
    localStorage.setItem(key,JSON.stringify(all));
-  }else localStorage.setItem(key,JSON.stringify(data));
+  }else if(isTimetable){const all=validObject(parse(old))?parse(old):{};all[data.className]=data.timetable;localStorage.setItem(key,JSON.stringify(all));}else localStorage.setItem(key,JSON.stringify(data));
  }catch(e){if(old===null)localStorage.removeItem(key);else localStorage.setItem(key,old);throw e}
 }
 function pick(){
@@ -45,8 +45,8 @@ function pick(){
    if(f.size>2000000)throw Error('Backup file is too large');
    const obj=JSON.parse(await f.text());
    if(obj.app!=='Classroom Companion'||obj.schema!==1||obj.kind!==kind||obj.edition!==edition||!validate(obj.data))throw Error('This file is not a compatible '+kind+' backup');
-   if(isReward&&obj.data.className!==getClass())throw Error('Select the same class as the backup ('+obj.data.className+') before importing');
-   const summary=isReward?Object.keys(obj.data.scores).length+' score entries':isTimetable?Object.keys(obj.data).length+' timetable entries':isCustom?'custom text and font size':obj.data.length+' saved prompts';
+   if((isReward||isTimetable)&&obj.data.className!==getClass())throw Error('Select the same class as the backup ('+obj.data.className+') before importing');
+   const summary=isReward?Object.keys(obj.data.scores).length+' score entries':isTimetable?'timetable for '+obj.data.className:isCustom?'custom text and font size':obj.data.length+' saved prompts';
    if(!confirm('Restore '+summary+' from '+f.name+'? Existing data for this section will be replaced. Other tools will not be changed.'))return;
    // Automatic pre-restore safety copy, downloaded before any write.
    exportData();
