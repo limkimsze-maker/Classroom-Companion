@@ -88,6 +88,7 @@ function load(type){
   try{const v=JSON.parse(localStorage.getItem(key(type)));if(Array.isArray(v)&&v.length)return v}catch(e){}
   return clone(DEFAULTS[type]);
 }
+window.ClassroomCompanionEditableBackupRead=function(type){return Object.prototype.hasOwnProperty.call(DEFAULTS,type)?load(type):null};
 function hasSaved(type){try{return !!localStorage.getItem(key(type))}catch(e){return false}}
 function save(type,v){try{localStorage.setItem(key(type),JSON.stringify(v))}catch(e){}}
 function reset(type){try{localStorage.removeItem(key(type))}catch(e){}}
