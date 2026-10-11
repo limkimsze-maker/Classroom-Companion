@@ -7,18 +7,29 @@ let selectedId=null,drag=null,suppressClick=false;
 
 function svgData(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
 function widthsFor(obj){
- const n=Math.max(2,obj.barCount||2);
- if(Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length===n)return obj.barCompareWidths.map(v=>clamp(Number(v)||.5,.16,1));
- return Array.from({length:n},(_,i)=>clamp(1-i*.11,.16,1));
+ const n=2;
+ if(Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length>=n)return obj.barCompareWidths.slice(0,n).map(v=>clamp(Number(v)||.5,.16,1));
+ return [.82,1];
 }
+function normalizeComparison(obj){
+ if(!obj||obj.smartType!=='barModel'||obj.smartBarType!=='comparison')return false;
+ let changed=false;
+ if(obj.barCount!==2){obj.barCount=2;changed=true}
+ if(Array.isArray(obj.barFills)&&obj.barFills.length!==2){obj.barFills=obj.barFills.slice(0,2);while(obj.barFills.length<2)obj.barFills.push('#ffffff');changed=true}
+ const widths=widthsFor(obj);
+ if(!Array.isArray(obj.barCompareWidths)||obj.barCompareWidths.length!==2||obj.barCompareWidths.some((v,i)=>Math.abs((Number(v)||0)-widths[i])>.0001)){obj.barCompareWidths=widths;changed=true}
+ if(changed)rebuild(obj);
+ return changed;
+}
+function normalizeAll(){for(const s of strokes)normalizeComparison(s)}
 function rebuild(obj){
- const count=Math.max(2,obj.barCount||2),stroke='#17324d',fills=Array.from({length:count},(_,i)=>obj.barFills?.[i]||'#ffffff');
- const widths=widthsFor(obj),W=900,H=Math.max(260,120+count*115),els=[],x=70,maxW=760;
+ const count=2,stroke='#17324d',fills=Array.from({length:count},(_,i)=>obj.barFills?.[i]||'#ffffff');
+ const widths=widthsFor(obj),W=900,H=350,els=[],x=70,maxW=760;
  for(let i=0;i<count;i++){
   const w=maxW*widths[i];
-  els.push(`<rect x="${x}" y="${45+i*105}" width="${w}" height="72" rx="2" fill="${fills[i]}" stroke="${stroke}" stroke-width="8"/>`);
+  els.push(`<rect x="${x}" y="${55+i*125}" width="${w}" height="78" rx="2" fill="${fills[i]}" stroke="${stroke}" stroke-width="8"/>`);
  }
- obj.barCompareWidths=widths;
+ obj.barCount=2;obj.barCompareWidths=widths;
  obj.src=svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${els.join('')}</svg>`);
 }
 function canvasPoint(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)/Math.max(1,r.width),y:(e.clientY-r.top)/Math.max(1,r.height),r}}
@@ -26,12 +37,12 @@ function hitComparison(x,y){
  for(let i=strokes.length-1;i>=0;i--){const s=strokes[i];if(!s||s.smartType!=='barModel'||s.smartBarType!=='comparison'||!s.w||!s.h)continue;if(x>=s.x&&x<=s.x+s.w&&y>=s.y&&y<=s.y+s.h)return s}return null;
 }
 function rowGeometry(obj,index){
- const count=Math.max(2,obj.barCount||2),H=Math.max(260,120+count*115),widths=widthsFor(obj),x0=70/900,y0=(45+index*105)/H,w=(760*widths[index])/900,h=72/H;
- return{x0,y0,w,h,H};
+ const widths=widthsFor(obj),x0=70/900,y0=(55+index*125)/350,w=(760*widths[index])/900,h=78/350;
+ return{x0,y0,w,h};
 }
 function endHandleHit(obj,x,y,rect){
- const n=Math.max(2,obj.barCount||2),threshold=14;
- for(let i=0;i<n;i++){
+ const threshold=14;
+ for(let i=0;i<2;i++){
   const g=rowGeometry(obj,i);
   const hx=(obj.x+obj.w*(g.x0+g.w))*rect.width;
   const hy=(obj.y+obj.h*(g.y0+g.h/2))*rect.height;
@@ -42,20 +53,20 @@ function endHandleHit(obj,x,y,rect){
 function drawHandles(){
  if(!selectedId)return;
  const obj=strokes.find(s=>s&&s.smartId===selectedId&&s.smartType==='barModel'&&s.smartBarType==='comparison');if(!obj)return;
- const n=Math.max(2,obj.barCount||2);ctx.save();ctx.fillStyle='#ffffff';ctx.strokeStyle='#2563eb';ctx.lineWidth=2;
- for(let i=0;i<n;i++){
+ ctx.save();ctx.fillStyle='#ffffff';ctx.strokeStyle='#2563eb';ctx.lineWidth=2;
+ for(let i=0;i<2;i++){
   const g=rowGeometry(obj,i),x=(obj.x+obj.w*(g.x0+g.w))*cssW,y=(obj.y+obj.h*(g.y0+g.h/2))*cssH;
   ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();ctx.stroke();
  }
  ctx.restore();
 }
-const baseRedraw=redraw;redraw=function(){baseRedraw();drawHandles()};
+const baseRedraw=redraw;redraw=function(){normalizeAll();baseRedraw();drawHandles()};
 
 canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=canvasPoint(e),obj=hitComparison(p.x,p.y);
  if(!obj){selectedId=null;redraw();return}
- selectedId=obj.smartId;const row=endHandleHit(obj,p.x,p.y,p.r);redraw();
+ normalizeComparison(obj);selectedId=obj.smartId;const row=endHandleHit(obj,p.x,p.y,p.r);redraw();
  if(row<0)return;
  e.preventDefault();e.stopImmediatePropagation();canvas.setPointerCapture?.(e.pointerId);
  drag={id:obj.smartId,row,before:clone(strokes),pointerId:e.pointerId,moved:false};
@@ -71,8 +82,5 @@ function endDrag(e){if(!drag)return;const obj=strokes.find(s=>s&&s.smartId===dra
 canvas.addEventListener('pointerup',endDrag,true);canvas.addEventListener('pointercancel',endDrag,true);
 document.addEventListener('click',e=>{if(suppressClick&&e.target===canvas){e.preventDefault();e.stopImmediatePropagation()}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){selectedId=null;drag=null;redraw()}},true);
-})();
-(function(){
- if(document.querySelector('script[data-smart-bar-brackets]'))return;
- const s=document.createElement('script');s.dataset.smartBarBrackets='1';s.src='smart-math-bar-brackets.js?v=20261011-1020-autobrackets1';document.head.appendChild(s);
+setTimeout(()=>{try{normalizeAll();redraw()}catch{}},0);
 })();
