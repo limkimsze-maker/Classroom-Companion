@@ -56,7 +56,7 @@ if(b.isDifference&&Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.len
  x2=(obj.x+obj.w*(180+650*widths[long])/900)*cssW;
  // Top longer: immediately below its bottom edge; bottom longer: immediately above its top edge.
  y=(obj.y+obj.h*(long===0?(60+76+8):(60+145-8))/440)*cssH;
- b.position=long===0?'bottom':'top';
+ y+=(Number(b.verticalOffset)||0)*cssH;b.position=long===0?'bottom':'top';
 }
 curly(x1,x2,y,b.position,b.label||'',obj,b)}}}
 const priorRedraw=redraw;redraw=function(){priorRedraw();drawAll()};
