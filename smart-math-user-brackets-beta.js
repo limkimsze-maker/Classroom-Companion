@@ -48,7 +48,17 @@ function curly(x1,x2,y,position,label,obj,entry){
  ctx.save();ctx.strokeStyle='#111827';ctx.fillStyle='#111827';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x1,y+endDir*depth);ctx.bezierCurveTo(x1,y+endDir*3,x1+2,y,x1+end,y);ctx.lineTo(mid-neck,y);ctx.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);ctx.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);ctx.lineTo(x2-end,y);ctx.bezierCurveTo(x2-2,y,x2,y+endDir*3,x2,y+endDir*depth);ctx.stroke();if(label){ctx.font='700 14px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*14)}ctx.restore();
  hot.push({obj,entry,x1:x1-10,x2:x2+10,y1:y-27,y2:y+27});
 }
-function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel')continue;detect(obj);if(!Array.isArray(obj.userDrawnBrackets)||!obj.userDrawnBrackets.length)continue;if(obj.smartBarType!=='comparison')hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.visible)continue;const x1=(obj.x+obj.w*b.x1)*cssW,x2=(obj.x+obj.w*b.x2)*cssW,y=(obj.y+obj.h*b.y)*cssH;curly(x1,x2,y,b.position,b.label||'',obj,b)}}}
+function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel')continue;detect(obj);if(!Array.isArray(obj.userDrawnBrackets)||!obj.userDrawnBrackets.length)continue;if(obj.smartBarType!=='comparison')hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.visible)continue;let x1=(obj.x+obj.w*b.x1)*cssW,x2=(obj.x+obj.w*b.x2)*cssW,y=(obj.y+obj.h*b.y)*cssH;
+if(b.isDifference&&Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length>=2){
+ const widths=obj.barCompareWidths,long=widths[0]>=widths[1]?0:1,short=1-long;
+ // Anchor directly to the exposed edge of the longer bar in the 900 × 440 SVG.
+ x1=(obj.x+obj.w*(180+650*widths[short])/900)*cssW;
+ x2=(obj.x+obj.w*(180+650*widths[long])/900)*cssW;
+ // Top longer: immediately below its bottom edge; bottom longer: immediately above its top edge.
+ y=(obj.y+obj.h*(long===0?(60+76+8):(60+145-8))/440)*cssH;
+ b.position=long===0?'bottom':'top';
+}
+curly(x1,x2,y,b.position,b.label||'',obj,b)}}}
 const priorRedraw=redraw;redraw=function(){priorRedraw();drawAll()};
 function hit(clientX,clientY){const r=canvas.getBoundingClientRect(),x=(clientX-r.left)*(cssW/Math.max(1,r.width)),y=(clientY-r.top)*(cssH/Math.max(1,r.height));for(let i=hot.length-1;i>=0;i--){const h=hot[i];if(x>=h.x1&&x<=h.x2&&y>=h.y1&&y<=h.y2)return h}return null}
 function button(text,cls){const b=document.createElement('button');b.type='button';b.className='btn '+(cls||'');b.textContent=text;b.style.cssText='min-height:32px;padding:5px 8px;font-size:11px;flex:1';return b}
