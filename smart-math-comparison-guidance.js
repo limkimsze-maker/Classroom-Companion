@@ -58,3 +58,4 @@ function follow(){let changed=false;for(const obj of strokes){if(!obj||obj.smart
 const priorRedraw=redraw;redraw=function(){follow();priorRedraw();if(!refreshing&&follow()){refreshing=true;requestAnimationFrame(()=>{refreshing=false;priorRedraw()})}};
 setTimeout(()=>{try{redraw()}catch{}},0);
 })();
+(function(){if(document.querySelector('script[data-compare-total-bracket]'))return;const s=document.createElement('script');s.dataset.compareTotalBracket='1';s.src='smart-math-comparison-total-bracket.js?v=20261011-1215-totalright1';document.head.appendChild(s)})();
