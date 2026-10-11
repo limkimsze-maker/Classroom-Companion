@@ -27,41 +27,41 @@ function ensureState(obj){
 function cutsFor(obj){const n=Math.max(2,obj.barCount||2);if(obj.smartBarType==='equal')return Array.from({length:n-1},(_,i)=>(i+1)/n);if(Array.isArray(obj.barCuts)&&obj.barCuts.length===n-1)return obj.barCuts.slice().sort((a,b)=>a-b);return Array.from({length:n-1},(_,i)=>(i+1)/n)}
 function compWidths(obj){const n=Math.max(2,obj.barCount||2);if(Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length===n)return obj.barCompareWidths.map(v=>clamp(Number(v)||.5,.16,1));return Array.from({length:n},(_,i)=>clamp(1-i*.11,.16,1))}
 function straightBracket(x1,x2,y,toward,label,id,obj,labelSide){
- const arm=6,ctx2=ctx;if(x2<x1)[x1,x2]=[x2,x1];
- ctx2.save();ctx2.strokeStyle='#17324d';ctx2.fillStyle='#17324d';ctx2.lineWidth=1.6;ctx2.lineCap='round';ctx2.lineJoin='round';
+ const arm=7,ctx2=ctx;if(x2<x1)[x1,x2]=[x2,x1];
+ ctx2.save();ctx2.strokeStyle='#111827';ctx2.fillStyle='#111827';ctx2.lineWidth=1.8;ctx2.lineCap='round';ctx2.lineJoin='round';
  ctx2.beginPath();ctx2.moveTo(x1,y);ctx2.lineTo(x2,y);ctx2.moveTo(x1,y);ctx2.lineTo(x1,y+toward*arm);ctx2.moveTo(x2,y);ctx2.lineTo(x2,y+toward*arm);ctx2.stroke();
- const tx=(x1+x2)/2;if(label){const side=labelSide||-toward,ty=y+side*7;ctx2.font='600 13px Arial,sans-serif';ctx2.textAlign='center';ctx2.textBaseline=side<0?'bottom':'top';ctx2.fillText(label,tx,ty)}ctx2.restore();
- hot.push({obj,id,x1:x1-7,x2:x2+7,y1:y-17,y2:y+17});
+ const tx=(x1+x2)/2;if(label){const side=labelSide||-toward,ty=y+side*9;ctx2.font='700 14px Arial,sans-serif';ctx2.textAlign='center';ctx2.textBaseline=side<0?'bottom':'top';ctx2.fillText(label,tx,ty)}ctx2.restore();
+ hot.push({obj,id,x1:x1-9,x2:x2+9,y1:y-23,y2:y+23});
 }
 function curlyBrace(x1,x2,y,position,label,id,obj){
  if(x2<x1)[x1,x2]=[x2,x1];
- const w=x2-x1,mid=(x1+x2)/2,end=clamp(w*.055,5,11),neck=clamp(w*.045,5,10),depth=8;
+ const w=x2-x1,mid=(x1+x2)/2;
+ const end=clamp(w*.045,5,10),neck=clamp(w*.035,5,9),depth=9;
  const top=position==='top';
- const edgeDir=top?1:-1,midDir=top?-1:1,labelDir=top?-1:1;
- ctx.save();ctx.strokeStyle='#17324d';ctx.fillStyle='#17324d';ctx.lineWidth=1.7;ctx.lineCap='round';ctx.lineJoin='round';
+ const endDir=top?1:-1,notchDir=top?-1:1,labelDir=top?-1:1;
+ ctx.save();ctx.strokeStyle='#111827';ctx.fillStyle='#111827';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';
  ctx.beginPath();
- ctx.moveTo(x1,y+edgeDir*depth);
- ctx.quadraticCurveTo(x1,y,x1+end,y);
+ ctx.moveTo(x1,y+endDir*depth);
+ ctx.bezierCurveTo(x1,y+endDir*3,x1+2,y,x1+end,y);
  ctx.lineTo(mid-neck,y);
- ctx.quadraticCurveTo(mid,y,mid,y+midDir*depth);
- ctx.quadraticCurveTo(mid,y,mid+neck,y);
+ ctx.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);
+ ctx.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);
  ctx.lineTo(x2-end,y);
- ctx.quadraticCurveTo(x2,y,x2,y+edgeDir*depth);
+ ctx.bezierCurveTo(x2-2,y,x2,y+endDir*3,x2,y+endDir*depth);
  ctx.stroke();
- if(label){ctx.font='600 13px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*12)}
+ if(label){ctx.font='700 14px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*14)}
  ctx.restore();
- hot.push({obj,id,x1:x1-8,x2:x2+8,y1:y-21,y2:y+21});
+ hot.push({obj,id,x1:x1-10,x2:x2+10,y1:y-26,y2:y+26});
 }
-function segmentInset(x1,x2){const w=Math.max(0,x2-x1),gap=Math.min(7,Math.max(2,w*.025));return[x1+gap,x2-gap]}
+function segmentInset(x1,x2){const w=Math.max(0,x2-x1),gap=Math.min(8,Math.max(3,w*.03));return[x1+gap,x2-gap]}
 function geom(obj){return{left:(obj.x+obj.w*(60/900))*cssW,right:(obj.x+obj.w*(840/900))*cssW,top:(obj.y+obj.h*(90/300))*cssH,bottom:(obj.y+obj.h*(210/300))*cssH}}
 function drawPartWhole(obj){
  const st=ensureState(obj),n=Math.max(2,obj.barCount||2),cuts=cutsFor(obj),bounds=[0,...cuts,1],g=geom(obj);
- // Singapore-style convention: WHOLE bracket above the complete bar; PART brackets below individual parts.
- if(st.whole?.visible)curlyBrace(g.left+2,g.right-2,g.top-20,'top',st.whole.label||'','whole',obj);
+ if(st.whole?.visible)curlyBrace(g.left+2,g.right-2,g.top-30,'top',st.whole.label||'','whole',obj);
  for(let i=0;i<n;i++){
   const raw1=g.left+(g.right-g.left)*bounds[i],raw2=g.left+(g.right-g.left)*bounds[i+1];
   const [x1,x2]=segmentInset(raw1,raw2),b=st['p'+i];
-  if(b?.visible)curlyBrace(x1,x2,g.bottom+20,'bottom',b.label||'','p'+i,obj);
+  if(b?.visible)curlyBrace(x1,x2,g.bottom+30,'bottom',b.label||'','p'+i,obj);
  }
 }
 function drawEqual(obj){
@@ -97,7 +97,17 @@ function showPanel(h,clientX,clientY){
  del.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const o=strokes.find(s=>s&&s.smartId===h.obj.smartId);if(!o)return;window.__smartBarLastHistory={before:clone(strokes),afterId:o.smartId};const s=ensureState(o);s[h.id].visible=false;redraw();syncUi();closePanel()},true);
  row.append(apply,del);panel.append(title,input,row);document.body.appendChild(panel);setTimeout(()=>input.focus(),0)
 }
-canvas.addEventListener('click',e=>{const h=hitBracket(e.clientX,e.clientY);if(!h)return;e.preventDefault();e.stopImmediatePropagation();showPanel(h,e.clientX,e.clientY)},true);
-document.addEventListener('pointerdown',e=>{if(panel&&!panel.contains(e.target)&&e.target!==canvas)closePanel()},true);document.addEventListener('keydown',e=>{if(e.key==='Escape')closePanel()},true);
+let bracketDown=null;
+canvas.addEventListener('pointerdown',e=>{
+ const h=hitBracket(e.clientX,e.clientY);if(!h)return;
+ e.preventDefault();e.stopImmediatePropagation();bracketDown={h,x:e.clientX,y:e.clientY};canvas.style.cursor='pointer';
+},true);
+canvas.addEventListener('pointerup',e=>{
+ if(!bracketDown)return;
+ const b=bracketDown;bracketDown=null;e.preventDefault();e.stopImmediatePropagation();canvas.style.cursor='default';
+ if(Math.hypot(e.clientX-b.x,e.clientY-b.y)<=8)showPanel(b.h,e.clientX,e.clientY);
+},true);
+canvas.addEventListener('click',e=>{const h=hitBracket(e.clientX,e.clientY);if(!h)return;e.preventDefault();e.stopImmediatePropagation()},true);
+document.addEventListener('pointerdown',e=>{if(panel&&!panel.contains(e.target)&&e.target!==canvas)closePanel()},true);document.addEventListener('keydown',e=>{if(e.key==='Escape'){bracketDown=null;closePanel()}},true);
 setTimeout(()=>{try{redraw()}catch{}},0);
 })();
