@@ -29,38 +29,69 @@ function deactivate(){active=false;if(doneBtn)doneBtn.style.display='none';const
 function svgData(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
 function makeFinishButton(){if(doneBtn)return;const sm=smartButton();if(!sm)return;doneBtn=document.createElement('button');doneBtn.type='button';doneBtn.className='btn soft';doneBtn.textContent=L.finish;doneBtn.style.cssText='display:none;min-height:32px;padding:5px 9px;font-size:11px;border-style:dashed';sm.insertAdjacentElement('afterend',doneBtn);doneBtn.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();finishFraction()},true)}
 
+function dedupePositions(items,tol){items.sort((a,b)=>a-b);const out=[];for(const p of items){if(!out.length||Math.abs(p-out[out.length-1])>tol)out.push(p)}return out}
+
 function analyseFraction(group){
  if(!group.length)return null;
  const gb=groupBox(group),gw=gb.w*cssW,gh=gb.h*cssH;
- if(gw<70||gh<20)return null;
+ if(gw<60||gh<18)return null;
  const horizontal=gw>=gh;
- // Find a likely continuous outer rectangle if the teacher drew one in a single stroke.
+
+ // First try to locate a single rough outer rectangle, but do not require it.
  let outer=null,best=-1;
- for(const s of group){const b=box(s),pw=b.w*cssW,ph=b.h*cssH,diag=Math.hypot(pw,ph),closed=1-clamp(closure(s)/Math.max(12,diag),0,1),aspect=Math.max(pw/ph,ph/pw);const score=closed+(aspect>1.5?.35:0)+(pw*ph)/(Math.max(1,gw*gh))*.25;if(closed>.45&&score>best){best=score;outer=s}}
+ for(const s of group){
+   const b=box(s),pw=b.w*cssW,ph=b.h*cssH,diag=Math.hypot(pw,ph);
+   const closed=1-clamp(closure(s)/Math.max(12,diag),0,1);
+   const aspect=Math.max(pw/ph,ph/pw);
+   const areaScore=(pw*ph)/Math.max(1,gw*gh);
+   const score=closed+(aspect>1.35?.3:0)+areaScore*.3;
+   if(closed>.30&&areaScore>.35&&score>best){best=score;outer=s}
+ }
+
  const ob=outer?box(outer):gb;
  const bw=ob.w*cssW,bh=ob.h*cssH;
- if(horizontal&&bw<80)return null;if(!horizontal&&bh<80)return null;
- const divs=[];
- for(const s of group){if(s===outer||straightness(s)<.55)continue;const b=box(s),pw=b.w*cssW,ph=b.h*cssH;
+ if(horizontal&&bw<60)return null;
+ if(!horizontal&&bh<60)return null;
+
+ // Count divider strokes. In fallback mode, tolerate hand-drawn, slightly bent
+ // dividers and separate-stroke outer borders like a teacher would naturally draw.
+ const positions=[];
+ for(const s of group){
+   if(s===outer)continue;
+   const b=box(s),pw=b.w*cssW,ph=b.h*cssH;
+   const relX=(b.cx-ob.x)/Math.max(.001,ob.w);
+   const relY=(b.cy-ob.y)/Math.max(.001,ob.h);
    if(horizontal){
-     if(ph<Math.max(10,bh*.35)||ph<pw*1.15)continue;
-     const rel=(b.cx-ob.x)/Math.max(.001,ob.w);if(rel>.10&&rel<.90&&b.cy>ob.y-.05&&b.cy<ob.y+ob.h+.05)divs.push({s,pos:b.cx});
+     const verticalEnough=ph>=Math.max(10,bh*.42)&&ph>=pw*.75;
+     const inside=relX>.055&&relX<.945;
+     const overlaps=b.cy>ob.y-ob.h*.25&&b.cy<ob.y+ob.h*1.25;
+     if(verticalEnough&&inside&&overlaps)positions.push(b.cx);
    }else{
-     if(pw<Math.max(10,bw*.35)||pw<ph*1.15)continue;
-     const rel=(b.cy-ob.y)/Math.max(.001,ob.h);if(rel>.10&&rel<.90&&b.cx>ob.x-.05&&b.cx<ob.x+ob.w+.05)divs.push({s,pos:b.cy});
+     const horizontalEnough=pw>=Math.max(10,bw*.42)&&pw>=ph*.75;
+     const inside=relY>.055&&relY<.945;
+     const overlaps=b.cx>ob.x-ob.w*.25&&b.cx<ob.x+ob.w*1.25;
+     if(horizontalEnough&&inside&&overlaps)positions.push(b.cy);
    }
  }
- // Deduplicate divider strokes that are very close together.
- divs.sort((a,b)=>a.pos-b.pos);const unique=[];const tol=(horizontal?ob.w:ob.h)*.06;for(const d of divs){if(!unique.length||Math.abs(d.pos-unique[unique.length-1].pos)>tol)unique.push(d)}
- const parts=unique.length+1;
+
+ const tol=(horizontal?ob.w:ob.h)*.035;
+ const unique=dedupePositions(positions,tol);
+ let parts=unique.length+1;
+
+ // If the outer rectangle itself was not a single stroke, the group bounding box
+ // includes the bar borders. The 5.5% edge exclusion above removes those borders,
+ // leaving only the true internal dividers.
  if(parts<2||parts>12)return null;
  return{box:ob,horizontal,parts,group};
 }
 
 function finishFraction(){
  if(!active)return;
- const group=strokes.slice(startIndex).filter(rawInk);const f=analyseFraction(group);if(!f){notify(L.no);forcePen();showActive();return}
- const before=clone(strokes),set=new Set(group),b=f.box,n=f.parts;strokes=strokes.filter(s=>!set.has(s));
+ const group=strokes.slice(startIndex).filter(rawInk);
+ const f=analyseFraction(group);
+ if(!f){notify(L.no);forcePen();showActive();return}
+ const before=clone(strokes),set=new Set(group),b=f.box,n=f.parts;
+ strokes=strokes.filter(s=>!set.has(s));
  const svgW=f.horizontal?900:260,svgH=f.horizontal?220:900,els=[];
  els.push(`<rect x="10" y="10" width="${svgW-20}" height="${svgH-20}" rx="2" fill="white" stroke="#17324d" stroke-width="10"/>`);
  for(let i=1;i<n;i++){
@@ -68,7 +99,8 @@ function finishFraction(){
    else{const y=10+(svgH-20)*i/n;els.push(`<line x1="10" y1="${y}" x2="${svgW-10}" y2="${y}" stroke="#17324d" stroke-width="8"/>`)}
  }
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">${els.join('')}</svg>`;
- const obj={type:'image',src:svgData(svg),x:clamp(b.x,0,.96),y:clamp(b.y,0,.96),w:clamp(b.w,.06,1-b.x),h:clamp(b.h,.06,1-b.y),smartGenerated:true,smartType:'fractionBar',smartId:uid(),smartOriginal:clone(group)};
+ const minW=f.horizontal?.10:.055,minH=f.horizontal?.055:.10;
+ const obj={type:'image',src:svgData(svg),x:clamp(b.x,0,.96),y:clamp(b.y,0,.96),w:clamp(b.w,minW,1-b.x),h:clamp(b.h,minH,1-b.y),smartGenerated:true,smartType:'fractionBar',smartId:uid(),smartOriginal:clone(group)};
  strokes.push(obj);lastHistory={before,afterId:obj.smartId};redraw();syncUi();try{tool='select';syncUi()}catch{};deactivate();notify(`${n}-part ${L.made}`)
 }
 
