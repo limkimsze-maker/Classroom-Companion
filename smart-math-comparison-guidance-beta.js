@@ -67,7 +67,7 @@ function prepareFinish(){
   const originals=p.original.map(s=>{const c=clone(s);delete c.__cmpWasSmart;delete c.__cmpBracketTemp;c.smartGenerated=false;return c});
   obj.smartOriginal=[...(Array.isArray(obj.smartOriginal)?obj.smartOriginal:[]),...originals];
   obj.barCount=Math.max(2,Math.min(5,p.bars.length));obj.barCompareWidths=modelWidths(p.bars);if(!Array.isArray(obj.barFills))obj.barFills=Array(obj.barCount).fill('#ffffff');
-  rebuild(obj);obj.userDrawnBrackets=makeBrackets(originals,obj,p.bars);obj.userDrawnBracketScan=true;hideAuto(obj);pending=null;redraw();syncUi();
+  rebuild(obj);obj.rotation=0;obj.angle=0;obj.userDrawnBrackets=makeBrackets(originals,obj,p.bars);obj.userDrawnBracketScan=true;hideAuto(obj);pending=null;redraw();syncUi();
  },0)
 }
 
