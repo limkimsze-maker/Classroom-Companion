@@ -24,8 +24,13 @@ function rectangularish(s,b){
 }
 function dedupeRows(list){list.sort((a,b)=>a.b.cy-b.b.cy);const out=[];for(const q of list){const last=out[out.length-1];if(last&&Math.abs((q.b.cy-last.b.cy)*cssH)<34){if(q.b.pw*q.b.ph>last.b.pw*last.b.ph)out[out.length-1]=q}else out.push(q)}return out}
 function findBars(group){
+ // A comparison bar must look like an actual rough rectangle. Curly brackets can be
+ // wide and almost closed, so endpoint distance alone is not enough.
  let c=group.map(s=>({s,b:pxBox(s)})).filter(q=>rectangularish(q.s,q.b));
  c=dedupeRows(c);
+ // Tolerant fallback for rough rectangles: still require enough travel to go around
+ // most of a rectangle. This rejects top/bottom curly brackets that caused 2 bars
+ // to be interpreted as 4 bars.
  if(c.length<2){c=group.map(s=>({s,b:pxBox(s)})).filter(q=>q.b.pw>=120&&q.b.ph>=32&&q.b.pw>=q.b.ph*1.55&&closedish(q.s,q.b)&&pathLength(q.s)>=2*(q.b.pw+q.b.ph)*.72);c=dedupeRows(c)}
  if(c.length>5)c=c.sort((a,b)=>b.b.pw*b.b.ph-a.b.pw*a.b.ph).slice(0,5).sort((a,b)=>a.b.cy-b.b.cy);
  return c;
@@ -36,7 +41,6 @@ function findBrackets(group,bars){
 }
 function modelH(n){return Math.max(340,150+n*145)}
 function modelWidths(bars){const max=Math.max(...bars.map(q=>q.b.w),.001);return bars.map(q=>clamp(q.b.w/max,.16,1))}
-function currentWidths(obj){const n=Math.max(2,Math.min(5,obj.barCount||2)),a=Array.isArray(obj.barCompareWidths)?obj.barCompareWidths:[];return Array.from({length:n},(_,i)=>clamp(Number(a[i]??(1-i*.11)),.16,1))}
 function svgData(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
 function rebuild(obj){const n=Math.max(2,Math.min(5,obj.barCount||2)),H=modelH(n),x=180,maxW=650,rowGap=145,barH=76,startY=60,stroke='#17324d',widths=obj.barCompareWidths||Array.from({length:n},(_,i)=>1-i*.11),els=[];for(let i=0;i<n;i++){const w=maxW*clamp(widths[i]??1,.16,1),fill=obj.barFills?.[i]||'#ffffff';els.push(`<rect x="${x}" y="${startY+i*rowGap}" width="${w}" height="${barH}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="8"/>`)}obj.barCompareLayoutVersion=2;obj.src=svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="${H}" viewBox="0 0 900 ${H}">${els.join('')}</svg>`)}
 function hideAuto(obj){if(!obj.barBracketState||typeof obj.barBracketState!=='object')obj.barBracketState={};const n=Math.max(2,obj.barCount||2);for(let i=0;i<n;i++){if(!obj.barBracketState['c'+i])obj.barBracketState['c'+i]={visible:false,label:'',position:i%2?'bottom':'top'};else obj.barBracketState['c'+i].visible=false}}
@@ -51,6 +55,8 @@ function prepareFinish(){
  const bars=findBars(group);if(bars.length<2)return;
  const brackets=findBrackets(group,bars);
  const beforeIds=new Set(strokes.filter(s=>s?.smartType==='barModel').map(s=>s.smartId));
+ // Hide only recognised horizontal brackets from the base row counter. The bars stay
+ // visible to the base recogniser, so two drawn bars produce exactly two rows.
  for(const s of brackets){s.__cmpWasSmart=!!s.smartGenerated;s.__cmpBracketTemp=true;s.smartGenerated=true}
  pending={bars,brackets:brackets.slice(),original:clone(brackets),beforeIds};
  setTimeout(()=>{
@@ -66,31 +72,9 @@ function prepareFinish(){
 }
 
 document.addEventListener('click',e=>{const el=e.target;if(!(el instanceof Element))return;if(el.closest('#smartBarTypeMenu'))setTimeout(()=>{const t=window.__smartBarType||'';if(t&&t!==lastType){lastType=t;startIndex=strokes.length}},0);const finish=smartBtn.nextElementSibling;if(finish&&el===finish)prepareFinish()},true);
-function anchorX(obj,a){if(!a||a.kind==='start')return 180/900;const widths=currentWidths(obj),row=clamp(Number(a.row)||0,0,Math.max(0,(obj.barCount||2)-1));return(180+650*widths[row])/900}
-function classifyBracket(obj,b){
- const a=b.compareAnchorLeft,c=b.compareAnchorRight,n=Math.max(2,Math.min(5,obj.barCount||2)),widths=currentWidths(obj);
- if(a?.kind==='start'&&c?.kind==='end'){
-  const row=clamp(Number(c.row)||0,0,n-1),longest=widths.indexOf(Math.max(...widths));
-  return{role:'whole',row,position:(n===2&&row===longest)?'top':(n===2?'bottom':(b.position==='bottom'?'bottom':'top'))};
- }
- if(a?.kind==='end'&&c?.kind==='end'&&Number(a.row)!==Number(c.row)){
-  return{role:'difference',row:Math.max(clamp(Number(a.row)||0,0,n-1),clamp(Number(c.row)||0,0,n-1)),position:'bottom'};
- }
- return{role:'free',row:clamp(Number.isInteger(b.compareRow)?b.compareRow:0,0,n-1),position:b.position==='bottom'?'bottom':'top'};
-}
-function follow(){let changed=false;for(const obj of strokes){if(!obj||obj.smartType!=='barModel'||obj.smartBarType!=='comparison'||!Array.isArray(obj.userDrawnBrackets))continue;hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.compareAnchorLeft||!b.compareAnchorRight)continue;let x1=anchorX(obj,b.compareAnchorLeft),x2=anchorX(obj,b.compareAnchorRight);if(x2<x1)[x1,x2]=[x2,x1];const role=classifyBracket(obj,b),y=bracketY(obj,role.row,role.position);if(Math.abs((b.x1??0)-x1)>.0005||Math.abs((b.x2??0)-x2)>.0005||Math.abs((b.y??0)-y)>.0005||b.position!==role.position||b.compareRole!==role.role||b.compareRow!==role.row){b.x1=x1;b.x2=x2;b.y=y;b.position=role.position;b.compareRole=role.role;b.compareRow=role.row;changed=true}}}return changed}
-function drawGuides(){
- for(const obj of strokes){
-  if(!obj||obj.smartType!=='barModel'||obj.smartBarType!=='comparison'||!Array.isArray(obj.userDrawnBrackets)||!obj.w||!obj.h)continue;
-  const n=Math.max(2,Math.min(5,obj.barCount||2)),H=modelH(n),startY=60,rowGap=145;
-  for(const b of obj.userDrawnBrackets){
-   if(!b.visible||b.compareRole!=='difference')continue;
-   const x1=(obj.x+obj.w*b.x1)*cssW,x2=(obj.x+obj.w*b.x2)*cssW,y1=(obj.y+obj.h*(startY/H))*cssH,y2=(obj.y+obj.h*b.y)*cssH-4;
-   ctx.save();ctx.strokeStyle='#111827';ctx.lineWidth=1.5;ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1,y2);ctx.moveTo(x2,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
-  }
- }
-}
-const priorRedraw=redraw;redraw=function(){follow();priorRedraw();drawGuides();if(!refreshing&&follow()){refreshing=true;requestAnimationFrame(()=>{refreshing=false;priorRedraw();drawGuides()})}};
+function anchorX(obj,a){if(!a||a.kind==='start')return 180/900;const widths=Array.isArray(obj.barCompareWidths)?obj.barCompareWidths:[];const row=clamp(Number(a.row)||0,0,Math.max(0,(obj.barCount||2)-1));return(180+650*clamp(widths[row]??1,.16,1))/900}
+function follow(){let changed=false;for(const obj of strokes){if(!obj||obj.smartType!=='barModel'||obj.smartBarType!=='comparison'||!Array.isArray(obj.userDrawnBrackets))continue;hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.compareAnchorLeft||!b.compareAnchorRight)continue;let x1=anchorX(obj,b.compareAnchorLeft),x2=anchorX(obj,b.compareAnchorRight);if(x2<x1)[x1,x2]=[x2,x1];const row=clamp(Number.isInteger(b.compareRow)?b.compareRow:0,0,Math.max(0,(obj.barCount||2)-1)),y=bracketY(obj,row,b.position==='bottom'?'bottom':'top');if(Math.abs((b.x1??0)-x1)>.0005||Math.abs((b.x2??0)-x2)>.0005||Math.abs((b.y??0)-y)>.0005){b.x1=x1;b.x2=x2;b.y=y;changed=true}}}return changed}
+const priorRedraw=redraw;redraw=function(){follow();priorRedraw();if(!refreshing&&follow()){refreshing=true;requestAnimationFrame(()=>{refreshing=false;priorRedraw()})}};
 setTimeout(()=>{try{redraw()}catch{}},0);
 })();
 (function(){if(document.querySelector('script[data-compare-total-bracket]'))return;const s=document.createElement('script');s.dataset.compareTotalBracket='1';s.src='smart-math-comparison-total-bracket.js?v=20261011-1245-totalright2';document.head.appendChild(s)})();
