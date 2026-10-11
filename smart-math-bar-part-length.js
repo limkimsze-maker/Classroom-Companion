@@ -43,14 +43,23 @@ function dividerHit(obj,x,rect){
  }
  return -1;
 }
+function barEdges(obj){return{top:obj.y+obj.h*(90/300),bottom:obj.y+obj.h*(210/300),cx:obj.x+obj.w*.5}}
+function heightHandleHit(obj,x,y,rect){
+ const g=barEdges(obj),px=x*rect.width,py=y*rect.height,cx=g.cx*rect.width,top=g.top*rect.height,bottom=g.bottom*rect.height,threshold=12;
+ if(Math.abs(px-cx)<=18&&Math.abs(py-top)<=threshold)return'top';
+ if(Math.abs(px-cx)<=18&&Math.abs(py-bottom)<=threshold)return'bottom';
+ return null;
+}
 function drawHandles(){
  if(!selectedId)return;
  const obj=strokes.find(s=>s&&s.smartId===selectedId&&s.smartType==='barModel'&&s.smartBarType==='partwhole');if(!obj)return;
- const cuts=cutsFor(obj);ctx.save();ctx.fillStyle='#ffffff';ctx.strokeStyle='#2563eb';ctx.lineWidth=2;
+ const cuts=cutsFor(obj),g=barEdges(obj);ctx.save();ctx.fillStyle='#ffffff';ctx.strokeStyle='#2563eb';ctx.lineWidth=2;
  for(const r of cuts){
   const x=(obj.x+obj.w*(60/900+(780/900)*r))*cssW,y=(obj.y+obj.h*.5)*cssH;
   ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();ctx.stroke();
  }
+ const cx=g.cx*cssW,top=g.top*cssH,bottom=g.bottom*cssH;
+ for(const y of [top,bottom]){ctx.beginPath();ctx.rect(cx-7,y-7,14,14);ctx.fill();ctx.stroke()}
  ctx.restore();
 }
 const baseRedraw=redraw;redraw=function(){baseRedraw();drawHandles()};
@@ -59,19 +68,34 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=canvasPoint(e),obj=hitPartWhole(p.x,p.y);
  if(!obj){selectedId=null;redraw();return}
- selectedId=obj.smartId;const di=dividerHit(obj,p.x,p.r);redraw();
- if(di<0)return;
+ selectedId=obj.smartId;const hh=heightHandleHit(obj,p.x,p.y,p.r),di=dividerHit(obj,p.x,p.r);redraw();
+ if(!hh&&di<0)return;
  e.preventDefault();e.stopImmediatePropagation();canvas.setPointerCapture?.(e.pointerId);
- drag={id:obj.smartId,index:di,before:clone(strokes),pointerId:e.pointerId,moved:false};
+ drag=hh?{id:obj.smartId,kind:'height',edge:hh,before:clone(strokes),pointerId:e.pointerId,moved:false}:{id:obj.smartId,kind:'divider',index:di,before:clone(strokes),pointerId:e.pointerId,moved:false};
 },true);
 canvas.addEventListener('pointermove',e=>{
  if(!drag)return;const obj=strokes.find(s=>s&&s.smartId===drag.id);if(!obj)return;
- const p=canvasPoint(e),cuts=cutsFor(obj),i=drag.index;
- const innerStart=obj.x+obj.w*(60/900),innerW=obj.w*(780/900);
- let r=(p.x-innerStart)/Math.max(.001,innerW);
- const minGap=.05,left=i===0?minGap:cuts[i-1]+minGap,right=i===cuts.length-1?1-minGap:cuts[i+1]-minGap;
- r=clamp(r,left,right);if(Math.abs(cuts[i]-r)<.001)return;
- cuts[i]=r;obj.barCuts=cuts;rebuild(obj);drag.moved=true;suppressClick=true;redraw();syncUi();e.preventDefault();e.stopImmediatePropagation();
+ const p=canvasPoint(e);
+ if(drag.kind==='divider'){
+  const cuts=cutsFor(obj),i=drag.index;
+  const innerStart=obj.x+obj.w*(60/900),innerW=obj.w*(780/900);
+  let r=(p.x-innerStart)/Math.max(.001,innerW);
+  const minGap=.05,left=i===0?minGap:cuts[i-1]+minGap,right=i===cuts.length-1?1-minGap:cuts[i+1]-minGap;
+  r=clamp(r,left,right);if(Math.abs(cuts[i]-r)<.001)return;
+  cuts[i]=r;obj.barCuts=cuts;rebuild(obj);
+ }else{
+  const g=barEdges(obj),minVisible=30/Math.max(1,p.r.height),maxVisible=.55;
+  let newH,newY;
+  if(drag.edge==='bottom'){
+   const top=g.top,visible=clamp(p.y-top,minVisible,maxVisible);newH=visible/.4;newY=top-.3*newH;
+  }else{
+   const bottom=g.bottom,visible=clamp(bottom-p.y,minVisible,maxVisible);newH=visible/.4;newY=p.y-.3*newH;
+  }
+  newH=clamp(newH,.08,.92);newY=clamp(newY,0,1-newH);
+  if(Math.abs(obj.h-newH)<.001&&Math.abs(obj.y-newY)<.001)return;
+  obj.h=newH;obj.y=newY;
+ }
+ drag.moved=true;suppressClick=true;redraw();syncUi();e.preventDefault();e.stopImmediatePropagation();
 },true);
 function endDrag(e){if(!drag)return;const obj=strokes.find(s=>s&&s.smartId===drag.id);if(obj&&drag.moved)window.__smartBarLastHistory={before:drag.before,afterId:obj.smartId};try{canvas.releasePointerCapture?.(drag.pointerId)}catch{};drag=null;setTimeout(()=>{suppressClick=false},80);e?.preventDefault?.();e?.stopImmediatePropagation?.()}
 canvas.addEventListener('pointerup',endDrag,true);canvas.addEventListener('pointercancel',endDrag,true);
