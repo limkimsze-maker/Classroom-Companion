@@ -44,7 +44,7 @@ function detect(obj){
  if(found.length){obj.userDrawnBrackets=found;hideAuto(obj)}
 }
 function curly(x1,x2,y,position,label,obj,entry){
- if(x2<x1)[x1,x2]=[x2,x1];const w=x2-x1,mid=(x1+x2)/2,end=clamp(w*.045,5,10),neck=clamp(w*.035,5,9),depth=9,top=position==='top',endDir=entry?.isDifference?-1:(top?1:-1),notchDir=entry?.isDifference?1:(top?-1:1),labelDir=top?-1:1;
+ if(x2<x1)[x1,x2]=[x2,x1];const w=x2-x1,mid=(x1+x2)/2,end=clamp(w*.045,5,10),neck=clamp(w*.035,5,9),depth=entry?.isDifference?5:9,top=position==='top',endDir=entry?.isDifference?-1:(top?1:-1),notchDir=entry?.isDifference?1:(top?-1:1),labelDir=top?-1:1;
  ctx.save();ctx.strokeStyle='#111827';ctx.fillStyle='#111827';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x1,y+endDir*depth);ctx.bezierCurveTo(x1,y+endDir*3,x1+2,y,x1+end,y);ctx.lineTo(mid-neck,y);ctx.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);ctx.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);ctx.lineTo(x2-end,y);ctx.bezierCurveTo(x2-2,y,x2,y+endDir*3,x2,y+endDir*depth);ctx.stroke();if(label){ctx.font='700 14px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*14)}ctx.restore();
  hot.push({obj,entry,x1:x1-10,x2:x2+10,y1:y-27,y2:y+27});
 }
