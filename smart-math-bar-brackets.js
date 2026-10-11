@@ -3,10 +3,10 @@
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
 const edition=(new URLSearchParams(location.search).get('edition')||'en').toLowerCase();
 const TXT={
- en:{title:'Bracket label',whole:'Whole label',part:'Part label',placeholder:'Type label',apply:'Apply',del:'Delete bracket'},
- zh:{title:'括号标签',whole:'整体标签',part:'部分标签',placeholder:'输入标签',apply:'应用',del:'删除括号'},
- ms:{title:'Label kurungan',whole:'Label keseluruhan',part:'Label bahagian',placeholder:'Taip label',apply:'Guna',del:'Padam kurungan'},
- ta:{title:'அடைப்புக்குறி பெயர்',whole:'முழு பெயர்',part:'பகுதி பெயர்',placeholder:'பெயரை உள்ளிடவும்',apply:'பயன்படுத்து',del:'அடைப்புக்குறியை நீக்கு'}
+ en:{title:'Bracket label',whole:'Whole label',part:'Part label',shared:'Shared/known label',extra:'Extra/difference label',placeholder:'Type label',apply:'Apply',del:'Delete bracket'},
+ zh:{title:'括号标签',whole:'整体标签',part:'部分标签',shared:'共同/已知标签',extra:'多出/相差标签',placeholder:'输入标签',apply:'应用',del:'删除括号'},
+ ms:{title:'Label kurungan',whole:'Label keseluruhan',part:'Label bahagian',shared:'Label sama/diketahui',extra:'Label beza/tambahan',placeholder:'Taip label',apply:'Guna',del:'Padam kurungan'},
+ ta:{title:'அடைப்புக்குறி பெயர்',whole:'முழு பெயர்',part:'பகுதி பெயர்',shared:'பொது/தெரிந்த பெயர்',extra:'கூடுதல்/வேறுபாடு பெயர்',placeholder:'பெயரை உள்ளிடவும்',apply:'பயன்படுத்து',del:'அடைப்புக்குறியை நீக்கு'}
 };
 const L=TXT[edition]||TXT.en;
 const clone=v=>JSON.parse(JSON.stringify(v));
@@ -20,12 +20,14 @@ function ensureState(obj){
   if(!st.whole)st.whole={visible:true,label:''};
   for(let i=0;i<n;i++)if(!st['p'+i])st['p'+i]={visible:true,label:''};
  }else if(obj.smartBarType==='comparison'){
-  for(let i=0;i<n;i++)if(!st['c'+i])st['c'+i]={visible:true,label:''};
+  if(!st.shared)st.shared={visible:true,label:''};
+  if(!st.extra)st.extra={visible:true,label:''};
+  if(!st.whole)st.whole={visible:true,label:''};
  }
  return st;
 }
 function cutsFor(obj){const n=Math.max(2,obj.barCount||2);if(obj.smartBarType==='equal')return Array.from({length:n-1},(_,i)=>(i+1)/n);if(Array.isArray(obj.barCuts)&&obj.barCuts.length===n-1)return obj.barCuts.slice().sort((a,b)=>a-b);return Array.from({length:n-1},(_,i)=>(i+1)/n)}
-function compWidths(obj){const n=Math.max(2,obj.barCount||2);if(Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length===n)return obj.barCompareWidths.map(v=>clamp(Number(v)||.5,.16,1));return Array.from({length:n},(_,i)=>clamp(1-i*.11,.16,1))}
+function compWidths(obj){if(Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length>=2)return obj.barCompareWidths.slice(0,2).map(v=>clamp(Number(v)||.5,.16,1));return [.82,1]}
 function straightBracket(x1,x2,y,toward,label,id,obj,labelSide){
  const arm=7,ctx2=ctx;if(x2<x1)[x1,x2]=[x2,x1];
  ctx2.save();ctx2.strokeStyle='#111827';ctx2.fillStyle='#111827';ctx2.lineWidth=1.8;ctx2.lineCap='round';ctx2.lineJoin='round';
@@ -73,17 +75,19 @@ function drawEqual(obj){
  }
 }
 function drawComparison(obj){
- const st=ensureState(obj),n=Math.max(2,obj.barCount||2),widths=compWidths(obj),H=Math.max(260,120+n*115);
- for(let i=0;i<n;i++){
-  const raw1=(obj.x+obj.w*(70/900))*cssW,raw2=(obj.x+obj.w*((70+760*widths[i])/900))*cssW;
-  const [x1,x2]=segmentInset(raw1,raw2),top=(obj.y+obj.h*((45+i*105)/H))*cssH;
-  const b=st['c'+i];if(b?.visible)straightBracket(x1,x2,top-14,1,b.label||'','c'+i,obj,-1);
- }
+ const st=ensureState(obj),widths=compWidths(obj),left=(obj.x+obj.w*(70/900))*cssW,maxSpan=obj.w*(760/900)*cssW;
+ const shortW=Math.min(widths[0],widths[1]),longW=Math.max(widths[0],widths[1]);
+ const shortEnd=left+maxSpan*shortW,longEnd=left+maxSpan*longW;
+ const H=350,top=(obj.y+obj.h*(55/H))*cssH,bottom=(obj.y+obj.h*((180+78)/H))*cssH;
+ const gap=6;
+ if(st.shared?.visible){const [x1,x2]=segmentInset(left,shortEnd);curlyBrace(x1,x2,top-28,'top',st.shared.label||'','shared',obj)}
+ if(st.extra?.visible&&longEnd-shortEnd>24){const [x1,x2]=segmentInset(shortEnd+gap,longEnd);curlyBrace(x1,x2,top-28,'top',st.extra.label||'','extra',obj)}
+ if(st.whole?.visible)curlyBrace(left+2,longEnd-2,bottom+30,'bottom',st.whole.label||'','whole',obj);
 }
 function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel'||!obj.w||!obj.h)continue;if(obj.smartBarType==='partwhole')drawPartWhole(obj);else if(obj.smartBarType==='equal')drawEqual(obj);else if(obj.smartBarType==='comparison')drawComparison(obj)}}
 const priorRedraw=redraw;redraw=function(){priorRedraw();drawAll()};
 function hitBracket(clientX,clientY){const r=canvas.getBoundingClientRect(),x=(clientX-r.left)*(cssW/Math.max(1,r.width)),y=(clientY-r.top)*(cssH/Math.max(1,r.height));for(let i=hot.length-1;i>=0;i--){const h=hot[i];if(x>=h.x1&&x<=h.x2&&y>=h.y1&&y<=h.y2)return h}return null}
-function panelTitle(h){if(h.id==='whole')return L.whole;if(/^p\d+$/.test(h.id))return `${L.part} ${Number(h.id.slice(1))+1}`;return L.title}
+function panelTitle(h){if(h.id==='whole')return L.whole;if(h.id==='shared')return L.shared;if(h.id==='extra')return L.extra;if(/^p\d+$/.test(h.id))return `${L.part} ${Number(h.id.slice(1))+1}`;return L.title}
 function showPanel(h,clientX,clientY){
  closePanel();const obj=strokes.find(s=>s&&s.smartId===h.obj.smartId);if(!obj)return;const st=ensureState(obj),entry=st[h.id];if(!entry)return;
  panel=document.createElement('div');panel.style.cssText='position:fixed;z-index:10080;width:260px;padding:10px;background:#fff;border:1px solid #cfd9de;border-radius:13px;box-shadow:0 10px 28px rgba(23,50,77,.22);left:'+Math.min(innerWidth-268,Math.max(8,clientX-120))+'px;top:'+Math.min(innerHeight-120,Math.max(8,clientY+12))+'px';
