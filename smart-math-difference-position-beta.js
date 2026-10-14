@@ -15,11 +15,7 @@ function adjustDifferencePosition(){
   const edgeModelY=long===0?(60+76):(60+145);
   const baseScreenY=(Number(obj.y||0)+Number(obj.h||0)*(baseModelY/440))*cssH;
   const edgeScreenY=(Number(obj.y||0)+Number(obj.h||0)*(edgeModelY/440))*cssH;
-  const manualPx=Number(diff.manualVerticalOffsetPx||0);
-  const targetScreenY=(long===0
-    ? edgeScreenY+FIXED_GAP_PX
-    : edgeScreenY-FIXED_GAP_PX)+manualPx;
-
+  const targetScreenY=long===0?edgeScreenY+FIXED_GAP_PX:edgeScreenY-FIXED_GAP_PX;
   diff.verticalOffset=(targetScreenY-baseScreenY)/cssH;
  }
 }
@@ -29,16 +25,9 @@ setTimeout(()=>{try{adjustDifferencePosition();redraw()}catch{}},0);
 })();
 
 (function(){
- if(!document.querySelector('script[data-predrawn-comparison-fallback]')){
-  const s=document.createElement('script');
-  s.dataset.predrawnComparisonFallback='1';
-  s.src='smart-math-comparison-predrawn-fallback.js?v=20261014-predrawn2';
-  document.head.appendChild(s);
- }
- if(!document.querySelector('script[data-difference-height-controls]')){
-  const h=document.createElement('script');
-  h.dataset.differenceHeightControls='1';
-  h.src='smart-math-difference-height-controls.js?v=20261014-height1';
-  document.head.appendChild(h);
- }
+ if(document.querySelector('script[data-predrawn-comparison-fallback]'))return;
+ const s=document.createElement('script');
+ s.dataset.predrawnComparisonFallback='1';
+ s.src='smart-math-comparison-predrawn-fallback.js?v=20261014-predrawn2';
+ document.head.appendChild(s);
 })();
