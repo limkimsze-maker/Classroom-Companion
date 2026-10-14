@@ -59,7 +59,7 @@ function ensurePattern(o){
   const id=`auto-3diff-${o.smartId}-${o.threeBarPattern}-${s.slot}`;expected.add(id);
   const geo=pairGeometry(o,s.a,s.b,s.offset);let e=o.userDrawnBrackets.find(x=>x&&x.id===id);
   if(!e){
-   e={id,autoThreeDifference:true,diffRows:[s.a,s.b],visible:!!geo,label:'',position:geo?.position||'bottom',x1:geo?.x1||0,x2:geo?.x2||0,y:geo?.y||0,compareRow:geo?.long??s.a,compareAnchorLeft:{kind:'end',row:geo?.short??s.b},compareAnchorRight:{kind:'end',row:geo?.long??s.a},verticalOffset:0,__autoEqualHidden:!geo};
+   e={id,autoThreeDifference:true,diffRows:[s.a,s.b],visible:!!geo,label:'',position:geo?.position||'bottom',x1:geo?.x1||0,x2:geo?.x2||0,y:geo?.y||0,compareRow:geo?.long??s.a,verticalOffset:0,__autoEqualHidden:!geo};
    o.userDrawnBrackets.push(e);changed=true;
   }else if(!geo){
    if(e.visible!==false||!e.__autoEqualHidden){e.visible=false;e.__autoEqualHidden=true;changed=true}
@@ -68,8 +68,11 @@ function ensurePattern(o){
    const vals={position:geo.position,x1:geo.x1,x2:geo.x2,y:geo.y,compareRow:geo.long};
    for(const [k,v] of Object.entries(vals))if((typeof v==='string'&&e[k]!==v)||(typeof v!=='string'&&Math.abs(Number(e[k])-Number(v))>.0005)){e[k]=v;changed=true}
    if(!Array.isArray(e.diffRows)||e.diffRows[0]!==s.a||e.diffRows[1]!==s.b){e.diffRows=[s.a,s.b];changed=true}
-   e.compareAnchorLeft={kind:'end',row:geo.short};e.compareAnchorRight={kind:'end',row:geo.long};e.autoThreeDifference=true;
+   e.autoThreeDifference=true;
   }
+  // The older 2-bar follower watches these anchor fields. 3-bar auto brackets
+  // are positioned here instead, so remove stale anchors to preserve stacking.
+  if(e&&(e.compareAnchorLeft||e.compareAnchorRight)){delete e.compareAnchorLeft;delete e.compareAnchorRight;changed=true}
  }
  const before=o.userDrawnBrackets.length;
  o.userDrawnBrackets=o.userDrawnBrackets.filter(e=>!e?.autoThreeDifference||expected.has(e.id));
