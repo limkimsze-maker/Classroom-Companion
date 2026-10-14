@@ -7,10 +7,20 @@ if(!wrap)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const START_Y=60,ROW_GAP=145,BAR_H=76,X0=180,MAX_W=650;
 const LANE_BASE_PX=8,LANE_STEP_PX=22;
-const PATTERN_VERSION=3;
-const MODES=['segments','reference','adjacent','outer','all','none'];
-const MODE_LABELS={segments:'Segments',reference:'Reference',adjacent:'Adjacent',outer:'Top ↔ Bottom',all:'All pairs',none:'No auto brackets',manual:'Manual'};
-let activeId='';
+const PATTERN_VERSION=4;
+
+const MODE_META={
+ auto:{label:'Auto',desc:'Recommended. Chooses a clean layout from the three bar lengths.'},
+ segments:{label:'Shared difference',desc:'Marks the same interval clearly on the relevant bars.'},
+ reference:{label:'Compare to longest',desc:'Compares each shorter bar with the longest bar.'},
+ adjacent:{label:'Compare neighbours',desc:'Compares top–middle and middle–bottom.'},
+ outer:{label:'Top ↔ bottom only',desc:'Shows only the outer-bar difference.'},
+ all:{label:'All differences',desc:'Shows every pairwise difference.'},
+ none:{label:'Totals / custom',desc:'No automatic difference guides. Keep labels and full-bar brackets for totals or your own setup.'},
+ manual:{label:'Use my drawing',desc:'Keeps the brackets you drew before beautifying.'}
+};
+const MENU_ORDER=['auto','segments','reference','adjacent','outer','all','none'];
+let activeId='',menu=null;
 
 function countFor(o){return clamp(Math.round(Number(o?.barCount)||2),2,5)}
 function modelH(n){return Math.max(340,150+n*145)}
@@ -25,6 +35,35 @@ function clearOldAdjacent(o){if(!Array.isArray(o.userDrawnBrackets))return false
 function longestRow(o){const w=widthsFor(o);let best=0;for(let i=1;i<3;i++)if(w[i]>w[best]+.0001)best=i;return best}
 function lengthOrder(o){return widthsFor(o).map((width,row)=>({row,width})).sort((a,b)=>a.width-b.width||a.row-b.row)}
 
+function notify(msg){
+ if(typeof say==='function'){try{say(msg);return}catch{}}
+ const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400)}
+}
+
+function setManualVisibility(o,show){
+ let changed=false;
+ for(const e of manualEntries(o)){
+  if(show){
+   if(e.__hiddenByThreeBarAuto){
+    e.visible=e.__visibleBeforeThreeBarAuto!==false;
+    delete e.__hiddenByThreeBarAuto;delete e.__visibleBeforeThreeBarAuto;changed=true;
+   }
+  }else if(e.visible!==false){
+   e.__visibleBeforeThreeBarAuto=true;e.__hiddenByThreeBarAuto=true;e.visible=false;changed=true;
+  }
+ }
+ return changed;
+}
+
+function effectiveMode(o){
+ const chosen=o.threeBarPattern||'auto';
+ if(chosen!=='auto')return chosen;
+ const [s,m,l]=lengthOrder(o),g1=m.width-s.width,g2=l.width-m.width;
+ if(g1<.025&&g2<.025)return'none';
+ if(g1<.035||g2<.035)return'reference';
+ return'segments';
+}
+
 function screenOffsetModel(o,px,H){return px*H/Math.max(1,Number(o.h||0)*cssH)}
 function rowSideGeometry(o,targetRow,towardRow,x1,x2,offsetPx=LANE_BASE_PX){
  const H=modelH(3),below=towardRow>targetRow,position=below?'bottom':'top',off=screenOffsetModel(o,offsetPx,H);
@@ -32,7 +71,6 @@ function rowSideGeometry(o,targetRow,towardRow,x1,x2,offsetPx=LANE_BASE_PX){
  return{targetRow,towardRow,x1:Math.min(x1,x2),x2:Math.max(x1,x2),y:clamp(yModel/H,.01,.99),position,offsetPx};
 }
 
-// Standard pair geometry retained for the alternate 3-bar patterns.
 function pairGeometry(o,a,b,offsetPx=LANE_BASE_PX){
  const widths=widthsFor(o),H=modelH(3),wa=widths[a],wb=widths[b];
  if(Math.abs(wa-wb)<.025)return null;
@@ -41,31 +79,17 @@ function pairGeometry(o,a,b,offsetPx=LANE_BASE_PX){
  return{a,b,long,short,x1:endpoint(widths[short]),x2:endpoint(widths[long]),y:clamp(yModel/H,.01,.99),position,widths,H,offsetPx};
 }
 
-// DEFAULT "Segments" pattern. Sort by LENGTH, not row position:
-// S = shortest endpoint, M = middle endpoint, L = longest bar.
-// - Longest bar: guides at S and M, bracket only S→M.
-// - Middle-length bar: guide at S, bracket S→M.
-// - Shortest bar: no automatic difference bracket.
-// This deliberately omits the unwanted M→L bracket.
 function segmentSpecsFor(o){
  const [short,mid,long]=lengthOrder(o),xS=endpoint(short.width),xM=endpoint(mid.width);
  if(Math.abs(mid.width-short.width)<.025)return[];
  return[
-  {
-   kind:'segment',slot:`seg-long-${long.row}-${mid.row}-${short.row}`,
-   targetRow:long.row,towardRow:mid.row,x1:xS,x2:xM,offsetPx:LANE_BASE_PX,
-   guideEndpoints:[xS,xM]
-  },
-  {
-   kind:'segment',slot:`seg-mid-${mid.row}-${long.row}-${short.row}`,
-   targetRow:mid.row,towardRow:long.row,x1:xS,x2:xM,offsetPx:LANE_BASE_PX,
-   guideEndpoints:[xS]
-  }
+  {kind:'segment',slot:`seg-long-${long.row}-${mid.row}-${short.row}`,targetRow:long.row,towardRow:mid.row,x1:xS,x2:xM,offsetPx:LANE_BASE_PX,guideEndpoints:[xS,xM]},
+  {kind:'segment',slot:`seg-mid-${mid.row}-${long.row}-${short.row}`,targetRow:mid.row,towardRow:long.row,x1:xS,x2:xM,offsetPx:LANE_BASE_PX,guideEndpoints:[xS]}
  ];
 }
 
-function rawPairSpecsFor(o){
- const mode=o.threeBarPattern||'segments',specs=[];
+function rawPairSpecsFor(o,mode){
+ const specs=[];
  if(mode==='none'||mode==='manual'||mode==='segments')return specs;
  if(mode==='reference'){
   const ref=longestRow(o);[0,1,2].filter(i=>i!==ref).forEach(row=>specs.push({a:ref,b:row,slot:`ref-${ref}-${row}`}));
@@ -79,9 +103,8 @@ function rawPairSpecsFor(o){
  return specs;
 }
 
-// Alternate patterns still use non-overlapping lanes when two brackets share a side.
-function pairSpecsFor(o){
- const enriched=rawPairSpecsFor(o).map(s=>{
+function pairSpecsFor(o,mode){
+ const enriched=rawPairSpecsFor(o,mode).map(s=>{
   const geo=pairGeometry(o,s.a,s.b,LANE_BASE_PX);
   return{...s,kind:'pair',key:geo?`${geo.long}|${geo.position}`:null,span:geo?Math.abs(geo.x2-geo.x1):0,offsetPx:LANE_BASE_PX};
  });
@@ -90,14 +113,13 @@ function pairSpecsFor(o){
  for(const list of groups.values()){list.sort((a,b)=>a.span-b.span);list.forEach((s,i)=>{s.offsetPx=LANE_BASE_PX+i*LANE_STEP_PX})}
  return enriched;
 }
-function specsFor(o){return (o.threeBarPattern||'segments')==='segments'?segmentSpecsFor(o):pairSpecsFor(o)}
+function specsFor(o,mode){return mode==='segments'?segmentSpecsFor(o):pairSpecsFor(o,mode)}
 
 function migratePattern(o){
  if(Number(o.threeBarPatternVersion)>=PATTERN_VERSION)return false;
  const manual=manualEntries(o).length>0;
- // Old builds defaulted to Reference. Move that old default to the new Segments layout,
- // while preserving any other pattern the teacher explicitly chose.
- if(!o.threeBarPattern||o.threeBarPattern==='reference')o.threeBarPattern=manual?'manual':'segments';
+ if(manual)o.threeBarPattern='manual';
+ else if(!o.threeBarPattern||o.threeBarPattern==='segments')o.threeBarPattern='auto';
  o.threeBarPatternVersion=PATTERN_VERSION;
  return true;
 }
@@ -106,14 +128,20 @@ function ensurePattern(o){
  if(!isThree(o))return false;
  let changed=clearOldAdjacent(o);if(migratePattern(o))changed=true;
  if(!Array.isArray(o.userDrawnBrackets))o.userDrawnBrackets=[];
- if(!o.threeBarPattern){o.threeBarPattern=manualEntries(o).length?'manual':'segments';o.threeBarPatternVersion=PATTERN_VERSION;changed=true}
- if(o.threeBarPattern==='manual'){
-  const before=o.userDrawnBrackets.length;o.userDrawnBrackets=o.userDrawnBrackets.filter(e=>!auto3Entry(e));return changed||before!==o.userDrawnBrackets.length;
+ if(!o.threeBarPattern){o.threeBarPattern=manualEntries(o).length?'manual':'auto';o.threeBarPatternVersion=PATTERN_VERSION;changed=true}
+
+ const chosen=o.threeBarPattern,mode=effectiveMode(o);
+ if(chosen==='manual'){
+  if(setManualVisibility(o,true))changed=true;
+  const before=o.userDrawnBrackets.length;o.userDrawnBrackets=o.userDrawnBrackets.filter(e=>!auto3Entry(e));
+  return changed||before!==o.userDrawnBrackets.length;
  }
- const specs=specsFor(o),expected=new Set();
+ if(setManualVisibility(o,false))changed=true;
+
+ const specs=specsFor(o,mode),expected=new Set();
  for(const s of specs){
   if(s.kind==='segment'){
-   const id=`auto-3seg-${o.smartId}-${s.slot}`;expected.add(id);
+   const id=`auto-3seg-${o.smartId}-${mode}-${s.slot}`;expected.add(id);
    const geo=rowSideGeometry(o,s.targetRow,s.towardRow,s.x1,s.x2,s.offsetPx);
    let e=o.userDrawnBrackets.find(x=>x&&x.id===id);
    if(!e){
@@ -130,7 +158,7 @@ function ensurePattern(o){
    continue;
   }
 
-  const id=`auto-3diff-${o.smartId}-${o.threeBarPattern}-${s.slot}`;expected.add(id);
+  const id=`auto-3diff-${o.smartId}-${mode}-${s.slot}`;expected.add(id);
   const geo=pairGeometry(o,s.a,s.b,s.offsetPx);let e=o.userDrawnBrackets.find(x=>x&&x.id===id);
   if(!e){
    e={id,autoThreeDifference:true,diffRows:[s.a,s.b],visible:!!geo,label:'',position:geo?.position||'bottom',x1:geo?.x1||0,x2:geo?.x2||0,y:geo?.y||0,compareRow:geo?.long??s.a,verticalOffset:0,laneOffsetPx:s.offsetPx,__autoEqualHidden:!geo};
@@ -142,7 +170,8 @@ function ensurePattern(o){
    if(e.__autoEqualHidden){e.visible=true;e.__autoEqualHidden=false;changed=true}
    const vals={position:geo.position,x1:geo.x1,x2:geo.x2,y:geo.y,compareRow:geo.long,laneOffsetPx:s.offsetPx};
    for(const [k,v] of Object.entries(vals))if((typeof v==='string'&&e[k]!==v)||(typeof v!=='string'&&Math.abs(Number(e[k])-Number(v))>.0005)){e[k]=v;changed=true}
-   if(!Array.isArray(e.diffRows)||e.diffRows[0]!==s.a||e.diffRows[1]!==s.b){e.diffRows=[s.a,s.b];changed=true}e.autoThreeDifference=true;
+   if(!Array.isArray(e.diffRows)||e.diffRows[0]!==s.a||e.diffRows[1]!==s.b){e.diffRows=[s.a,s.b];changed=true}
+   e.autoThreeDifference=true;
   }
   if(e&&(e.compareAnchorLeft||e.compareAnchorRight)){delete e.compareAnchorLeft;delete e.compareAnchorRight;changed=true}
  }
@@ -185,17 +214,63 @@ function drawDots(){
 }
 
 const tools=document.querySelector('.tools');
-const patternBtn=document.createElement('button');patternBtn.type='button';patternBtn.className='btn soft';patternBtn.id='threeBarPatternBtn';patternBtn.style.display='none';
-patternBtn.title='Cycle 3-bar comparison pattern: Segments → Reference → Adjacent → Top ↔ Bottom → All pairs → No auto brackets';
+const patternBtn=document.createElement('button');
+patternBtn.type='button';patternBtn.className='btn soft';patternBtn.id='threeBarPatternBtn';patternBtn.style.display='none';
+patternBtn.title='Choose how the 3 bars are related';
 tools?.appendChild(patternBtn);
+
 function activeModel(){const list=threeModels();if(!list.length)return null;return list.find(o=>o.smartId===activeId)||list[list.length-1]}
-function refreshButton(){const o=activeModel();if(!o){patternBtn.style.display='none';return}activeId=o.smartId;patternBtn.style.display='inline-flex';const mode=o.threeBarPattern||'segments';patternBtn.textContent=`3 bars: ${MODE_LABELS[mode]||mode}`;patternBtn.classList.toggle('active',mode!=='none'&&mode!=='manual')}
-patternBtn.addEventListener('click',e=>{
- e.preventDefault();e.stopPropagation();const o=activeModel();if(!o)return;
- const current=o.threeBarPattern||'segments';o.threeBarPattern=current==='manual'?'segments':MODES[(MODES.indexOf(current)+1+MODES.length)%MODES.length];o.threeBarPatternVersion=PATTERN_VERSION;
- o.userDrawnBrackets=(o.userDrawnBrackets||[]).filter(x=>!auto3Entry(x)&&!x?.autoMultiDifference);
- ensurePattern(o);try{redraw();if(typeof syncUi==='function')syncUi()}catch{}refreshButton();
-},true);
+
+function closeMenu(){if(menu){menu.remove();menu=null}}
+function modeLabel(o){const chosen=o?.threeBarPattern||'auto';return MODE_META[chosen]?.label||chosen}
+function refreshButton(){
+ const o=activeModel();
+ if(!o){patternBtn.style.display='none';closeMenu();return}
+ activeId=o.smartId;patternBtn.style.display='inline-flex';
+ patternBtn.textContent=`3 bars · ${modeLabel(o)} ▾`;
+ const eff=effectiveMode(o),effText=MODE_META[eff]?.label||eff;
+ patternBtn.title=(o.threeBarPattern||'auto')==='auto'?`Auto currently uses: ${effText}`:`Current layout: ${modeLabel(o)}`;
+ patternBtn.classList.toggle('active',(o.threeBarPattern||'auto')!=='none');
+}
+
+function optionRow(o,key){
+ const row=document.createElement('button');row.type='button';
+ row.style.cssText='display:block;width:100%;text-align:left;border:0;background:#fff;padding:9px 10px;border-radius:9px;cursor:pointer;color:#17324d';
+ const chosen=o.threeBarPattern||'auto',checked=chosen===key;
+ const title=document.createElement('div');title.style.cssText='font:900 12px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:space-between;gap:8px';
+ title.innerHTML=`<span>${MODE_META[key].label}</span><span style="color:#0f766e">${checked?'✓':''}</span>`;
+ const desc=document.createElement('div');desc.textContent=MODE_META[key].desc;desc.style.cssText='font:700 10px/1.35 Inter,system-ui,sans-serif;color:#667085;margin-top:2px';
+ row.append(title,desc);
+ row.addEventListener('mouseenter',()=>row.style.background='#f3faf8');
+ row.addEventListener('mouseleave',()=>row.style.background='#fff');
+ row.addEventListener('click',e=>{
+  e.preventDefault();e.stopPropagation();
+  const model=activeModel();if(!model)return;
+  model.threeBarPattern=key;model.threeBarPatternVersion=PATTERN_VERSION;
+  model.userDrawnBrackets=(model.userDrawnBrackets||[]).filter(x=>!auto3Entry(x)&&!x?.autoMultiDifference);
+  ensurePattern(model);closeMenu();try{redraw();if(typeof syncUi==='function')syncUi()}catch{}
+  notify(`3-bar layout: ${MODE_META[key].label}`);refreshButton();
+ },true);
+ return row;
+}
+
+function openMenu(){
+ const o=activeModel();if(!o)return;
+ closeMenu();menu=document.createElement('div');menu.id='threeBarPatternMenu';
+ const r=patternBtn.getBoundingClientRect(),w=330;
+ menu.style.cssText=`position:fixed;z-index:10200;width:${w}px;max-height:min(520px,75vh);overflow:auto;padding:8px;background:#fff;border:1px solid #cfd9de;border-radius:14px;box-shadow:0 14px 34px rgba(23,50,77,.22);left:${Math.max(8,Math.min(innerWidth-w-8,r.left))}px;top:${Math.max(8,Math.min(innerHeight-470,r.bottom+6))}px`;
+ const head=document.createElement('div');head.style.cssText='padding:5px 7px 8px;border-bottom:1px solid #e7edf1;margin-bottom:4px';
+ head.innerHTML='<div style="font:900 13px Inter,system-ui,sans-serif;color:#17324d">How should these 3 bars compare?</div><div style="font:700 10px/1.4 Inter,system-ui,sans-serif;color:#667085;margin-top:2px">Pick the relationship. You do not need to redraw the bars.</div>';
+ menu.appendChild(head);
+ for(const key of MENU_ORDER)menu.appendChild(optionRow(o,key));
+ if(manualEntries(o).length||o.threeBarPattern==='manual')menu.appendChild(optionRow(o,'manual'));
+ document.body.appendChild(menu);
+}
+
+patternBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();menu?closeMenu():openMenu()},true);
+document.addEventListener('pointerdown',e=>{if(menu&&!menu.contains(e.target)&&e.target!==patternBtn)closeMenu()},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()},true);
+
 canvas.addEventListener('pointerdown',e=>{
  const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width),y=(e.clientY-r.top)/Math.max(1,r.height);
  for(let i=strokes.length-1;i>=0;i--){const o=strokes[i];if(!isThree(o))continue;if(x>=o.x&&x<=o.x+o.w&&y>=o.y&&y<=o.y+o.h){activeId=o.smartId;setTimeout(refreshButton,0);break}}
@@ -203,6 +278,7 @@ canvas.addEventListener('pointerdown',e=>{
 
 const previousRedraw=redraw;
 redraw=function(){ensureAll();previousRedraw();refreshButton();requestAnimationFrame(drawDots)};
-new ResizeObserver(()=>requestAnimationFrame(drawDots)).observe(wrap);window.addEventListener('resize',()=>requestAnimationFrame(drawDots));
+new ResizeObserver(()=>requestAnimationFrame(drawDots)).observe(wrap);
+window.addEventListener('resize',()=>{closeMenu();requestAnimationFrame(drawDots)});
 setTimeout(()=>{try{ensureAll();redraw()}catch{}},0);
 })();
