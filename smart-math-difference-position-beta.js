@@ -29,9 +29,16 @@ setTimeout(()=>{try{adjustDifferencePosition();redraw()}catch{}},0);
 })();
 
 (function(){
- if(document.querySelector('script[data-predrawn-comparison-fallback]'))return;
- const s=document.createElement('script');
- s.dataset.predrawnComparisonFallback='1';
- s.src='smart-math-comparison-predrawn-fallback.js?v=20261014-predrawn2';
- document.head.appendChild(s);
+ if(!document.querySelector('script[data-predrawn-comparison-fallback]')){
+  const s=document.createElement('script');
+  s.dataset.predrawnComparisonFallback='1';
+  s.src='smart-math-comparison-predrawn-fallback.js?v=20261014-predrawn2';
+  document.head.appendChild(s);
+ }
+ if(!document.querySelector('script[data-difference-height-controls]')){
+  const h=document.createElement('script');
+  h.dataset.differenceHeightControls='1';
+  h.src='smart-math-difference-height-controls.js?v=20261014-height1';
+  document.head.appendChild(h);
+ }
 })();
