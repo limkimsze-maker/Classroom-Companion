@@ -6,6 +6,7 @@ if(!wrap)return;
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const START_Y=60,ROW_GAP=145,BAR_H=76,X0=180,MAX_W=650;
+const LANE_BASE_PX=8,LANE_STEP_PX=22;
 const MODES=['reference','adjacent','outer','all','none'];
 const MODE_LABELS={reference:'Reference',adjacent:'Adjacent',outer:'Top ↔ Bottom',all:'All pairs',none:'No auto brackets',manual:'Manual'};
 let activeId='';
@@ -20,32 +21,51 @@ function autoEntry(e){return !!(e&&(e.autoThreeDifference||e.autoMultiDifference
 function manualEntries(o){return Array.isArray(o.userDrawnBrackets)?o.userDrawnBrackets.filter(e=>e&&!autoEntry(e)):[]}
 function clearOldAdjacent(o){if(!Array.isArray(o.userDrawnBrackets))return false;const n=o.userDrawnBrackets.length;o.userDrawnBrackets=o.userDrawnBrackets.filter(e=>!e?.autoMultiDifference);return o.userDrawnBrackets.length!==n}
 function longestRow(o){const w=widthsFor(o);let best=0;for(let i=1;i<3;i++)if(w[i]>w[best]+.0001)best=i;return best}
-function pairGeometry(o,a,b,offset=8){
+
+// offsetPx is deliberately measured in SCREEN pixels. Converting it back into
+// model units keeps the bracket lanes visibly separated even when the model is resized.
+function pairGeometry(o,a,b,offsetPx=LANE_BASE_PX){
  const widths=widthsFor(o),H=modelH(3),wa=widths[a],wb=widths[b];
  if(Math.abs(wa-wb)<.025)return null;
  const long=wa>=wb?a:b,short=long===a?b:a;
  const other=short,below=other>long,position=below?'bottom':'top';
- const yModel=START_Y+long*ROW_GAP+(below?BAR_H+offset:-offset);
- return{a,b,long,short,x1:endpoint(widths[short]),x2:endpoint(widths[long]),y:clamp(yModel/H,.01,.99),position,widths,H};
+ const displayH=Math.max(1,Number(o.h||0)*cssH),offsetModel=offsetPx*H/displayH;
+ const yModel=START_Y+long*ROW_GAP+(below?BAR_H+offsetModel:-offsetModel);
+ return{a,b,long,short,x1:endpoint(widths[short]),x2:endpoint(widths[long]),y:clamp(yModel/H,.01,.99),position,widths,H,offsetPx};
 }
-function specsFor(o){
+
+function rawSpecsFor(o){
  const mode=o.threeBarPattern||'reference',specs=[];
  if(mode==='none'||mode==='manual')return specs;
  if(mode==='reference'){
-  const ref=longestRow(o),others=[0,1,2].filter(i=>i!==ref);
-  const above=others.filter(i=>i<ref).sort((a,b)=>Math.abs(a-ref)-Math.abs(b-ref));
-  const below=others.filter(i=>i>ref).sort((a,b)=>Math.abs(a-ref)-Math.abs(b-ref));
-  above.forEach((row,k)=>specs.push({a:ref,b:row,offset:8+k*22,slot:`ref-${ref}-${row}`}));
-  below.forEach((row,k)=>specs.push({a:ref,b:row,offset:8+k*22,slot:`ref-${ref}-${row}`}));
+  const ref=longestRow(o);
+  [0,1,2].filter(i=>i!==ref).forEach(row=>specs.push({a:ref,b:row,slot:`ref-${ref}-${row}`}));
  }else if(mode==='adjacent'){
-  specs.push({a:0,b:1,offset:8,slot:'adj-01'},{a:1,b:2,offset:8,slot:'adj-12'});
+  specs.push({a:0,b:1,slot:'adj-01'},{a:1,b:2,slot:'adj-12'});
  }else if(mode==='outer'){
-  specs.push({a:0,b:2,offset:8,slot:'outer-02'});
+  specs.push({a:0,b:2,slot:'outer-02'});
  }else if(mode==='all'){
-  specs.push({a:0,b:1,offset:8,slot:'all-01'},{a:1,b:2,offset:8,slot:'all-12'},{a:0,b:2,offset:30,slot:'all-02'});
+  specs.push({a:0,b:1,slot:'all-01'},{a:1,b:2,slot:'all-12'},{a:0,b:2,slot:'all-02'});
  }
  return specs;
 }
+
+// Brackets that share the same longer/reference bar AND the same side are put
+// on separate lanes. The shorter span is nearest the bar; wider spans sit outside it.
+function specsFor(o){
+ const enriched=rawSpecsFor(o).map(s=>{
+  const geo=pairGeometry(o,s.a,s.b,LANE_BASE_PX);
+  return{...s,key:geo?`${geo.long}|${geo.position}`:null,span:geo?Math.abs(geo.x2-geo.x1):0,offsetPx:LANE_BASE_PX};
+ });
+ const groups=new Map();
+ for(const s of enriched){if(!s.key)continue;if(!groups.has(s.key))groups.set(s.key,[]);groups.get(s.key).push(s)}
+ for(const list of groups.values()){
+  list.sort((a,b)=>a.span-b.span);
+  list.forEach((s,i)=>{s.offsetPx=LANE_BASE_PX+i*LANE_STEP_PX});
+ }
+ return enriched;
+}
+
 function ensurePattern(o){
  if(!isThree(o))return false;
  let changed=clearOldAdjacent(o);
@@ -57,21 +77,22 @@ function ensurePattern(o){
  const specs=specsFor(o),expected=new Set();
  for(const s of specs){
   const id=`auto-3diff-${o.smartId}-${o.threeBarPattern}-${s.slot}`;expected.add(id);
-  const geo=pairGeometry(o,s.a,s.b,s.offset);let e=o.userDrawnBrackets.find(x=>x&&x.id===id);
+  const geo=pairGeometry(o,s.a,s.b,s.offsetPx);let e=o.userDrawnBrackets.find(x=>x&&x.id===id);
   if(!e){
-   e={id,autoThreeDifference:true,diffRows:[s.a,s.b],visible:!!geo,label:'',position:geo?.position||'bottom',x1:geo?.x1||0,x2:geo?.x2||0,y:geo?.y||0,compareRow:geo?.long??s.a,verticalOffset:0,__autoEqualHidden:!geo};
+   e={id,autoThreeDifference:true,diffRows:[s.a,s.b],visible:!!geo,label:'',position:geo?.position||'bottom',x1:geo?.x1||0,x2:geo?.x2||0,y:geo?.y||0,compareRow:geo?.long??s.a,verticalOffset:0,laneOffsetPx:s.offsetPx,__autoEqualHidden:!geo};
    o.userDrawnBrackets.push(e);changed=true;
   }else if(!geo){
    if(e.visible!==false||!e.__autoEqualHidden){e.visible=false;e.__autoEqualHidden=true;changed=true}
+   if(e.laneOffsetPx!==s.offsetPx){e.laneOffsetPx=s.offsetPx;changed=true}
   }else{
    if(e.__autoEqualHidden){e.visible=true;e.__autoEqualHidden=false;changed=true}
-   const vals={position:geo.position,x1:geo.x1,x2:geo.x2,y:geo.y,compareRow:geo.long};
+   const vals={position:geo.position,x1:geo.x1,x2:geo.x2,y:geo.y,compareRow:geo.long,laneOffsetPx:s.offsetPx};
    for(const [k,v] of Object.entries(vals))if((typeof v==='string'&&e[k]!==v)||(typeof v!=='string'&&Math.abs(Number(e[k])-Number(v))>.0005)){e[k]=v;changed=true}
    if(!Array.isArray(e.diffRows)||e.diffRows[0]!==s.a||e.diffRows[1]!==s.b){e.diffRows=[s.a,s.b];changed=true}
    e.autoThreeDifference=true;
   }
   // The older 2-bar follower watches these anchor fields. 3-bar auto brackets
-  // are positioned here instead, so remove stale anchors to preserve stacking.
+  // are positioned here instead, so remove stale anchors to preserve lane spacing.
   if(e&&(e.compareAnchorLeft||e.compareAnchorRight)){delete e.compareAnchorLeft;delete e.compareAnchorRight;changed=true}
  }
  const before=o.userDrawnBrackets.length;
@@ -94,7 +115,7 @@ function drawDots(){
   const MH=modelH(3),widths=widthsFor(o);
   for(const e of o.userDrawnBrackets){
    if(!e?.autoThreeDifference||e.visible===false||!Array.isArray(e.diffRows))continue;
-   const a=clamp(Number(e.diffRows[0])||0,0,2),b=clamp(Number(e.diffRows[1])||0,0,2),geo=pairGeometry(o,a,b,8);if(!geo)continue;
+   const a=clamp(Number(e.diffRows[0])||0,0,2),b=clamp(Number(e.diffRows[1])||0,0,2),geo=pairGeometry(o,a,b,Number(e.laneOffsetPx)||LANE_BASE_PX);if(!geo)continue;
    const x=(Number(o.x||0)+Number(o.w||0)*endpoint(widths[geo.short]))*W;
    const rowY=START_Y+geo.long*ROW_GAP;
    const y1=(Number(o.y||0)+Number(o.h||0)*(rowY/MH))*H,y2=(Number(o.y||0)+Number(o.h||0)*((rowY+BAR_H)/MH))*H;
