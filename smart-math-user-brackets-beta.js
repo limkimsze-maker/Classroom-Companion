@@ -48,42 +48,17 @@ function curly(x1,x2,y,position,label,obj,entry){
  ctx.save();ctx.strokeStyle='#111827';ctx.fillStyle='#111827';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x1,y+endDir*depth);ctx.bezierCurveTo(x1,y+endDir*3,x1+2,y,x1+end,y);ctx.lineTo(mid-neck,y);ctx.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);ctx.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);ctx.lineTo(x2-end,y);ctx.bezierCurveTo(x2-2,y,x2,y+endDir*3,x2,y+endDir*depth);ctx.stroke();if(label){ctx.font='700 14px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*14)}ctx.restore();
  hot.push({obj,entry,x1:x1-10,x2:x2+10,y1:y-27,y2:y+27});
 }
-function parseColour(c){
- const s=String(c||'').trim();
- if(/^#[0-9a-f]{3}$/i.test(s))return[s[1]+s[1],s[2]+s[2],s[3]+s[3]].map(v=>parseInt(v,16));
- if(/^#[0-9a-f]{6}$/i.test(s))return[parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)];
- const m=s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);return m?[+m[1],+m[2],+m[3]]:[255,255,255];
-}
-function contrastFor(c){
- const [r,g,b]=parseColour(c),lum=(0.2126*r+0.7152*g+0.0722*b)/255;
- return lum<.56?'#ffffff':'#111827';
-}
-function drawDifferenceGuide(obj,long,short,widths){
- if(!Array.isArray(widths)||widths.length<2)return;
- if(Math.abs((widths[long]||0)-(widths[short]||0))<.025)return;
- const x=(obj.x+obj.w*(180+650*widths[short])/900)*cssW;
- const rowY=long===0?60:205;
- const y1=(obj.y+obj.h*(rowY/440))*cssH;
- const y2=(obj.y+obj.h*((rowY+76)/440))*cssH;
- const fill=Array.isArray(obj.barFills)?obj.barFills[long]:'#ffffff';
- ctx.save();
- ctx.strokeStyle=contrastFor(fill);
- ctx.lineWidth=3;
- ctx.lineCap='round';
- ctx.setLineDash([3,7]);
- ctx.beginPath();ctx.moveTo(x,y1+6);ctx.lineTo(x,y2-6);ctx.stroke();
- ctx.restore();
-}
 function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel')continue;detect(obj);if(!Array.isArray(obj.userDrawnBrackets)||!obj.userDrawnBrackets.length)continue;if(obj.smartBarType!=='comparison')hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.visible)continue;let x1=(obj.x+obj.w*b.x1)*cssW,x2=(obj.x+obj.w*b.x2)*cssW,y=(obj.y+obj.h*b.y)*cssH;
 if(b.isDifference&&Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length>=2){
  const widths=obj.barCompareWidths,long=widths[0]>=widths[1]?0:1,short=1-long;
+ // Anchor directly to the exposed edge of the longer bar in the 900 × 440 SVG.
  x1=(obj.x+obj.w*(180+650*widths[short])/900)*cssW;
  x2=(obj.x+obj.w*(180+650*widths[long])/900)*cssW;
+ // Top longer: immediately below its bottom edge; bottom longer: immediately above its top edge.
  y=(obj.y+obj.h*(long===0?(60+76+8):(60+145-8))/440)*cssH;
  y+=(Number(b.verticalOffset)||0)*cssH;b.position=long===0?'bottom':'top';
+ // Difference brace notch must face the exposed difference section.
  b.flipped=long!==0;
- // Show the dotted partition only while the difference bracket itself is visible.
- drawDifferenceGuide(obj,long,short,widths);
 }
 curly(x1,x2,y,b.position,b.label||'',obj,b)}}}
 const priorRedraw=redraw;redraw=function(){priorRedraw();drawAll()};
