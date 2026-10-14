@@ -28,19 +28,45 @@ function components(entries){
   return{items,l,t,r,b,pw:r-l,ph:b-t,cx:(l+r)/2,cy:(t+b)/2,last:Math.max(...items.map(q=>q.i)),x:l/d.w,y:t/d.h,w:(r-l)/d.w,h:(b-t)/d.h}
  })
 }
-function chooseTwoBars(){
+function barLike(c){return c&&c.pw>=100&&c.ph>=12&&c.pw>=c.ph*1.65}
+function compatible(a,b){
+ const overlap=Math.max(0,Math.min(a.r,b.r)-Math.max(a.l,b.l)),ratio=overlap/Math.max(1,Math.min(a.pw,b.pw));
+ const dy=Math.abs(a.cy-b.cy),leftDiff=Math.abs(a.l-b.l),leftTol=Math.max(110,Math.min(a.pw,b.pw)*.42);
+ return ratio>=.25&&dy>=24&&dy<=720&&leftDiff<=leftTol;
+}
+function chooseBars(){
  const entries=snapshot.map((s,i)=>({s,i})).filter(q=>rawInk(q.s));if(!entries.length)return[];
- let comps=components(entries).filter(c=>c.pw>=100&&c.ph>=16&&c.pw>=c.ph*1.65);
- if(comps.length<2)comps=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(c=>c.pw>=100&&c.ph>=12&&c.pw>=c.ph*1.65);
+ let comps=components(entries).filter(barLike);
+ if(comps.length<2)comps=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
  if(comps.length<2)return[];
- const recent=comps.sort((a,b)=>b.last-a.last).slice(0,12);let best=null;
- for(let i=0;i<recent.length;i++)for(let j=i+1;j<recent.length;j++){
-  const a=recent[i],b=recent[j],overlap=Math.max(0,Math.min(a.r,b.r)-Math.max(a.l,b.l)),ratio=overlap/Math.max(1,Math.min(a.pw,b.pw)),dy=Math.abs(a.cy-b.cy),leftDiff=Math.abs(a.l-b.l);
-  if(ratio<.3||dy<24||dy>450)continue;
-  const score=(Math.max(a.last,b.last)*2+Math.min(a.last,b.last))+ratio*100-leftDiff*.08-dy*.01;
-  if(!best||score>best.score)best={score,pair:[a,b]};
+
+ // Start from the most recently drawn bar-like component. This makes the
+ // workflow feel the same for 2, 3, 4 or 5 bars and avoids pulling in old
+ // diagrams elsewhere on the board.
+ const recent=comps.sort((a,b)=>b.last-a.last).slice(0,16),anchor=recent[0];
+ let cluster=[anchor];
+ for(const c of recent.slice(1)){
+  if(cluster.length>=5)break;
+  if(!compatible(anchor,c))continue;
+  // Require compatibility with most of the cluster as it grows, while still
+  // allowing noticeably different bar lengths.
+  const ok=cluster.filter(q=>compatible(q,c)).length>=Math.max(1,cluster.length-1);
+  if(ok)cluster.push(c);
  }
- return(best?best.pair:recent.slice(0,2)).sort((a,b)=>a.cy-b.cy)
+
+ // Fallback: choose the best vertically aligned recent group if the newest
+ // component was an accidental stray stroke.
+ if(cluster.length<2){
+  let best=[];
+  for(const seed of recent){
+   const group=[seed];
+   for(const c of recent){if(c===seed||group.length>=5)continue;if(group.every(q=>compatible(q,c)))group.push(c)}
+   if(group.length>best.length||(group.length===best.length&&group.reduce((s,q)=>s+q.last,0)>best.reduce((s,q)=>s+q.last,0)))best=group;
+  }
+  cluster=best;
+ }
+ if(cluster.length<2)return[];
+ return cluster.slice(0,5).sort((a,b)=>a.cy-b.cy)
 }
 function synthetic(c){
  const x1=Math.max(0,Math.min(1,c.x)),y1=Math.max(0,Math.min(1,c.y)),x2=Math.max(0,Math.min(1,c.x+c.w)),y2=Math.max(0,Math.min(1,c.y+c.h));
@@ -57,8 +83,8 @@ document.addEventListener('pointerdown',e=>{
 document.addEventListener('pointerdown',e=>{
  const el=e.target instanceof Element?e.target:null;if(!el||!finishButton(el)||window.__smartBarType!=='comparison'||injected)return;
  if(strokes.slice(selectionStrokeCount).filter(rawInk).length)return;
- const pair=chooseTwoBars();if(pair.length!==2)return;
- const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=pair.map(synthetic),originals=[...new Set(pair.flatMap(c=>c.items.map(q=>q.s)))];
+ const bars=chooseBars();if(bars.length<2)return;
+ const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
  strokes.push(...temp);injected={temp,originals,beforeState,priorIds}
 },true);
 
