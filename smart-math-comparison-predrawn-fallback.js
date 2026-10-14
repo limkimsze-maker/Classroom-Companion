@@ -27,7 +27,6 @@ function looksLikeBar(s){
 function chooseRecentBars(list){
   const candidates=list.map((s,i)=>({s,i,b:box(s)})).filter(q=>looksLikeBar(q.s));
   if(candidates.length<2)return [];
-  // For the standard two-bar comparison model, use the two most recently drawn wide shapes.
   const chosen=candidates.slice(-2).sort((a,b)=>a.b.cy-b.b.cy);
   return chosen.map(q=>q.s);
 }
@@ -41,17 +40,19 @@ function isFinishButton(el){
   return !!(smart&&smart.nextElementSibling===b);
 }
 
-// Snapshot the teacher's existing sketch just before a bar-model type is selected.
-document.addEventListener('click',e=>{
+// Pointer-down runs before the existing click handlers, so we can snapshot a
+// comparison sketch even when the teacher drew the two bars first.
+document.addEventListener('pointerdown',e=>{
   const el=e.target instanceof Element?e.target:null;
   if(!el||!isBarMenuButton(el))return;
   selectionStrokeCount=strokes.length;
   preDrawnBars=chooseRecentBars(strokes);
 },true);
 
-// If Comparison is selected after the two bars were already drawn, replay temporary
-// copies after the mode start point so the existing converter can process them normally.
-document.addEventListener('click',e=>{
+// If there is no new ink after Comparison was selected, temporarily replay the
+// two pre-drawn bars after the mode start point. The normal converter and all
+// existing bracket/length logic then run unchanged on the following click.
+document.addEventListener('pointerdown',e=>{
   const el=e.target instanceof Element?e.target:null;
   if(!el||!isFinishButton(el)||window.__smartBarType!=='comparison')return;
 
