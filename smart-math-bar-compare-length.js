@@ -3,7 +3,7 @@
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const clone=v=>JSON.parse(JSON.stringify(v));
-let selectedId=null,drag=null,suppressClick=false;
+let selectedId=null,drag=null,suppressClick=false,lastAutoSelectedId='';
 const LAYOUT_VERSION=2;
 function svgData(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
 function countFor(obj){return clamp(Math.round(Number(obj.barCount)||2),2,5)}
@@ -32,6 +32,12 @@ function rebuild(obj){
  obj.barCount=n;obj.barCompareWidths=widths;obj.barCompareLayoutVersion=LAYOUT_VERSION;obj.src=svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="${H}" viewBox="0 0 900 ${H}">${els.join('')}</svg>`);
 }
 function canvasPoint(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)/Math.max(1,r.width),y:(e.clientY-r.top)/Math.max(1,r.height),r}}
+function comparisons(){return strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison'&&s.smartId)}
+function autoSelectNewest(){
+ const list=comparisons();if(!list.length)return;
+ const newest=list[list.length-1];
+ if(newest.smartId!==lastAutoSelectedId){selectedId=newest.smartId;lastAutoSelectedId=newest.smartId}
+}
 function hitComparison(x,y){for(let i=strokes.length-1;i>=0;i--){const s=strokes[i];if(!s||s.smartType!=='barModel'||s.smartBarType!=='comparison'||!s.w||!s.h)continue;if(x>=s.x&&x<=s.x+s.w&&y>=s.y&&y<=s.y+s.h)return s}return null}
 function rowGeometry(obj,index){const {H,x,maxW,rowGap,barH,startY}=layoutFor(obj),widths=widthsFor(obj);return{x0:x/900,y0:(startY+index*rowGap)/H,w:(maxW*widths[index])/900,h:barH/H}}
 function groupEdges(obj){
@@ -40,18 +46,19 @@ function groupEdges(obj){
 }
 function endHandleHit(obj,x,y,rect){const n=countFor(obj),threshold=14;for(let i=0;i<n;i++){const g=rowGeometry(obj,i),hx=(obj.x+obj.w*(g.x0+g.w))*rect.width,hy=(obj.y+obj.h*(g.y0+g.h/2))*rect.height;if(Math.hypot(x*rect.width-hx,y*rect.height-hy)<=threshold)return i}return -1}
 function heightHandleHit(obj,x,y,rect){
- const g=groupEdges(obj),px=x*rect.width,py=y*rect.height,cx=g.cx*rect.width,top=g.top*rect.height,bottom=g.bottom*rect.height,threshold=12;
- if(Math.abs(px-cx)<=18&&Math.abs(py-top)<=threshold)return'top';
- if(Math.abs(px-cx)<=18&&Math.abs(py-bottom)<=threshold)return'bottom';
+ const g=groupEdges(obj),px=x*rect.width,py=y*rect.height,cx=g.cx*rect.width,top=g.top*rect.height,bottom=g.bottom*rect.height,threshold=15;
+ if(Math.abs(px-cx)<=22&&Math.abs(py-top)<=threshold)return'top';
+ if(Math.abs(px-cx)<=22&&Math.abs(py-bottom)<=threshold)return'bottom';
  return null;
 }
 function drawHandles(){
+ autoSelectNewest();
  if(!selectedId)return;
  const obj=strokes.find(s=>s&&s.smartId===selectedId&&s.smartType==='barModel'&&s.smartBarType==='comparison');if(!obj)return;
  const n=countFor(obj),g=groupEdges(obj);ctx.save();ctx.fillStyle='#fff';ctx.strokeStyle='#2563eb';ctx.lineWidth=2;
  for(let i=0;i<n;i++){const rg=rowGeometry(obj,i),x=(obj.x+obj.w*(rg.x0+rg.w))*cssW,y=(obj.y+obj.h*(rg.y0+rg.h/2))*cssH;ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();ctx.stroke()}
  const cx=g.cx*cssW,top=g.top*cssH,bottom=g.bottom*cssH;
- for(const y of [top,bottom]){ctx.beginPath();ctx.rect(cx-7,y-7,14,14);ctx.fill();ctx.stroke()}
+ for(const y of [top,bottom]){ctx.beginPath();ctx.rect(cx-9,y-9,18,18);ctx.fill();ctx.stroke()}
  ctx.restore();
 }
 const baseRedraw=redraw;redraw=function(){normalizeAll();baseRedraw();drawHandles()};
@@ -59,7 +66,7 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=canvasPoint(e),obj=hitComparison(p.x,p.y);
  if(!obj){selectedId=null;redraw();return}
- normalizeComparison(obj);selectedId=obj.smartId;
+ normalizeComparison(obj);selectedId=obj.smartId;lastAutoSelectedId=obj.smartId;
  const hh=heightHandleHit(obj,p.x,p.y,p.r),row=endHandleHit(obj,p.x,p.y,p.r);redraw();
  if(!hh&&row<0)return;
  e.preventDefault();e.stopImmediatePropagation();canvas.setPointerCapture?.(e.pointerId);
@@ -82,5 +89,5 @@ canvas.addEventListener('pointermove',e=>{
  drag.moved=true;suppressClick=true;redraw();syncUi();e.preventDefault();e.stopImmediatePropagation();
 },true);
 function endDrag(e){if(!drag)return;const obj=strokes.find(s=>s&&s.smartId===drag.id);if(obj&&drag.moved)window.__smartBarLastHistory={before:drag.before,afterId:obj.smartId};try{canvas.releasePointerCapture?.(drag.pointerId)}catch{}drag=null;setTimeout(()=>{suppressClick=false},80);e?.preventDefault?.();e?.stopImmediatePropagation?.()}
-canvas.addEventListener('pointerup',endDrag,true);canvas.addEventListener('pointercancel',endDrag,true);document.addEventListener('click',e=>{if(suppressClick&&e.target===canvas){e.preventDefault();e.stopImmediatePropagation()}},true);document.addEventListener('keydown',e=>{if(e.key==='Escape'){selectedId=null;drag=null;redraw()}},true);setTimeout(()=>{try{normalizeAll();redraw()}catch{}},0);
+canvas.addEventListener('pointerup',endDrag,true);canvas.addEventListener('pointercancel',endDrag,true);document.addEventListener('click',e=>{if(suppressClick&&e.target===canvas){e.preventDefault();e.stopImmediatePropagation()}},true);document.addEventListener('keydown',e=>{if(e.key==='Escape'){selectedId=null;drag=null;lastAutoSelectedId='';redraw()}},true);setTimeout(()=>{try{normalizeAll();autoSelectNewest();redraw()}catch{}},0);
 })();
