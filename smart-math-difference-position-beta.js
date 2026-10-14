@@ -11,9 +11,6 @@ function adjustDifferencePosition(){
   const diff=obj.userDrawnBrackets.find(b=>b&&b.isDifference&&b.visible!==false);
   if(!diff||!String(diff.id||'').startsWith('auto-difference-'))continue;
 
-  // The drawing code starts from a built-in 8 model-unit gap from the
-  // longer bar. Convert that to screen space, then force one stable
-  // 16px visual gap from the relevant bar edge for BOTH orientations.
   const baseModelY=long===0?(60+76+8):(60+145-8);
   const edgeModelY=long===0?(60+76):(60+145);
   const baseScreenY=(Number(obj.y||0)+Number(obj.h||0)*(baseModelY/440))*cssH;
@@ -34,6 +31,6 @@ setTimeout(()=>{try{adjustDifferencePosition();redraw()}catch{}},0);
  if(document.querySelector('script[data-predrawn-comparison-fallback]'))return;
  const s=document.createElement('script');
  s.dataset.predrawnComparisonFallback='1';
- s.src='smart-math-comparison-predrawn-fallback.js?v=20261014-predrawn1';
+ s.src='smart-math-comparison-predrawn-fallback.js?v=20261014-predrawn2';
  document.head.appendChild(s);
 })();
