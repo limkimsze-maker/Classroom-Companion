@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Smart Math Whiteboard Beta</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#eef4f5}iframe{display:block;width:100%;height:100%;border:0}</style>
+</head>
+<body>
+<iframe id="app" title="Smart Math Whiteboard Beta"></iframe>
+<script>
+(function(){
+ const app=document.getElementById('app');
+ const q=new URLSearchParams(location.search);
+ const edition=q.get('edition')||'en';
+ app.src='whiteboard-smart-beta.html?v=20261014-robust3-inner&edition='+encodeURIComponent(edition);
+ app.addEventListener('load',()=>{
+  try{
+   const d=app.contentDocument;
+   if(!d||d.querySelector('script[data-robust3]'))return;
+   const s=d.createElement('script');
+   s.dataset.robust3='1';
+   s.src='smart-math-comparison-predrawn-robust3.js?v=20261014-robust3a';
+   d.head.appendChild(s);
+  }catch(e){console.error(e)}
+ });
+})();
+</script>
+</body>
+</html>
