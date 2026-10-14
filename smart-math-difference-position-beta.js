@@ -29,3 +29,11 @@ const priorRedraw=redraw;
 redraw=function(){adjustDifferencePosition();priorRedraw()};
 setTimeout(()=>{try{adjustDifferencePosition();redraw()}catch{}},0);
 })();
+
+(function(){
+ if(document.querySelector('script[data-predrawn-comparison-fallback]'))return;
+ const s=document.createElement('script');
+ s.dataset.predrawnComparisonFallback='1';
+ s.src='smart-math-comparison-predrawn-fallback.js?v=20261014-predrawn1';
+ document.head.appendChild(s);
+})();
