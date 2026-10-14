@@ -33,7 +33,7 @@ function cutsFor(obj){const n=Math.max(2,obj.barCount||2);if(obj.smartBarType===
 function compWidths(obj){const n=Math.max(2,obj.barCount||2);if(Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length>=n)return obj.barCompareWidths.slice(0,n).map(v=>clamp(Number(v)||.5,.16,1));return Array.from({length:n},(_,i)=>clamp(1-i*.11,.16,1))}
 function curlyBrace(x1,x2,y,position,label,id,obj){
  if(x2<x1)[x1,x2]=[x2,x1];const w=x2-x1,mid=(x1+x2)/2,end=clamp(w*.045,5,10),neck=clamp(w*.035,5,9),depth=9;const top=position==='top';const endDir=top?1:-1,notchDir=top?-1:1,labelDir=top?-1:1;
- ctx.save();ctx.strokeStyle='#111827';ctx.fillStyle='#111827';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x1,y+endDir*depth);ctx.bezierCurveTo(x1,y+endDir*3,x1+2,y,x1+end,y);ctx.lineTo(mid-neck,y);ctx.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);ctx.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);ctx.lineTo(x2-end,y);ctx.bezierCurveTo(x2-2,y,x2,y+endDir*3,x2,y+endDir*depth);ctx.stroke();if(label){ctx.font='700 14px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*14)}ctx.restore();hot.push({obj,id,kind:'bracket',x1:x1-10,x2:x2+10,y1:y-27,y2:y+27});
+ ctx.save();ctx.strokeStyle='#111827';ctx.fillStyle='#111827';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x1,y+endDir*depth);ctx.bezierCurveTo(x1,y+endDir*3,x1+2,y,x1+end,y);ctx.lineTo(mid-neck,y);ctx.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);ctx.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);ctx.lineTo(x2-end,y);ctx.bezierCurveTo(x2-2,y,x2,y+endDir*3,x2,y+endDir*depth);ctx.stroke();if(label){ctx.font='700 20px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*18)}ctx.restore();hot.push({obj,id,kind:'bracket',x1:x1-10,x2:x2+10,y1:y-32,y2:y+32});
 }
 function segmentInset(x1,x2){const w=Math.max(0,x2-x1),gap=Math.min(8,Math.max(3,w*.03));return[x1+gap,x2-gap]}
 function geom(obj){return{left:(obj.x+obj.w*(60/900))*cssW,right:(obj.x+obj.w*(840/900))*cssW,top:(obj.y+obj.h*(90/300))*cssH,bottom:(obj.y+obj.h*(210/300))*cssH}}
@@ -43,9 +43,9 @@ function drawComparison(obj){
  const st=ensureState(obj),n=Math.max(2,obj.barCount||2),widths=compWidths(obj),H=Math.max(340,150+n*145),left=(obj.x+obj.w*(180/900))*cssW,maxSpan=obj.w*(650/900)*cssW,startY=60,rowGap=145,barH=76;
  for(let i=0;i<n;i++){
   const rowTop=(obj.y+obj.h*((startY+i*rowGap)/H))*cssH,rowBottom=(obj.y+obj.h*((startY+i*rowGap+barH)/H))*cssH,end=left+maxSpan*widths[i],b=st['c'+i];
-  const name=obj.barNames?.[i]||'',nameX=left-16,nameY=(rowTop+rowBottom)/2;
-  ctx.save();ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=(name?'700':'600')+' 14px Arial,sans-serif';ctx.fillStyle=name?'#17324d':'#94a3b8';ctx.fillText(name||L.addName,nameX,nameY);ctx.restore();
-  hot.push({obj,id:'n'+i,kind:'name',x1:Math.max(0,nameX-145),x2:nameX+6,y1:nameY-20,y2:nameY+20});
+  const name=obj.barNames?.[i]||'',nameX=left-18,nameY=(rowTop+rowBottom)/2;
+  ctx.save();ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=(name?'700':'700')+' 20px Arial,sans-serif';ctx.fillStyle=name?'#17324d':'#7c8ea3';ctx.fillText(name||L.addName,nameX,nameY);ctx.restore();
+  hot.push({obj,id:'n'+i,kind:'name',x1:Math.max(0,nameX-180),x2:nameX+8,y1:nameY-25,y2:nameY+25});
   if(!b?.visible)continue;const [x1,x2]=segmentInset(left,end),pos=b.position==='bottom'?'bottom':'top',y=pos==='top'?rowTop-28:rowBottom+28;curlyBrace(x1,x2,y,pos,b.label||'','c'+i,obj);
  }
 }
