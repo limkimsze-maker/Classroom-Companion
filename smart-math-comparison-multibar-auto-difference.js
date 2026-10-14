@@ -3,64 +3,99 @@
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof cssW==='undefined'||typeof cssH==='undefined')return;
 const wrap=document.getElementById('boardWrap');
 if(!wrap)return;
+
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const START_Y=60,ROW_GAP=145,BAR_H=76,X0=180,MAX_W=650;
+const MODES=['reference','adjacent','outer','all','none'];
+const MODE_LABELS={reference:'Reference',adjacent:'Adjacent',outer:'Top ↔ Bottom',all:'All pairs',none:'No auto brackets',manual:'Manual'};
+let activeId='';
+
 function countFor(o){return clamp(Math.round(Number(o?.barCount)||2),2,5)}
 function modelH(n){return Math.max(340,150+n*145)}
 function widthsFor(o){const n=countFor(o),a=Array.isArray(o.barCompareWidths)?o.barCompareWidths:[];return Array.from({length:n},(_,i)=>clamp(Number(a[i]??(1-i*.11))||.5,.16,1))}
 function endpoint(w){return(X0+MAX_W*w)/900}
-function pairGeometry(o,a,b){
- const widths=widthsFor(o),n=countFor(o),H=modelH(n),wa=widths[a],wb=widths[b];
+function isThree(o){return !!(o&&o.smartType==='barModel'&&o.smartBarType==='comparison'&&countFor(o)===3)}
+function threeModels(){return strokes.filter(isThree)}
+function autoEntry(e){return !!(e&&(e.autoThreeDifference||e.autoMultiDifference))}
+function manualEntries(o){return Array.isArray(o.userDrawnBrackets)?o.userDrawnBrackets.filter(e=>e&&!autoEntry(e)):[]}
+function clearOldAdjacent(o){if(!Array.isArray(o.userDrawnBrackets))return false;const n=o.userDrawnBrackets.length;o.userDrawnBrackets=o.userDrawnBrackets.filter(e=>!e?.autoMultiDifference);return o.userDrawnBrackets.length!==n}
+function longestRow(o){const w=widthsFor(o);let best=0;for(let i=1;i<3;i++)if(w[i]>w[best]+.0001)best=i;return best}
+function pairGeometry(o,a,b,offset=8){
+ const widths=widthsFor(o),H=modelH(3),wa=widths[a],wb=widths[b];
  if(Math.abs(wa-wb)<.025)return null;
  const long=wa>=wb?a:b,short=long===a?b:a;
- const upper=Math.min(a,b),lower=Math.max(a,b);
- // Adjacent-pair bracket sits in the gap, attached to the longer member of that pair.
- const longIsUpper=long===upper;
- const yModel=longIsUpper?(START_Y+upper*ROW_GAP+BAR_H+8):(START_Y+lower*ROW_GAP-8);
- return{long,short,upper,lower,x1:endpoint(widths[short]),x2:endpoint(widths[long]),y:clamp(yModel/H,.01,.99),position:longIsUpper?'bottom':'top',widths,H};
+ // Put the difference bracket on the side of the longer bar that faces the other bar.
+ const other=short,below=other>long,position=below?'bottom':'top';
+ const yModel=START_Y+long*ROW_GAP+(below?BAR_H+offset:-offset);
+ return{a,b,long,short,x1:endpoint(widths[short]),x2:endpoint(widths[long]),y:clamp(yModel/H,.01,.99),position,widths,H};
 }
-function ensureOne(o){
- if(!o||o.smartType!=='barModel'||o.smartBarType!=='comparison'||countFor(o)<3)return false;
- const n=countFor(o);if(!Array.isArray(o.userDrawnBrackets))o.userDrawnBrackets=[];
- let changed=false;
- const expected=new Set();
- for(let i=0;i<n-1;i++){
-  const j=i+1,id=`auto-adj-difference-${o.smartId}-${i}-${j}`;expected.add(id);
-  const g=pairGeometry(o,i,j);let e=o.userDrawnBrackets.find(x=>x&&x.id===id);
-  if(!g){if(e&&e.visible!==false){e.visible=false;e.__autoEqualHidden=true;changed=true}continue}
+function specsFor(o){
+ const mode=o.threeBarPattern||'reference',specs=[];
+ if(mode==='none'||mode==='manual')return specs;
+ if(mode==='reference'){
+  const ref=longestRow(o),others=[0,1,2].filter(i=>i!==ref);
+  const above=others.filter(i=>i<ref).sort((a,b)=>Math.abs(a-ref)-Math.abs(b-ref));
+  const below=others.filter(i=>i>ref).sort((a,b)=>Math.abs(a-ref)-Math.abs(b-ref));
+  above.forEach((row,k)=>specs.push({a:ref,b:row,offset:8+k*22,slot:`ref-${ref}-${row}`}));
+  below.forEach((row,k)=>specs.push({a:ref,b:row,offset:8+k*22,slot:`ref-${ref}-${row}`}));
+ }else if(mode==='adjacent'){
+  specs.push({a:0,b:1,offset:8,slot:'adj-01'},{a:1,b:2,offset:8,slot:'adj-12'});
+ }else if(mode==='outer'){
+  specs.push({a:0,b:2,offset:8,slot:'outer-02'});
+ }else if(mode==='all'){
+  specs.push({a:0,b:1,offset:8,slot:'all-01'},{a:1,b:2,offset:8,slot:'all-12'},{a:0,b:2,offset:30,slot:'all-02'});
+ }
+ return specs;
+}
+function ensurePattern(o){
+ if(!isThree(o))return false;
+ let changed=clearOldAdjacent(o);
+ if(!Array.isArray(o.userDrawnBrackets))o.userDrawnBrackets=[];
+ if(!o.threeBarPattern){o.threeBarPattern=manualEntries(o).length?'manual':'reference';changed=true}
+ // Respect brackets explicitly drawn by the teacher during recognition.
+ if(o.threeBarPattern==='manual'){
+  const before=o.userDrawnBrackets.length;o.userDrawnBrackets=o.userDrawnBrackets.filter(e=>!e?.autoThreeDifference);return changed||before!==o.userDrawnBrackets.length;
+ }
+ const specs=specsFor(o),expected=new Set();
+ for(const s of specs){
+  const id=`auto-3diff-${o.smartId}-${o.threeBarPattern}-${s.slot}`;expected.add(id);
+  const geo=pairGeometry(o,s.a,s.b,s.offset);let e=o.userDrawnBrackets.find(x=>x&&x.id===id);
   if(!e){
-   e={id,autoMultiDifference:true,diffRows:[i,j],visible:true,label:'',position:g.position,x1:g.x1,x2:g.x2,y:g.y,compareRow:g.long,compareAnchorLeft:{kind:'end',row:g.short},compareAnchorRight:{kind:'end',row:g.long},verticalOffset:0};
+   e={id,autoThreeDifference:true,diffRows:[s.a,s.b],visible:!!geo,label:'',position:geo?.position||'bottom',x1:geo?.x1||0,x2:geo?.x2||0,y:geo?.y||0,compareRow:geo?.long??s.a,compareAnchorLeft:{kind:'end',row:geo?.short??s.b},compareAnchorRight:{kind:'end',row:geo?.long??s.a},verticalOffset:0,__autoEqualHidden:!geo};
    o.userDrawnBrackets.push(e);changed=true;
+  }else if(!geo){
+   if(e.visible!==false||!e.__autoEqualHidden){e.visible=false;e.__autoEqualHidden=true;changed=true}
   }else{
+   // If it was hidden only because the bars were equal, restore it when they differ again.
    if(e.__autoEqualHidden){e.visible=true;e.__autoEqualHidden=false;changed=true}
-   const vals={position:g.position,x1:g.x1,x2:g.x2,y:g.y,compareRow:g.long};
-   for(const [k,v] of Object.entries(vals))if(e[k]!==v){e[k]=v;changed=true}
-   if(!Array.isArray(e.diffRows)||e.diffRows[0]!==i||e.diffRows[1]!==j){e.diffRows=[i,j];changed=true}
-   e.compareAnchorLeft={kind:'end',row:g.short};e.compareAnchorRight={kind:'end',row:g.long};e.autoMultiDifference=true;
+   const vals={position:geo.position,x1:geo.x1,x2:geo.x2,y:geo.y,compareRow:geo.long};
+   for(const [k,v] of Object.entries(vals))if(Math.abs(Number(e[k])-Number(v))>.0005||typeof v==='string'&&e[k]!==v){e[k]=v;changed=true}
+   if(!Array.isArray(e.diffRows)||e.diffRows[0]!==s.a||e.diffRows[1]!==s.b){e.diffRows=[s.a,s.b];changed=true}
+   e.compareAnchorLeft={kind:'end',row:geo.short};e.compareAnchorRight={kind:'end',row:geo.long};e.autoThreeDifference=true;
   }
  }
- // Remove only stale automatic entries left behind after a bar-count change.
  const before=o.userDrawnBrackets.length;
- o.userDrawnBrackets=o.userDrawnBrackets.filter(e=>!e?.autoMultiDifference||expected.has(e.id));
- if(o.userDrawnBrackets.length!==before)changed=true;
+ o.userDrawnBrackets=o.userDrawnBrackets.filter(e=>!e?.autoThreeDifference||expected.has(e.id));
+ if(before!==o.userDrawnBrackets.length)changed=true;
  return changed;
 }
-function ensureAll(){let c=false;for(const o of strokes)if(ensureOne(o))c=true;return c}
+function ensureAll(){let changed=false;for(const o of threeModels())if(ensurePattern(o))changed=true;return changed}
 
+// Dotted guides live on their own overlay so they stay above coloured bars.
 let overlay=document.getElementById('comparisonMultiGuideOverlay');
 if(!overlay){overlay=document.createElement('canvas');overlay.id='comparisonMultiGuideOverlay';overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:925;pointer-events:none;';wrap.appendChild(overlay)}
 const g=overlay.getContext('2d');
-function parseColour(c){const s=String(c||'').trim();if(/^#[0-9a-f]{3}$/i.test(s))return[s[1]+s[1],s[2]+s[2],s[3]+s[3]].map(v=>parseInt(v,16));if(/^#[0-9a-f]{6}$/i.test(s))return[parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)];const m=s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);return m?[+m[1],+m[2],+m[3]]:[255,255,255]}
+function parseColour(c){const s=String(c||'').trim();if(/^#[0-9a-f]{3}$/i.test(s))return[s[1]+s[1],s[2]+s[2],s[3]+s[3]].map(v=>parseInt(v,16));if(/^#[0-9a-f]{6}$/i.test(s))return[parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16)];const m=s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);return m?[+m[1],+m[2],+m[3]]:[255,255,255]}
 function contrastFor(c){const [r,gg,b]=parseColour(c),lum=(.2126*r+.7152*gg+.0722*b)/255;return lum<.6?'#ffffff':'#111827'}
 function resizeOverlay(){const r=wrap.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(overlay.width!==w)overlay.width=w;if(overlay.height!==h)overlay.height=h;overlay.style.width=r.width+'px';overlay.style.height=r.height+'px';g.setTransform(d,0,0,d,0,0);return{W:r.width,H:r.height}}
 function drawDots(){
  const {W,H}=resizeOverlay();g.clearRect(0,0,W,H);
- for(const o of strokes){
-  if(!o||o.smartType!=='barModel'||o.smartBarType!=='comparison'||countFor(o)<3||!Array.isArray(o.userDrawnBrackets))continue;
-  const n=countFor(o),MH=modelH(n),widths=widthsFor(o);
+ for(const o of threeModels()){
+  if(!Array.isArray(o.userDrawnBrackets))continue;
+  const MH=modelH(3),widths=widthsFor(o);
   for(const e of o.userDrawnBrackets){
-   if(!e?.autoMultiDifference||e.visible===false||!Array.isArray(e.diffRows))continue;
-   const [a,b]=e.diffRows.map(v=>clamp(Number(v)||0,0,n-1)),geo=pairGeometry(o,a,b);if(!geo)continue;
+   if(!e?.autoThreeDifference||e.visible===false||!Array.isArray(e.diffRows))continue;
+   const a=clamp(Number(e.diffRows[0])||0,0,2),b=clamp(Number(e.diffRows[1])||0,0,2),geo=pairGeometry(o,a,b,8);if(!geo)continue;
    const x=(Number(o.x||0)+Number(o.w||0)*endpoint(widths[geo.short]))*W;
    const rowY=START_Y+geo.long*ROW_GAP;
    const y1=(Number(o.y||0)+Number(o.h||0)*(rowY/MH))*H,y2=(Number(o.y||0)+Number(o.h||0)*((rowY+BAR_H)/MH))*H;
@@ -70,8 +105,28 @@ function drawDots(){
   }
  }
 }
+
+// One compact button cycles the unusual 3-bar cases without adding a complicated menu.
+const tools=document.querySelector('.tools');
+const patternBtn=document.createElement('button');patternBtn.type='button';patternBtn.className='btn soft';patternBtn.id='threeBarPatternBtn';patternBtn.style.display='none';
+patternBtn.title='Cycle 3-bar comparison pattern: Reference → Adjacent → Top ↔ Bottom → All pairs → No auto brackets';
+tools?.appendChild(patternBtn);
+function activeModel(){const list=threeModels();if(!list.length)return null;return list.find(o=>o.smartId===activeId)||list[list.length-1]}
+function refreshButton(){const o=activeModel();if(!o){patternBtn.style.display='none';return}activeId=o.smartId;patternBtn.style.display='inline-flex';const mode=o.threeBarPattern||'reference';patternBtn.textContent=`3 bars: ${MODE_LABELS[mode]||mode}`;patternBtn.classList.toggle('active',mode!=='none'&&mode!=='manual')}
+patternBtn.addEventListener('click',e=>{
+ e.preventDefault();e.stopPropagation();const o=activeModel();if(!o)return;
+ const current=o.threeBarPattern||'reference';o.threeBarPattern=current==='manual'?'reference':MODES[(MODES.indexOf(current)+1+MODES.length)%MODES.length];
+ // Switching pattern deliberately resets only automatic 3-bar brackets. Hand-created brackets remain untouched.
+ o.userDrawnBrackets=(o.userDrawnBrackets||[]).filter(x=>!x?.autoThreeDifference&&!x?.autoMultiDifference);
+ ensurePattern(o);try{redraw();if(typeof syncUi==='function')syncUi()}catch{}refreshButton();
+},true);
+canvas.addEventListener('pointerdown',e=>{
+ const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width),y=(e.clientY-r.top)/Math.max(1,r.height);
+ for(let i=strokes.length-1;i>=0;i--){const o=strokes[i];if(!isThree(o))continue;if(x>=o.x&&x<=o.x+o.w&&y>=o.y&&y<=o.y+o.h){activeId=o.smartId;setTimeout(refreshButton,0);break}}
+},true);
+
 const previousRedraw=redraw;
-redraw=function(){ensureAll();previousRedraw();requestAnimationFrame(drawDots)};
+redraw=function(){ensureAll();previousRedraw();refreshButton();requestAnimationFrame(drawDots)};
 new ResizeObserver(()=>requestAnimationFrame(drawDots)).observe(wrap);window.addEventListener('resize',()=>requestAnimationFrame(drawDots));
 setTimeout(()=>{try{ensureAll();redraw()}catch{}},0);
 })();
