@@ -7,7 +7,7 @@ if(!wrap||!tools)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const clone=v=>JSON.parse(JSON.stringify(v));
 const START_Y=60,ROW_GAP=145,BAR_H=76,X0=180,MAX_W=650,MODEL_H=585;
-let activeId='',editing=false,selectedRows=[],panel=null,templatePanel=null,suppressClick=false;
+let activeId='',editing=false,selectedRows=[],panel=null,templatePanel=null;
 
 function isThree(o){return !!(o&&o.smartType==='barModel'&&o.smartBarType==='comparison'&&Math.round(Number(o.barCount)||0)===3)}
 function models(){return strokes.filter(isThree)}
@@ -18,7 +18,6 @@ function saveHistory(o,before){window.__smartBarLastHistory={before,afterId:o.sm
 function notify(msg){if(typeof say==='function'){try{say(msg);return}catch{}}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400)}}
 function ensureRelations(o){if(!Array.isArray(o.intuitiveRelations))o.intuitiveRelations=[];return o.intuitiveRelations}
 function setCustom(o){o.threeBarPattern='none';o.threeBarPatternVersion=4;ensureRelations(o)}
-function clearSelection(){selectedRows=[];drawOverlay();refreshPanel()}
 
 function geom(o,row,W,H){
  const widths=widthsFor(o),x0=(Number(o.x||0)+Number(o.w||0)*(X0/900))*W,x1=(Number(o.x||0)+Number(o.w||0)*((X0+MAX_W*widths[row])/900))*W;
@@ -47,17 +46,15 @@ function hBrace(x1,x2,y,top,label){
 }
 function vBrace(x,y1,y2,label){
  if(y2<y1)[y1,y2]=[y2,y1];const h=Math.max(28,y2-y1),mid=(y1+y2)/2,end=clamp(h*.05,6,12),neck=clamp(h*.035,6,10),depth=11;
- g.save();g.strokeStyle='#111827';g.fillStyle='#111827';g.lineWidth=2.3;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(x-depth,y1);g.bezierCurveTo(x-3,y1,x,y1+2,x,y1+end);g.lineTo(x,mid-neck);g.bezierCurveTo(x,mid-neck*.35+y1*.0,x+2,mid-4,x+depth,mid);g.bezierCurveTo(x+2,mid+4,x,mid+neck*.35,x,mid+neck);g.lineTo(x,y2-end);g.bezierCurveTo(x,y2-2,x-3,y2,x-depth,y2);g.stroke();if(label){g.font='700 20px Arial,sans-serif';g.textAlign='left';g.textBaseline='middle';g.fillText(label,x+16,mid)}g.restore();
+ g.save();g.strokeStyle='#111827';g.fillStyle='#111827';g.lineWidth=2.3;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(x-depth,y1);g.bezierCurveTo(x-3,y1,x,y1+2,x,y1+end);g.lineTo(x,mid-neck);g.bezierCurveTo(x,mid-5,x+2,mid-4,x+depth,mid);g.bezierCurveTo(x+2,mid+4,x,mid+5,x,mid+neck);g.lineTo(x,y2-end);g.bezierCurveTo(x,y2-2,x-3,y2,x-depth,y2);g.stroke();if(label){g.font='700 20px Arial,sans-serif';g.textAlign='left';g.textBaseline='middle';g.fillText(label,x+16,mid)}g.restore();
 }
 function relationRowsKey(rows){return rows.slice().sort((a,b)=>a-b).join('-')}
 function drawRelations(o,W,H){
- const rels=ensureRelations(o),diffs=rels.filter(r=>r?.type==='difference'&&Array.isArray(r.rows)&&r.rows.length===2);
- const diffGeo=[];
+ const rels=ensureRelations(o),diffs=rels.filter(r=>r?.type==='difference'&&Array.isArray(r.rows)&&r.rows.length===2),diffGeo=[];
  for(const r of diffs){const [a,b]=r.rows,widths=widthsFor(o);if(a===b||Math.abs(widths[a]-widths[b])<.025)continue;const long=widths[a]>=widths[b]?a:b,short=long===a?b:a,qL=geom(o,long,W,H),qS=geom(o,short,W,H),side=short>long?'bottom':'top',span=Math.abs(qL.x1-qS.x1);diffGeo.push({r,long,short,qL,qS,side,span,lane:0})}
  const groups=new Map();for(const d of diffGeo){const k=d.long+'|'+d.side;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(d)}
  for(const list of groups.values()){list.sort((a,b)=>a.span-b.span);list.forEach((d,i)=>d.lane=i)}
  for(const d of diffGeo){const y=d.side==='bottom'?d.qL.y2+12+d.lane*24:d.qL.y1-12-d.lane*24;dotted(d.qS.x1,d.qL.y1+5,d.qL.y2-5);hBrace(d.qS.x1,d.qL.x1,y,d.side==='top',d.r.label||'')}
-
  for(const r of rels){
   if(!r)continue;
   if(r.type==='total'&&Array.isArray(r.rows)&&r.rows.length>=2){const rows=r.rows.slice().sort((a,b)=>a-b),qs=rows.map(row=>geom(o,row,W,H)),right=Math.max(...qs.map(q=>q.x1))+28,y1=Math.min(...qs.map(q=>q.y1)),y2=Math.max(...qs.map(q=>q.y2));vBrace(right,y1,y2,r.label||'')}
@@ -69,9 +66,8 @@ function drawOverlay(){const {W,H}=resizeOverlay();g.clearRect(0,0,W,H);for(cons
 
 const oldPattern=document.getElementById('threeBarPatternBtn');if(oldPattern)oldPattern.style.setProperty('display','none','important');
 const relBtn=document.createElement('button');relBtn.type='button';relBtn.className='btn soft';relBtn.id='threeBarRelationshipBtn';relBtn.style.display='none';relBtn.textContent='🔗 Relationships';relBtn.title='Edit how the 3 bars are related';tools.appendChild(relBtn);
-
 function hideOldPattern(){const b=document.getElementById('threeBarPatternBtn');if(b)b.style.setProperty('display','none','important')}
-function refreshButton(){hideOldPattern();const o=active();if(!o){relBtn.style.display='none';editing=false;closePanel();closeTemplates();return}activeId=o.smartId;relBtn.style.display='inline-flex';relBtn.textContent=editing?'✓ Done':'🔗 Relationships';relBtn.classList.toggle('active',editing)}
+function refreshButton(){hideOldPattern();const o=active();if(!o){relBtn.style.display='none';editing=false;overlay.style.pointerEvents='none';closePanel();closeTemplates();return}activeId=o.smartId;relBtn.style.display='inline-flex';relBtn.textContent=editing?'✓ Done':'🔗 Relationships';relBtn.classList.toggle('active',editing)}
 function button(text,action,cls){const b=document.createElement('button');b.type='button';b.className='btn '+(cls||'');b.textContent=text;b.style.cssText='min-height:36px;padding:6px 9px;font-size:12px;font-weight:900';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();action()},true);return b}
 function closePanel(){if(panel){panel.remove();panel=null}}
 function closeTemplates(){if(templatePanel){templatePanel.remove();templatePanel=null}}
@@ -111,17 +107,14 @@ function miniSvg(kind){
 function templateCard(kind,title,desc,mode){const b=document.createElement('button');b.type='button';b.style.cssText='display:flex;align-items:center;gap:9px;text-align:left;border:1px solid #d8e1e8;background:#fff;border-radius:11px;padding:7px;cursor:pointer;width:100%';b.innerHTML=`${miniSvg(kind)}<span><strong style="display:block;font:900 12px Inter,system-ui,sans-serif;color:#17324d">${title}</strong><span style="display:block;font:700 10px/1.3 Inter,system-ui,sans-serif;color:#667085;margin-top:2px">${desc}</span></span>`;b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setTemplate(mode,title)},true);return b}
 function openTemplates(){const o=active();if(!o)return;closeTemplates();templatePanel=document.createElement('div');templatePanel.style.cssText='position:fixed;z-index:10340;width:min(460px,calc(100vw - 16px));max-height:75vh;overflow:auto;padding:9px;background:#fff;border:1px solid #cfd9de;border-radius:14px;box-shadow:0 14px 34px rgba(23,50,77,.24);left:50%;top:50%;transform:translate(-50%,-50%)';const h=document.createElement('div');h.innerHTML='<div style="font:900 14px Inter,system-ui,sans-serif;color:#17324d">Choose by picture</div><div style="font:700 10px/1.4 Inter,system-ui,sans-serif;color:#667085;margin:2px 0 8px">Use this only when Auto is not what you want.</div>';templatePanel.appendChild(h);const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:7px';grid.append(templateCard('segments','Shared difference','Marks the same interval clearly on two bars.','segments'),templateCard('reference','Compare to longest','Both shorter bars compare with the longest.','reference'),templateCard('adjacent','Chain comparison','Top↔middle and middle↔bottom.','adjacent'),templateCard('none','Totals / build your own','Start clean, then tap bars to add totals, differences or equal parts.','none'),templateCard('all','All differences','Shows all three pairwise differences.','all'));templatePanel.appendChild(grid);const close=button('Close',closeTemplates,'soft');close.style.width='100%';close.style.marginTop='8px';templatePanel.appendChild(close);document.body.appendChild(templatePanel)}
 
-function toggleEditing(force){const o=active();if(!o)return;editing=typeof force==='boolean'?force:!editing;selectedRows=[];closeTemplates();refreshButton();refreshPanel();drawOverlay();if(editing)notify('Tap one, two or three bars');}
+function toggleEditing(force){const o=active();if(!o)return;editing=typeof force==='boolean'?force:!editing;selectedRows=[];closeTemplates();overlay.style.pointerEvents=editing?'auto':'none';overlay.style.cursor=editing?'pointer':'default';refreshButton();refreshPanel();drawOverlay();if(editing)notify('Tap one, two or three bars')}
 relBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleEditing()},true);
 
-canvas.addEventListener('pointerdown',e=>{
- const o=modelAt(e.clientX,e.clientY);if(o){activeId=o.smartId;refreshButton()}
- if(!editing||!o)return;const row=hitRow(o,e.clientX,e.clientY);if(row<0)return;
- e.preventDefault();e.stopImmediatePropagation();suppressClick=true;activeId=o.smartId;
- const i=selectedRows.indexOf(row);if(i>=0)selectedRows.splice(i,1);else if(selectedRows.length<3)selectedRows.push(row);selectedRows.sort((a,b)=>a-b);
- drawOverlay();refreshPanel();setTimeout(()=>{suppressClick=false},180)
+overlay.addEventListener('pointerdown',e=>{
+ if(!editing)return;const o=modelAt(e.clientX,e.clientY);if(!o)return;const row=hitRow(o,e.clientX,e.clientY);if(row<0)return;
+ e.preventDefault();e.stopPropagation();activeId=o.smartId;const i=selectedRows.indexOf(row);if(i>=0)selectedRows.splice(i,1);else if(selectedRows.length<3)selectedRows.push(row);selectedRows.sort((a,b)=>a-b);drawOverlay();refreshPanel()
 },true);
-canvas.addEventListener('click',e=>{if(editing&&suppressClick){e.preventDefault();e.stopImmediatePropagation()}},true);
+canvas.addEventListener('pointerdown',e=>{if(editing)return;const o=modelAt(e.clientX,e.clientY);if(o){activeId=o.smartId;refreshButton()}},true);
 document.addEventListener('pointerdown',e=>{if(templatePanel&&!templatePanel.contains(e.target))closeTemplates()},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(templatePanel){closeTemplates();return}if(editing)toggleEditing(false)}},true);
 
