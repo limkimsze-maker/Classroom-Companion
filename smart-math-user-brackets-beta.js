@@ -22,14 +22,12 @@ function hideAuto(obj){
  if(obj.smartBarType==='partwhole'){
   if(!st.whole)st.whole={visible:false,label:''};else st.whole.visible=false;
   for(let i=0;i<n;i++){if(!st['p'+i])st['p'+i]={visible:false,label:''};else st['p'+i].visible=false}
- }else if(obj.smartBarType==='comparison'){
-  for(let i=0;i<n;i++){if(!st['c'+i])st['c'+i]={visible:false,label:'',position:i%2?'bottom':'top'};else st['c'+i].visible=false}
  }
 }
 function detect(obj){
  if(obj.userDrawnBracketScan)return;
  obj.userDrawnBracketScan=true;
- if(obj.smartType!=='barModel'||!['partwhole','comparison'].includes(obj.smartBarType)||!Array.isArray(obj.smartOriginal)||!obj.smartOriginal.length)return;
+ if(obj.smartType!=='barModel'||obj.smartBarType!=='partwhole'||!Array.isArray(obj.smartOriginal)||!obj.smartOriginal.length)return;
  const ink=obj.smartOriginal.filter(s=>Array.isArray(s?.points)&&s.points.length&&!s.erase),bb=ink.map(s=>({s,b:box(s)}));
  const verts=[];
  for(const q of bb){const pw=q.b.w*cssW,ph=q.b.h*cssH;if(ph>=Math.max(14,pw*1.8))verts.push({y:q.b.y,y2:q.b.y+q.b.h})}
@@ -44,20 +42,11 @@ function detect(obj){
  if(found.length){obj.userDrawnBrackets=found;hideAuto(obj)}
 }
 function curly(x1,x2,y,position,label,obj,entry){
- if(x2<x1)[x1,x2]=[x2,x1];const w=x2-x1,mid=(x1+x2)/2,end=clamp(w*.045,5,10),neck=clamp(w*.035,5,9),depth=entry?.isDifference?5:9,top=position==='top',endDir=entry?.isDifference?(entry.flipped?1:-1):(top?1:-1),notchDir=entry?.isDifference?(entry.flipped?-1:1):(top?-1:1),labelDir=top?-1:1;
+ if(x2<x1)[x1,x2]=[x2,x1];const w=x2-x1,mid=(x1+x2)/2,end=clamp(w*.045,5,10),neck=clamp(w*.035,5,9),depth=9,top=position==='top',endDir=top?1:-1,notchDir=top?-1:1,labelDir=top?-1:1;
  ctx.save();ctx.strokeStyle='#111827';ctx.fillStyle='#111827';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x1,y+endDir*depth);ctx.bezierCurveTo(x1,y+endDir*3,x1+2,y,x1+end,y);ctx.lineTo(mid-neck,y);ctx.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);ctx.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);ctx.lineTo(x2-end,y);ctx.bezierCurveTo(x2-2,y,x2,y+endDir*3,x2,y+endDir*depth);ctx.stroke();if(label){ctx.font='700 20px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*18)}ctx.restore();
  hot.push({obj,entry,x1:x1-10,x2:x2+10,y1:y-32,y2:y+32});
 }
-function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel')continue;detect(obj);if(!Array.isArray(obj.userDrawnBrackets)||!obj.userDrawnBrackets.length)continue;if(obj.smartBarType!=='comparison')hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.visible)continue;let x1=(obj.x+obj.w*b.x1)*cssW,x2=(obj.x+obj.w*b.x2)*cssW,y=(obj.y+obj.h*b.y)*cssH;
-if(b.isDifference&&Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length>=2){
- const widths=obj.barCompareWidths,long=widths[0]>=widths[1]?0:1,short=1-long;
- x1=(obj.x+obj.w*(180+650*widths[short])/900)*cssW;
- x2=(obj.x+obj.w*(180+650*widths[long])/900)*cssW;
- y=(obj.y+obj.h*(long===0?(60+76+8):(60+145-8))/440)*cssH;
- y+=(Number(b.verticalOffset)||0)*cssH;b.position=long===0?'bottom':'top';
- b.flipped=long!==0;
-}
-curly(x1,x2,y,b.position,b.label||'',obj,b)}}}
+function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel')continue;if(obj.smartBarType==='comparison')continue;detect(obj);if(!Array.isArray(obj.userDrawnBrackets)||!obj.userDrawnBrackets.length)continue;hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.visible)continue;const x1=(obj.x+obj.w*b.x1)*cssW,x2=(obj.x+obj.w*b.x2)*cssW,y=(obj.y+obj.h*b.y)*cssH;curly(x1,x2,y,b.position,b.label||'',obj,b)}}}
 const priorRedraw=redraw;redraw=function(){priorRedraw();drawAll()};
 function hit(clientX,clientY){const r=canvas.getBoundingClientRect(),x=(clientX-r.left)*(cssW/Math.max(1,r.width)),y=(clientY-r.top)*(cssH/Math.max(1,r.height));for(let i=hot.length-1;i>=0;i--){const h=hot[i];if(x>=h.x1&&x<=h.x2&&y>=h.y1&&y<=h.y2)return h}return null}
 function button(text,cls){const b=document.createElement('button');b.type='button';b.className='btn '+(cls||'');b.textContent=text;b.style.cssText='min-height:32px;padding:5px 8px;font-size:11px;flex:1';return b}
