@@ -14,7 +14,8 @@ const MENU_LABELS=new Set(Object.values(TXT).map(x=>x.menu));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const uid=()=>`solid3d-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const svgData=svg=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
-let panel=null,target=null,gesture=null,raf=0;
+const TRANSPARENT='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+let panel=null,target=null,gesture=null,raf=0,preview=null;
 
 function notify(msg){if(typeof say==='function'){try{say(msg);return}catch{}}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1200)}}
 function closePanel(){if(panel){panel.remove();panel=null}}
@@ -29,6 +30,7 @@ function rotatePoint(v,yaw,pitch){
 function project(v){const cam=5.2,f=cam/(cam-v[2]),s=142;return[260+v[0]*s*f,260-v[1]*s*f]}
 function ptsAttr(points){return points.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')}
 function baseSvg(inner){return `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520" viewBox="0 0 520 520"><defs><filter id="ds" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="5" dy="8" stdDeviation="8" flood-color="#17324d" flood-opacity=".16"/></filter><radialGradient id="ball" cx="31%" cy="25%" r="76%"><stop offset="0" stop-color="#ffffff"/><stop offset=".28" stop-color="#e8f7ff"/><stop offset=".7" stop-color="#9fd0e9"/><stop offset="1" stop-color="#5f9fc4"/></radialGradient></defs>${inner}</svg>`}
+function groupOpen(live){return live?'<g>':'<g filter="url(#ds)">' }
 
 function boxMesh(x=1,y=1,z=1){
  const V=[[-x,-y,-z],[x,-y,-z],[x,y,-z],[-x,y,-z],[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z]];
@@ -37,12 +39,12 @@ function boxMesh(x=1,y=1,z=1){
 }
 function pyramidMesh(){return{V:[[-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,1],[0,1.25,0]],F:[[0,3,2,1],[0,1,4],[1,2,4],[2,3,4],[3,0,4]],smooth:false}}
 function prismMesh(){return{V:[[-1.1,-.82,-.9],[1.1,-.82,-.9],[0,1.02,-.9],[-1.1,-.82,.9],[1.1,-.82,.9],[0,1.02,.9]],F:[[0,2,1],[3,4,5],[0,1,4,3],[1,2,5,4],[2,0,3,5]],smooth:false}}
-function cylinderMesh(n=32){
+function cylinderMesh(n=24){
  const V=[],F=[];for(let i=0;i<n;i++){const a=i*Math.PI*2/n;V.push([Math.cos(a),-1.05,Math.sin(a)])}for(let i=0;i<n;i++){const a=i*Math.PI*2/n;V.push([Math.cos(a),1.05,Math.sin(a)])}
  for(let i=0;i<n;i++){const j=(i+1)%n;F.push([i,j,n+j,n+i])}
  F.push([...Array(n).keys()].reverse());F.push([...Array(n).keys()].map(i=>n+i));return{V,F,smooth:true,ringBottom:[...Array(n).keys()],ringTop:[...Array(n).keys()].map(i=>n+i)};
 }
-function coneMesh(n=36){
+function coneMesh(n=28){
  const V=[],F=[];for(let i=0;i<n;i++){const a=i*Math.PI*2/n;V.push([Math.cos(a),-1.05,Math.sin(a)])}V.push([0,1.28,0]);const apex=n;
  for(let i=0;i<n;i++)F.push([i,(i+1)%n,apex]);F.push([...Array(n).keys()].reverse());return{V,F,smooth:true,ringBottom:[...Array(n).keys()],apex};
 }
@@ -50,7 +52,7 @@ function meshFor(type){if(type==='cube')return boxMesh(1,1,1);if(type==='cuboid'
 function normalOf(face,R){if(face.length<3)return[0,0,1];return norm(cross(vsub(R[face[1]],R[face[0]]),vsub(R[face[2]],R[face[0]])))}
 function faceLight(n){const light=norm([-.45,.7,1]);const d=Math.max(0,n[0]*light[0]+n[1]*light[1]+n[2]*light[2]);return 55+d*28}
 function edgeKey(a,b){return a<b?`${a}:${b}`:`${b}:${a}`}
-function polyMeshSvg(type,yaw,pitch){
+function polyMeshSvg(type,yaw,pitch,live=false){
  const M=meshFor(type),R=M.V.map(v=>rotatePoint(v,yaw,pitch)),P=R.map(project);
  const faces=M.F.map((f,i)=>{const n=normalOf(f,R);return{f,n,z:f.reduce((s,k)=>s+R[k][2],0)/f.length,front:n[2]>0,i}}).sort((a,b)=>a.z-b.z);
  let body='';
@@ -66,17 +68,17 @@ function polyMeshSvg(type,yaw,pitch){
    for(const p of [ringPts[li],ringPts[ri]])body+=`<line x1="${ap[0].toFixed(1)}" y1="${ap[1].toFixed(1)}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}" stroke="#17324d" stroke-width="3.2" stroke-linecap="round"/>`;
   }
  }
- return baseSvg(`<g filter="url(#ds)">${body}</g>`);
+ return baseSvg(`${groupOpen(live)}${body}</g>`);
 }
 function sphereRing(axis,yaw,pitch,front){
- const pts=[];let path='';let open=false;for(let i=0;i<=96;i++){const a=i/96*Math.PI*2;let v;if(axis==='xy')v=[Math.cos(a),Math.sin(a),0];else if(axis==='xz')v=[Math.cos(a),0,Math.sin(a)];else v=[0,Math.cos(a),Math.sin(a)];const r=rotatePoint(v,yaw,pitch),isFront=r[2]>=0;if(isFront===front){const x=260+r[0]*178,y=260-r[1]*178;if(!open){path+=`M${x.toFixed(1)} ${y.toFixed(1)}`;open=true}else path+=`L${x.toFixed(1)} ${y.toFixed(1)}`}else open=false}return path;
+ let path='',open=false;for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;let v;if(axis==='xy')v=[Math.cos(a),Math.sin(a),0];else if(axis==='xz')v=[Math.cos(a),0,Math.sin(a)];else v=[0,Math.cos(a),Math.sin(a)];const r=rotatePoint(v,yaw,pitch),isFront=r[2]>=0;if(isFront===front){const x=260+r[0]*178,y=260-r[1]*178;if(!open){path+=`M${x.toFixed(1)} ${y.toFixed(1)}`;open=true}else path+=`L${x.toFixed(1)} ${y.toFixed(1)}`}else open=false}return path;
 }
-function sphereSvg(yaw,pitch){
+function sphereSvg(yaw,pitch,live=false){
  let rings='';for(const axis of ['xy','xz','yz']){const back=sphereRing(axis,yaw,pitch,false),front=sphereRing(axis,yaw,pitch,true);rings+=`<path d="${back}" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 7" opacity=".22"/><path d="${front}" fill="none" stroke="#17324d" stroke-width="2.4" opacity=".38"/>`}
- return baseSvg(`<g filter="url(#ds)"><circle cx="260" cy="260" r="179" fill="url(#ball)" stroke="#17324d" stroke-width="4"/>${rings}<ellipse cx="207" cy="194" rx="43" ry="25" fill="#fff" opacity=".28" transform="rotate(-35 207 194)"/></g>`);
+ return baseSvg(`${groupOpen(live)}<circle cx="260" cy="260" r="179" fill="url(#ball)" stroke="#17324d" stroke-width="4"/>${rings}<ellipse cx="207" cy="194" rx="43" ry="25" fill="#fff" opacity=".28" transform="rotate(-35 207 194)"/></g>`);
 }
-function renderSolid(type,yaw,pitch){return type==='sphere'?sphereSvg(yaw,pitch):polyMeshSvg(type,yaw,pitch)}
-function refresh(o){o.src=svgData(renderSolid(o.solidType,o.solidYaw||0,o.solidPitch||0));}
+function renderSolid(type,yaw,pitch,live=false){return type==='sphere'?sphereSvg(yaw,pitch,live):polyMeshSvg(type,yaw,pitch,live)}
+function refresh(o){o.src=svgData(renderSolid(o.solidType,o.solidYaw||0,o.solidPitch||0,false));}
 function create(type){
  closePanel();const yaw=-.58,pitch=.42,px=Math.max(230,Math.min(350,Math.min(cssW,cssH)*.46));
  const w=px/Math.max(1,cssW),h=px/Math.max(1,cssH),o={type:'image',src:'',x:clamp(.5-w/2,0,1-w),y:clamp(.43-h/2,0,1-h),w,h,smartGenerated:true,smartType:'solid3d',solidType:type,solidYaw:yaw,solidPitch:pitch,smartId:uid(),smartOriginal:[]};
@@ -101,26 +103,41 @@ function drawHandle(){
  ctx.save();ctx.globalCompositeOperation='source-over';ctx.strokeStyle='#7c3aed';ctx.fillStyle='#fff';ctx.lineWidth=2.5;ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(h.b.x+h.b.w/2,h.b.y-4);ctx.lineTo(h.x,h.y+h.r);ctx.stroke();ctx.beginPath();ctx.arc(h.x,h.y,h.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#7c3aed';ctx.font='900 13px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('⟳',h.x,h.y+.5);ctx.restore();
 }
 const baseRedraw=redraw;redraw=function(){baseRedraw();drawHandle()};
-function scheduleRefresh(o){cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{refresh(o);redraw()})}
+
+function removePreview(){if(preview){preview.remove();preview=null}}
+function makePreview(o){
+ removePreview();const b=bounds(o);preview=document.createElement('div');preview.setAttribute('aria-hidden','true');Object.assign(preview.style,{position:'absolute',zIndex:'90',pointerEvents:'none',left:`${b.x}px`,top:`${b.y}px`,width:`${b.w}px`,height:`${b.h}px`,overflow:'visible'});wrap.appendChild(preview);renderPreview(o);
+}
+function renderPreview(o){if(!preview)return;preview.innerHTML=renderSolid(o.solidType,o.solidYaw||0,o.solidPitch||0,true);const svg=preview.firstElementChild;if(svg)Object.assign(svg.style,{display:'block',width:'100%',height:'100%'});}
+function schedulePreview(o){
+ if(raf)return;raf=requestAnimationFrame(()=>{raf=0;renderPreview(o)});
+}
+function finishPreview(o){
+ cancelAnimationFrame(raf);raf=0;refresh(o);const img=new Image();img.onload=()=>{redraw();requestAnimationFrame(()=>requestAnimationFrame(()=>{removePreview();redraw()}))};img.onerror=()=>{removePreview();redraw()};img.src=o.src;
+}
 
 window.addEventListener('pointerdown',e=>{
  if(e.button!==undefined&&e.button!==0)return;if(typeof tool!=='undefined'&&tool!=='select'){target=null;return}
  if(target&&hitHandle(e,target)){
-  const p=point(e);gesture={o:target,sx:p.x,sy:p.y,yaw:target.solidYaw||0,pitch:target.solidPitch||0};try{canvas.setPointerCapture?.(e.pointerId)}catch{};e.preventDefault();e.stopImmediatePropagation();return;
+  const p=point(e);gesture={o:target,sx:p.x,sy:p.y,yaw:target.solidYaw||0,pitch:target.solidPitch||0,src:target.src};makePreview(target);target.src=TRANSPARENT;redraw();try{canvas.setPointerCapture?.(e.pointerId)}catch{};e.preventDefault();e.stopImmediatePropagation();return;
  }
  const hit=hitSolid(e);target=hit||null;setTimeout(()=>redraw(),0);
 },true);
 window.addEventListener('pointermove',e=>{
- if(!gesture)return;const p=point(e),dx=p.x-gesture.sx,dy=p.y-gesture.sy;gesture.o.solidYaw=gesture.yaw+dx*.012;gesture.o.solidPitch=clamp(gesture.pitch+dy*.012,-1.48,1.48);scheduleRefresh(gesture.o);e.preventDefault();e.stopImmediatePropagation();
+ if(!gesture)return;const p=point(e),dx=p.x-gesture.sx,dy=p.y-gesture.sy;gesture.o.solidYaw=gesture.yaw+dx*.010;gesture.o.solidPitch=clamp(gesture.pitch+dy*.010,-1.48,1.48);schedulePreview(gesture.o);e.preventDefault();e.stopImmediatePropagation();
 },true);
-window.addEventListener('pointerup',e=>{if(!gesture)return;const o=gesture.o;gesture=null;cancelAnimationFrame(raf);refresh(o);redraw();try{canvas.releasePointerCapture?.(e.pointerId)}catch{};e.preventDefault();e.stopImmediatePropagation();},true);
-window.addEventListener('pointercancel',e=>{if(!gesture)return;gesture.o.solidYaw=gesture.yaw;gesture.o.solidPitch=gesture.pitch;const o=gesture.o;gesture=null;refresh(o);redraw();try{canvas.releasePointerCapture?.(e.pointerId)}catch{};},true);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();if(gesture){gesture.o.solidYaw=gesture.yaw;gesture.o.solidPitch=gesture.pitch;refresh(gesture.o);gesture=null}target=null;redraw()}},true);
+window.addEventListener('pointerup',e=>{
+ if(!gesture)return;const o=gesture.o;gesture=null;finishPreview(o);try{canvas.releasePointerCapture?.(e.pointerId)}catch{};e.preventDefault();e.stopImmediatePropagation();
+},true);
+window.addEventListener('pointercancel',e=>{
+ if(!gesture)return;cancelAnimationFrame(raf);raf=0;const g=gesture;gesture=null;g.o.solidYaw=g.yaw;g.o.solidPitch=g.pitch;g.o.src=g.src;removePreview();redraw();try{canvas.releasePointerCapture?.(e.pointerId)}catch{};
+},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();if(gesture){cancelAnimationFrame(raf);raf=0;gesture.o.solidYaw=gesture.yaw;gesture.o.solidPitch=gesture.pitch;gesture.o.src=gesture.src;gesture=null;removePreview()}target=null;redraw()}},true);
 
 document.addEventListener('click',e=>{
  const b=e.target?.closest?.('button');if(!b)return;const t=(b.textContent||'').trim();if(!MENU_LABELS.has(t)||b.id==='smartMathBtn'||b.id==='smartSolidBtn')return;
  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();const p=b.parentElement;if(p?.style)p.style.display='none';openPanel();
 },true);
 
-[document.getElementById('penBtn'),document.getElementById('textBtn'),document.getElementById('eraserBtn')].forEach(b=>b?.addEventListener('click',()=>{target=null;redraw()}));
+[document.getElementById('penBtn'),document.getElementById('textBtn'),document.getElementById('eraserBtn')].forEach(b=>b?.addEventListener('click',()=>{target=null;removePreview();redraw()}));
 })();
