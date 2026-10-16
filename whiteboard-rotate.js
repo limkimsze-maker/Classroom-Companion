@@ -14,7 +14,7 @@ const TRANSPARENT='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 let target=null,gesture=null,preview=null,angleBubble=null;
 
 function isPointObject(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase)}
-function rotatable(s){return !!(s&&!s.locked&&(s.type==='image'||isPointObject(s)))}
+function rotatable(s){return !!(s&&!s.locked&&s.smartType!=='solid3d'&&(s.type==='image'||isPointObject(s)))}
 function pointBounds(s){
  if(!isPointObject(s))return null;
  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
