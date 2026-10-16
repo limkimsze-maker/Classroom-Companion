@@ -9,10 +9,12 @@ const TXT={
 };
 const L=TXT[edition]||TXT.en;
 function openSolidPicker(){
+ if(typeof window.__smartSolidOpen==='function'){window.__smartSolidOpen();return;}
  const solidMenuButton=[...document.querySelectorAll('button')].find(b=>b.id!=='smartSolidBtn'&&(b.textContent||'').trim()===L.menu);
  if(solidMenuButton){solidMenuButton.click();return;}
  const smart=document.getElementById('smartMathBtn');
  if(smart){smart.click();setTimeout(()=>{
+   if(typeof window.__smartSolidOpen==='function'){window.__smartSolidOpen();return;}
    const b=[...document.querySelectorAll('button')].find(x=>x.id!=='smartSolidBtn'&&(x.textContent||'').trim()===L.menu);
    if(b)b.click();
  },0)}
