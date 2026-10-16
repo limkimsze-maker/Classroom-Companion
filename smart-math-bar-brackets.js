@@ -21,7 +21,8 @@ function ensureState(obj){
   for(let i=0;i<n;i++)if(!st['p'+i])st['p'+i]={visible:true,label:''};
  }else if(obj.smartBarType==='comparison'){
   for(let i=0;i<n;i++){
-   if(!st['c'+i])st['c'+i]={visible:true,label:'',position:i%2===0?'top':'bottom'};
+   if(!st['c'+i])st['c'+i]={visible:false,label:'',position:i%2===0?'top':'bottom'};
+   st['c'+i].visible=false;
    if(!st['c'+i].position)st['c'+i].position=i%2===0?'top':'bottom';
   }
   if(!Array.isArray(obj.barNames))obj.barNames=[];
@@ -40,13 +41,12 @@ function geom(obj){return{left:(obj.x+obj.w*(60/900))*cssW,right:(obj.x+obj.w*(8
 function drawPartWhole(obj){const st=ensureState(obj),n=Math.max(2,obj.barCount||2),cuts=cutsFor(obj),bounds=[0,...cuts,1],g=geom(obj);if(st.whole?.visible)curlyBrace(g.left+2,g.right-2,g.top-30,'top',st.whole.label||'','whole',obj);for(let i=0;i<n;i++){const raw1=g.left+(g.right-g.left)*bounds[i],raw2=g.left+(g.right-g.left)*bounds[i+1],[x1,x2]=segmentInset(raw1,raw2),b=st['p'+i];if(b?.visible)curlyBrace(x1,x2,g.bottom+30,'bottom',b.label||'','p'+i,obj)}}
 function drawEqual(obj){const st=ensureState(obj),n=Math.max(2,obj.barCount||2),cuts=cutsFor(obj),bounds=[0,...cuts,1],g=geom(obj);if(st.whole?.visible)curlyBrace(g.left+2,g.right-2,g.top-26,'top',st.whole.label||'','whole',obj);for(let i=0;i<n;i++){const raw1=g.left+(g.right-g.left)*bounds[i],raw2=g.left+(g.right-g.left)*bounds[i+1],[x1,x2]=segmentInset(raw1,raw2),b=st['p'+i];if(b?.visible)curlyBrace(x1,x2,g.bottom+28,'bottom',b.label||'','p'+i,obj)}}
 function drawComparison(obj){
- const st=ensureState(obj),n=Math.max(2,obj.barCount||2),widths=compWidths(obj),H=Math.max(340,150+n*145),left=(obj.x+obj.w*(180/900))*cssW,maxSpan=obj.w*(650/900)*cssW,startY=60,rowGap=145,barH=76;
+ ensureState(obj);const n=Math.max(2,obj.barCount||2),widths=compWidths(obj),H=Math.max(340,150+n*145),left=(obj.x+obj.w*(180/900))*cssW,startY=60,rowGap=145,barH=76;
  for(let i=0;i<n;i++){
-  const rowTop=(obj.y+obj.h*((startY+i*rowGap)/H))*cssH,rowBottom=(obj.y+obj.h*((startY+i*rowGap+barH)/H))*cssH,end=left+maxSpan*widths[i],b=st['c'+i];
+  const rowTop=(obj.y+obj.h*((startY+i*rowGap)/H))*cssH,rowBottom=(obj.y+obj.h*((startY+i*rowGap+barH)/H))*cssH;
   const name=obj.barNames?.[i]||'',nameX=left-18,nameY=(rowTop+rowBottom)/2;
-  ctx.save();ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=(name?'700':'700')+' 20px Arial,sans-serif';ctx.fillStyle=name?'#17324d':'#7c8ea3';ctx.fillText(name||L.addName,nameX,nameY);ctx.restore();
+  ctx.save();ctx.textAlign='right';ctx.textBaseline='middle';ctx.font='700 20px Arial,sans-serif';ctx.fillStyle=name?'#17324d':'#7c8ea3';ctx.fillText(name||L.addName,nameX,nameY);ctx.restore();
   hot.push({obj,id:'n'+i,kind:'name',x1:Math.max(0,nameX-180),x2:nameX+8,y1:nameY-25,y2:nameY+25});
-  if(!b?.visible)continue;const [x1,x2]=segmentInset(left,end),pos=b.position==='bottom'?'bottom':'top',y=pos==='top'?rowTop-28:rowBottom+28;curlyBrace(x1,x2,y,pos,b.label||'','c'+i,obj);
  }
 }
 function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel'||!obj.w||!obj.h)continue;if(obj.smartBarType==='partwhole')drawPartWhole(obj);else if(obj.smartBarType==='equal')drawEqual(obj);else if(obj.smartBarType==='comparison')drawComparison(obj)}}
