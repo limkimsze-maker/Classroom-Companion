@@ -54,9 +54,9 @@ function rebuildHitZones(){
   for(const o of strokes){if(!isComparison(o))continue;for(let row=0;row<count(o);row++){for(const seg of segmentsForRow(o,row,W,H)){
    const zone=document.createElement('button');zone.type='button';zone.setAttribute('aria-label','Add bracket to this comparison segment');zone.title='Click to add/remove bracket for this segment';
    const left=ox+seg.px1,top=oy+seg.y1,width=Math.max(12,seg.px2-seg.px1),height=Math.max(24,seg.y2-seg.y1);
-   zone.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;border:0;background:transparent;padding:0;margin:0;pointer-events:auto;cursor:pointer;z-index:1;border-radius:4px;`;
-   zone.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();},true);
-   zone.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();toggle(o,seg);},true);
+   zone.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;border:0;background:rgba(37,99,235,.001);padding:0;margin:0;pointer-events:auto;cursor:pointer;z-index:1;border-radius:4px;`;
+   zone.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();toggle(o,seg);},true);
+   zone.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();},true);
    zone.addEventListener('mouseenter',()=>{zone.style.outline='2px solid rgba(37,99,235,.45)';zone.style.outlineOffset='-2px';});
    zone.addEventListener('mouseleave',()=>{zone.style.outline='none';});
    hitLayer.appendChild(zone);
