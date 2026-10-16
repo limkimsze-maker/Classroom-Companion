@@ -44,27 +44,30 @@ function toggle(o,seg){
 
 let ov=document.getElementById('comparisonSegmentBracketOverlay');if(!ov){ov=document.createElement('canvas');ov.id='comparisonSegmentBracketOverlay';ov.setAttribute('aria-hidden','true');ov.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:939;pointer-events:none;';wrap.appendChild(ov)}
 const g=ov.getContext('2d');
-let hitLayer=document.getElementById('comparisonSegmentHitLayer');if(!hitLayer){hitLayer=document.createElement('div');hitLayer.id='comparisonSegmentHitLayer';hitLayer.style.cssText='position:absolute;inset:0;z-index:948;pointer-events:none;';wrap.appendChild(hitLayer)}
 function sizeOv(){const r=wrap.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(ov.width!==w)ov.width=w;if(ov.height!==h)ov.height=h;ov.style.width=r.width+'px';ov.style.height=r.height+'px';g.setTransform(d,0,0,d,0,0);return{W:r.width,H:r.height};}
 function brace(x1,x2,y,top,label){if(x2<x1)[x1,x2]=[x2,x1];const w=Math.max(18,x2-x1),mid=(x1+x2)/2,end=clamp(w*.05,5,11),neck=clamp(w*.035,5,9),depth=8,edgeDir=top?1:-1,notchDir=top?-1:1;g.save();g.strokeStyle='#111827';g.fillStyle='#111827';g.lineWidth=2.3;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(x1,y+edgeDir*depth);g.bezierCurveTo(x1,y+edgeDir*3,x1+2,y,x1+end,y);g.lineTo(mid-neck,y);g.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);g.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);g.lineTo(x2-end,y);g.bezierCurveTo(x2-2,y,x2,y+edgeDir*3,x2,y+edgeDir*depth);g.stroke();if(label){g.font='700 20px Arial,sans-serif';g.textAlign='center';g.textBaseline=top?'bottom':'top';g.fillText(label,mid,y+(top?-16:16));}g.restore();}
 function draw(){const {W,H}=sizeOv();g.clearRect(0,0,W,H);for(const o of strokes){if(!isComparison(o)||!Array.isArray(o.segmentBrackets))continue;for(const b of o.segmentBrackets){const row=clamp(Number(b.row)||0,0,count(o)-1),q=rowGeom(o,row,W,H);if(!q)continue;const x1=(o.x+o.w*clamp(Number(b.x1)||0,0,1))*W,x2=(o.x+o.w*clamp(Number(b.x2)||0,0,1))*W,top=b.side!=='bottom',y=top?q.y1-13:q.y2+13;brace(x1,x2,y,top,b.label||'');}}}
+function clearZones(){for(const z of wrap.querySelectorAll('.comparison-segment-hit-zone'))z.remove();}
 function rebuildHitZones(){
  if(rebuildingZones)return;rebuildingZones=true;requestAnimationFrame(()=>{
-  rebuildingZones=false;hitLayer.replaceChildren();const cr=canvas.getBoundingClientRect(),wr=wrap.getBoundingClientRect(),ox=cr.left-wr.left,oy=cr.top-wr.top,W=cr.width,H=cr.height;
+  rebuildingZones=false;clearZones();const cr=canvas.getBoundingClientRect(),wr=wrap.getBoundingClientRect(),ox=cr.left-wr.left,oy=cr.top-wr.top,W=cr.width,H=cr.height;
+  let made=0;
   for(const o of strokes){if(!isComparison(o))continue;for(let row=0;row<count(o);row++){for(const seg of segmentsForRow(o,row,W,H)){
-   const zone=document.createElement('button');zone.type='button';zone.setAttribute('aria-label','Add bracket to this comparison segment');zone.title='Click to add/remove bracket for this segment';
-   const left=ox+seg.px1,top=oy+seg.y1,width=Math.max(12,seg.px2-seg.px1),height=Math.max(24,seg.y2-seg.y1);
-   zone.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;border:0;background:rgba(37,99,235,.001);padding:0;margin:0;pointer-events:auto;cursor:pointer;z-index:1;border-radius:4px;`;
+   const zone=document.createElement('button');zone.type='button';zone.className='comparison-segment-hit-zone';zone.setAttribute('aria-label','Add bracket to this comparison segment');zone.title='Click to add/remove bracket for this segment';
+   const left=ox+seg.px1,top=oy+seg.y1,width=Math.max(14,seg.px2-seg.px1),height=Math.max(26,seg.y2-seg.y1);
+   zone.style.cssText=`position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;border:0;background:rgba(37,99,235,.001);padding:0;margin:0;cursor:pointer;z-index:1200;border-radius:4px;pointer-events:auto;`;
+   zone.addEventListener('pointerenter',()=>{zone.style.background='rgba(37,99,235,.10)';zone.style.boxShadow='inset 0 0 0 2px rgba(37,99,235,.65)';});
+   zone.addEventListener('pointerleave',()=>{zone.style.background='rgba(37,99,235,.001)';zone.style.boxShadow='none';});
    zone.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();toggle(o,seg);},true);
    zone.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();},true);
-   zone.addEventListener('mouseenter',()=>{zone.style.outline='2px solid rgba(37,99,235,.45)';zone.style.outlineOffset='-2px';});
-   zone.addEventListener('mouseleave',()=>{zone.style.outline='none';});
-   hitLayer.appendChild(zone);
+   wrap.appendChild(zone);made++;
   }}}
+  wrap.dataset.segmentZones=String(made);
  },0);
 }
 const prev=redraw;redraw=function(){prev();requestAnimationFrame(draw);rebuildHitZones();};
 window.addEventListener('resize',()=>{requestAnimationFrame(draw);rebuildHitZones();});
 new ResizeObserver(()=>rebuildHitZones()).observe(wrap);
+setInterval(()=>rebuildHitZones(),700);
 setTimeout(()=>{draw();rebuildHitZones()},0);
 })();
