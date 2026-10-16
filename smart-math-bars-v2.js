@@ -7,7 +7,7 @@ const edition=(new URLSearchParams(location.search).get('edition')||'en').toLowe
 const TXT={
  en:{bar:'Bar Model',choose:'Choose bar model',partwhole:'Part–Whole',comparison:'Comparison',equal:'Equal Groups',missing:'Missing Part',finish:'✓ Finished bar model?',draw:'Draw the bar model, then click “Finished bar model?”.',no:'I could not identify the bar model yet.',made:'bar model created',edit:'Colour or label this part',label:'Part label',apply:'Apply label'},
  zh:{bar:'条形图',choose:'选择条形图类型',partwhole:'部分–整体',comparison:'比较',equal:'等组',missing:'缺失部分',finish:'✓ 条形图画完了吗？',draw:'画好条形图后，点击“条形图画完了吗？”。',no:'暂时无法识别条形图。',made:'已创建条形图',edit:'为这一部分着色或添加标签',label:'部分标签',apply:'应用标签'},
- ms:{bar:'Model Bar',choose:'Pilih jenis model bar',partwhole:'Bahagian–Keseluruhan',comparison:'Perbandingan',equal:'Kumpulan Sama',missing:'Bahagian Hilang',finish:'✓ Siap model bar?',draw:'Lukis model bar, kemudian klik “Siap model bar?”.',no:'Model bar belum dapat dikenal pasti.',made:'model bar dicipta',edit:'Warnakan atau label bahagian ini',label:'Label bahagian',apply:'Guna label'},
+ ms:{bar:'Model Bar',choose:'Pilih jenis model bar',partwhole:'Bahagian–Keseluruhan',comparison:'Perbandingan',equal:'Kumpulan Sama',missing:'Bahagian Hilang',finish:'✓ Siap model bar?',draw:'Lukis model bar, kemudian klik “Siap model bar?”.',no:'Model bar belum dapat dikenal pasti.',made:'bar model dicipta',edit:'Warnakan atau label bahagian ini',label:'Label bahagian',apply:'Guna label'},
  ta:{bar:'பார் மாதிரி',choose:'பார் மாதிரி வகையைத் தேர்வு செய்',partwhole:'பகுதி–முழு',comparison:'ஒப்பீடு',equal:'சமக் குழுக்கள்',missing:'காணாத பகுதி',finish:'✓ பார் மாதிரி முடிந்ததா?',draw:'பார் மாதிரியை வரைந்து முடித்ததும் “முடிந்ததா?” என்பதைக் கிளிக் செய்யவும்.',no:'பார் மாதிரியை இன்னும் அடையாளம் காண முடியவில்லை.',made:'பார் மாதிரி உருவாக்கப்பட்டது',edit:'இந்தப் பகுதியை வண்ணமிடவும் அல்லது பெயரிடவும்',label:'பகுதி பெயர்',apply:'பெயரைப் பயன்படுத்து'}
 };
 const L=TXT[edition]||TXT.en;
@@ -32,15 +32,33 @@ function deactivate(){active=false;if(doneBtn)doneBtn.style.display='none';smart
 function makeFinishButton(){if(doneBtn)return;doneBtn=document.createElement('button');doneBtn.type='button';doneBtn.className='btn soft';doneBtn.textContent=L.finish;doneBtn.style.cssText='display:none;min-height:32px;padding:5px 9px;font-size:11px;border-style:dashed';smartBtn.insertAdjacentElement('afterend',doneBtn);doneBtn.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();finishBar()},true)}
 
 function dedupe(vals,tol){vals.sort((a,b)=>a-b);const out=[];for(const v of vals)if(!out.length||Math.abs(v-out[out.length-1])>tol)out.push(v);return out}
-function inferPartLayout(group,gb,maxParts){
- const xs=[];
- for(const s of group){
-  const b=box(s),pw=b.w*cssW,ph=b.h*cssH;
-  const rx=(b.cx-gb.x)/Math.max(.001,gb.w),ry=(b.cy-gb.y)/Math.max(.001,gb.h);
-  if(ph>=Math.max(10,gb.h*cssH*.38)&&ph>=pw*.72&&rx>.055&&rx<.945&&ry>-.25&&ry<1.25)xs.push(b.cx);
+function roughPartWholeBox(group,gb){
+ const items=group.map(s=>{const b=box(s);return{b,pw:b.w*cssW,ph:b.h*cssH}});
+ const hs=items.filter(o=>o.pw>=Math.max(55,gb.w*cssW*.35)&&o.pw>=o.ph*1.55);
+ if(hs.length<2)return gb;
+ let best=null;
+ for(let i=0;i<hs.length;i++)for(let j=i+1;j<hs.length;j++){
+  const a=hs[i].b,b=hs[j].b,sep=Math.abs(a.cy-b.cy)*cssH;if(sep<14||sep>220)continue;
+  const left=Math.max(a.x,b.x),right=Math.min(a.x+a.w,b.x+b.w),ov=Math.max(0,right-left)*cssW;
+  const shorter=Math.min(a.w,b.w)*cssW;if(ov<Math.max(45,shorter*.48))continue;
+  const score=ov-sep*.08;if(!best||score>best.score)best={score,a,b};
  }
- const unique=dedupe(xs,gb.w*.035).slice(0,maxParts-1);
- const cuts=unique.map(x=>clamp((x-gb.x)/Math.max(.001,gb.w),.06,.94)).sort((a,b)=>a-b);
+ if(!best)return gb;
+ const top=Math.min(best.a.cy,best.b.cy),bottom=Math.max(best.a.cy,best.b.cy);
+ const left=Math.min(best.a.x,best.b.x),right=Math.max(best.a.x+best.a.w,best.b.x+best.b.w);
+ return{x:left,y:top,w:Math.max(.001,right-left),h:Math.max(.03,bottom-top),cx:(left+right)/2,cy:(top+bottom)/2};
+}
+function inferPartLayout(group,gb,maxParts){
+ const xs=[],gw=Math.max(1,gb.w*cssW),gh=Math.max(1,gb.h*cssH);
+ for(const s of group){
+  const b=box(s),pw=b.w*cssW,ph=b.h*cssH,rx=(b.cx-gb.x)/Math.max(.001,gb.w);
+  if(rx<=.04||rx>=.96)continue;
+  // Deliberately forgiving: a divider may be short, slanted, or overshoot the bar.
+  const narrowEnough=pw<=Math.max(34,gw*.13),verticalish=ph>=pw*.42,longEnough=ph>=Math.max(8,Math.min(22,gh*.16));
+  if(longEnough&&(verticalish||narrowEnough))xs.push(b.cx);
+ }
+ const unique=dedupe(xs,Math.max(.012,gb.w*.028)).slice(0,maxParts-1);
+ const cuts=unique.map(x=>clamp((x-gb.x)/Math.max(.001,gb.w),.035,.965)).sort((a,b)=>a-b);
  return{count:clamp(cuts.length+1,2,maxParts),cuts};
 }
 function inferComparisonRows(group,gb){
@@ -86,10 +104,11 @@ function buildModel(type,count,cuts,fills,labels){
 }
 function analyse(group){
  if(!group.length)return null;
- const gb=groupBox(group),gw=gb.w*cssW,gh=gb.h*cssH;if(gw<70||gh<18)return null;
- if(barType==='comparison'){const count=inferComparisonRows(group,gb);if(count<2)return null;return{box:gb,count,cuts:null}}
- const max=barType==='equal'?12:8,layout=inferPartLayout(group,gb,max);
- return{box:gb,count:layout.count,cuts:layout.cuts};
+ const rawBox=groupBox(group),gw=rawBox.w*cssW,gh=rawBox.h*cssH;if(gw<38||gh<7)return null;
+ if(barType==='comparison'){const count=inferComparisonRows(group,rawBox);if(count<2)return null;return{box:rawBox,count,cuts:null}}
+ const modelBox=barType==='partwhole'?roughPartWholeBox(group,rawBox):rawBox;
+ const max=barType==='equal'?12:8,layout=inferPartLayout(group,modelBox,max);
+ return{box:modelBox,count:layout.count,cuts:layout.cuts};
 }
 function finishBar(){
  if(!active||!barType)return;
@@ -149,6 +168,6 @@ function showPartPanel(hit,clientX,clientY){
 
 makeFinishButton();if(!hook()){let tries=0;const id=setInterval(()=>{if(hook()||++tries>40)clearInterval(id)},100)}
 document.addEventListener('pointerdown',e=>{if(submenu&&submenu.style.display==='block'&&!submenu.contains(e.target)&&e.target!==barButton)close();if(partPanel&&!partPanel.contains(e.target)&&e.target!==canvas)closePartPanel()},true);
-canvas.addEventListener('click',e=>{const hit=hitPartWhole(e.clientX,e.clientY);if(!hit){closePartPanel();return}e.preventDefault();e.stopImmediatePropagation();showPartPanel(hit,e.clientX,e.clientY)},true);
+canvas.addEventListener('click',e=>{if(window.__smartPartWholeCompactOptions)return;const hit=hitPartWhole(e.clientX,e.clientY);if(!hit){closePartPanel();return}e.preventDefault();e.stopImmediatePropagation();showPartPanel(hit,e.clientX,e.clientY)},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){close();closePartPanel();if(active)deactivate()}},true);
 })();
