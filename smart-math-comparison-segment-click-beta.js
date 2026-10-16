@@ -13,12 +13,16 @@ function modelH(o){return Math.max(340,150+count(o)*145)}
 function widths(o){const n=count(o),a=Array.isArray(o?.barCompareWidths)?o.barCompareWidths:[];return Array.from({length:n},(_,i)=>clamp(Number(a[i]??(1-i*.11))||.5,.16,1))}
 function uniqueSorted(values){const out=[];for(const v of values.slice().sort((a,b)=>a-b)){if(!out.length||Math.abs(v-out[out.length-1])>.012)out.push(v)}return out}
 function smallSegments(o,row){
- const ws=widths(o),own=ws[row],u=uniqueSorted(ws).filter(v=>v<=own+.012);
- if(u.length<2)return[];
+ const ws=widths(o),own=ws[row];
+ // Every bar starts at the same left edge. That left edge is a real segment boundary.
+ // Example for 3 distinct bar lengths on the longest bar:
+ // left edge -> short end, short end -> middle end, middle end -> long end = 3 segments.
+ const ends=uniqueSorted(ws).filter(v=>v<=own+.012);
+ const bounds=[0,...ends];
  const out=[];
- for(let i=0;i<u.length-1;i++){
-  const a=u[i],b=u[i+1];if(b-a<.025)continue;
-  out.push({row,index:i,a,b,x1:(X0+MAX_W*a)/900,x2:(X0+MAX_W*b)/900});
+ for(let i=0;i<bounds.length-1;i++){
+  const a=bounds[i],b=bounds[i+1];if(b-a<.025)continue;
+  out.push({row,index:out.length,a,b,x1:(X0+MAX_W*a)/900,x2:(X0+MAX_W*b)/900});
  }
  return out;
 }
