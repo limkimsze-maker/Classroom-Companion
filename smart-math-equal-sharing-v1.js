@@ -38,6 +38,7 @@ function openPanel(){
  create.addEventListener('click',e=>{e.preventDefault();const n=calc();if(!n){notify(L.bad);return}const totalLabel=total.input.value.trim();close();make(totalLabel,n)},true);cancel.addEventListener('click',e=>{e.preventDefault();close()},true);
  row.append(create,cancel);panel.append(title,total.wrap,shares.wrap,hint,row);document.body.appendChild(panel);setTimeout(()=>total.input.focus(),0)
 }
+window.__smartEqualSharingOpen=openPanel;
 function inject(){const m=document.getElementById('smartBarTypeMenu');if(!m||m.querySelector('[data-equal-sharing]'))return;const buttons=[...m.querySelectorAll('button')],anchor=buttons.find(b=>(b.textContent||'').trim().toLowerCase()==='equal grouping');const b=document.createElement('button');b.type='button';b.className='btn';b.dataset.equalSharing='1';b.textContent=L.menu;b.style.cssText='display:block;width:100%;text-align:left;margin:3px 0';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();m.style.display='none';openPanel()},true);if(anchor?.nextSibling)m.insertBefore(b,anchor.nextSibling);else m.appendChild(b)}
 new MutationObserver(inject).observe(document.body,{childList:true,subtree:true});inject();document.addEventListener('keydown',e=>{if(e.key==='Escape')close()},true);
 })();
