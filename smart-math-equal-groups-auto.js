@@ -3,10 +3,10 @@
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
 const edition=(new URLSearchParams(location.search).get('edition')||'en').toLowerCase();
 const TXT={
- en:{equal:'Equal Groups',title:'Create Equal Groups',total:'Total',each:'In each group',preview:'groups',create:'Create model',cancel:'Cancel',bad:'Enter a total and an amount in each group. The total must make a whole number of equal groups.',made:'Equal Groups model created'},
- zh:{equal:'等组',title:'建立等组模型',total:'总数',each:'每组数量',preview:'组',create:'建立模型',cancel:'取消',bad:'请输入总数和每组数量。总数必须能组成整数个等组。',made:'已建立等组模型'},
- ms:{equal:'Kumpulan Sama',title:'Bina Kumpulan Sama',total:'Jumlah',each:'Dalam setiap kumpulan',preview:'kumpulan',create:'Bina model',cancel:'Batal',bad:'Masukkan jumlah dan nilai setiap kumpulan. Jumlah mesti menghasilkan bilangan kumpulan yang bulat.',made:'Model Kumpulan Sama dicipta'},
- ta:{equal:'சமக் குழுக்கள்',title:'சமக் குழுக்களை உருவாக்கு',total:'மொத்தம்',each:'ஒவ்வொரு குழுவிலும்',preview:'குழுக்கள்',create:'மாதிரியை உருவாக்கு',cancel:'ரத்து செய்',bad:'மொத்தத்தையும் ஒவ்வொரு குழுவிலுள்ள அளவையும் உள்ளிடவும். மொத்தம் முழு எண்ணிக்கையிலான சமக் குழுக்களாக இருக்க வேண்டும்.',made:'சமக் குழு மாதிரி உருவாக்கப்பட்டது'}
+ en:{base:'Equal Groups',equal:'Equal Grouping',title:'Create Equal Grouping',total:'Total',each:'In each group',ready:'Ready to create',create:'Create model',cancel:'Cancel',bad:'Enter a total and an amount in each group. The total must make a whole number of equal groups.',made:'Equal Grouping model created'},
+ zh:{base:'等组',equal:'等分组合',title:'建立等分组合模型',total:'总数',each:'每组数量',ready:'可以建立模型',create:'建立模型',cancel:'取消',bad:'请输入总数和每组数量。总数必须能组成整数个等组。',made:'已建立等分组合模型'},
+ ms:{base:'Kumpulan Sama',equal:'Pengumpulan Sama',title:'Bina Pengumpulan Sama',total:'Jumlah',each:'Dalam setiap kumpulan',ready:'Sedia untuk dibina',create:'Bina model',cancel:'Batal',bad:'Masukkan jumlah dan nilai setiap kumpulan. Jumlah mesti menghasilkan bilangan kumpulan yang bulat.',made:'Model Pengumpulan Sama dicipta'},
+ ta:{base:'சமக் குழுக்கள்',equal:'சமக் குழுவாக்கம்',title:'சமக் குழுவாக்கத்தை உருவாக்கு',total:'மொத்தம்',each:'ஒவ்வொரு குழுவிலும்',ready:'உருவாக்கத் தயாராக உள்ளது',create:'மாதிரியை உருவாக்கு',cancel:'ரத்து செய்',bad:'மொத்தத்தையும் ஒவ்வொரு குழுவிலுள்ள அளவையும் உள்ளிடவும். மொத்தம் முழு எண்ணிக்கையிலான சமக் குழுக்களாக இருக்க வேண்டும்.',made:'சமக் குழுவாக்க மாதிரி உருவாக்கப்பட்டது'}
 };
 const L=TXT[edition]||TXT.en;
 const clone=v=>JSON.parse(JSON.stringify(v));
@@ -39,7 +39,6 @@ function build(totalLabel,eachLabel,count){
   parts.push(`<rect x="${midX+midW}" y="${y}" width="${rightW}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="4"/>`);
   parts.push(bracket(x,x+leftW,244,1,eachLabel));
   parts.push(bracket(midX+midW,midX+midW+rightW,244,1,eachLabel));
-  parts.push(`<text x="500" y="185" text-anchor="middle" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#667085">${count} ${esc(L.preview)}</text>`);
  }
  return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${parts.join('')}</svg>`);
 }
@@ -58,7 +57,7 @@ function openPanel(){
  const row=document.createElement('div');row.style.cssText='display:flex;gap:7px';
  const create=document.createElement('button');create.type='button';create.className='btn soft';create.textContent=L.create;create.style.cssText='flex:1';
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent=L.cancel;cancel.style.cssText='flex:0 0 auto';
- function calc(){const a=numeric(t.input.value),b=numeric(e.input.value),q=a/b;if(Number.isFinite(q)&&b>0&&q>=2&&q<=30&&Math.abs(q-Math.round(q))<1e-8){hint.textContent=`${Math.round(q)} ${L.preview}`;return Math.round(q)}hint.textContent='';return null}
+ function calc(){const a=numeric(t.input.value),b=numeric(e.input.value),q=a/b;if(Number.isFinite(q)&&b>0&&q>=2&&q<=30&&Math.abs(q-Math.round(q))<1e-8){hint.textContent=L.ready;return Math.round(q)}hint.textContent='';return null}
  t.input.addEventListener('input',calc);e.input.addEventListener('input',calc);
  create.addEventListener('click',ev=>{ev.preventDefault();const n=calc();if(!n){notify(L.bad);return}const total=t.input.value.trim(),each=e.input.value.trim();close();make(total,each,n)},true);
  cancel.addEventListener('click',ev=>{ev.preventDefault();close()},true);
@@ -66,8 +65,9 @@ function openPanel(){
 }
 function hook(){
  const m=document.getElementById('smartBarTypeMenu');if(!m)return;
- const b=[...m.querySelectorAll('button')].find(x=>(x.textContent||'').trim()===L.equal);if(!b||b.dataset.equalAuto==='1')return;
- b.dataset.equalAuto='1';b.addEventListener('click',ev=>{ev.preventDefault();ev.stopImmediatePropagation();m.style.display='none';openPanel()},true)
+ let b=[...m.querySelectorAll('button')].find(x=>(x.textContent||'').trim()===L.base)||[...m.querySelectorAll('button')].find(x=>(x.textContent||'').trim()===L.equal);
+ if(!b||b.dataset.equalAuto==='1')return;
+ b.dataset.equalAuto='1';b.textContent=L.equal;b.addEventListener('click',ev=>{ev.preventDefault();ev.stopImmediatePropagation();m.style.display='none';openPanel()},true)
 }
 new MutationObserver(hook).observe(document.body,{childList:true,subtree:true});hook();
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close()},true);
