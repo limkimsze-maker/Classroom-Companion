@@ -21,39 +21,39 @@ function close(){if(panel){panel.remove();panel=null}}
 function font(){return `'Comic Sans MS','Segoe Print','Trebuchet MS','Arial Rounded MT Bold',sans-serif`}
 
 function verticalSvg(a,op,b){
- const W=520,H=245,right=455,fontSize=58,row1Y=78,row2Y=145,lineY=166;
- const maxChars=Math.max(a.length,b.length+2);
- const lineWidth=clamp(maxChars*39+34,155,300);
- const lineStart=right-lineWidth;
- return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`+
+ const fontSize=58,maxChars=Math.max(a.length,b.length+2);
+ const W=clamp(maxChars*43+44,210,330),H=190,right=W-24,row1Y=64,row2Y=126,lineY=148;
+ const lineWidth=clamp(maxChars*41+24,145,W-30),lineStart=right-lineWidth;
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`+
  `<rect width="100%" height="100%" fill="white"/>`+
  `<g fill="#17324d" font-family="${font()}" font-size="${fontSize}" font-weight="700">`+
  `<text x="${right}" y="${row1Y}" text-anchor="end">${esc(a)}</text>`+
  `<text x="${right}" y="${row2Y}" text-anchor="end">${esc(op)} ${esc(b)}</text>`+
- `</g><line x1="${lineStart}" y1="${lineY}" x2="${right+8}" y2="${lineY}" stroke="#17324d" stroke-width="5" stroke-linecap="round"/>`+
+ `</g><line x1="${lineStart}" y1="${lineY}" x2="${right+4}" y2="${lineY}" stroke="#17324d" stroke-width="5" stroke-linecap="round"/>`+
  `</svg>`;
+ return{svg,W,H};
 }
 
 function divisionSvg(dividend,divisor){
- const W=620,H=390,fontSize=58;
- const digits=Math.max(1,dividend.length);
- const dividendWidth=clamp(digits*39+38,150,310);
- const roofStart=225,roofEnd=clamp(roofStart+dividendWidth,390,555),roofY=108;
- const dividendX=roofStart+24,numberY=168,divisorX=roofStart-34;
- return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`+
+ const fontSize=58,digits=Math.max(1,dividend.length);
+ const dividendWidth=clamp(digits*42+34,140,300),W=clamp(dividendWidth+145,285,440),H=300;
+ const roofStart=100,roofEnd=clamp(roofStart+dividendWidth,245,W-18),roofY=78;
+ const dividendX=roofStart+20,numberY=136,divisorX=roofStart-24;
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`+
  `<rect width="100%" height="100%" fill="white"/>`+
  `<g fill="#17324d" font-family="${font()}" font-size="${fontSize}" font-weight="700">`+
  `<text x="${divisorX}" y="${numberY}" text-anchor="end">${esc(divisor)}</text>`+
  `<text x="${dividendX}" y="${numberY}" text-anchor="start">${esc(dividend)}</text>`+
  `</g>`+
- `<path d="M ${roofStart} 205 C ${roofStart-9} 192 ${roofStart-9} 162 ${roofStart} ${roofY} L ${roofEnd} ${roofY}" fill="none" stroke="#17324d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`+
+ `<path d="M ${roofStart} 170 C ${roofStart-8} 156 ${roofStart-8} 128 ${roofStart} ${roofY} L ${roofEnd} ${roofY}" fill="none" stroke="#17324d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`+
  `</svg>`;
+ return{svg,W,H};
 }
 
 function make(a,op,b){
- const isDivision=op==='÷';
- const svg=isDivision?divisionSvg(a,b):verticalSvg(a,op,b);
- const obj={type:'image',src:svgData(svg),x:isDivision?.22:.28,y:isDivision?.16:.22,w:isDivision?.5:.38,h:isDivision?.48:.29,smartGenerated:true,smartType:'equation',smartId:uid(),smartOriginal:[],equationExpression:`${a} ${op} ${b}`,equationLayout:isDivision?'long-division':'vertical'};
+ const isDivision=op==='÷',made=isDivision?divisionSvg(a,b):verticalSvg(a,op,b),svg=made.svg;
+ const pxW=isDivision?made.W:made.W,pxH=made.H;
+ const obj={type:'image',src:svgData(svg),x:isDivision?.24:.31,y:isDivision?.18:.24,w:clamp(pxW/Math.max(1,cssW),isDivision?.22:.15,isDivision?.38:.28),h:clamp(pxH/Math.max(1,cssH),isDivision?.28:.20,isDivision?.46:.32),smartGenerated:true,smartType:'equation',smartId:uid(),smartOriginal:[],equationExpression:`${a} ${op} ${b}`,equationLayout:isDivision?'long-division':'vertical'};
  strokes.push(obj);redraw();syncUi();try{tool='select';syncUi()}catch{}notify(L.made);
 }
 
