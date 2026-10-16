@@ -3,7 +3,7 @@
 if(typeof canvas==='undefined'||typeof strokes==='undefined')return;
 const wrap=document.getElementById('boardWrap');if(!wrap)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const X0=180,MAX_W=650,START_Y=60,ROW_GAP=145,BAR_H=76;
+const X0=180,MAX_W=650,START_Y=60,ROW_GAP=145,BAR_H=58;
 
 // The segment-options renderer used to paint bracket labels itself. Suppress only
 // that text; the braces and selection preview still render normally. Labels are
@@ -76,8 +76,6 @@ function placeBox(x1,x2,baseY,top,m,used,forbidden,W,H){
   if(used.some(q=>overlap(box,q,3)))continue;
   return{cx,cy,box,moved:Math.abs(cy-baseY)>2};
  }}
- // Last resort: keep the label readable and inside the canvas. The opaque pill
- // prevents visual merging even in an extremely crowded model.
  const cx=clamp(mid,half+4,W-half-4),cy=clamp(baseY,m.height/2+4,H-m.height/2-4);
  return{cx,cy,box:{l:cx-half,r:cx+half,t:cy-m.height/2,b:cy+m.height/2},moved:false};
 }
@@ -100,12 +98,10 @@ function drawLabels(){
  for(const o of strokes){
   if(!isComparison(o)||!Array.isArray(o.segmentBrackets))continue;
   const brackets=o.segmentBrackets.filter(b=>b&&b.visible!==false&&String(b.label||'').trim());
-  // Longer spans first gives the larger labels first choice of the cleanest lane.
   brackets.sort((a,b)=>Math.abs(Number(b.x2)-Number(b.x1))-Math.abs(Number(a.x2)-Number(a.x1)));
   for(const b of brackets){
    const row=clamp(Number(b.row)||0,0,count(o)-1),rg=rowGeom(o,row,W,H),x1=(o.x+o.w*Number(b.x1||0))*W,x2=(o.x+o.w*Number(b.x2||0))*W,top=b.side!=='bottom';
    const braceY=top?rg.y1-13:rg.y2+13;
-   // Keep the label just outside the brace, but close enough to remain visually attached.
    const baseY=braceY+(top?-9:9),available=Math.max(34,Math.min(170,Math.abs(x2-x1)-8)),m=textMetrics(String(b.label).trim(),available);
    const p=placeBox(x1,x2,baseY,top,m,used,forbidden,W,H);used.push(p.box);drawPill(String(b.label).trim(),p,m,braceY);
   }
@@ -118,7 +114,6 @@ if(typeof redraw==='function'){
 }
 window.addEventListener('resize',()=>requestAnimationFrame(drawLabels));
 new ResizeObserver(()=>requestAnimationFrame(drawLabels)).observe(wrap);
-// Also follows direct overlay redraws used while resizing/dragging Smart Math objects.
 setInterval(drawLabels,350);
 setTimeout(()=>{try{redraw()}catch{drawLabels()}},0);
 })();
