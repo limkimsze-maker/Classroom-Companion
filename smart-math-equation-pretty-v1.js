@@ -36,24 +36,25 @@ function verticalSvg(a,op,b){
 
 function divisionSvg(dividend,divisor){
  const fontSize=58,digits=Math.max(1,dividend.length);
- const dividendWidth=clamp(digits*42+34,140,300),W=clamp(dividendWidth+145,285,440),H=300;
- const roofStart=100,roofEnd=clamp(roofStart+dividendWidth,245,W-18),roofY=78;
- const dividendX=roofStart+20,numberY=136,divisorX=roofStart-24;
+ const dividendWidth=clamp(digits*42+30,140,300),W=clamp(dividendWidth+130,275,425),H=280;
+ const roofX=94,roofY=72,roofEnd=clamp(roofX+dividendWidth,W-38,W-18);
+ const dividendX=roofX+18,numberY=132,divisorX=roofX-22;
+ const bracketBottom=numberY+24,corner=12;
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`+
  `<rect width="100%" height="100%" fill="white"/>`+
  `<g fill="#17324d" font-family="${font()}" font-size="${fontSize}" font-weight="700">`+
  `<text x="${divisorX}" y="${numberY}" text-anchor="end">${esc(divisor)}</text>`+
  `<text x="${dividendX}" y="${numberY}" text-anchor="start">${esc(dividend)}</text>`+
  `</g>`+
- `<path d="M ${roofStart} 170 C ${roofStart-8} 156 ${roofStart-8} 128 ${roofStart} ${roofY} L ${roofEnd} ${roofY}" fill="none" stroke="#17324d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`+
+ `<path d="M ${roofX} ${bracketBottom} L ${roofX} ${roofY+corner} Q ${roofX} ${roofY} ${roofX+corner} ${roofY} L ${roofEnd} ${roofY}" fill="none" stroke="#17324d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`+
  `</svg>`;
  return{svg,W,H};
 }
 
 function make(a,op,b){
  const isDivision=op==='÷',made=isDivision?divisionSvg(a,b):verticalSvg(a,op,b),svg=made.svg;
- const pxW=isDivision?made.W:made.W,pxH=made.H;
- const obj={type:'image',src:svgData(svg),x:isDivision?.24:.31,y:isDivision?.18:.24,w:clamp(pxW/Math.max(1,cssW),isDivision?.22:.15,isDivision?.38:.28),h:clamp(pxH/Math.max(1,cssH),isDivision?.28:.20,isDivision?.46:.32),smartGenerated:true,smartType:'equation',smartId:uid(),smartOriginal:[],equationExpression:`${a} ${op} ${b}`,equationLayout:isDivision?'long-division':'vertical'};
+ const pxW=made.W,pxH=made.H;
+ const obj={type:'image',src:svgData(svg),x:isDivision?.24:.31,y:isDivision?.18:.24,w:clamp(pxW/Math.max(1,cssW),isDivision?.20:.15,isDivision?.36:.28),h:clamp(pxH/Math.max(1,cssH),isDivision?.24:.20,isDivision?.40:.32),smartGenerated:true,smartType:'equation',smartId:uid(),smartOriginal:[],equationExpression:`${a} ${op} ${b}`,equationLayout:isDivision?'long-division':'vertical'};
  strokes.push(obj);redraw();syncUi();try{tool='select';syncUi()}catch{}notify(L.made);
 }
 
