@@ -4,7 +4,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const wrap=document.getElementById('boardWrap');if(!wrap)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const clone=v=>JSON.parse(JSON.stringify(v));
-const X0=180,MAX_W=650,START_Y=60,ROW_GAP=145,BAR_H=76;
+const X0=180,MAX_W=650,START_Y=60,ROW_GAP=145,BAR_H=58;
 const PALETTE=[
  {name:'White',value:'#ffffff'},
  {name:'Yellow',value:'#fde68a'},
