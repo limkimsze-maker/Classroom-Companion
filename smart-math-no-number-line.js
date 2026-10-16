@@ -4,7 +4,8 @@ const LABELS=new Set([
   'Number Line','✨ Number Line?',
   '数轴','✨ 数轴？',
   'Garis Nombor','✨ Garis Nombor?',
-  'எண் கோடு','✨ எண் கோடு?'
+  'எண் கோடு','✨ எண் கோடு?',
+  'Smart Math Off','关闭智能数学','Matematik Pintar Mati','நுண்ணறிவு கணிதம் நிறுத்து'
 ]);
 function strip(){
   for(const b of document.querySelectorAll('button')){
