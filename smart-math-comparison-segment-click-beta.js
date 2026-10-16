@@ -5,7 +5,7 @@ const wrap=document.getElementById('boardWrap');if(!wrap)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const clone=v=>JSON.parse(JSON.stringify(v));
 const X0=180,MAX_W=650,START_Y=60,ROW_GAP=145,BAR_H=76;
-let rebuilding=false,panel=null,drag=null,preview=null;
+let rebuilding=false,panel=null,placementPanel=null,drag=null,preview=null;
 
 function isComparison(o){return !!(o&&o.smartType==='barModel'&&o.smartBarType==='comparison'&&Number.isFinite(o.x)&&Number.isFinite(o.y)&&Number.isFinite(o.w)&&Number.isFinite(o.h));}
 function count(o){return clamp(Math.round(Number(o?.barCount)||2),2,5)}
@@ -14,9 +14,6 @@ function widths(o){const n=count(o),a=Array.isArray(o?.barCompareWidths)?o.barCo
 function uniqueSorted(values){const out=[];for(const v of values.slice().sort((a,b)=>a-b)){if(!out.length||Math.abs(v-out[out.length-1])>.012)out.push(v)}return out}
 function smallSegments(o,row){
  const ws=widths(o),own=ws[row];
- // Every bar starts at the same left edge. That left edge is a real segment boundary.
- // Example for 3 distinct bar lengths on the longest bar:
- // left edge -> short end, short end -> middle end, middle end -> long end = 3 segments.
  const ends=uniqueSorted(ws).filter(v=>v<=own+.012);
  const bounds=[0,...ends];
  const out=[];
@@ -27,31 +24,57 @@ function smallSegments(o,row){
  return out;
 }
 function sameSpan(b,row,x1,x2){return !!(b&&b.visible!==false&&Number(b.row)===row&&Math.abs(Number(b.x1)-x1)<.003&&Math.abs(Number(b.x2)-x2)<.003)}
-function sideFor(o,row){return row===count(o)-1?'bottom':'top'}
 function ensureStore(o){if(!Array.isArray(o.segmentBrackets))o.segmentBrackets=[];return o.segmentBrackets}
 function notify(msg){if(typeof say==='function'){try{say(msg);return}catch{}}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1300)}}
-function addSpan(o,row,x1,x2,countSegments){
+function addSpan(o,row,x1,x2,countSegments,side){
  if(x2<x1)[x1,x2]=[x2,x1];
  const list=ensureStore(o),existing=list.find(b=>sameSpan(b,row,x1,x2));
  if(existing){notify('Bracket already added here');return}
- const before=clone(strokes),side=sideFor(o,row);
- list.push({id:'segment-'+Date.now()+'-'+row,row,x1,x2,side,label:'',visible:true,segmentCount:countSegments||1});
+ const before=clone(strokes);
+ list.push({id:'segment-'+Date.now()+'-'+row,row,x1,x2,side:side==='bottom'?'bottom':'top',label:'',visible:true,segmentCount:countSegments||1});
  window.__smartBarLastHistory={before,afterId:o.smartId};
  notify((countSegments||1)>1?`Bracket added across ${countSegments} segments`:'Bracket added to segment');
  try{redraw();if(typeof syncUi==='function')syncUi()}catch{}
 }
+
 function closePanel(){if(panel){panel.remove();panel=null}}
+function closePlacement(clearPreview=true){if(placementPanel){placementPanel.remove();placementPanel=null}if(clearPreview){preview=null;requestAnimationFrame(drawBrackets)}}
+function requestPlacement(o,row,x1,x2,countSegments,clientX,clientY){
+ closePlacement(false);
+ if(ensureStore(o).some(b=>sameSpan(b,row,x1,x2))){preview=null;requestAnimationFrame(drawBrackets);notify('Bracket already added here');return}
+ preview={o,row,x1,x2};requestAnimationFrame(drawBrackets);
+ placementPanel=document.createElement('div');
+ placementPanel.style.cssText='position:fixed;z-index:13100;width:230px;padding:10px;background:#fff;border:1px solid #cfd9de;border-radius:13px;box-shadow:0 10px 28px rgba(23,50,77,.24)';
+ placementPanel.style.left=Math.min(innerWidth-240,Math.max(8,clientX-110))+'px';
+ placementPanel.style.top=Math.min(innerHeight-118,Math.max(8,clientY+12))+'px';
+ const title=document.createElement('div');title.textContent='Place bracket';title.style.cssText='font:900 12px Inter,system-ui,sans-serif;color:#17324d;margin-bottom:3px';
+ const desc=document.createElement('div');desc.textContent=(countSegments||1)>1?`${countSegments} selected segments`:'1 selected segment';desc.style.cssText='font:700 10px Inter,system-ui,sans-serif;color:#667085;margin-bottom:8px';
+ const rowEl=document.createElement('div');rowEl.style.cssText='display:flex;gap:6px';
+ const above=document.createElement('button');above.type='button';above.className='btn soft';above.textContent='↑ Above';above.style.flex='1';
+ const below=document.createElement('button');below.type='button';below.className='btn soft';below.textContent='↓ Below';below.style.flex='1';
+ const choose=side=>{closePlacement();addSpan(o,row,x1,x2,countSegments,side)};
+ above.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();choose('top')},true);
+ below.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();choose('bottom')},true);
+ rowEl.append(above,below);placementPanel.append(title,desc,rowEl);document.body.appendChild(placementPanel);
+}
 function showPanel(o,b,clientX,clientY){
- closePanel();panel=document.createElement('div');panel.style.cssText='position:fixed;z-index:13050;width:260px;padding:10px;background:#fff;border:1px solid #cfd9de;border-radius:13px;box-shadow:0 10px 28px rgba(23,50,77,.22)';panel.style.left=Math.min(innerWidth-270,Math.max(8,clientX-125))+'px';panel.style.top=Math.min(innerHeight-132,Math.max(8,clientY+10))+'px';
+ closePanel();panel=document.createElement('div');panel.style.cssText='position:fixed;z-index:13050;width:260px;padding:10px;background:#fff;border:1px solid #cfd9de;border-radius:13px;box-shadow:0 10px 28px rgba(23,50,77,.22)';panel.style.left=Math.min(innerWidth-270,Math.max(8,clientX-125))+'px';panel.style.top=Math.min(innerHeight-178,Math.max(8,clientY+10))+'px';
  const title=document.createElement('div');title.textContent=(Number(b.segmentCount)||1)>1?`${b.segmentCount} segments bracket`:'Segment bracket';title.style.cssText='font:900 12px Inter,system-ui,sans-serif;color:#17324d;margin-bottom:7px';
  const input=document.createElement('input');input.type='text';input.maxLength=30;input.placeholder='Type label';input.value=b.label||'';input.style.cssText='width:100%;border:1px solid #cfd9de;border-radius:9px;padding:7px 8px;font-size:12px;font-weight:700;color:#17324d;margin-bottom:7px';
+ const sideRow=document.createElement('div');sideRow.style.cssText='display:flex;gap:6px;margin-bottom:7px';
+ const topBtn=document.createElement('button');topBtn.type='button';topBtn.className='btn soft';topBtn.textContent='↑ Above';topBtn.style.flex='1';
+ const bottomBtn=document.createElement('button');bottomBtn.type='button';bottomBtn.className='btn soft';bottomBtn.textContent='↓ Below';bottomBtn.style.flex='1';
+ const markSide=()=>{topBtn.classList.toggle('active',b.side!=='bottom');bottomBtn.classList.toggle('active',b.side==='bottom')};markSide();
+ topBtn.onclick=e=>{e.preventDefault();e.stopPropagation();b.side='top';markSide();redraw()};
+ bottomBtn.onclick=e=>{e.preventDefault();e.stopPropagation();b.side='bottom';markSide();redraw()};
+ sideRow.append(topBtn,bottomBtn);
  const row=document.createElement('div');row.style.cssText='display:flex;gap:6px';
  const apply=document.createElement('button');apply.type='button';apply.className='btn soft';apply.textContent='Apply';apply.style.flex='1';
  const del=document.createElement('button');del.type='button';del.className='btn danger';del.textContent='Delete bracket';del.style.flex='1';
  apply.onclick=e=>{e.preventDefault();e.stopPropagation();const x=ensureStore(o).find(q=>q.id===b.id);if(x)x.label=input.value.trim();closePanel();redraw();if(typeof syncUi==='function')syncUi()};
  del.onclick=e=>{e.preventDefault();e.stopPropagation();const before=clone(strokes),list=ensureStore(o),i=list.findIndex(q=>q.id===b.id);if(i>=0)list.splice(i,1);window.__smartBarLastHistory={before,afterId:o.smartId};closePanel();redraw();if(typeof syncUi==='function')syncUi();notify('Bracket deleted')};
  input.onkeydown=e=>{if(e.key==='Enter')apply.click();else if(e.key==='Escape')closePanel()};
- row.append(apply,del);panel.append(title,input,row);document.body.appendChild(panel);setTimeout(()=>input.focus(),0);
+ row.append(apply,del);panel.append(title,input,sideRow,row);document.body.appendChild(panel);setTimeout(()=>input.focus(),0);
 }
 
 let ov=document.getElementById('comparisonSegmentBracketOverlay');
@@ -70,7 +93,7 @@ function selectionMode(){try{return typeof tool==='undefined'||tool==='select'}c
 function segmentAtX(o,row,clientX){const r=canvas.getBoundingClientRect(),x=(clientX-r.left)/Math.max(1,r.width);for(const s of smallSegments(o,row)){const a=o.x+o.w*s.x1,b=o.x+o.w*s.x2;if(x>=a-.006&&x<=b+.006)return s}return null}
 function updatePreview(){if(!drag)return;preview={o:drag.o,row:drag.row,x1:Math.min(drag.startSeg.x1,drag.endSeg.x1),x2:Math.max(drag.startSeg.x2,drag.endSeg.x2)};requestAnimationFrame(drawBrackets)}
 function beginDrag(o,seg,e,zone){
- if(drag)return;
+ if(drag||placementPanel)return;
  drag={o,row:seg.row,startSeg:seg,endSeg:seg,startX:e.clientX,pointerId:e.pointerId,zone};preview={o,row:seg.row,x1:seg.x1,x2:seg.x2};
  try{zone.setPointerCapture(e.pointerId)}catch{}
  zone.addEventListener('pointermove',moveDrag,true);zone.addEventListener('pointerup',endDrag,true);zone.addEventListener('pointercancel',cancelDrag,true);
@@ -83,11 +106,14 @@ function finishDrag(cancelled,e){
  const d=drag;if(!d)return;
  const z=d.zone;try{z.releasePointerCapture?.(d.pointerId)}catch{}
  z.removeEventListener('pointermove',moveDrag,true);z.removeEventListener('pointerup',endDrag,true);z.removeEventListener('pointercancel',cancelDrag,true);
- drag=null;preview=null;requestAnimationFrame(drawBrackets);
- if(cancelled){rebuildZones();return}
+ drag=null;
+ if(cancelled){preview=null;requestAnimationFrame(drawBrackets);rebuildZones();return}
  const first=Math.min(d.startSeg.index,d.endSeg.index),last=Math.max(d.startSeg.index,d.endSeg.index),segs=smallSegments(d.o,d.row),picked=segs.filter(s=>s.index>=first&&s.index<=last);
- if(!picked.length){rebuildZones();return}
- addSpan(d.o,d.row,picked[0].x1,picked[picked.length-1].x2,picked.length);
+ if(!picked.length){preview=null;requestAnimationFrame(drawBrackets);rebuildZones();return}
+ const x1=picked[0].x1,x2=picked[picked.length-1].x2;
+ preview={o:d.o,row:d.row,x1,x2};requestAnimationFrame(drawBrackets);
+ requestPlacement(d.o,d.row,x1,x2,picked.length,e?.clientX||d.startX,e?.clientY||0);
+ rebuildZones();
 }
 function endDrag(e){if(!drag)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();finishDrag(false,e)}
 function cancelDrag(e){if(!drag)return;e?.preventDefault?.();e?.stopPropagation?.();finishDrag(true,e)}
@@ -96,10 +122,10 @@ function rebuildZones(){
  if(rebuilding||drag)return;rebuilding=true;requestAnimationFrame(()=>{
   rebuilding=false;if(drag)return;clearUiZones();
   const cr=canvas.getBoundingClientRect(),wr=wrap.getBoundingClientRect(),ox=cr.left-wr.left,oy=cr.top-wr.top,W=cr.width,H=cr.height;
-  if(selectionMode()){
+  if(selectionMode()&&!placementPanel){
    for(const o of strokes){if(!isComparison(o))continue;const Hm=modelH(o),n=count(o);for(let row=0;row<n;row++){const y1=(o.y+o.h*((START_Y+row*ROW_GAP)/Hm))*H,y2=(o.y+o.h*((START_Y+row*ROW_GAP+BAR_H)/Hm))*H;for(const seg of smallSegments(o,row)){
     const px1=(o.x+o.w*seg.x1)*W,px2=(o.x+o.w*seg.x2)*W;if(px2-px1<12)continue;
-    const z=document.createElement('button');z.type='button';z.className='comparison-segment-hit-zone';z.setAttribute('aria-label','Add bracket to this comparison segment');z.title='Click one segment, or press and drag across adjacent segments';z.style.cssText=`position:absolute;left:${ox+px1}px;top:${oy+y1}px;width:${Math.max(14,px2-px1)}px;height:${Math.max(26,y2-y1)}px;border:0;background:rgba(37,99,235,.002);padding:0;margin:0;cursor:pointer;z-index:1200;border-radius:4px;pointer-events:auto;touch-action:none;`;
+    const z=document.createElement('button');z.type='button';z.className='comparison-segment-hit-zone';z.setAttribute('aria-label','Select comparison segment for a bracket');z.title='Click one segment, or press and drag across adjacent segments';z.style.cssText=`position:absolute;left:${ox+px1}px;top:${oy+y1}px;width:${Math.max(14,px2-px1)}px;height:${Math.max(26,y2-y1)}px;border:0;background:rgba(37,99,235,.002);padding:0;margin:0;cursor:pointer;z-index:1200;border-radius:4px;pointer-events:auto;touch-action:none;`;
     z.onpointerenter=()=>{if(!drag){z.style.background='rgba(37,99,235,.11)';z.style.boxShadow='inset 0 0 0 2px rgba(37,99,235,.7)'}};z.onpointerleave=()=>{if(!drag){z.style.background='rgba(37,99,235,.002)';z.style.boxShadow='none'}};
     z.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();beginDrag(o,seg,e,z)},true);
     z.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()},true);wrap.appendChild(z)
@@ -111,10 +137,10 @@ function rebuildZones(){
 function cleanLegacy(){for(const o of strokes){if(!isComparison(o)||!Array.isArray(o.userDrawnBrackets))continue;o.userDrawnBrackets=o.userDrawnBrackets.filter(b=>!b?.isSegmentBracket)}}
 cleanLegacy();
 const prev=redraw;redraw=function(){prev();requestAnimationFrame(drawBrackets);rebuildZones()};
-window.addEventListener('resize',()=>{requestAnimationFrame(drawBrackets);rebuildZones()});
+window.addEventListener('resize',()=>{closePlacement();requestAnimationFrame(drawBrackets);rebuildZones()});
 new ResizeObserver(()=>{requestAnimationFrame(drawBrackets);rebuildZones()}).observe(wrap);
-document.addEventListener('pointerdown',e=>{if(panel&&!panel.contains(e.target))closePanel()},true);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();cancelDrag()}},true);
+document.addEventListener('pointerdown',e=>{if(panel&&!panel.contains(e.target))closePanel();if(placementPanel&&!placementPanel.contains(e.target)){closePlacement();rebuildZones()}},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePanel();closePlacement();cancelDrag();rebuildZones()}},true);
 setInterval(()=>{if(!drag)rebuildZones()},700);
 setTimeout(()=>{drawBrackets();rebuildZones()},0);
 })();
