@@ -14,27 +14,43 @@ function widths(o){const n=count(o),a=Array.isArray(o.barCompareWidths)?o.barCom
 function rowGeom(o,row,W,H){const mh=modelH(o),ws=widths(o),x0=(o.x+o.w*(X0/900))*W,x1=(o.x+o.w*((X0+MAX_W*ws[row])/900))*W,y1=(o.y+o.h*((START_Y+row*ROW_GAP)/mh))*H,y2=(o.y+o.h*((START_Y+row*ROW_GAP+BAR_H)/mh))*H;return{x0,x1,y1,y2};}
 function modelAt(clientX,clientY){const r=canvas.getBoundingClientRect(),x=(clientX-r.left)/Math.max(1,r.width),y=(clientY-r.top)/Math.max(1,r.height);for(let i=strokes.length-1;i>=0;i--){const o=strokes[i];if(isComparison(o)&&x>=o.x&&x<=o.x+o.w&&y>=o.y&&y<=o.y+o.h)return o}return null;}
 function hitRow(o,clientX,clientY){const r=canvas.getBoundingClientRect(),x=clientX-r.left,y=clientY-r.top;for(let i=0;i<count(o);i++){const q=rowGeom(o,i,r.width,r.height);if(x>=q.x0&&x<=q.x1&&y>=q.y1&&y<=q.y2)return i}return-1;}
-function segmentAt(o,row,clientX){
- const r=canvas.getBoundingClientRect(),x=clientX-r.left,W=r.width,ws=widths(o),own=ws[row],base=(o.x+o.w*(X0/900))*W,end=(o.x+o.w*((X0+MAX_W*own)/900))*W;
- const shorter=[];for(let i=0;i<ws.length;i++){if(i===row||ws[i]>=own-.002)continue;const ex=(o.x+o.w*((X0+MAX_W*ws[i])/900))*W;if(ex>base+4&&ex<end-4)shorter.push({x:ex,row:i,w:ws[i]});}
- if(!shorter.length)return null;
- shorter.sort((a,b)=>a.x-b.x);
- const uniq=[];for(const s of shorter){const last=uniq[uniq.length-1];if(!last||Math.abs(s.x-last.x)>5)uniq.push(s);}
- const bounds=uniq.map(s=>s.x);bounds.push(end);
- for(let i=0;i<bounds.length-1;i++){
-  const x1=bounds[i],x2=bounds[i+1];if(x>=x1+2&&x<=x2-2){
-   const leftSource=uniq[i];return{row,x1:(x1/W-o.x)/o.w,x2:(x2/W-o.x)/o.w,sourceRow:leftSource?.row??null};
-  }
+
+// General rule: every distinct shorter-bar endpoint inside a longer bar creates
+// a clickable overhang segment. The shared main body remains untouched, so the
+// normal bar click behaviour still works there. This supports 2–5 bars.
+function segmentsForRow(o,row,W){
+ const ws=widths(o),own=ws[row],base=(o.x+o.w*(X0/900))*W,end=(o.x+o.w*((X0+MAX_W*own)/900))*W;
+ const ends=[];
+ for(let i=0;i<ws.length;i++){
+  if(i===row||ws[i]>=own-.002)continue;
+  const x=(o.x+o.w*((X0+MAX_W*ws[i])/900))*W;
+  if(x>base+5&&x<end-5)ends.push({x,row:i});
  }
- // Right-most overhang: from the nearest shorter endpoint to this bar end.
- const last=uniq[uniq.length-1];if(last&&x>=last.x+2&&x<=end-2)return{row,x1:(last.x/W-o.x)/o.w,x2:(end/W-o.x)/o.w,sourceRow:last.row};
+ ends.sort((a,b)=>a.x-b.x);
+ const uniq=[];
+ for(const e of ends){const last=uniq[uniq.length-1];if(!last||Math.abs(e.x-last.x)>6)uniq.push(e);}
+ if(!uniq.length)return[];
+ const out=[];
+ for(let i=0;i<uniq.length;i++){
+  const left=uniq[i],rightX=i+1<uniq.length?uniq[i+1].x:end;
+  if(rightX-left.x<10)continue;
+  out.push({row,x1:(left.x/W-o.x)/o.w,x2:(rightX/W-o.x)/o.w,sourceRow:left.row});
+ }
+ return out;
+}
+function segmentAt(o,row,clientX){
+ const r=canvas.getBoundingClientRect(),px=clientX-r.left,W=r.width;
+ for(const seg of segmentsForRow(o,row,W)){
+  const x1=(o.x+o.w*seg.x1)*W,x2=(o.x+o.w*seg.x2)*W;
+  if(px>=x1+2&&px<=x2-2)return seg;
+ }
  return null;
 }
 function same(a,b){return a&&b&&a.row===b.row&&Math.abs(a.x1-b.x1)<.002&&Math.abs(a.x2-b.x2)<.002;}
 function toggle(o,seg){
  const before=clone(strokes);if(!Array.isArray(o.segmentBrackets))o.segmentBrackets=[];
  const i=o.segmentBrackets.findIndex(b=>same(b,seg));
- if(i>=0)o.segmentBrackets.splice(i,1);else{o.segmentBrackets.push({row:seg.row,x1:seg.x1,x2:seg.x2,sourceRow:seg.sourceRow,side:seg.row===count(o)-1?'bottom':'top',label:''});}
+ if(i>=0)o.segmentBrackets.splice(i,1);else o.segmentBrackets.push({type:'segment',row:seg.row,x1:seg.x1,x2:seg.x2,sourceRow:seg.sourceRow,side:seg.row===count(o)-1?'bottom':'top',label:''});
  window.__smartBarLastHistory={before,afterId:o.smartId};
  try{redraw();if(typeof syncUi==='function')syncUi()}catch{}
  if(typeof say==='function')try{say(i>=0?'Segment bracket removed':'Segment bracket added')}catch{}
