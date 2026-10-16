@@ -4,7 +4,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const clone=v=>JSON.parse(JSON.stringify(v));
 let selectedId=null,drag=null,suppressClick=false,lastAutoSelectedId='';
-const LAYOUT_VERSION=2;
+const LAYOUT_VERSION=3;
 function svgData(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
 function countFor(obj){return clamp(Math.round(Number(obj.barCount)||2),2,5)}
 function widthsFor(obj){
@@ -12,7 +12,7 @@ function widthsFor(obj){
  if(Array.isArray(obj.barCompareWidths)&&obj.barCompareWidths.length>=n)return obj.barCompareWidths.slice(0,n).map(v=>clamp(Number(v)||.5,.16,1));
  return Array.from({length:n},(_,i)=>clamp(1-i*.11,.16,1));
 }
-function layoutFor(obj){const n=countFor(obj);return{n,H:Math.max(340,150+n*145),x:180,maxW:650,rowGap:145,barH:76,startY:60}}
+function layoutFor(obj){const n=countFor(obj);return{n,H:Math.max(340,150+n*145),x:180,maxW:650,rowGap:145,barH:58,startY:60}}
 function normalizeComparison(obj){
  if(!obj||obj.smartType!=='barModel'||obj.smartBarType!=='comparison')return false;
  const n=countFor(obj);let changed=false;
