@@ -5,7 +5,7 @@ const wrap=document.getElementById('boardWrap'),tools=document.querySelector('.t
 if(!wrap||!tools)return;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const clone=v=>JSON.parse(JSON.stringify(v));
-const X0=180,MAX_W=650,START_Y=60,ROW_GAP=145,BAR_H=76;
+const X0=180,MAX_W=650,START_Y=60,ROW_GAP=145,BAR_H=58;
 let currentId='',panel=null,rebuilding=false;
 
 function isComparison(o){return !!(o&&o.smartType==='barModel'&&o.smartBarType==='comparison'&&Number.isFinite(o.x)&&Number.isFinite(o.y)&&Number.isFinite(o.w)&&Number.isFinite(o.h));}
@@ -51,7 +51,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closePanel()},true);
 const previous=redraw;redraw=function(){previous();refreshButton();requestAnimationFrame(drawAll);rebuildHits()};
 window.addEventListener('resize',()=>{refreshButton();requestAnimationFrame(drawAll);rebuildHits()});
 new ResizeObserver(()=>{refreshButton();requestAnimationFrame(drawAll);rebuildHits()}).observe(wrap);
-// Keep the manual Total control available even if later whiteboard scripts replace redraw.
 setInterval(()=>{refreshButton();if(models().length){requestAnimationFrame(drawAll);rebuildHits()}},500);
 setTimeout(()=>{refreshButton();drawAll();rebuildHits()},0);
 })();
