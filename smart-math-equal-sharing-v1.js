@@ -17,15 +17,18 @@ function svgData(svg){return'data:image/svg+xml;charset=utf-8,'+encodeURICompone
 function notify(msg){if(typeof say==='function'){try{say(msg);return}catch{}}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400)}}
 function numeric(v){const m=String(v||'').replace(/,/g,'').match(/-?\d+(?:\.\d+)?/);return m?Number(m[0]):NaN}
 function close(){if(panel){panel.remove();panel=null}}
-function bracket(x1,x2,y,label){const arm=14,mid=(x1+x2)/2,tip=y-10,endY=y+arm;return `<path d="M ${x1} ${endY} Q ${x1} ${y} ${x1+10} ${y} L ${mid-14} ${y} Q ${mid} ${y} ${mid} ${tip} Q ${mid} ${y} ${mid+14} ${y} L ${x2-10} ${y} Q ${x2} ${y} ${x2} ${endY}" fill="none" stroke="#111827" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>${label?`<text x="${mid}" y="${y-20}" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#111827">${esc(label)}</text>`:''}`}
+function topBracket(x1,x2,y,label){const arm=14,mid=(x1+x2)/2,tip=y-10,endY=y+arm;return `<path d="M ${x1} ${endY} Q ${x1} ${y} ${x1+10} ${y} L ${mid-14} ${y} Q ${mid} ${y} ${mid} ${tip} Q ${mid} ${y} ${mid+14} ${y} L ${x2-10} ${y} Q ${x2} ${y} ${x2} ${endY}" fill="none" stroke="#111827" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>${label?`<text x="${mid}" y="${y-20}" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#111827">${esc(label)}</text>`:''}`}
+function bottomBracket(x1,x2,y,label){const arm=14,mid=(x1+x2)/2,tip=y+10,endY=y-arm;return `<path d="M ${x1} ${endY} Q ${x1} ${y} ${x1+10} ${y} L ${mid-14} ${y} Q ${mid} ${y} ${mid} ${tip} Q ${mid} ${y} ${mid+14} ${y} L ${x2-10} ${y} Q ${x2} ${y} ${x2} ${endY}" fill="none" stroke="#111827" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>${label?`<text x="${mid}" y="${y+44}" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#111827">${esc(label)}</text>`:''}`}
 function build(totalLabel,count){
- const W=1000,H=340,x=120,y=135,h=86,w=760,stroke='#17324d',fill='#8db8dc',parts=[];
- parts.push(bracket(x,x+w,95,totalLabel));
+ const W=1000,H=380,x=120,y=135,h=86,w=760,stroke='#17324d',fill='#8db8dc',parts=[];
+ parts.push(topBracket(x,x+w,95,totalLabel));
  parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="5"/>`);
  for(let i=1;i<count;i++){const px=x+w*i/count;parts.push(`<line x1="${px}" y1="${y}" x2="${px}" y2="${y+h}" stroke="${stroke}" stroke-width="4"/>`)}
+ const unit=w/count;
+ parts.push(bottomBracket(x,x+unit,y+h+30,'?'));
  return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${parts.join('')}</svg>`)
 }
-function make(totalLabel,count){const before=clone(strokes);const obj={type:'image',src:build(totalLabel,count),x:.16,y:.18,w:.68,h:.39,smartGenerated:true,smartType:'barModel',smartBarType:'equalsharing',smartId:uid(),equalSharingTotalLabel:totalLabel,equalSharingCount:count,smartOriginal:[]};strokes.push(obj);window.__smartBarLastHistory={before,afterId:obj.smartId};redraw();syncUi();try{tool='select';syncUi()}catch{}notify(L.made)}
+function make(totalLabel,count){const before=clone(strokes);const obj={type:'image',src:build(totalLabel,count),x:.16,y:.18,w:.68,h:.43,smartGenerated:true,smartType:'barModel',smartBarType:'equalsharing',smartId:uid(),equalSharingTotalLabel:totalLabel,equalSharingCount:count,smartOriginal:[]};strokes.push(obj);window.__smartBarLastHistory={before,afterId:obj.smartId};redraw();syncUi();try{tool='select';syncUi()}catch{}notify(L.made)}
 function openPanel(){
  close();panel=document.createElement('div');panel.style.cssText='position:fixed;z-index:10125;width:min(360px,calc(100vw - 20px));padding:14px;background:#fff;border:1px solid #cfd9de;border-radius:15px;box-shadow:0 14px 36px rgba(23,50,77,.24);left:50%;top:50%;transform:translate(-50%,-50%)';
  const title=document.createElement('div');title.textContent=L.title;title.style.cssText='font:900 16px Inter,system-ui,sans-serif;color:#17324d;margin-bottom:11px';
