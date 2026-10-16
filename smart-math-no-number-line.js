@@ -5,7 +5,8 @@ const LABELS=new Set([
   '数轴','✨ 数轴？',
   'Garis Nombor','✨ Garis Nombor?',
   'எண் கோடு','✨ எண் கோடு?',
-  'Smart Math Off','关闭智能数学','Matematik Pintar Mati','நுண்ணறிவு கணிதம் நிறுத்து'
+  'Smart Math Off','关闭智能数学','Matematik Pintar Mati','நுண்ணறிவு கணிதம் நிறுத்து',
+  'Auto Detect','自动识别','Kesan Auto','தானாக கண்டறி'
 ]);
 function strip(){
   for(const b of document.querySelectorAll('button')){
