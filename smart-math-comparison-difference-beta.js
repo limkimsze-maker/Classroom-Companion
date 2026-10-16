@@ -1,22 +1,9 @@
-(function(){'use strict';
-if(typeof strokes==='undefined'||typeof redraw!=='function'||typeof canvas==='undefined')return;
-const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-let target=null,stage='idle',raw=null,points=[],overlay=null,panel=null,seen=new Set();
-const wrap=document.getElementById('boardWrap');
-function comparison(){return [...strokes].reverse().find(o=>o?.smartType==='barModel'&&o.smartBarType==='comparison'&&o.smartId)}
-function geometry(o){const n=Math.max(2,Math.min(5,o.barCount||2)),H=Math.max(340,150+n*145),widths=Array.from({length:n},(_,i)=>clamp(Number(o.barCompareWidths?.[i]??1-i*.11),.16,1));let longest=widths.indexOf(Math.max(...widths)),shortest=widths.indexOf(Math.min(...widths));return{n,H,widths,longest,shortest,left:(180+650*widths[shortest])/900,right:(180+650*widths[longest])/900,row:longest,y:(60+longest*145+76+22)/H}}
-function init(){if(panel)return;panel=document.createElement('div');panel.id='comparisonDifferencePanel';panel.style.cssText='display:none;position:absolute;z-index:950;left:8px;right:8px;top:8px;background:#fff;border:2px solid #0f766e;border-radius:12px;padding:9px;box-shadow:0 6px 20px #0002;flex-wrap:wrap;gap:6px;align-items:center';wrap.appendChild(panel);
-overlay=document.createElement('canvas');overlay.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:940;touch-action:none;display:none';wrap.appendChild(overlay);
-new ResizeObserver(()=>{const r=wrap.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);overlay.width=r.width*d;overlay.height=r.height*d;draw()}).observe(wrap)}
-function button(label,fn){const b=document.createElement('button');b.className='btn soft';b.type='button';b.textContent=label;b.onclick=fn;panel.appendChild(b);return b}
-function ui(){init();panel.replaceChildren();panel.style.display=stage==='idle'?'none':'flex';overlay.style.display=stage==='draw'||stage==='preview'?'block':'none';if(stage==='idle')return;const label=document.createElement('strong');label.textContent=stage==='draw'?'Comparison — draw a bracket beneath the difference.':'Comparison — check difference bracket.';label.style.cssText='width:100%;font-size:13px';panel.appendChild(label);if(stage==='draw'){button('✨ Beautify difference bracket',beautify);button('↶ Redraw bracket',()=>{points=[];raw=null;draw()})}else{button('✓ Confirm bracket',commit);button('↶ Redraw bracket',()=>{stage='draw';points=[];raw=null;ui();draw()})}button('✕ Cancel',()=>{stage='idle';ui();draw()})}
-function start(o){target=o;stage='draw';points=[];raw=null;ui();draw()}
-function xy(e){const r=overlay.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height}}
-function draw(){if(!overlay)return;const g=overlay.getContext('2d'),d=overlay.width/Math.max(1,overlay.clientWidth);g.setTransform(d,0,0,d,0,0);const W=overlay.clientWidth,H=overlay.clientHeight;g.clearRect(0,0,W,H);if(stage==='idle')return;g.strokeStyle='#b56a12';g.lineWidth=3;g.lineCap='round';g.lineJoin='round';if(stage==='draw'&&points.length){g.beginPath();points.forEach((p,i)=>i?g.lineTo(p.x*W,p.y*H):g.moveTo(p.x*W,p.y*H));g.stroke()}if(stage==='preview'&&raw){const x=raw.x1*W,z=raw.x2*W,y=raw.y*H,m=(x+z)/2,dir=1;g.beginPath();g.moveTo(x,y+5);g.quadraticCurveTo(x,y,x+10,y);g.lineTo(m-9,y);g.lineTo(m,y-5);g.lineTo(m+9,y);g.lineTo(z-10,y);g.quadraticCurveTo(z,y,z,y+5);g.stroke()}}
-let down=false;function setup(){init();overlay.addEventListener('pointerdown',e=>{if(stage!=='draw')return;down=true;points=[xy(e)];overlay.setPointerCapture(e.pointerId);draw();e.preventDefault()});overlay.addEventListener('pointermove',e=>{if(!down)return;points.push(xy(e));draw();e.preventDefault()});overlay.addEventListener('pointerup',e=>{down=false;draw();e.preventDefault()})}
-function beautify(){if(points.length<3){panel.querySelector('strong').textContent='Draw a rough difference bracket first.';return}const o=strokes.find(s=>s.smartId===target?.smartId);if(!o)return;const gg=geometry(o);if(gg.right-gg.left<.025){panel.querySelector('strong').textContent='Bars are equal in length; no difference to bracket.';return}const upper=Math.min(gg.longest,gg.shortest),lower=Math.max(gg.longest,gg.shortest);const upperBottom=(60+upper*145+76)/gg.H,lowerTop=(60+lower*145)/gg.H;const offset=(upperBottom+lowerTop)/2-8/Math.max(1,o.h*cssH);raw={x1:o.x+o.w*gg.left,x2:o.x+o.w*gg.right,y:o.y+o.h*offset,position:'top'};stage='preview';ui();draw()}
-function commit(){const o=strokes.find(s=>s.smartId===target?.smartId);if(!o||!raw)return;const gg=geometry(o);window.__smartBarLastHistory={before:clone(strokes),afterId:o.smartId};if(!Array.isArray(o.userDrawnBrackets))o.userDrawnBrackets=[];o.userDrawnBracketScan=true;o.userDrawnBrackets=o.userDrawnBrackets.filter(b=>!b.isDifference);o.userDrawnBrackets.push({id:'difference-'+Date.now(),isDifference:true,visible:true,label:'',position:raw.position,x1:gg.left,x2:gg.right,y:(raw.y-o.y)/o.h,compareAnchorLeft:{kind:'end',row:gg.shortest},compareAnchorRight:{kind:'end',row:gg.longest},compareRow:gg.longest});stage='idle';ui();redraw();syncUi();if(typeof say==='function')say('Difference bracket attached to comparison bars')}
-function offer(){if(stage!=='idle')return;const o=comparison();if(!o||seen.has(o.smartId)||o.userDrawnBrackets?.some(b=>b.isDifference))return;seen.add(o.smartId);init();const b=document.createElement('button');b.id='addComparisonDifference';b.className='btn soft';b.type='button';b.textContent='＋ Add Difference Bracket';b.style.cssText='position:absolute;z-index:930;right:10px;bottom:44px';b.onclick=()=>{b.remove();start(o)};wrap.appendChild(b)}
-const prev=redraw;redraw=function(){prev();setTimeout(offer,0)};
-setup();setTimeout(offer,600);
+(function(){
+'use strict';
+// Retired in beta: the old floating "Add Difference Bracket" workflow
+// has been replaced by direct comparison-segment interactions.
+const oldButton=document.getElementById('addComparisonDifference');
+if(oldButton)oldButton.remove();
+const oldPanel=document.getElementById('comparisonDifferencePanel');
+if(oldPanel)oldPanel.remove();
 })();
