@@ -46,7 +46,15 @@ function curly(x1,x2,y,position,label,obj,entry){
  ctx.save();ctx.strokeStyle='#111827';ctx.fillStyle='#111827';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x1,y+endDir*depth);ctx.bezierCurveTo(x1,y+endDir*3,x1+2,y,x1+end,y);ctx.lineTo(mid-neck,y);ctx.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);ctx.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);ctx.lineTo(x2-end,y);ctx.bezierCurveTo(x2-2,y,x2,y+endDir*3,x2,y+endDir*depth);ctx.stroke();if(label){ctx.font='700 20px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline=labelDir<0?'bottom':'top';ctx.fillText(label,mid,y+labelDir*18)}ctx.restore();
  hot.push({obj,entry,x1:x1-10,x2:x2+10,y1:y-32,y2:y+32});
 }
-function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel')continue;if(obj.smartBarType==='comparison')continue;detect(obj);if(!Array.isArray(obj.userDrawnBrackets)||!obj.userDrawnBrackets.length)continue;hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.visible)continue;const x1=(obj.x+obj.w*b.x1)*cssW,x2=(obj.x+obj.w*b.x2)*cssW,y=(obj.y+obj.h*b.y)*cssH;curly(x1,x2,y,b.position,b.label||'',obj,b)}}}
+function compactPartWholeY(obj,b){
+ const top=b.position!=='bottom';
+ const barTop=(obj.y+obj.h*(90/300))*cssH;
+ const barBottom=(obj.y+obj.h*(210/300))*cssH;
+ // Match Comparison visually: spacing is measured in real screen pixels,
+ // not SVG/model units, so resizing the bar never makes the bracket hug it.
+ return top?barTop-14:barBottom+14;
+}
+function drawAll(){hot=[];for(const obj of strokes){if(!obj||obj.smartType!=='barModel')continue;if(obj.smartBarType==='comparison')continue;detect(obj);if(!Array.isArray(obj.userDrawnBrackets)||!obj.userDrawnBrackets.length)continue;hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.visible)continue;const x1=(obj.x+obj.w*b.x1)*cssW,x2=(obj.x+obj.w*b.x2)*cssW,y=(obj.smartBarType==='partwhole'&&b.__partWholeCompact)?compactPartWholeY(obj,b):(obj.y+obj.h*b.y)*cssH;curly(x1,x2,y,b.position,b.label||'',obj,b)}}}
 const priorRedraw=redraw;redraw=function(){priorRedraw();drawAll()};
 function hit(clientX,clientY){const r=canvas.getBoundingClientRect(),x=(clientX-r.left)*(cssW/Math.max(1,r.width)),y=(clientY-r.top)*(cssH/Math.max(1,r.height));for(let i=hot.length-1;i>=0;i--){const h=hot[i];if(x>=h.x1&&x<=h.x2&&y>=h.y1&&y<=h.y2)return h}return null}
 function button(text,cls){const b=document.createElement('button');b.type='button';b.className='btn '+(cls||'');b.textContent=text;b.style.cssText='min-height:32px;padding:5px 8px;font-size:11px;flex:1';return b}
