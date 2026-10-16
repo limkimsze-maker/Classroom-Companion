@@ -27,28 +27,24 @@ let ov=document.getElementById('comparisonQuickPickOverlay');
 if(!ov){ov=document.createElement('canvas');ov.id='comparisonQuickPickOverlay';ov.setAttribute('aria-hidden','true');ov.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:940;pointer-events:none;';wrap.appendChild(ov)}
 const g=ov.getContext('2d');
 function sizeOv(){const r=wrap.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(ov.width!==w)ov.width=w;if(ov.height!==h)ov.height=h;ov.style.width=r.width+'px';ov.style.height=r.height+'px';g.setTransform(d,0,0,d,0,0);return{W:r.width,H:r.height}}
-function drawPick(){const {W,H}=sizeOv();g.clearRect(0,0,W,H);const o=active();if(!o||!mode)return;for(const row of picked){const q=rowGeom(o,row,W,H);g.save();g.strokeStyle='#0f766e';g.lineWidth=5;g.setLineDash([9,6]);g.strokeRect(q.x0-8,q.y1-8,(q.x1-q.x0)+16,(q.y2-q.y1)+16);g.restore()}}
+function drawPick(){const {W,H}=sizeOv();g.clearRect(0,0,W,H);const o=active();if(!o||mode!=='split')return;for(const row of picked){const q=rowGeom(o,row,W,H);g.save();g.strokeStyle='#0f766e';g.lineWidth=5;g.setLineDash([9,6]);g.strokeRect(q.x0-8,q.y1-8,(q.x1-q.x0)+16,(q.y2-q.y1)+16);g.restore()}}
 
 function mk(text,title){const b=document.createElement('button');b.type='button';b.className='btn soft';b.style.display='none';b.textContent=text;b.title=title;tools.appendChild(b);return b}
-const diffBtn=mk('↔ Difference','Tap, then tap the two bars you want to compare');
 const totalBtn=mk('∑ Total','Show or hide one total bracket for all 3 bars');
 const splitBtn=mk('▦ Split','Choose 2, 3 or 4 equal parts, then tap one bar');
 const autoBtn=mk('✨ Auto','Let Smart Math choose a clean 3-bar layout');
 for(const id of ['threeBarPatternBtn','threeBarRelationshipBtn']){const b=document.getElementById(id);if(b)b.style.setProperty('display','none','important')}
 function hideLegacy(){for(const id of ['threeBarPatternBtn','threeBarRelationshipBtn']){const b=document.getElementById(id);if(b)b.style.setProperty('display','none','important')}}
 function hasTotal(o){return relations(o).some(r=>r?.type==='total'&&Array.isArray(r.rows)&&key(r.rows)==='0-1-2')}
-function refresh(){hideLegacy();const o=active(),show=!!o;for(const b of [diffBtn,totalBtn,splitBtn,autoBtn])b.style.display=show?'inline-flex':'none';if(!show){mode='';picked=[];closePopup();drawPick();return}totalBtn.textContent=hasTotal(o)?'✓ Total':'∑ Total';diffBtn.classList.toggle('active',mode==='difference');splitBtn.classList.toggle('active',mode==='split');}
+function refresh(){hideLegacy();const o=active(),show=!!o;for(const b of [totalBtn,splitBtn,autoBtn])b.style.display=show?'inline-flex':'none';if(!show){mode='';picked=[];closePopup();drawPick();return}totalBtn.textContent=hasTotal(o)?'✓ Total':'∑ Total';splitBtn.classList.toggle('active',mode==='split');}
 function finishMode(){mode='';picked=[];closePopup();refresh();drawPick()}
 
 function toggleTotal(){const o=active();if(!o)return;const before=clone(strokes),rels=relations(o),idx=rels.findIndex(r=>r?.type==='total'&&Array.isArray(r.rows)&&key(r.rows)==='0-1-2');setCustom(o);if(idx>=0){rels.splice(idx,1);notify('Total bracket hidden')}else{rels.push({type:'total',rows:[0,1,2],label:''});notify('Total bracket shown')}history(o,before);finishMode();sync();refresh()}
-function beginDifference(){closePopup();mode=mode==='difference'?'':'difference';picked=[];refresh();drawPick();if(mode)notify('Tap any 2 bars')}
 function closePopup(){if(popup){popup.remove();popup=null}}
 function openSplitPopup(){closePopup();mode='split';picked=[];popup=document.createElement('div');popup.style.cssText='position:fixed;z-index:10450;display:flex;align-items:center;gap:6px;padding:8px;background:#fff;border:1px solid #cfd9de;border-radius:12px;box-shadow:0 10px 26px rgba(23,50,77,.22)';const r=splitBtn.getBoundingClientRect();popup.style.left=Math.max(8,Math.min(innerWidth-235,r.left))+'px';popup.style.top=Math.min(innerHeight-70,r.bottom+6)+'px';const lab=document.createElement('span');lab.textContent='Split into';lab.style.cssText='font:900 12px Inter,system-ui,sans-serif;color:#17324d';popup.appendChild(lab);for(const n of [2,3,4]){const b=document.createElement('button');b.type='button';b.className='btn soft';b.textContent=String(n);b.style.cssText='min-width:42px';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();splitParts=n;closePopup();refresh();notify(`Tap the bar to split into ${n}`)},true);popup.appendChild(b)}document.body.appendChild(popup);refresh();drawPick()}
 function setAuto(){const o=active();if(!o)return;const before=clone(strokes);o.intuitiveRelations=[];o.threeBarPattern='auto';o.threeBarPatternVersion=4;history(o,before);finishMode();sync();notify('Auto layout restored')}
-function addDifference(o,a,b){if(a===b)return;const before=clone(strokes);setCustom(o);const rels=relations(o),k=key([a,b]);if(!rels.some(r=>r?.type==='difference'&&Array.isArray(r.rows)&&key(r.rows)===k))rels.push({type:'difference',rows:[a,b],label:''});history(o,before);finishMode();sync();notify('Difference added')}
 function splitRow(o,row){const before=clone(strokes);setCustom(o);o.intuitiveRelations=relations(o).filter(r=>!(r?.type==='equalParts'&&r.row===row));o.intuitiveRelations.push({type:'equalParts',row,parts:splitParts});history(o,before);finishMode();sync();notify(`Bar split into ${splitParts} equal parts`)}
 
-diffBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();beginDifference()},true);
 totalBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleTotal()},true);
 splitBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openSplitPopup()},true);
 autoBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setAuto()},true);
@@ -57,13 +53,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')finishMode()},true);
 
 canvas.addEventListener('pointerdown',e=>{
  const o=modelAt(e.clientX,e.clientY);if(o){currentId=o.smartId;refresh()}
- if(!mode||!o)return;
+ if(mode!=='split'||!o)return;
  const row=hitRow(o,e.clientX,e.clientY);if(row<0)return;
  e.preventDefault();e.stopImmediatePropagation();
- if(mode==='difference'){
-  if(!picked.includes(row))picked.push(row);else picked=picked.filter(x=>x!==row);
-  drawPick();if(picked.length===2)addDifference(o,picked[0],picked[1]);else notify('Tap one more bar');
- }else if(mode==='split'){splitRow(o,row)}
+ splitRow(o,row)
 },true);
 
 const previous=redraw;redraw=function(){previous();refresh();requestAnimationFrame(drawPick)};
