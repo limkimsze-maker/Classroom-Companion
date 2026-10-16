@@ -135,3 +135,12 @@ window.addEventListener('blur',()=>{if(gesture)finishResize(null);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(gesture)finishResize(null);armed=null;}},true);
 document.addEventListener('click',e=>{if(e.target?.closest?.('button')&&!e.target.closest('#selectBtn'))armed=null;},false);
 })();
+
+// Load the beta-only 3-bar recognition correction after all comparison-model handlers.
+(function(){
+ if(document.querySelector('script[data-smart-3bar-count-fix]'))return;
+ const s=document.createElement('script');
+ s.dataset.smart3barCountFix='1';
+ s.src='smart-math-comparison-3bar-count-fix.js?v=20261016-3barfix1';
+ document.head.appendChild(s);
+})();
