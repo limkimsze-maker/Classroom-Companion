@@ -35,9 +35,12 @@ and division. Every prediction remains subject to user review.
 
 ## Formatting and integration
 
-The confirmation preview and final object call WhiteboardEquationFormatter.create,
-the same parser and SVG renderer used by Equation. Font, decimal alignment,
-currency preservation and vertical/long-division layouts therefore stay in sync.
+The confirmation preview and final object call WhiteboardEquationFormatter.createInline,
+using the Equation parser and font. Beautify always keeps the writing horizontal
+in the original selected ink area, preserving its position and dimensions instead
+of rearranging it into vertical or long-division working. Currency, decimal places
+and a trailing equals sign are retained. The transparent SVG fits the visible
+glyph bounds to the writing area without an extra margin or white background.
 The first release uses `window.WhiteboardMarqueeSelection` from the Beta marquee
 script to read selected strokes. Without a selection, Beautify offers its own
 temporary selection rectangle. The frozen bar-model scripts and production

@@ -58,22 +58,21 @@ async function review(group){
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=180;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised equation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
  const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Reading handwriting on this device…';
- const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Preview using the Equation font and layout';preview.hidden=true;
+ const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Horizontal preview using the Equation font in your original writing area';preview.hidden=true;
  const actions=document.createElement('div');actions.className='handwriting-actions';
  const apply=document.createElement('button');apply.type='button';apply.className='btn soft';apply.textContent='✓ Apply beautify';apply.disabled=true;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=closeReview;
  function updatePreview(){
-  const obj=window.WhiteboardEquationFormatter?.create(input.value);apply.disabled=!obj;preview.hidden=!obj;if(obj)preview.src=obj.src;
+  const obj=window.WhiteboardEquationFormatter?.createInline(input.value,groupBounds(group));apply.disabled=!obj;preview.hidden=!obj;if(obj)preview.src=obj.src;
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
   status.textContent=obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Correct the numbers, operators or brackets to continue.':'Enter or correct the reading to continue.';
  }
  input.addEventListener('input',updatePreview);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
  apply.onclick=()=>{
-  const obj=window.WhiteboardEquationFormatter?.create(input.value);if(!obj){updatePreview();return}
+  const obj=window.WhiteboardEquationFormatter?.createInline(input.value,groupBounds(group));if(!obj){updatePreview();return}
   if(!group.every(s=>strokes.includes(s))||JSON.stringify(group)!==original){status.textContent='This handwriting changed. Cancel and select it again.';apply.disabled=true;return}
-  const before=clone(strokes),b=groupBounds(group),first=Math.min(...group.map(s=>strokes.indexOf(s))),set=new Set(group),targetH=obj.equationLayout==='inline'?clamp(b.h*cssH*2,64,150):clamp(b.h*cssH*2.5,160,cssH*.5);
-  const scale=Math.max(.01,Math.min(targetH/Math.max(1,obj.h*cssH),(1-b.x)/obj.w,(1-b.y)/obj.h));
-  obj.w*=scale;obj.h*=scale;obj.x=clamp(b.x,0,1-obj.w);obj.y=clamp(b.y,0,1-obj.h);obj.smartOriginal=clone(group);obj.handwritingBeautified=true;
+  const before=clone(strokes),first=Math.min(...group.map(s=>strokes.indexOf(s))),set=new Set(group);
+  obj.smartOriginal=clone(group);obj.handwritingBeautified=true;
   strokes=strokes.filter(s=>!set.has(s));strokes.splice(first,0,obj);window.WhiteboardMarqueeSelection?.clear();tool='select';closeReview();redraw();
   history.push({before,after:JSON.stringify(strokes)});if(history.length>30)history.shift();syncUi();sayLocal('Handwriting beautified · Undo restores the original writing');
  };

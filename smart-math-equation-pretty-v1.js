@@ -139,12 +139,28 @@ function inlineSvg(expression){
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="white"/><text x="24" y="78" font-family="${font()}" font-size="52" font-weight="700" fill="#17324d" textLength="${W-48}" lengthAdjust="spacingAndGlyphs">${esc(expression)}</text></svg>`;
  return{svg,W,H};
 }
-function equationObject(parsed){
+function positionedInlineSvg(expression,placement){
+ const W=Math.max(8,placement.w*Math.max(1,cssW)),H=Math.max(8,placement.h*Math.max(1,cssH));
+ let metrics={width:expression.length*60,actualBoundingBoxAscent:78,actualBoundingBoxDescent:8,actualBoundingBoxLeft:0,actualBoundingBoxRight:expression.length*60};
+ if(typeof ctx!=='undefined'&&typeof ctx.measureText==='function'){
+  ctx.save();try{ctx.font=`700 100px ${font()}`;metrics=ctx.measureText(expression)}finally{ctx.restore()}
+ }
+ const advance=Math.max(1,Number(metrics.width)||expression.length*60),ascent=Math.max(1,Number(metrics.actualBoundingBoxAscent)||78),descent=Math.max(0,Number.isFinite(metrics.actualBoundingBoxDescent)?metrics.actualBoundingBoxDescent:8);
+ const left=Number.isFinite(metrics.actualBoundingBoxLeft)?metrics.actualBoundingBoxLeft:0,right=Number.isFinite(metrics.actualBoundingBoxRight)?metrics.actualBoundingBoxRight:advance;
+ const sx=W/Math.max(1,left+right),sy=H/(ascent+descent),size=100*sy;
+ // Fit the visible glyph bounds directly over the selected ink, without padding
+ // or an opaque background that could move or cover nearby teaching material.
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><text x="${left*sx}" y="${ascent*sy}" font-family="${font()}" font-size="${size}" font-weight="700" fill="#17324d" textLength="${advance*sx}" lengthAdjust="spacingAndGlyphs">${esc(expression)}</text></svg>`;
+ return{svg,W,H};
+}
+function equationObject(parsed,options={}){
  const {a,op,b,result,simple,expression}=parsed,isDivision=simple&&op==='÷'&&!parsed.right;
- const made=isDivision?divisionSvg(a,b):simple&&op!=='÷'?verticalSvg(a,op,b,result):inlineSvg(expression),svg=made.svg;
+ const inline=options.layout==='inline',placement=inline&&options.placement;
+ const made=inline?(placement?positionedInlineSvg(expression,placement):inlineSvg(expression)):isDivision?divisionSvg(a,b):simple&&op!=='÷'?verticalSvg(a,op,b,result):inlineSvg(expression),svg=made.svg;
  const pxW=made.W,pxH=made.H;
  const W=Math.max(1,cssW),H=Math.max(1,cssH),scale=Math.min(1,W*.78/pxW,H*.55/pxH),w=pxW*scale/W,h=pxH*scale/H;
- const obj={type:'image',src:svgData(svg),x:clamp(isDivision?.24:.31,0,1-w),y:clamp(isDivision?.18:.24,0,1-h),w,h,smartGenerated:true,smartType:'equation',smartId:uid(),smartOriginal:[],equationExpression:expression,equationLayout:isDivision?'long-division':simple&&op!=='÷'?'vertical':'inline'};
+ const obj={type:'image',src:svgData(svg),x:clamp(isDivision?.24:.31,0,1-w),y:clamp(isDivision?.18:.24,0,1-h),w,h,smartGenerated:true,smartType:'equation',smartId:uid(),smartOriginal:[],equationExpression:expression,equationLayout:inline?'inline':isDivision?'long-division':simple&&op!=='÷'?'vertical':'inline'};
+ if(placement){obj.x=placement.x;obj.y=placement.y;obj.w=made.W/W;obj.h=made.H/H}
  return obj;
 }
 function make(parsed){
@@ -154,6 +170,7 @@ function make(parsed){
 // The handwriting action uses the same parser, SVG renderer and fonts as Equation.
 window.WhiteboardEquationFormatter=Object.freeze({
  create:text=>{const parsed=parseEquation(text);return parsed?equationObject(parsed):null},
+ createInline:(text,placement)=>{const parsed=parseEquation(text);return parsed?equationObject(parsed,{layout:'inline',placement}):null},
  font
 });
 
