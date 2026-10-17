@@ -114,3 +114,47 @@ function onWheel(e){
 }
 window.addEventListener('wheel',onWheel,{passive:false,capture:true});
 })();
+
+/* Page dial: lock input type and direction for an entire wheel/trackpad flick.
+   Trackpad finger DOWN must always move the dial down and increase page number.
+   Trackpad finger UP must always move the dial up and decrease page number.
+   A physical mouse wheel keeps wheel-down = higher page number. */
+(function(){
+'use strict';
+let inputMode=null,lastEvent=0,dialY=null,finishTimer=0;
+const GESTURE_GAP=240,COMMIT_DELAY=160;
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function current(box,max){return clamp(+box.value||1,1,max)}
+function yForPage(stage,p,max){const h=Math.max(1,stage.clientHeight-20);return 10+(max<=1?0:(p-1)/(max-1))*h}
+function pageForY(stage,y,max){const h=Math.max(1,stage.clientHeight-20),q=clamp((y-10)/h,0,1);return clamp(Math.round(1+q*(max-1)),1,max)}
+function showPreview(stage,p,max,y){
+ const dial=stage.closest('#documentPageDial');if(!dial)return;
+ const head=dial.querySelector('.dial-head strong'),total=dial.querySelector('.dial-head span'),thumb=dial.querySelector('.dial-thumb'),bubble=dial.querySelector('.dial-bubble'),progress=dial.querySelector('.dial-progress');
+ if(head)head.textContent=String(p);if(total)total.textContent=`/ ${max}`;if(thumb)thumb.style.top=`${y}px`;if(bubble){bubble.textContent=`Page ${p}`;bubble.style.top=`${y}px`}if(progress)progress.style.height=`${Math.max(0,y-10)}px`;
+ dial.classList.add('dragging');stage.setAttribute('aria-valuenow',String(p));stage.setAttribute('aria-valuetext',`Page ${p} of ${max}`);
+}
+function classify(e){
+ if(e.deltaMode!==0)return 'mouse';
+ const raw=Math.abs(e.deltaY||0),wd=Math.abs(e.wheelDeltaY||0),frac=Math.abs((e.deltaY||0)-Math.round(e.deltaY||0))>.001,x=Math.abs(e.deltaX||0);
+ const discreteMouse=(wd===120||wd===240||wd===360)&&raw>=70&&x<.01&&!frac;
+ return discreteMouse?'mouse':'trackpad';
+}
+function onDialWheel(e){
+ const stage=e.target?.closest?.('#documentPageDial .dial-stage');if(!stage)return;
+ const bar=document.getElementById('documentQuickBar'),box=bar?.querySelector('input[type=number]');if(!box)return;
+ const max=Math.max(1,+box.max||1),now=performance.now(),newGesture=!inputMode||now-lastEvent>GESTURE_GAP;
+ e.preventDefault();e.stopImmediatePropagation();
+ if(newGesture){inputMode=classify(e);dialY=yForPage(stage,current(box,max),max)}
+ lastEvent=now;
+ let dy=e.deltaY||0;if(e.deltaMode===1)dy*=18;else if(e.deltaMode===2)dy*=stage.clientHeight;
+ if(inputMode==='trackpad')dy=-dy;
+ dy=clamp(dy,-70,70);dialY=clamp((dialY??yForPage(stage,current(box,max),max))+dy,10,Math.max(10,stage.clientHeight-10));
+ const p=pageForY(stage,dialY,max);showPreview(stage,p,max,dialY);
+ clearTimeout(finishTimer);finishTimer=setTimeout(()=>{
+  const dial=stage.closest('#documentPageDial');dial?.classList.remove('dragging');
+  const target=pageForY(stage,dialY,max);box.value=String(target);box.dispatchEvent(new Event('change',{bubbles:true}));
+  inputMode=null;dialY=null;
+ },COMMIT_DELAY);
+}
+window.addEventListener('wheel',onDialWheel,{passive:false,capture:true});
+})();
