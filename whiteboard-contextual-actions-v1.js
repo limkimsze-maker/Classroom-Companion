@@ -108,7 +108,7 @@ function onWheel(e){
  clearTimeout(resetTimer);
  resetTimer=setTimeout(()=>{accX=0;accY=0},WINDOW_MS);
  if(Math.abs(accY)>=THRESHOLD){
-  const dir=accY>0?-1:1;accX=0;accY=0;
+  const dir=accY>0?1:-1;accX=0;accY=0;
   if(go(box,dir))cooldownUntil=t+COOLDOWN_MS;
  }
 }
