@@ -90,13 +90,19 @@ function segment(strokes,W,H){
   }}
   const rowTokens=[];
   for(const group of groups){
+   // Keep the dot with a narrow stem for separately written i/j, rather than making another token.
+   const stem=bounds(group),accent=dots.find(s=>{const d=bounds([s]);return stem.h>height*.4&&stem.w<height*.55&&Math.abs(d.cx-stem.cx)<Math.max(4,height*.2)&&d.cy<stem.y-height*.06&&d.cy>stem.y-height*.45});
+   if(accent){group.push(accent);dots=dots.filter(s=>s!==accent)}
    const b=bounds(group),op=symbol(group,height);
    if(op==='−'){
     const candidates=dots.filter(s=>{const d=bounds([s]);return Math.abs(d.cx-b.cx)<Math.max(5,b.w*.3)&&Math.abs(d.cy-b.cy)<height*.55}),above=candidates.find(s=>bounds([s]).cy<b.cy-height*.10),below=candidates.find(s=>bounds([s]).cy>b.cy+height*.10);
     if(above&&below){dots=dots.filter(s=>s!==above&&s!==below);rowTokens.push({char:'÷',score:1,x:b.x,parts:[...group,above,below]});continue}
    }
+   const pixels=rasterDigit(group),personal=window.WhiteboardHandwritingLearning?.match(pixels);
+   if(personal){rowTokens.push({...personal,x:b.x,parts:group});continue}
    if(op){rowTokens.push({char:op,score:1,x:b.x,parts:group});continue}
-   const choices=predictDigit(rasterDigit(group));rowTokens.push({...choices[0],choices:choices.slice(0,3),x:b.x,parts:group});
+   const choices=predictDigit(pixels);
+   rowTokens.push({...choices[0],choices:choices.slice(0,3),x:b.x,parts:group});
   }
   for(const dot of dots){const b=bounds([dot]);rowTokens.push({char:b.cy>=row.cy+height*.15?'.':'×',score:.85,x:b.x,parts:[dot]})}
   rowTokens.sort((a,b)=>a.x-b.x);tokens.push(...rowTokens);

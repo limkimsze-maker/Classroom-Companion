@@ -45,3 +45,32 @@ The first release uses `window.WhiteboardMarqueeSelection` from the Beta marquee
 script to read selected strokes. Without a selection, Beautify offers its own
 temporary selection rectangle. The frozen bar-model scripts and production
 whiteboard are unchanged.
+
+## Learning from confirmed corrections
+
+Apply beautify quietly saves normalized examples of confirmed digits and Latin
+letters A–Z / a–z on this browser and device. Letters have no bundled general
+alphabet model: correct a new letter's first reading and Apply to teach its shape.
+Subsequent recognition uses sufficiently similar personal examples alongside the
+unchanged digit model. Uppercase/lowercase and lookalikes such as O/0, l/1 and x/×
+still need review. This is for separately written characters and math expressions,
+not cursive word recognition. Dots above narrow i/j stems are grouped with them.
+
+Only confirmed Apply actions teach the system; opening a review, typing, Cancel,
+invalid text and stale selections do not. Learning requires a one-to-one alignment
+of character groups and corrected characters (an optional final = is ignored).
+Insertions/deletions and changed separator symbols skip learning rather than
+assigning uncertain labels. Matching uses centered, downsampled character rasters;
+distant shapes and closely conflicting labels fall back to normal recognition.
+
+The versioned localStorage record holds only character labels and 14×14 quantized
+shape features, at most 360 examples and 18 per character. No original strokes,
+full equations or board images are saved for learning or uploaded. Refreshing the
+same browser retains examples; clearing site data removes them. Blocked/full storage
+falls back to this session's memory, with an accurate confirmation message. Undo
+restores the ink and removes that Apply's new examples, preserving prior examples
+and changes from another tab. The large bundled model is never retrained.
+
+The review has a compact Colour dropdown, initially using the selected ink colour.
+The preview and applied transparent SVG use the chosen colour while retaining the
+Equation font and original writing bounds. Colour changes do not affect learning.

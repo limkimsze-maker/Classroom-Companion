@@ -22,11 +22,14 @@ const style=document.createElement('style');style.textContent=`
 .handwriting-review .handwriting-clean-preview{height:150px;background:white}
 .handwriting-review .handwriting-actions{display:flex;gap:8px;margin-top:14px}
 .handwriting-review .handwriting-actions button:first-child{flex:1}
+.handwriting-review .handwriting-appearance{display:flex;align-items:center;gap:8px;margin:7px 0}
+.handwriting-review .handwriting-appearance label{margin:0}
+.handwriting-review .handwriting-appearance select{font:13px Arial,sans-serif;max-width:150px;padding:5px 8px;border:1px solid #cfd9de;border-radius:7px;background:white;color:#17324d}
 .handwriting-review [role=status]{min-height:20px;color:#667085}
 .handwriting-review .handwriting-error{color:#b42318}
 .handwriting-review [hidden]{display:none!important}
 `;document.head.appendChild(style);
-const btn=document.createElement('button');btn.id='handwritingBeautifyBtn';btn.type='button';btn.className='btn soft';btn.textContent='✨ Beautify';btn.title='Recognise selected handwritten numbers and equations';tools.insertBefore(btn,document.getElementById('undoBtn'));
+const btn=document.createElement('button');btn.id='handwritingBeautifyBtn';btn.type='button';btn.className='btn soft';btn.textContent='✨ Beautify';btn.title='Recognise handwritten numbers, learned letters and equations';tools.insertBefore(btn,document.getElementById('undoBtn'));
 const eligible=s=>s&&!s.erase&&!s.locked&&!s.background&&!s.smartGenerated&&!s.shape&&Array.isArray(s.points)&&s.points.length&&s.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
 function sayLocal(text){if(typeof say==='function')say(text)}
 function groupBounds(group){const pts=group.flatMap(s=>s.points),xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x=Math.min(...xs),y=Math.min(...ys);return{x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y}}
@@ -44,44 +47,56 @@ function svgInk(group){
 function availableUndo(){return history.length&&history[history.length-1].after===JSON.stringify(strokes)}
 function undoBeautify(e){
  if(!availableUndo())return false;
- e?.preventDefault?.();e?.stopImmediatePropagation?.();const last=history.pop();strokes=clone(last.before);window.WhiteboardMarqueeSelection?.clear();redraw();syncUi();sayLocal('Original handwriting restored');return true;
+ e?.preventDefault?.();e?.stopImmediatePropagation?.();const last=history.pop();strokes=clone(last.before);
+ try{window.WhiteboardHandwritingLearning?.undo(last.learning)}catch{}
+ window.WhiteboardMarqueeSelection?.clear();redraw();syncUi();sayLocal('Original handwriting restored');return true;
 }
 async function review(group){
  group=group.filter(s=>strokes.includes(s)&&eligible(s));if(!group.length){beginSelection();return}
  if(group.length>180||group.reduce((n,s)=>n+s.points.length,0)>16000){beginSelection();sayLocal('Select a shorter number or equation and try again.');return}
- endSelection();closeReview();const id=session,original=JSON.stringify(group);
+ endSelection();closeReview();const id=session,original=JSON.stringify(group);let recognition=null;
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Digits, decimals, $, + − × ÷ =. Check or edit the reading before applying.';
+ const help=document.createElement('p');help.textContent='Numbers, decimals, $, + − × ÷ =, and learned letters A–Z / a–z. For a new letter, correct its reading once and apply. Confirmed characters help this browser learn your handwriting.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=180;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised equation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
+ const appearance=document.createElement('div');appearance.className='handwriting-appearance';
+ const colourLabel=document.createElement('label');colourLabel.htmlFor='handwritingColour';colourLabel.textContent='Colour';
+ const colourSelect=document.createElement('select');colourSelect.id='handwritingColour';colourSelect.setAttribute('aria-label','Beautified writing colour');
+ const palette=[['#17324d','Navy'],['#000000','Black'],['#2563eb','Blue'],['#dc2626','Red'],['#15803d','Green'],['#7c3aed','Purple']];
+ const initialColour=(group.find(s=>/^#[0-9a-f]{6}$/i.test(s.colour||''))?.colour||'#17324d').toLowerCase();
+ if(!palette.some(([hex])=>hex===initialColour))palette.push([initialColour,'Original ink']);
+ for(const [hex,name]of palette){const option=document.createElement('option');option.value=hex;option.textContent=name;colourSelect.appendChild(option)}colourSelect.value=initialColour;appearance.append(colourLabel,colourSelect);
  const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Reading handwriting on this device…';
  const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Horizontal preview using the Equation font in your original writing area';preview.hidden=true;
  const actions=document.createElement('div');actions.className='handwriting-actions';
  const apply=document.createElement('button');apply.type='button';apply.className='btn soft';apply.textContent='✓ Apply beautify';apply.disabled=true;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=closeReview;
  function updatePreview(){
-  const obj=window.WhiteboardEquationFormatter?.createInline(input.value,groupBounds(group));apply.disabled=!obj;preview.hidden=!obj;if(obj)preview.src=obj.src;
+  const obj=window.WhiteboardEquationFormatter?.createInline(input.value,groupBounds(group),colourSelect.value);apply.disabled=!obj;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
   status.textContent=obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Correct the numbers, operators or brackets to continue.':'Enter or correct the reading to continue.';
  }
  input.addEventListener('input',updatePreview);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
+ colourSelect.addEventListener('change',updatePreview);
  apply.onclick=()=>{
-  const obj=window.WhiteboardEquationFormatter?.createInline(input.value,groupBounds(group));if(!obj){updatePreview();return}
+  const obj=window.WhiteboardEquationFormatter?.createInline(input.value,groupBounds(group),colourSelect.value);if(!obj){updatePreview();return}
   if(!group.every(s=>strokes.includes(s))||JSON.stringify(group)!==original){status.textContent='This handwriting changed. Cancel and select it again.';apply.disabled=true;return}
   const before=clone(strokes),first=Math.min(...group.map(s=>strokes.indexOf(s))),set=new Set(group);
   obj.smartOriginal=clone(group);obj.handwritingBeautified=true;
   strokes=strokes.filter(s=>!set.has(s));strokes.splice(first,0,obj);window.WhiteboardMarqueeSelection?.clear();tool='select';closeReview();redraw();
-  history.push({before,after:JSON.stringify(strokes)});if(history.length>30)history.shift();syncUi();sayLocal('Handwriting beautified · Undo restores the original writing');
+  let learning=null;try{if(recognition)learning=window.WhiteboardHandwritingLearning?.confirm(recognition,input.value,window.WhiteboardHandwritingMath.rasterDigit)}catch{}
+  history.push({before,after:JSON.stringify(strokes),learning});if(history.length>30)history.shift();syncUi();
+  sayLocal(learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
- actions.append(apply,cancel);panel.append(title,help,ink,label,input,status,preview,actions);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
+ actions.append(apply,cancel);panel.append(title,help,ink,label,input,appearance,status,preview,actions);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
   if(!window.WhiteboardHandwritingMath)throw Error('The handwriting reader is not ready. Refresh the page and try again.');
   const result=await window.WhiteboardHandwritingMath.recognize(group,cssW,cssH);
-  if(session!==id||dialog!==backdrop)return;
+  if(session!==id||dialog!==backdrop)return;recognition=result;
   // Do not overwrite a correction entered while recognition was running.
   if(!input.value)input.value=result.text;updatePreview();input.focus();
   if(result.uncertain.length)status.textContent='Some characters were uncertain. Check and correct the reading before applying.';
