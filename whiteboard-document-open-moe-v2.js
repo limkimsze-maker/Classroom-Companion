@@ -1,4 +1,4 @@
-/* MOE SAFE BUILD: all document engines are same-origin, pinned, and no document bytes are uploaded. */
+/* MOE SAFE BUILD: same-origin pinned document engines; no document upload endpoint. */
 (function(){
 'use strict';
 if(typeof wrap==='undefined'||typeof canvas==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
