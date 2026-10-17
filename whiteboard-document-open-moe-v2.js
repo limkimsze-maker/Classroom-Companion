@@ -16,7 +16,8 @@ let pageStore=new Map(),preDocumentStrokes=null;
 let pdfDoc=null,pptViewer=null,pptModule=null,pptMatches=[],pptMatchIndex=-1,pptQuery='';
 let workbook=null,sheetNames=[];
 let objectUrl=null,genericEl=null,interactionMode=false;
-let pdfTextCache=new Map(),pdfQuery='',pdfLastPage=0;
+let pdfTextCache=new Map(),pdfQuery='',pdfMatches=[],pdfMatchIndex=-1,pdfHasText=true;
+let searchRevision=0,documentRevision=0,sheetQuery='',sheetMatches=[],sheetMatchIndex=-1,genericSearchText='';
 let wordMatches=[],wordMatchIndex=-1,wordQuery='';
 
 const clone=v=>{try{return structuredClone(v)}catch{return JSON.parse(JSON.stringify(v))}};
@@ -34,7 +35,20 @@ function pageKey(p=currentPage){return `${docKind||'doc'}:${p}`}
 function savePage(){if(active)pageStore.set(pageKey(),clone(strokes))}
 function loadPageAnnotations(){try{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))}catch{}strokes=clone(pageStore.get(pageKey())||[]);current=null;drawing=false;redraw();syncUi()}
 function restoreBlankBoard(){if(preDocumentStrokes!==null){strokes=clone(preDocumentStrokes);preDocumentStrokes=null;current=null;drawing=false;redraw();syncUi()}}
-function resetSearch(){pdfTextCache.clear();pdfQuery='';pdfLastPage=0;wordMatches=[];wordMatchIndex=-1;wordQuery='';pptMatches=[];pptMatchIndex=-1;pptQuery='';if(searchStatus)searchStatus.textContent=''}
+function resetSearch(clearText=false){
+ searchRevision++;if(clearText){documentRevision++;pdfTextCache.clear();genericSearchText=''}
+ pdfQuery='';pdfMatches=[];pdfMatchIndex=-1;pdfHasText=true;wordMatches=[];wordMatchIndex=-1;wordQuery='';pptMatches=[];pptMatchIndex=-1;pptQuery='';sheetQuery='';sheetMatches=[];sheetMatchIndex=-1;
+ try{pptViewer?.clearSearchHighlights()}catch{}
+ if(searchStatus)searchStatus.textContent='';
+}
+const searchCurrent=token=>active&&token===searchRevision;
+const normalizedText=text=>String(text||'').replace(/\s+/g,' ').trim().toLowerCase();
+function matchOffsets(text,q){const found=[];let from=0,i;while((i=text.indexOf(q,from))!==-1){found.push(i);from=i+q.length}return found}
+function initialPageMatch(matches,dir,pageOf){
+ if(dir>0){const i=matches.findIndex(m=>pageOf(m)>=currentPage);return i<0?0:i}
+ for(let i=matches.length-1;i>=0;i--)if(pageOf(matches[i])<=currentPage)return i;
+ return matches.length-1;
+}
 
 function ensureLayer(){
  if(layer)return;
@@ -58,14 +72,14 @@ function smallBtn(text,title,fn){const b=document.createElement('button');b.type
 function ensureSearchPanel(){
  if(searchPanel)return;
  searchPanel=document.createElement('div');searchPanel.id='documentSearchPanel';searchPanel.style.display='none';
- searchInput=document.createElement('input');searchInput.type='search';searchInput.placeholder='Find';searchInput.autocomplete='off';searchInput.spellcheck=false;
- searchStatus=document.createElement('span');
+ searchInput=document.createElement('input');searchInput.type='search';searchInput.placeholder='Find in document';searchInput.setAttribute('aria-label','Find in document');searchInput.autocomplete='off';searchInput.spellcheck=false;
+ searchStatus=document.createElement('span');searchStatus.id='documentSearchStatus';searchStatus.setAttribute('role','status');searchStatus.setAttribute('aria-live','polite');
  const up=smallBtn('↑','Previous match',()=>runSearch(-1)),down=smallBtn('↓','Next match',()=>runSearch(1)),close=smallBtn('×','Close search',hideSearch);
  searchInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();runSearch(e.shiftKey?-1:1)}else if(e.key==='Escape'){e.preventDefault();hideSearch()}});
- searchInput.addEventListener('input',resetSearch);searchPanel.append(searchInput,searchStatus,up,down,close);document.body.appendChild(searchPanel);
+ searchInput.addEventListener('input',()=>resetSearch());searchPanel.append(searchInput,searchStatus,up,down,close);document.body.appendChild(searchPanel);
 }
 function showSearch(){if(!active)return;ensureSearchPanel();searchPanel.style.display='flex';requestAnimationFrame(()=>{searchInput.focus();searchInput.select()})}
-function hideSearch(){if(searchPanel)searchPanel.style.display='none';if(searchInput)searchInput.blur()}
+function hideSearch(){searchRevision++;if(searchStatus?.textContent.startsWith('Searching'))searchStatus.textContent='';if(searchPanel)searchPanel.style.display='none';if(searchInput)searchInput.blur()}
 function toggleSearch(){if(searchPanel?.style.display==='flex')hideSearch();else showSearch()}
 
 function ensureToolbar(){
@@ -89,7 +103,7 @@ function ensureFileInput(){if(fileInput)return;fileInput=document.createElement(
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=interactionMode?'none':'auto';if(active)toast(interactionMode?'Interact mode — tap the document':'Annotation mode')}
 function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);active=true;pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');redraw();syncUi()}
 function destroyPpt(){if(pptViewer){try{pptViewer.destroy()}catch{}pptViewer=null}if(pptViewport)pptViewport.innerHTML=''}
-function exitMode(){active=false;renderToken++;hideSearch();resetSearch();interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
+function exitMode(){active=false;renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
 function closeDocument(){if(!active)return;savePage();exitMode()}
 function updateControls(){if(!toolbar)return;pageInput.value=String(currentPage);pageInput.max=String(Math.max(1,totalPages));pageTotal.textContent=`/ ${Math.max(1,totalPages)}`;zoomLabel.textContent=`${Math.round(zoom*100)}%`;prevBtn.disabled=currentPage<=1;nextBtn.disabled=currentPage>=totalPages;searchBtn.disabled=!['pdf','word','pptx','sheet','text','html'].includes(docKind)}
 
@@ -103,7 +117,7 @@ function isText(file,ext){return (file.type||'').startsWith('text/')||['txt','md
 function isMedia(file,ext){return (file.type||'').startsWith('video/')||(file.type||'').startsWith('audio/')||['mp4','webm','mov','m4v','mp3','wav','ogg','m4a'].includes(ext)}
 async function openFile(file){
  try{
-  resetSearch();hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
+  resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
   if(ext==='pdf'||file.type==='application/pdf')return await openPdf(await file.arrayBuffer());
   if(ext==='docx')return await openWord(await file.arrayBuffer());
   if(['pptx','pptm','ppsx','potx'].includes(ext))return await openPptx(await file.arrayBuffer());
@@ -129,31 +143,71 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function renderSheet(){if(docKind!=='sheet'||!workbook)return;const name=sheetNames[currentPage-1],ws=workbook.Sheets[name];sheetPaper.innerHTML=`<div class="docSheetName">${esc(name)}</div>${window.XLSX.utils.sheet_to_html(ws,{id:'documentSheetTable'})}`;const r=sheetViewport.getBoundingClientRect(),w=Math.max(1,sheetPaper.scrollWidth),base=Math.min(1,(r.width-20)/w);sheetPaper.style.transform=`translateX(-50%) scale(${base*zoom})`;updateControls()}
 
 async function openImage(file){docKind='image';genericViewport.style.display='block';objectUrl=URL.createObjectURL(file);const img=document.createElement('img');img.src=objectUrl;img.alt=docName;img.className='documentGenericImage';genericViewport.replaceChildren(img);genericEl=img;img.onload=layoutGeneric;updateControls();loadPageAnnotations();toast(`${docName} opened`)}
-async function openText(file){docKind='text';genericViewport.style.display='block';const pre=document.createElement('pre');pre.className='documentGenericText';pre.textContent=await file.text();genericViewport.replaceChildren(pre);genericEl=pre;layoutGeneric();updateControls();loadPageAnnotations();toast(`${docName} opened`)}
-async function openHtml(file){docKind='html';genericViewport.style.display='block';const frame=document.createElement('iframe');frame.className='documentGenericFrame';frame.setAttribute('sandbox','');frame.srcdoc=await file.text();genericViewport.replaceChildren(frame);genericEl=frame;layoutGeneric();updateControls();loadPageAnnotations();toast(`${docName} opened`)}
+async function openText(file){docKind='text';genericViewport.style.display='block';const pre=document.createElement('pre');pre.className='documentGenericText';pre.textContent=await file.text();genericSearchText=normalizedText(pre.textContent);genericViewport.replaceChildren(pre);genericEl=pre;layoutGeneric();updateControls();loadPageAnnotations();toast(`${docName} opened`)}
+async function openHtml(file){docKind='html';genericViewport.style.display='block';const frame=document.createElement('iframe');frame.className='documentGenericFrame';frame.setAttribute('sandbox','');const html=await file.text(),parsed=new DOMParser().parseFromString(html,'text/html');parsed.querySelectorAll('script,style,template,noscript').forEach(el=>el.remove());genericSearchText=normalizedText(parsed.body.textContent);frame.srcdoc=html;genericViewport.replaceChildren(frame);genericEl=frame;layoutGeneric();updateControls();loadPageAnnotations();toast(`${docName} opened`)}
 async function openMedia(file){docKind='media';genericViewport.style.display='block';objectUrl=URL.createObjectURL(file);const el=(file.type||'').startsWith('audio/')?document.createElement('audio'):document.createElement('video');el.controls=true;el.src=objectUrl;el.className='documentGenericMedia';genericViewport.replaceChildren(el);genericEl=el;layoutGeneric();updateControls();loadPageAnnotations();toast(`${docName} opened — use ☝ for controls`)}
 async function openNative(file){docKind='native';genericViewport.style.display='block';objectUrl=URL.createObjectURL(file);const frame=document.createElement('iframe');frame.className='documentGenericFrame';frame.src=objectUrl;genericViewport.replaceChildren(frame);genericEl=frame;layoutGeneric();updateControls();loadPageAnnotations();toast('Opened with browser preview. If it stays blank, this format needs its own renderer.')}
 function layoutGeneric(){if(!genericEl)return;if(['IMG','VIDEO','AUDIO'].includes(genericEl.tagName))genericEl.style.transform=`translate(-50%,-50%) scale(${zoom})`;else if(genericEl.tagName==='PRE')genericEl.style.transform=`translateX(-50%) scale(${zoom})`;else{genericEl.style.transform=`scale(${zoom})`;genericEl.style.width=`${100/zoom}%`;genericEl.style.height=`${100/zoom}%`}}
 
-async function pdfPageText(p){if(pdfTextCache.has(p))return pdfTextCache.get(p);const page=await pdfDoc.getPage(p),tc=await page.getTextContent(),txt=(tc.items||[]).map(x=>x.str||'').join(' ').replace(/\s+/g,' ').toLowerCase();pdfTextCache.set(p,txt);return txt}
-async function searchPdf(q,dir){const start=(q===pdfQuery&&pdfLastPage)?pdfLastPage:currentPage;for(let i=0;i<totalPages;i++){const p=((start-1+dir*i)%totalPages+totalPages)%totalPages+1;if((await pdfPageText(p)).includes(q)){pdfQuery=q;pdfLastPage=p;searchStatus.textContent=`Page ${p}`;await goToPage(p);return}}searchStatus.textContent='0 found'}
+async function pdfPageText(p,source=pdfDoc,revision=documentRevision){
+ if(pdfTextCache.has(p))return pdfTextCache.get(p);
+ const page=await source.getPage(p),tc=await page.getTextContent(),txt=normalizedText((tc.items||[]).map(x=>x.str||'').join(' '));
+ if(source===pdfDoc&&revision===documentRevision)pdfTextCache.set(p,txt);
+ return txt;
+}
+async function searchPdf(q,dir,token){
+ if(q!==pdfQuery){
+  const matches=[],source=pdfDoc,revision=documentRevision,count=totalPages;let hasText=false;
+  for(let p=1;p<=count;p++){
+   const text=await pdfPageText(p,source,revision);if(!searchCurrent(token))return;
+   hasText||=!!text;matchOffsets(text,q).forEach(offset=>matches.push({page:p,offset}));
+   searchStatus.textContent=`Searching… ${p}/${count}`;
+  }
+  pdfMatches=matches;pdfHasText=hasText;pdfQuery=q;pdfMatchIndex=matches.length?initialPageMatch(matches,dir,m=>m.page):-1;
+  if(!matches.length){searchStatus.textContent=hasText?'0 found':'No searchable text — scanned PDF';return}
+ }else if(pdfMatches.length)pdfMatchIndex=(pdfMatchIndex+dir+pdfMatches.length)%pdfMatches.length;
+ if(!pdfMatches.length){searchStatus.textContent=pdfHasText?'0 found':'No searchable text — scanned PDF';return}
+ if(!searchCurrent(token))return;
+ const m=pdfMatches[pdfMatchIndex];searchStatus.textContent=`${pdfMatchIndex+1}/${pdfMatches.length} · Page ${m.page}`;await goToPage(m.page);
+}
 function collectWordMatches(q){const out=[],walker=document.createTreeWalker(wordPaper,NodeFilter.SHOW_TEXT);let node;while((node=walker.nextNode())){const raw=node.nodeValue||'',low=raw.toLowerCase();let from=0,idx;while((idx=low.indexOf(q,from))!==-1){out.push({node,start:idx,end:idx+q.length});from=idx+Math.max(1,q.length)}}return out}
 function wordMatchPage(m){const range=document.createRange();range.setStart(m.node,m.start);range.setEnd(m.node,m.end);const rr=range.getBoundingClientRect(),pr=wordPaper.getBoundingClientRect(),y=Math.max(0,(rr.top-pr.top)/Math.max(.01,zoom)),visible=Math.max(120,wordViewport.clientHeight-12);return Math.max(1,Math.min(totalPages,Math.floor((y*zoom)/visible)+1))}
-async function searchWord(q,dir){if(q!==wordQuery||!wordMatches.length){wordMatches=collectWordMatches(q);wordMatchIndex=dir>0?-1:0;wordQuery=q}if(!wordMatches.length){searchStatus.textContent='0 found';return}wordMatchIndex=(wordMatchIndex+dir+wordMatches.length)%wordMatches.length;const m=wordMatches[wordMatchIndex];searchStatus.textContent=`${wordMatchIndex+1}/${wordMatches.length}`;await goToPage(wordMatchPage(m));try{const r=document.createRange();r.setStart(m.node,m.start);r.setEnd(m.node,m.end);const sel=getSelection();sel.removeAllRanges();sel.addRange(r)}catch{}}
-async function searchPpt(q,dir){if(q!==pptQuery){pptMatches=pptViewer.searchText(q)||[];pptMatchIndex=dir>0?-1:0;pptQuery=q;try{pptViewer.clearSearchHighlights()}catch{}}if(!pptMatches.length){searchStatus.textContent='0 found';return}pptMatchIndex=(pptMatchIndex+dir+pptMatches.length)%pptMatches.length;const m=pptMatches[pptMatchIndex];searchStatus.textContent=`${pptMatchIndex+1}/${pptMatches.length}`;await goToPage((m.slideIndex||0)+1);try{pptViewer.clearSearchHighlights();await pptViewer.highlightSearchResult(m)}catch{}}
-async function searchSheet(q,dir){for(let i=1;i<=totalPages;i++){const p=((currentPage-1+dir*i)%totalPages+totalPages)%totalPages+1,txt=window.XLSX.utils.sheet_to_csv(workbook.Sheets[sheetNames[p-1]]).toLowerCase();if(txt.includes(q)){searchStatus.textContent=`Sheet ${p}`;await goToPage(p);return}}searchStatus.textContent='0 found'}
-async function runSearch(dir){if(!active)return;const raw=(searchInput?.value||'').trim();if(!raw){showSearch();return}const q=raw.toLowerCase();searchStatus.textContent='Searching…';try{if(docKind==='pdf')await searchPdf(q,dir);else if(docKind==='word')await searchWord(q,dir);else if(docKind==='pptx')await searchPpt(raw,dir);else if(docKind==='sheet')await searchSheet(q,dir);else if(['text','html'].includes(docKind))searchStatus.textContent=(genericViewport?.innerText||genericEl?.textContent||'').toLowerCase().includes(q)?'Found':'0 found';else searchStatus.textContent='No searchable text'}catch(err){console.error(err);searchStatus.textContent='Search error'}}
+async function searchWord(q,dir,token){if(q!==wordQuery||!wordMatches.length){wordMatches=collectWordMatches(q);wordMatchIndex=dir>0?-1:0;wordQuery=q}if(!wordMatches.length){searchStatus.textContent='0 found';return}wordMatchIndex=(wordMatchIndex+dir+wordMatches.length)%wordMatches.length;const m=wordMatches[wordMatchIndex];searchStatus.textContent=`${wordMatchIndex+1}/${wordMatches.length}`;await goToPage(wordMatchPage(m));if(!searchCurrent(token))return;try{const r=document.createRange();r.setStart(m.node,m.start);r.setEnd(m.node,m.end);const sel=getSelection();sel.removeAllRanges();sel.addRange(r)}catch{}}
+async function searchPpt(q,dir,token){if(q!==pptQuery){pptMatches=pptViewer.searchText(q)||[];pptMatchIndex=dir>0?-1:0;pptQuery=q;try{pptViewer.clearSearchHighlights()}catch{}}if(!pptMatches.length){searchStatus.textContent='0 found';return}pptMatchIndex=(pptMatchIndex+dir+pptMatches.length)%pptMatches.length;const m=pptMatches[pptMatchIndex];searchStatus.textContent=`${pptMatchIndex+1}/${pptMatches.length}`;await goToPage((m.slideIndex||0)+1);if(!searchCurrent(token))return;try{pptViewer.clearSearchHighlights();await pptViewer.highlightSearchResult(m)}catch{}}
+async function searchSheet(q,dir,token){
+ if(q!==sheetQuery){
+  sheetMatches=[];
+  for(let p=1;p<=totalPages;p++){const text=normalizedText(window.XLSX.utils.sheet_to_csv(workbook.Sheets[sheetNames[p-1]]));if(text.includes(q))sheetMatches.push(p)}
+  sheetQuery=q;sheetMatchIndex=sheetMatches.length?initialPageMatch(sheetMatches,dir,p=>p):-1;
+ }else if(sheetMatches.length)sheetMatchIndex=(sheetMatchIndex+dir+sheetMatches.length)%sheetMatches.length;
+ if(!sheetMatches.length){searchStatus.textContent='0 found';return}
+ if(!searchCurrent(token))return;
+ const p=sheetMatches[sheetMatchIndex];searchStatus.textContent=`${sheetMatchIndex+1}/${sheetMatches.length} · Sheet ${p}`;await goToPage(p);
+}
+async function runSearch(dir){
+ if(!active)return;
+ const raw=(searchInput?.value||'').trim();if(!raw){resetSearch();showSearch();return}
+ const q=normalizedText(raw),token=++searchRevision;searchStatus.textContent='Searching…';
+ try{
+  if(docKind==='pdf')await searchPdf(q,dir,token);
+  else if(docKind==='word')await searchWord(q,dir,token);
+  else if(docKind==='pptx')await searchPpt(raw,dir,token);
+  else if(docKind==='sheet')await searchSheet(q,dir,token);
+  else if(['text','html'].includes(docKind)){const n=matchOffsets(genericSearchText,q).length;searchStatus.textContent=n?`${n} found`:'0 found'}
+  else searchStatus.textContent='No searchable text';
+ }catch(err){if(searchCurrent(token)){console.error(err);searchStatus.textContent='Search error'}}
+}
 
 const style=document.createElement('style');style.textContent=`
 #documentQuickBar{position:fixed;right:4px;top:4px;z-index:100200;display:flex;align-items:center;gap:2px;padding:2px 3px;border:1px solid rgba(23,50,77,.22);border-radius:8px;background:rgba(255,255,255,.97);box-shadow:0 3px 12px rgba(18,32,46,.18)}
 #documentQuickBar button{height:26px;min-width:26px;padding:0 6px;border:1px solid #d8e1e8;border-radius:6px;background:#fff;color:#17324d;font:900 11px system-ui,sans-serif}#documentQuickBar button.active{background:#17324d;color:#fff}#documentQuickBar button:disabled{opacity:.3}
 #documentQuickBar input{width:44px;height:26px;padding:1px 3px;border:1px solid #d8e1e8;border-radius:6px;text-align:center;font:900 11px system-ui,sans-serif}#documentQuickBar span{min-width:34px;text-align:center;font:900 10px system-ui,sans-serif;color:#17324d}
-#documentSearchPanel{position:fixed;right:5px;top:35px;z-index:100201;align-items:center;gap:3px;padding:4px;border:1px solid #cfd9de;border-radius:9px;background:#fff;box-shadow:0 4px 16px rgba(18,32,46,.18)}#documentSearchPanel input{width:180px;height:28px;border:1px solid #cfd9de;border-radius:6px;padding:3px 7px;font:700 11px system-ui,sans-serif}#documentSearchPanel button{height:27px;min-width:27px;border:1px solid #d8e1e8;border-radius:6px;background:#fff;font:900 11px system-ui,sans-serif}#documentSearchPanel span{min-width:58px;text-align:center;font:800 10px system-ui,sans-serif;color:#667085}
+#documentSearchPanel{position:fixed;right:5px;top:35px;z-index:100201;align-items:center;gap:3px;padding:4px;border:1px solid #cfd9de;border-radius:9px;background:#fff;box-shadow:0 4px 16px rgba(18,32,46,.18)}#documentSearchPanel input{width:180px;min-width:0;height:28px;border:1px solid #cfd9de;border-radius:6px;padding:3px 7px;font:700 11px system-ui,sans-serif}#documentSearchPanel button{height:27px;min-width:27px;border:1px solid #d8e1e8;border-radius:6px;background:#fff;font:900 11px system-ui,sans-serif}#documentSearchPanel span{min-width:58px;max-width:180px;overflow-wrap:anywhere;text-align:center;font:800 10px system-ui,sans-serif;color:#667085}
 body.document-open-mode .shell{padding:2px!important;gap:2px!important}body.document-open-mode .top{padding:2px 4px!important;border-radius:7px!important;gap:2px!important}body.document-open-mode .brand{display:none!important}body.document-open-mode .tools{width:100%!important;gap:2px!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none!important;padding-right:310px!important}body.document-open-mode .tools::-webkit-scrollbar{display:none!important}body.document-open-mode .btn{min-height:24px!important;height:24px!important;padding:1px 5px!important;border-radius:6px!important;font-size:10px!important;line-height:1!important;white-space:nowrap!important}body.document-open-mode #modeBadge{display:none!important}body.document-open-mode .boardWrap{border-radius:6px!important;background-image:none!important;background:#e9edf0!important}body.document-open-mode .boardWrap::after{display:none!important}
 #documentWordPaper img{max-width:100%;height:auto}#documentWordPaper table{border-collapse:collapse;max-width:100%}#documentWordPaper td,#documentWordPaper th{border:1px solid #aaa;padding:4px}#documentPptViewport>*{margin:auto!important}
 #documentSheetPaper table{border-collapse:collapse;background:#fff;font:13px/1.3 Arial,sans-serif}#documentSheetPaper td,#documentSheetPaper th{border:1px solid #b8c1c8;padding:4px 7px;min-width:54px;height:25px;white-space:nowrap}.docSheetName{font:900 12px system-ui,sans-serif;color:#17324d;margin:0 0 8px}
 .documentGenericImage,.documentGenericMedia{position:absolute;left:50%;top:50%;max-width:96%;max-height:96%;transform-origin:center center;object-fit:contain;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.15)}.documentGenericMedia{width:min(92%,1100px)}.documentGenericText{position:absolute;left:50%;top:10px;transform-origin:top center;min-width:min(900px,94%);max-width:94%;margin:0;padding:22px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.15);white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#111}.documentGenericFrame{position:absolute;left:0;top:0;width:100%;height:100%;border:0;background:#fff;transform-origin:top left}
-@media(max-width:800px){#documentQuickBar{right:2px;top:2px}#documentQuickBar button{padding:0 4px;min-width:24px}#documentQuickBar span{min-width:30px}#documentSearchPanel{right:3px;top:33px}#documentSearchPanel input{width:135px}body.document-open-mode .tools{padding-right:300px!important}}
+@media(max-width:800px){#documentQuickBar{right:2px;top:2px}#documentQuickBar button{padding:0 4px;min-width:24px}#documentQuickBar span{min-width:30px}#documentSearchPanel{right:3px;top:33px}#documentSearchPanel{max-width:calc(100vw - 142px);flex-wrap:wrap}#documentSearchPanel input{width:100%}body.document-open-mode .tools{padding-right:300px!important}}
 `;document.head.appendChild(style);
 
 ensureFileInput();ensureOpenButton();ensureLayer();ensureToolbar();updateControls();
