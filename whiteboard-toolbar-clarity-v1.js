@@ -6,8 +6,25 @@ const restoreTitles={en:'Restore saved whiteboard',zh:'恢复已保存的白板'
 let queued=false;
 function setText(el,text){if(el&&el.textContent!==text)el.textContent=text}
 function setAttr(el,name,value){if(el&&el.getAttribute(name)!==value)el.setAttribute(name,value)}
+function removeLegacyOverlay(){
+ const video=document.getElementById('liveOverlayVideo');
+ if(video?.srcObject){try{for(const t of video.srcObject.getTracks())t.stop()}catch{}}
+ for(const id of ['liveOverlayBtn','overlayQuickControls','liveOverlayVideo'])document.getElementById(id)?.remove();
+ document.body.classList.remove('live-overlay-mode');
+ document.getElementById('boardWrap')?.classList.remove('live-overlay-active');
+ const tools=document.querySelector('.tools');
+ if(tools){
+  for(const b of tools.querySelectorAll('button')){
+   const txt=(b.textContent||'').trim().toLowerCase();
+   const aria=(b.getAttribute('aria-label')||'').trim().toLowerCase();
+   const title=(b.title||'').trim().toLowerCase();
+   if(txt==='overlay'||aria==='overlay'||title.includes('place behind the whiteboard'))b.remove();
+  }
+ }
+}
 function tidyToolbar(){
  queued=false;
+ removeLegacyOverlay();
  const tools=document.querySelector('.tools');if(!tools)return;
  const docOpen=document.getElementById('openDocumentBtn');
  const label=restoreLabels[edition]||restoreLabels.en;
