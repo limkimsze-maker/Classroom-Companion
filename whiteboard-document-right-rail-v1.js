@@ -92,8 +92,8 @@ function wireDial(){
   if(!dragging||e.pointerId!==dragId)return;e.preventDefault();
   dragRemainder+=e.clientY-dragLastY;dragLastY=e.clientY;
   let steps=0;
-  while(dragRemainder>=TOUCH_PX_PER_PAGE){steps--;dragRemainder-=TOUCH_PX_PER_PAGE}
-  while(dragRemainder<=-TOUCH_PX_PER_PAGE){steps++;dragRemainder+=TOUCH_PX_PER_PAGE}
+  while(dragRemainder>=TOUCH_PX_PER_PAGE){steps++;dragRemainder-=TOUCH_PX_PER_PAGE}
+  while(dragRemainder<=-TOUCH_PX_PER_PAGE){steps--;dragRemainder+=TOUCH_PX_PER_PAGE}
   if(steps)go(previewPage+steps);
  });
  const end=e=>{
