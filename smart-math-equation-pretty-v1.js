@@ -139,14 +139,23 @@ function inlineSvg(expression){
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="white"/><text x="24" y="78" font-family="${font()}" font-size="52" font-weight="700" fill="#17324d" textLength="${W-48}" lengthAdjust="spacingAndGlyphs">${esc(expression)}</text></svg>`;
  return{svg,W,H};
 }
-function make(parsed){
+function equationObject(parsed){
  const {a,op,b,result,simple,expression}=parsed,isDivision=simple&&op==='÷'&&!parsed.right;
  const made=isDivision?divisionSvg(a,b):simple&&op!=='÷'?verticalSvg(a,op,b,result):inlineSvg(expression),svg=made.svg;
  const pxW=made.W,pxH=made.H;
  const W=Math.max(1,cssW),H=Math.max(1,cssH),scale=Math.min(1,W*.78/pxW,H*.55/pxH),w=pxW*scale/W,h=pxH*scale/H;
  const obj={type:'image',src:svgData(svg),x:clamp(isDivision?.24:.31,0,1-w),y:clamp(isDivision?.18:.24,0,1-h),w,h,smartGenerated:true,smartType:'equation',smartId:uid(),smartOriginal:[],equationExpression:expression,equationLayout:isDivision?'long-division':simple&&op!=='÷'?'vertical':'inline'};
+ return obj;
+}
+function make(parsed){
+ const obj=equationObject(parsed);
  strokes.push(obj);redraw();syncUi();try{tool='select';syncUi()}catch{}notify(L.made);
 }
+// The handwriting action uses the same parser, SVG renderer and fonts as Equation.
+window.WhiteboardEquationFormatter=Object.freeze({
+ create:text=>{const parsed=parseEquation(text);return parsed?equationObject(parsed):null},
+ font
+});
 
 function openPanel(){
  close();panel=document.createElement('div');

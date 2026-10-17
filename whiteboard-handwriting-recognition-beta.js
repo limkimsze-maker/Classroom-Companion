@@ -1,0 +1,113 @@
+/* Local-only math handwriting: stroke segmentation, symbol geometry and MNIST digits. */
+(function(){
+'use strict';
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const median=a=>{a=a.slice().sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:0};
+let layers=null;
+function predictDigit(pixels){
+ const model=window.WhiteboardDigitModel;if(!model)throw Error('The local handwriting model has not loaded. Refresh the page.');
+ if(!layers)layers=model.layers.map(l=>({...l,w:Int8Array.from(atob(l.weights),c=>{const n=c.charCodeAt(0);return n>127?n-256:n})}));
+ const pixelScale=pixels.some(v=>v>1)?1/255:1;
+ let input=Float32Array.from(pixels,v=>v*pixelScale);
+ for(let k=0;k<layers.length;k++){
+  const l=layers[k],out=Float32Array.from(l.bias);
+  for(let i=0;i<l.input;i++){const v=input[i]*l.scale;if(!v)continue;const offset=i*l.output;for(let j=0;j<l.output;j++)out[j]+=v*l.w[offset+j]}
+  if(k<layers.length-1)for(let j=0;j<out.length;j++)out[j]=Math.max(0,out[j]);
+  input=out;
+ }
+ const max=Math.max(...input),exp=Array.from(input,x=>Math.exp(x-max)),sum=exp.reduce((a,b)=>a+b,0);
+ return exp.map((p,i)=>({char:String(i),score:p/sum})).sort((a,b)=>b.score-a.score);
+}
+function bounds(parts){
+ const pts=parts.flatMap(s=>s.points);const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x=Math.min(...xs),y=Math.min(...ys),w=Math.max(...xs)-x,h=Math.max(...ys)-y;
+ return{x,y,w,h,cx:x+w/2,cy:y+h/2};
+}
+function pointDistance(x,y,a,b){const dx=b.x-a.x,dy=b.y-a.y,t=clamp(((x-a.x)*dx+(y-a.y)*dy)/(dx*dx+dy*dy||1),0,1);return Math.hypot(x-a.x-t*dx,y-a.y-t*dy)}
+function rasterDigit(parts){
+ const b=bounds(parts),scale=20/Math.max(1,b.w,b.h),ox=13.5-b.w*scale/2,oy=13.5-b.h*scale/2,pixels=new Float32Array(784);
+ for(const s of parts){
+  const pts=s.points.map(p=>({x:(p.x-b.x)*scale+ox,y:(p.y-b.y)*scale+oy})),radius=clamp((s.size||4)*scale/2,.8,1.5);
+  for(let i=0;i<pts.length;i++){
+   const a=pts[Math.max(0,i-1)],z=pts[i],x0=Math.max(0,Math.floor(Math.min(a.x,z.x)-radius-1)),x1=Math.min(27,Math.ceil(Math.max(a.x,z.x)+radius+1)),y0=Math.max(0,Math.floor(Math.min(a.y,z.y)-radius-1)),y1=Math.min(27,Math.ceil(Math.max(a.y,z.y)+radius+1));
+   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)pixels[y*28+x]=Math.max(pixels[y*28+x],clamp(radius+.5-pointDistance(x,y,a,z),0,1));
+  }
+ }
+ let mass=0,mx=0,my=0;for(let y=0;y<28;y++)for(let x=0;x<28;x++){const v=pixels[y*28+x];mass+=v;mx+=x*v;my+=y*v}
+ if(!mass)return pixels;
+ const dx=13.5-mx/mass,dy=13.5-my/mass,out=new Float32Array(784);
+ for(let y=0;y<28;y++)for(let x=0;x<28;x++){
+  const sx=x-dx,sy=y-dy,ix=Math.floor(sx),iy=Math.floor(sy),fx=sx-ix,fy=sy-iy;
+  for(let j=0;j<2;j++)for(let i=0;i<2;i++)if(ix+i>=0&&ix+i<28&&iy+j>=0&&iy+j<28)out[y*28+x]+=pixels[(iy+j)*28+ix+i]*(i?fx:1-fx)*(j?fy:1-fy);
+ }
+ return out;
+}
+function line(s){
+ const p=s.points,a=p[0],b=p[p.length-1];let length=0;for(let i=1;i<p.length;i++)length+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y);
+ const d=Math.hypot(b.x-a.x,b.y-a.y),straight=d>0&&length/d<1.16;
+ return{straight,horizontal:straight&&Math.abs(b.y-a.y)<Math.abs(b.x-a.x)*.3,vertical:straight&&Math.abs(b.x-a.x)<Math.abs(b.y-a.y)*.3,slope:(b.y-a.y)/(b.x-a.x||.001)};
+}
+function bends(s){let prior=0,changes=0;for(let i=1;i<s.points.length;i++){const d=s.points[i].x-s.points[i-1].x;if(Math.abs(d)<.7)continue;const sign=Math.sign(d);if(prior&&prior!==sign)changes++;prior=sign}return changes}
+function symbol(parts,H){
+ const b=bounds(parts),lines=parts.map(line),horizontal=parts.filter((s,i)=>lines[i].horizontal);
+ if(parts.length===1&&b.h>H*.55&&b.w<b.h*.34){
+  const p=parts[0].points;let length=0;for(let i=1;i<p.length;i++)length+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y);
+  if(length/Math.max(1,Math.hypot(b.w,b.h))<1.4)return'1';
+ }
+ if(parts.length>=2&&horizontal.length===parts.length&&b.h<H*.48)return'=';
+ if(parts.length===1&&lines[0].horizontal&&b.w>H*.22)return'−';
+ if(parts.length===2&&lines.some(l=>l.horizontal)&&lines.some(l=>l.vertical)){
+  const h=bounds([parts[lines.findIndex(l=>l.horizontal)]]),v=bounds([parts[lines.findIndex(l=>l.vertical)]]);
+  if(h.cy>v.y+v.h*.22&&h.cy<v.y+v.h*.78)return'+';
+ }
+ if(parts.length===2&&lines.every(l=>l.straight&&!l.horizontal&&!l.vertical)&&lines[0].slope*lines[1].slope<0)return'×';
+ if(parts.length>=2&&b.w>H*.16&&b.w<H*.95){
+  const bar=parts.find((s,i)=>lines[i].vertical&&bounds([s]).h>H*.65);
+  if(bar&&parts.some(s=>s!==bar&&bounds([s]).h>H*.5&&bends(s)>=2))return'$';
+ }
+ return null;
+}
+function segment(strokes,W,H){
+ const parts=strokes.filter(s=>Array.isArray(s.points)&&s.points.length).map(s=>({source:s,size:Number(s.size)||4,points:s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H}))})).filter(s=>s.points.length);
+ if(!parts.length)return[];
+ const height=median(parts.map(s=>bounds([s]).h).filter(h=>h>8))||Math.max(16,...parts.map(s=>s.size*4));
+ const tall=parts.filter(s=>bounds([s]).h>height*.4),rows=[];
+ for(const s of tall.sort((a,b)=>bounds([a]).cy-bounds([b]).cy)){
+  const cy=bounds([s]).cy;let row=rows.find(r=>Math.abs(cy-r.cy)<height*.65);
+  if(!row){row={cy,parts:[]};rows.push(row)}row.parts.push(s);row.cy=median(row.parts.map(s=>bounds([s]).cy));
+ }
+ if(!rows.length)rows.push({cy:median(parts.map(s=>bounds([s]).cy)),parts:[]});
+ for(const s of parts)if(!tall.includes(s))rows.reduce((best,r)=>Math.abs(bounds([s]).cy-r.cy)<Math.abs(bounds([s]).cy-best.cy)?r:best).parts.push(s);
+ const tokens=[];
+ for(const row of rows){
+  let dots=row.parts.filter(s=>{const b=bounds([s]);return b.w<height*.18&&b.h<height*.18}),main=row.parts.filter(s=>!dots.includes(s));
+  // A long ruling underneath stacked working is not a subtraction sign.
+  if(rows.length>1)main=main.filter(s=>{const b=bounds([s]);return !(line(s).horizontal&&b.w>height*3&&b.cy>row.cy+height*.3)});
+  const groups=main.map(s=>[s]);
+  let changed=true;
+  while(changed){changed=false;for(let i=0;i<groups.length&&!changed;i++)for(let j=i+1;j<groups.length;j++){
+   const a=bounds(groups[i]),b=bounds(groups[j]),overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x),joined=bounds([...groups[i],...groups[j]]);
+   if(overlap>=-Math.max(1,height*.035)&&joined.w<height*1.25){groups[i].push(...groups[j]);groups.splice(j,1);changed=true;break}
+  }}
+  const rowTokens=[];
+  for(const group of groups){
+   const b=bounds(group),op=symbol(group,height);
+   if(op==='−'){
+    const candidates=dots.filter(s=>{const d=bounds([s]);return Math.abs(d.cx-b.cx)<Math.max(5,b.w*.3)&&Math.abs(d.cy-b.cy)<height*.55}),above=candidates.find(s=>bounds([s]).cy<b.cy-height*.10),below=candidates.find(s=>bounds([s]).cy>b.cy+height*.10);
+    if(above&&below){dots=dots.filter(s=>s!==above&&s!==below);rowTokens.push({char:'÷',score:1,x:b.x,parts:[...group,above,below]});continue}
+   }
+   if(op){rowTokens.push({char:op,score:1,x:b.x,parts:group});continue}
+   const choices=predictDigit(rasterDigit(group));rowTokens.push({...choices[0],choices:choices.slice(0,3),x:b.x,parts:group});
+  }
+  for(const dot of dots){const b=bounds([dot]);rowTokens.push({char:b.cy>=row.cy+height*.15?'.':'×',score:.85,x:b.x,parts:[dot]})}
+  rowTokens.sort((a,b)=>a.x-b.x);tokens.push(...rowTokens);
+ }
+ return tokens;
+}
+async function recognize(strokes,W,H){
+ if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
+ const tokens=segment(strokes,W,H);let text='';
+ for(const token of tokens)text+=['+','−','×','÷','='].includes(token.char)?' '+token.char+' ':token.char;
+ return{text:text.replace(/\s+/g,' ').trim(),tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-digits'};
+}
+window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
+})();
