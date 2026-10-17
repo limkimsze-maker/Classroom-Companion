@@ -1,11 +1,11 @@
-/* Beta-only move cursor. Frozen model builders and editors are unchanged. */
+/* Beta-only pointer UI. Frozen model scripts remain unchanged. */
 (function(){
 'use strict';
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
 const board=document.getElementById('boardWrap');
 if(!board||document.getElementById('barModelMoveCursorStyles'))return;
 const cache=new WeakMap(),undoMoves=[];
-let drag=null,lastPointer=null,suppressed=null,queued=false;
+let drag=null,lastPointer=null,suppressed=null,queued=false,suppressClickUntil=0;
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const copy=v=>JSON.parse(JSON.stringify(v));
 const signature=()=>JSON.stringify(strokes);
@@ -15,14 +15,90 @@ const style=document.createElement('style');style.id='barModelMoveCursorStyles';
 style.textContent=`
 #boardWrap.bar-model-move-ready,#boardWrap.bar-model-move-ready *,#boardWrap.bar-model-moving,#boardWrap.bar-model-moving *{cursor:move!important}
 #boardWrap.bar-model-move-released,#boardWrap.bar-model-move-released *{cursor:default!important}
+#boardWrap.bar-model-resize-ready,#boardWrap.bar-model-resize-ready *{cursor:default!important}
+#barModelPointerTip{position:fixed;width:5px;height:5px;margin:0;border:1px solid white;border-radius:50%;box-sizing:content-box;background:#ef2020;transform:translate(-50%,-50%);pointer-events:none!important;z-index:2147483647;display:none}
 `;
 document.head.appendChild(style);
+const tip=document.createElement('span');tip.id='barModelPointerTip';tip.setAttribute('aria-hidden','true');document.body.appendChild(tip);
+function pointerTip(e){
+ const r=canvas.getBoundingClientRect(),inside=e.clientX>=r.left&&e.clientX<=r.left+r.width&&e.clientY>=r.top&&e.clientY<=r.top+r.height;
+ const show=selectable()&&(drag||inside&&usableTarget(e.target))&&(e.pointerType!=='touch'||!!drag||e.type==='pointerdown');
+ tip.style.display=show?'block':'none';
+ if(show){tip.style.left=e.clientX+'px';tip.style.top=e.clientY+'px'}
+}
 function cursor(state){
  for(const [name,on] of [['bar-model-move-ready',state==='ready'],['bar-model-moving',state==='moving'],['bar-model-move-released',state==='released']])board.classList.toggle(name,on);
 }
 function usableTarget(target){
- return target===canvas||!!target?.closest?.('.partwhole-compact-hit-zone,.comparison-segment-hit-zone,.multiplicative-unit-zone');
+ return target===canvas||!!target?.closest?.('.partwhole-compact-hit-zone,.comparison-segment-hit-zone,.comparison-segment-bracket-hit,.comparison-manual-total-hit,.multiplicative-unit-zone');
 }
+function cutsFor(o){const n=Math.max(2,o.barCount||2);return Array.isArray(o.barCuts)&&o.barCuts.length===n-1?o.barCuts.slice().sort((a,b)=>a-b):Array.from({length:n-1},(_,i)=>(i+1)/n)}
+function compareLayout(o){const n=clamp(Math.round(Number(o.barCount)||2),2,5);return{n,H:Math.max(340,150+n*145)}}
+function widthsFor(o){const {n}=compareLayout(o);return Array.isArray(o.barCompareWidths)&&o.barCompareWidths.length>=n?o.barCompareWidths.slice(0,n).map(v=>clamp(Number(v)||.5,.16,1)):Array.from({length:n},(_,i)=>clamp(1-i*.11,.16,1))}
+function handles(o,r){
+ const out=[],cx=(o.x+o.w*.5)*r.width;
+ if(o.smartBarType==='comparison'){
+  const {n,H}=compareLayout(o),widths=widthsFor(o);
+  for(const [edge,y] of [['top',60/H],['bottom',(60+(n-1)*145+58)/H]])out.push({kind:'height',edge,x:cx,y:(o.y+o.h*y)*r.height,size:9});
+  for(let row=0;row<n;row++)out.push({kind:'width',row,x:(o.x+o.w*(180+650*widths[row])/900)*r.width,y:(o.y+o.h*(60+row*145+29)/H)*r.height,size:7});
+ }else if(o.smartBarType==='partwhole'){
+  for(const [edge,y] of [['top',.3],['bottom',.7]])out.push({kind:'height',edge,x:cx,y:(o.y+o.h*y)*r.height,size:7});
+  cutsFor(o).forEach((cut,index)=>out.push({kind:'divider',index,x:(o.x+o.w*(60+780*cut)/900)*r.width,y:(o.y+o.h*.5)*r.height,size:7}));
+ }
+ return out;
+}
+function handleAt(e){
+ if(!selectable()||!usableTarget(e.target))return null;
+ const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+ for(let i=strokes.length-1;i>=0;i--){
+  const o=strokes[i];if(!isModel(o))continue;
+  // Never reach through a model above this one to a hidden handle.
+  const inBounds=x>=o.x*r.width&&x<=(o.x+o.w)*r.width&&y>=o.y*r.height&&y<=(o.y+o.h)*r.height;
+  if(!inBounds)continue;
+  if(o.locked)return null;
+  const hits=handles(o,r).filter(h=>h.kind==='height'?Math.abs(x-h.x)<=h.size+1&&Math.abs(y-h.y)<=h.size+1:Math.hypot(x-h.x,y-h.y)<=h.size+1);
+  hits.sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y));
+  return hits.length?{o,...hits[0]}:null;
+ }
+ return null;
+}
+// Match the existing length editors' SVG geometry, colours, labels and limits.
+function rebuildLength(o){
+ const els=[],stroke='#17324d';let H=300;
+ if(o.smartBarType==='comparison'){
+  const l=compareLayout(o);H=l.H;const widths=widthsFor(o);o.barCount=l.n;o.barCompareWidths=widths;o.barCompareLayoutVersion=3;
+  for(let i=0;i<l.n;i++)els.push(`<rect x="180" y="${60+i*145}" width="${650*widths[i]}" height="58" rx="2" fill="${o.barFills?.[i]||'#ffffff'}" stroke="${stroke}" stroke-width="8"/>`);
+ }else{
+  const n=Math.max(2,o.barCount||2),cuts=cutsFor(o),bs=[0,...cuts,1],esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+  for(let i=0;i<n;i++){
+   const left=60+780*bs[i],right=60+780*bs[i+1],w=right-left,label=o.barLabels?.[i]||'';
+   els.push(`<rect x="${left}" y="90" width="${w}" height="120" fill="${o.barFills?.[i]||'#ffffff'}"/>`);
+   if(label){const fs=label.length>12?24:label.length>7?30:38;els.push(`<text x="${left+w/2}" y="${150+fs*.34}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${fs}" font-weight="700" fill="${stroke}">${esc(label)}</text>`)}
+  }
+  els.push(`<rect x="60" y="90" width="780" height="120" rx="2" fill="none" stroke="${stroke}" stroke-width="8"/>`);
+  for(const cut of cuts){const x=60+780*cut;els.push(`<line x1="${x}" y1="90" x2="${x}" y2="210" stroke="${stroke}" stroke-width="7"/>`)}
+  o.barCuts=cuts;
+ }
+ o.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="${H}" viewBox="0 0 900 ${H}">${els.join('')}</svg>`);
+}
+function resizeTo(d,e){
+ const o=d.o,r=canvas.getBoundingClientRect(),x=(e.clientX-r.left-d.grabX)/Math.max(1,r.width),y=(e.clientY-r.top-d.grabY)/Math.max(1,r.height);
+ if(d.kind==='width'){
+  const widths=widthsFor(o),v=clamp((x-o.x-o.w*(180/900))/Math.max(.001,o.w*(650/900)),.16,1);
+  if(Math.abs(widths[d.row]-v)<.001)return;widths[d.row]=v;o.barCompareWidths=widths;rebuildLength(o);
+ }else if(d.kind==='divider'){
+  const cuts=cutsFor(o),i=d.index,left=i===0?.05:cuts[i-1]+.05,right=i===cuts.length-1?.95:cuts[i+1]-.05,v=clamp((x-o.x-o.w*(60/900))/Math.max(.001,o.w*(780/900)),left,right);
+  if(Math.abs(cuts[i]-v)<.001)return;cuts[i]=v;o.barCuts=cuts;rebuildLength(o);
+ }else{
+  const comparison=o.smartBarType==='comparison',l=compareLayout(o),topRatio=comparison?60/l.H:.3,bottomRatio=comparison?(60+(l.n-1)*145+58)/l.H:.7;
+  const span=comparison?Math.max(.12,bottomRatio-topRatio):.4,min=(comparison?36:30)/Math.max(1,r.height),max=comparison?.75:.55;
+  const top=o.y+o.h*topRatio,bottom=o.y+o.h*bottomRatio,visible=clamp(d.edge==='bottom'?y-top:bottom-y,min,max);
+  let h=visible/span,ny=d.edge==='bottom'?top-topRatio*h:y-topRatio*h;h=clamp(h,.08,.92);ny=clamp(ny,0,1-h);
+  if(Math.abs(o.h-h)<.001&&Math.abs(o.y-ny)<.001)return;o.h=h;o.y=ny;
+ }
+ redraw();syncUi();
+}
+function restoreObject(o,before){for(const key of Object.keys(o))if(!(key in before))delete o[key];Object.assign(o,copy(before))}
 function shape(o){
  const prior=cache.get(o);if(prior?.src===o.src)return prior;
  const result={src:o.src,rects:[],lines:[]};cache.set(o,result);
@@ -76,6 +152,9 @@ function modelAt(e){
  return null;
 }
 function hover(e){
+ pointerTip(e);
+ const resize=!!drag&&drag.kind!=='move'||!drag&&!!handleAt(e);board.classList.toggle('bar-model-resize-ready',resize);
+ if(resize){cursor('');return}
  if(drag){cursor('moving');return}
  const o=modelAt(e);
  if(suppressed&&o===suppressed){cursor('released');return}
@@ -86,7 +165,7 @@ function schedule(){
   queued=false;
   if(drag&&(!selectable()||!strokes.includes(drag.o)))endDrag(true);
   else if(lastPointer)hover(lastPointer);
-  else cursor('');
+  else{cursor('');board.classList.remove('bar-model-resize-ready');tip.style.display='none'}
  });
 }
 function stop(e){e.preventDefault();e.stopImmediatePropagation()}
@@ -97,51 +176,60 @@ function moveTo(o,start,dx,dy){
 function canUndoMove(){return !!undoMoves.length&&undoMoves[undoMoves.length-1].after===signature()}
 function updateDrag(e){
  if(!drag||e.pointerId!==drag.id)return;
+ pointerTip(e);
+ if(drag.kind!=='move'){
+  if(!drag.moved&&e.clientX===drag.clientX&&e.clientY===drag.clientY)return;
+  drag.moved=true;resizeTo(drag,e);return;
+ }
  const r=canvas.getBoundingClientRect();moveTo(drag.o,drag.start,(e.clientX-drag.clientX)/Math.max(1,r.width),(e.clientY-drag.clientY)/Math.max(1,r.height));redraw();cursor('moving');
 }
 function endDrag(cancelled,e){
  if(!drag)return;const d=drag;
  if(e&&!cancelled)updateDrag(e);
  drag=null;
- if(cancelled&&strokes.includes(d.o)){d.o.x=d.start.x;d.o.y=d.start.y}
+ if(cancelled&&strokes.includes(d.o))restoreObject(d.o,d.objectBefore);
  try{canvas.releasePointerCapture(d.id)}catch{}
  redraw();
- if(!cancelled&&strokes.includes(d.o)&&(d.o.x!==d.start.x||d.o.y!==d.start.y)){
-  undoMoves.push({index:strokes.indexOf(d.o),x:d.start.x,y:d.start.y,after:signature()});if(undoMoves.length>100)undoMoves.shift();
+ if(!cancelled&&strokes.includes(d.o)&&JSON.stringify(d.o)!==JSON.stringify(d.objectBefore)){
+  undoMoves.push({index:strokes.indexOf(d.o),before:d.objectBefore,after:signature()});if(undoMoves.length>100)undoMoves.shift();
   window.__smartBarLastHistory={before:d.before,afterId:d.o.smartId};
  }
- suppressed=cancelled?null:d.o;
- if(e)lastPointer=e;
- cursor(cancelled?'':'released');syncUi();
+ suppressed=cancelled||d.kind!=='move'?null:d.o;suppressClickUntil=Date.now()+120;
+ lastPointer=e||null;
+ cursor(cancelled||d.kind!=='move'?'':'released');board.classList.remove('bar-model-resize-ready');if(e?.pointerType==='touch')tip.style.display='none';syncUi();
 }
-// Run before PDF gestures, and only take a drag on an actual bar outline.
+// Visible controls win over segment/bracket overlays and global gestures.
 window.addEventListener('pointerdown',e=>{
  if(drag){stop(e);return}
  if(e.button!==undefined&&e.button!==0)return;
- const o=modelAt(e);if(!o)return;
+ pointerTip(e);
+ const handle=handleAt(e),o=handle?.o||modelAt(e);if(!o)return;
  stop(e);lastPointer=e;suppressed=null;
- drag={id:e.pointerId,o,start:{x:o.x,y:o.y},clientX:e.clientX,clientY:e.clientY,before:copy(strokes)};
+ const r=canvas.getBoundingClientRect();
+ drag={...handle,kind:handle?.kind||'move',id:e.pointerId,o,start:{x:o.x,y:o.y},objectBefore:copy(o),clientX:e.clientX,clientY:e.clientY,grabX:handle?e.clientX-r.left-handle.x:0,grabY:handle?e.clientY-r.top-handle.y:0,before:copy(strokes)};
  try{canvas.setPointerCapture(e.pointerId)}catch{}
- cursor('moving');
+ hover(e);
 },{capture:true,passive:false});
 window.addEventListener('pointermove',e=>{
+ if(drag&&e.pointerId!==drag.id)return;
  lastPointer=e;
- if(drag){if(e.pointerId!==drag.id)return;stop(e);updateDrag(e);return}
+ if(drag){stop(e);updateDrag(e);return}
  hover(e);
 },{capture:true,passive:false});
 window.addEventListener('pointerup',e=>{if(!drag||e.pointerId!==drag.id)return;stop(e);endDrag(false,e)},{capture:true,passive:false});
 window.addEventListener('pointercancel',e=>{if(!drag||e.pointerId!==drag.id)return;stop(e);endDrag(true)},{capture:true,passive:false});
 canvas.addEventListener('lostpointercapture',e=>{if(drag&&e.pointerId===drag.id)endDrag(true)});
-board.addEventListener('pointerleave',()=>{if(!drag){lastPointer=null;suppressed=null;cursor('')}});
+board.addEventListener('pointerleave',()=>{if(!drag){lastPointer=null;suppressed=null;cursor('');board.classList.remove('bar-model-resize-ready');tip.style.display='none'}});
+window.addEventListener('click',e=>{if(Date.now()<suppressClickUntil&&usableTarget(e.target))stop(e)},true);
 window.addEventListener('keydown',e=>{if(drag&&(e.key==='Escape'||((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'))){stop(e);endDrag(true)}},true);
-window.addEventListener('blur',()=>{endDrag(true);lastPointer=null;suppressed=null;cursor('')});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){endDrag(true);lastPointer=null;cursor('')}});
+window.addEventListener('blur',()=>{endDrag(true);lastPointer=null;suppressed=null;cursor('');board.classList.remove('bar-model-resize-ready');tip.style.display='none'});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){endDrag(true);lastPointer=null;cursor('');board.classList.remove('bar-model-resize-ready');tip.style.display='none'}});
 const previousRedraw=redraw;redraw=function(){const r=previousRedraw.apply(this,arguments);schedule();return r};
 const previousSync=syncUi;syncUi=function(){const r=previousSync.apply(this,arguments),undo=document.getElementById('undoBtn');if(undo&&canUndoMove())undo.disabled=false;schedule();return r};
 const undo=document.getElementById('undoBtn');
 if(undo){const previousUndo=undo.onclick;undo.onclick=function(e){
  if(drag){endDrag(true);return}
- if(canUndoMove()){const last=undoMoves.pop(),o=strokes[last.index];o.x=last.x;o.y=last.y;suppressed=null;redraw();syncUi();return}
+ if(canUndoMove()){const last=undoMoves.pop(),o=strokes[last.index];restoreObject(o,last.before);suppressed=null;redraw();syncUi();return}
  if(typeof previousUndo==='function')return previousUndo.call(this,e);
 }}
 window.addEventListener('resize',schedule);
