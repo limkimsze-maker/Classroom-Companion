@@ -55,7 +55,7 @@ function syncPdfRail(){
  const dial=document.getElementById('documentPageDial');
  if(dial){
   dial.dataset.zoomIndependent='true';
-  dial.title='Drag to jump to any page while keeping the current zoom level';
+  dial.title='Drag or use the trackpad to scrub to any page while keeping the current zoom level';
  }
 }
 const observer=new MutationObserver(()=>requestAnimationFrame(syncPdfRail));
@@ -87,6 +87,7 @@ function go(box,dir){
  return true;
 }
 function onWheel(e){
+ if(e.target?.closest?.('#documentQuickBar'))return;
  if(!active()||e.ctrlKey||e.metaKey)return;
  const board=document.getElementById('boardWrap');
  const bar=document.getElementById('documentQuickBar');
