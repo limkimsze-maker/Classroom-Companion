@@ -81,7 +81,7 @@ function wireDial(){
   e.preventDefault();e.stopPropagation();
   const raw=e.deltaY||0,wd=Math.abs(e.wheelDeltaY||0),isMouse=e.deltaMode!==0||((wd===120||wd===240||wd===360)&&Math.abs(raw)>=50&&Math.abs(e.deltaX||0)<2);
   if(isMouse){commit(currentPage()+(raw>0?-1:1));return}
-  const fingerDy=-(raw||0);
+  const fingerDy=(raw||0);
   const now=performance.now();
   if(wheelPage==null||now-wheelLast>220)wheelPage=currentPage();
   wheelLast=now;wheelPage=clamp(wheelPage+fingerDy/TRACKPAD_PX_PER_PAGE,1,maxPage());previewPage=clampPage(wheelPage);dragging=true;dial.classList.add('dragging');visual(previewPage);
@@ -93,7 +93,7 @@ function build(){
  const top=make('div','doc-rail-section');top.id='documentRailTop';top.appendChild(make('div','doc-rail-kicker','Zoom'));const zr=make('div');zr.id='documentRailZoomRow';zoomLabel.classList.add('doc-zoom-value');zr.append(minusBtn,zoomLabel,plusBtn);top.appendChild(zr);searchBtn.classList.add('doc-search-main');searchBtn.textContent='🔎';top.appendChild(searchBtn);bar.prepend(top);
  dial=make('div');dial.id='documentPageDial';dial.appendChild(make('div','doc-rail-kicker','Pages'));const head=make('div','dial-head');dialReadout=make('strong',null,'1');dialTotal=make('span',null,'/ 1');head.append(dialReadout,dialTotal);dial.appendChild(head);
  dialStage=make('div','dial-stage');dialStage.tabIndex=0;dialStage.setAttribute('role','slider');dialStage.setAttribute('aria-label','Page dial');dialProgress=make('div','dial-progress');dialMarks=make('div','dial-marks');dialThumb=make('div','dial-thumb');dialThumb.setAttribute('aria-label','Drag page knob');dialThumb.appendChild(make('div','dial-grip'));dialBubble=make('div','dial-bubble','Page 1');dialStage.append(dialProgress,dialMarks,dialThumb,dialBubble);dial.appendChild(dialStage);const foot=make('div','dial-foot');foot.innerHTML='<b>↕</b><span>drag knob / scroll</span>';dial.appendChild(foot);bar.appendChild(dial);
- const modes=make('div');modes.id='documentRailModes';[penBtn,handBtn,interactBtn].forEach(b=>{if(b)modes.appendChild(b)});if(modes.childNodes.length)bar.appendChild(modes);const acts=make('div');acts.id='documentRailActions';[reopenBtn,closeBtn].forEach(b=>{if(b)acts.appendChild(b)});if(acts.childNodes.length)bar.appendChild(acts);
+ const modes=make('div');modes.id='documentRailModes';[penBtn,handBtn,interactBtn].forEach(b=>{if(b)modes.appendChild(b)});if(modes.childNodes.length)bar.appendChild(modes);const acts=make('div');acts.id='documentRailActions';[reopenBtn,closeBtn].forEach(b=>{if(b)modes.appendChild(b)});if(acts.childNodes.length)bar.appendChild(acts);
  wireDial();bar.dataset.rightRailReady='1';sync(true);return true;
 }
 function sync(force=false){if(!bar||bar.dataset.rightRailReady!=='1'||!dial)return;const p=currentPage(),m=maxPage(),z=(zoomLabel?.textContent||'').trim();if(force||m!==lastMax){lastMax=m;marks(m)}if(!dragging&&(force||p!==lastPage)){lastPage=p;visual(p)}if(force||z!==lastZoom){lastZoom=z;zoomLabel.title=`Zoom ${z}`}}
