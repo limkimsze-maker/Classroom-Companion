@@ -4,6 +4,7 @@ const STYLE_ID='documentRightRailStylesV2';
 let bar,pageBox,pageTotal,zoomLabel,minusBtn,plusBtn,searchBtn,interactBtn,reopenBtn,closeBtn,penBtn,handBtn;
 let dial,dialStage,dialProgress,dialThumb,dialReadout,dialTotal,dialBubble,dialMarks;
 let dragging=false,previewPage=1,lastPage=-1,lastMax=-1,lastZoom='';
+let dialWheelY=null,dialWheelTimer=0,dialWheelLast=0;
 
 function style(){
  if(document.getElementById(STYLE_ID))return;
@@ -56,7 +57,7 @@ function build(){
  dial=make('div');dial.id='documentPageDial';dial.appendChild(make('div','doc-rail-kicker','Pages'));
  const head=make('div','dial-head');dialReadout=make('strong',null,'1');dialTotal=make('span',null,'/ 1');head.append(dialReadout,dialTotal);dial.appendChild(head);
  dialStage=make('div','dial-stage');dialStage.tabIndex=0;dialStage.setAttribute('role','slider');dialStage.setAttribute('aria-label','Page dial');dialProgress=make('div','dial-progress');dialMarks=make('div','dial-marks');dialThumb=make('div','dial-thumb');dialThumb.appendChild(make('div','dial-grip'));dialBubble=make('div','dial-bubble','Page 1');dialStage.append(dialProgress,dialMarks,dialThumb,dialBubble);dial.appendChild(dialStage);
- const foot=make('div','dial-foot');foot.innerHTML='<b>↕</b><span>drag to page</span>';dial.appendChild(foot);bar.appendChild(dial);
+ const foot=make('div','dial-foot');foot.innerHTML='<b>↕</b><span>drag / scroll</span>';dial.appendChild(foot);bar.appendChild(dial);
  const modes=make('div');modes.id='documentRailModes';[penBtn,handBtn,interactBtn].forEach(b=>{if(b)modes.appendChild(b)});if(modes.childNodes.length)bar.appendChild(modes);
  const acts=make('div');acts.id='documentRailActions';[reopenBtn,closeBtn].forEach(b=>{if(b)acts.appendChild(b)});if(acts.childNodes.length)bar.appendChild(acts);
  wireDial();bar.dataset.rightRailReady='1';sync(true);return true;
@@ -73,12 +74,22 @@ function marks(m){
 }
 function commit(p){p=Math.max(1,Math.min(maxPage(),Math.round(p)));visual(p);if(currentPage()===p)return;pageBox.value=String(p);pageBox.dispatchEvent(new Event('change',{bubbles:true}))}
 function pageAt(y){const r=dialStage.getBoundingClientRect(),u=Math.max(1,r.height-20),q=Math.max(0,Math.min(1,(y-r.top-10)/u));return Math.max(1,Math.min(maxPage(),Math.round(1+q*(maxPage()-1))))}
+function dialYForPage(p){const h=dialStage?.clientHeight||200;return 10+pct(p,maxPage())*Math.max(1,h-20)}
 function wireDial(){
  dialStage.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();dragging=true;dial.classList.add('dragging');try{dialStage.setPointerCapture(e.pointerId)}catch{}previewPage=pageAt(e.clientY);visual(previewPage)});
  dialStage.addEventListener('pointermove',e=>{if(!dragging)return;e.preventDefault();previewPage=pageAt(e.clientY);visual(previewPage)});
  const end=e=>{if(!dragging)return;e.preventDefault();dragging=false;dial.classList.remove('dragging');try{dialStage.releasePointerCapture(e.pointerId)}catch{}commit(previewPage)};dialStage.addEventListener('pointerup',end);dialStage.addEventListener('pointercancel',end);
  dialStage.addEventListener('keydown',e=>{let p=currentPage();if(e.key==='ArrowUp'||e.key==='PageUp')p--;else if(e.key==='ArrowDown'||e.key==='PageDown')p++;else if(e.key==='Home')p=1;else if(e.key==='End')p=maxPage();else return;e.preventDefault();commit(p)});
- dialStage.addEventListener('wheel',e=>{e.preventDefault();commit(currentPage()+(e.deltaY>0?1:-1))},{passive:false});
+ dialStage.addEventListener('wheel',e=>{
+  e.preventDefault();e.stopPropagation();
+  let dy=e.deltaY||0;if(e.deltaMode===1)dy*=18;else if(e.deltaMode===2)dy*=dialStage.clientHeight;
+  dy=Math.max(-55,Math.min(55,dy));
+  const now=performance.now(),r=dialStage.getBoundingClientRect(),lo=10,hi=Math.max(10,r.height-10);
+  if(dialWheelY==null||now-dialWheelLast>180)dialWheelY=dialYForPage(currentPage());
+  dialWheelLast=now;dialWheelY=Math.max(lo,Math.min(hi,dialWheelY+dy*.9));
+  previewPage=pageAt(r.top+dialWheelY);dragging=true;dial.classList.add('dragging');visual(previewPage);
+  clearTimeout(dialWheelTimer);dialWheelTimer=setTimeout(()=>{dragging=false;dial.classList.remove('dragging');commit(previewPage);dialWheelY=null},140);
+ },{passive:false});
 }
 function sync(force=false){
  if(!bar||bar.dataset.rightRailReady!=='1'||!dial)return;const p=currentPage(),m=maxPage(),z=(zoomLabel?.textContent||'').trim();if(force||m!==lastMax){lastMax=m;marks(m)}if(!dragging&&(force||p!==lastPage)){lastPage=p;visual(p)}if(force||z!==lastZoom){lastZoom=z;zoomLabel.title=`Zoom ${z}`}
