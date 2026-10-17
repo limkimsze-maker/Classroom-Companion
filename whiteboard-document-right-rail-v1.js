@@ -88,7 +88,7 @@ function wireDial(){
  dialStage.addEventListener('wheel',e=>{
   e.preventDefault();e.stopPropagation();cancelInertia();
   const raw=e.deltaY||0,wd=Math.abs(e.wheelDeltaY||0),isMouse=e.deltaMode!==0||((wd===120||wd===240||wd===360)&&Math.abs(raw)>=50&&Math.abs(e.deltaX||0)<2);
-  if(isMouse){commit(currentPage()+(raw>0?1:-1));return}
+  if(isMouse){commit(currentPage()+(raw>0?-1:1));return}
   let fingerDy=-raw;if(e.deltaMode===1)fingerDy*=18;else if(e.deltaMode===2)fingerDy*=dialStage.clientHeight;
   fingerDy=clamp(fingerDy,-80,80)*1.35;
   const now=performance.now(),lo=10,hi=Math.max(10,dialStage.clientHeight-10);
