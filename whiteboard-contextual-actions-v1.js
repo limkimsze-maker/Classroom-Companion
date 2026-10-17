@@ -115,10 +115,9 @@ function onWheel(e){
 window.addEventListener('wheel',onWheel,{passive:false,capture:true});
 })();
 
-/* Page dial: lock input type and direction for an entire wheel/trackpad flick.
-   Trackpad finger DOWN must always move the dial down and increase page number.
-   Trackpad finger UP must always move the dial up and decrease page number.
-   A physical mouse wheel keeps wheel-down = higher page number. */
+/* Page dial: use the trackpad's real reported direction directly.
+   On this device, flick DOWN reports positive deltaY, so DOWN increases the page number;
+   flick UP reports negative deltaY, so UP decreases the page number. */
 (function(){
 'use strict';
 let inputMode=null,lastEvent=0,dialY=null,finishTimer=0;
@@ -147,7 +146,6 @@ function onDialWheel(e){
  if(newGesture){inputMode=classify(e);dialY=yForPage(stage,current(box,max),max)}
  lastEvent=now;
  let dy=e.deltaY||0;if(e.deltaMode===1)dy*=18;else if(e.deltaMode===2)dy*=stage.clientHeight;
- if(inputMode==='trackpad')dy=-dy;
  dy=clamp(dy,-70,70);dialY=clamp((dialY??yForPage(stage,current(box,max),max))+dy,10,Math.max(10,stage.clientHeight-10));
  const p=pageForY(stage,dialY,max);showPreview(stage,p,max,dialY);
  clearTimeout(finishTimer);finishTimer=setTimeout(()=>{
