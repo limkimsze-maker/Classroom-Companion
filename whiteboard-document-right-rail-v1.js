@@ -82,7 +82,10 @@ function wireDial(){
  dialStage.addEventListener('keydown',e=>{let p=currentPage();if(e.key==='ArrowUp'||e.key==='PageUp')p--;else if(e.key==='ArrowDown'||e.key==='PageDown')p++;else if(e.key==='Home')p=1;else if(e.key==='End')p=maxPage();else return;e.preventDefault();commit(p)});
  dialStage.addEventListener('wheel',e=>{
   e.preventDefault();e.stopPropagation();
-  let dy=e.deltaY||0;if(e.deltaMode===1)dy*=18;else if(e.deltaMode===2)dy*=dialStage.clientHeight;
+  const raw=e.deltaY||0;
+  const likelyPrecisionTrackpad=e.deltaMode===0&&(Math.abs(raw)<70||Math.abs(raw%1)>0.001);
+  let dy=likelyPrecisionTrackpad?-raw:raw;
+  if(e.deltaMode===1)dy*=18;else if(e.deltaMode===2)dy*=dialStage.clientHeight;
   dy=Math.max(-55,Math.min(55,dy));
   const now=performance.now(),r=dialStage.getBoundingClientRect(),lo=10,hi=Math.max(10,r.height-10);
   if(dialWheelY==null||now-dialWheelLast>180)dialWheelY=dialYForPage(currentPage());
