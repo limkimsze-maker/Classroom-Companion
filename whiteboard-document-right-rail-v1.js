@@ -1,11 +1,11 @@
 (function(){
 'use strict';
-const STYLE_ID='documentRightRailStylesV6';
+const STYLE_ID='documentRightRailStylesV7';
 const TOUCH_PX_PER_PAGE=12;
 const TRACKPAD_PX_PER_PAGE=22;
 const TRACKPAD_MAX_STEPS=4;
-const TRACKPAD_SIGN_KEY='cc_page_dial_trackpad_sign_v1';
-const DEFAULT_TRACKPAD_SIGN=-1; // this device: physical flick down must increase page
+const TRACKPAD_SIGN_KEY='cc_page_dial_trackpad_sign_v2';
+const DEFAULT_TRACKPAD_SIGN=1;
 let bar,pageBox,pageTotal,zoomLabel,minusBtn,plusBtn,searchBtn,interactBtn,reopenBtn,closeBtn,penBtn,handBtn;
 let dial,dialStage,dialProgress,dialThumb,dialReadout,dialTotal,dialBubble,dialMarks;
 let dragging=false,previewPage=1,lastPage=-1,lastMax=-1,lastZoom='';
@@ -92,8 +92,8 @@ function wireDial(){
   if(!dragging||e.pointerId!==dragId)return;e.preventDefault();
   dragRemainder+=e.clientY-dragLastY;dragLastY=e.clientY;
   let steps=0;
-  while(dragRemainder>=TOUCH_PX_PER_PAGE){steps++;dragRemainder-=TOUCH_PX_PER_PAGE}
-  while(dragRemainder<=-TOUCH_PX_PER_PAGE){steps--;dragRemainder+=TOUCH_PX_PER_PAGE}
+  while(dragRemainder>=TOUCH_PX_PER_PAGE){steps--;dragRemainder-=TOUCH_PX_PER_PAGE}
+  while(dragRemainder<=-TOUCH_PX_PER_PAGE){steps++;dragRemainder+=TOUCH_PX_PER_PAGE}
   if(steps)go(previewPage+steps);
  });
  const end=e=>{
@@ -109,7 +109,7 @@ function wireDial(){
   const raw=e.deltaY||0;if(!raw)return;
   if(isMouseWheel(e)){
    const now=performance.now();if(now<mouseLockUntil)return;mouseLockUntil=now+90;
-   go(currentPage()+(raw>0?1:-1));
+   go(currentPage()+(raw>0?-1:1));
    return;
   }
   const now=performance.now();
