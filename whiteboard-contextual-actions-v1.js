@@ -40,7 +40,6 @@ schedule();
 /* PDF rail cleanup: Interact is unnecessary for PDFs; page dial remains zoom-independent. */
 (function(){
 'use strict';
-let lastPdfState=null;
 function syncPdfRail(){
  const bar=document.getElementById('documentQuickBar');
  const pdf=document.getElementById('documentPdfCanvas');
@@ -58,11 +57,59 @@ function syncPdfRail(){
   dial.dataset.zoomIndependent='true';
   dial.title='Drag to jump to any page while keeping the current zoom level';
  }
- lastPdfState=isPdf;
 }
 const observer=new MutationObserver(()=>requestAnimationFrame(syncPdfRail));
 observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
 document.addEventListener('change',e=>{if(e.target?.matches?.('#documentQuickBar input[type="number"]'))requestAnimationFrame(syncPdfRail)},true);
 setInterval(syncPdfRail,500);
 syncPdfRail();
+})();
+
+/* Reliable wheel/trackpad page scrolling in Hand mode, even when document controls are created after startup. */
+(function(){
+'use strict';
+let accX=0,accY=0,lastT=0,cooldownUntil=0,resetTimer=0;
+const WINDOW_MS=220,THRESHOLD=42,COOLDOWN_MS=360;
+function active(){return document.body.classList.contains('document-open-mode')}
+function inside(board,e){
+ const r=board?.getBoundingClientRect();if(!r)return false;
+ const x=Number.isFinite(e.clientX)?e.clientX:r.left+r.width/2;
+ const y=Number.isFinite(e.clientY)?e.clientY:r.top+r.height/2;
+ return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
+}
+function go(box,dir){
+ const now=Math.max(1,+box.value||1),max=Math.max(1,+box.max||1),to=Math.max(1,Math.min(max,now+dir));
+ if(to===now)return false;
+ box.value=String(to);
+ box.dispatchEvent(new Event('change',{bubbles:true}));
+ const toast=document.getElementById('toast');
+ if(toast){toast.textContent=`Page ${to}`;toast.classList.add('show');clearTimeout(go.t);go.t=setTimeout(()=>toast.classList.remove('show'),700)}
+ return true;
+}
+function onWheel(e){
+ if(!active()||e.ctrlKey||e.metaKey)return;
+ const board=document.getElementById('boardWrap');
+ const bar=document.getElementById('documentQuickBar');
+ const hand=document.getElementById('documentTouchNavBtn');
+ const box=bar?.querySelector('input[type=number]');
+ if(!board||!box||!inside(board,e))return;
+ const handOn=!hand||hand.classList.contains('active')||hand.getAttribute('aria-pressed')==='true';
+ if(!handOn)return;
+ let dy=e.deltaY||0,dx=e.deltaX||0;
+ if(e.deltaMode===1){dy*=18;dx*=18}else if(e.deltaMode===2){dy*=innerHeight;dx*=innerWidth}
+ if(Math.abs(dy)<=Math.abs(dx)*1.08)return;
+ e.preventDefault();
+ e.stopImmediatePropagation();
+ const t=performance.now();
+ if(t<cooldownUntil)return;
+ if(t-lastT>WINDOW_MS){accX=0;accY=0}
+ lastT=t;accX+=dx;accY+=dy;
+ clearTimeout(resetTimer);
+ resetTimer=setTimeout(()=>{accX=0;accY=0},WINDOW_MS);
+ if(Math.abs(accY)>=THRESHOLD){
+  const dir=accY>0?1:-1;accX=0;accY=0;
+  if(go(box,dir))cooldownUntil=t+COOLDOWN_MS;
+ }
+}
+window.addEventListener('wheel',onWheel,{passive:false,capture:true});
 })();
