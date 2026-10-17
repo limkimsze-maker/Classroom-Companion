@@ -58,10 +58,10 @@ function wireDial(){
  dialStage.addEventListener('pointermove',e=>{if(!dragging)return;e.preventDefault();previewPage=pageForY(e.clientY);visual(previewPage)});
  const end=e=>{if(!dragging)return;e.preventDefault();dragging=false;dial.classList.remove('dragging');try{dialStage.releasePointerCapture(e.pointerId)}catch{}commit(previewPage)};dialStage.addEventListener('pointerup',end);dialStage.addEventListener('pointercancel',end);
  dialStage.addEventListener('keydown',e=>{let p=currentPage();if(e.key==='ArrowUp'||e.key==='PageUp')p--;else if(e.key==='ArrowDown'||e.key==='PageDown')p++;else if(e.key==='Home')p=1;else if(e.key==='End')p=maxPage();else return;e.preventDefault();commit(p)});
- // ONE wheel/trackpad handler only. Positive deltaY = dial down = higher page number.
+ // ONE wheel/trackpad handler only. Inverted handling for this trackpad.
  dialStage.addEventListener('wheel',e=>{
   e.preventDefault();e.stopPropagation();
-  let dy=e.deltaY||0;if(e.deltaMode===1)dy*=18;else if(e.deltaMode===2)dy*=dialStage.clientHeight;
+  let dy=-(e.deltaY||0);if(e.deltaMode===1)dy*=18;else if(e.deltaMode===2)dy*=dialStage.clientHeight;
   dy=Math.max(-70,Math.min(70,dy));
   const now=performance.now(),lo=10,hi=Math.max(10,dialStage.clientHeight-10);
   if(wheelY==null||now-wheelLast>220)wheelY=yForPage(currentPage());
