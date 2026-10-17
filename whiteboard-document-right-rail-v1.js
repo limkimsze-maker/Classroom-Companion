@@ -107,7 +107,7 @@ function ensureRail(){
  [penBtn,handBtn,interactBtn].forEach(b=>{if(b&&b.parentElement!==railModes)railModes.appendChild(b)});
  if(!railActions){railActions=el('div');railActions.id='documentRailActions';bar.appendChild(railActions)}
  [reopenBtn,closeBtn].forEach(b=>{if(b&&b.parentElement!==railActions)railActions.appendChild(b)});
- sync(true);return true;
+ return true;
 }
 function maxPage(){return Math.max(1,+pageBox?.max||parseInt((pageTotal?.textContent||'1').replace(/\D/g,''),10)||1)}
 function currentPage(){return Math.max(1,Math.min(maxPage(),+pageBox?.value||1))}
@@ -155,15 +155,15 @@ function wireDial(){
 }
 function sync(force=false){
  if(!pageBox||!dial)return;
- const p=currentPage(),m=maxPage(),z=(zoomLabel?.textContent||'').trim();
- if(force||m!==lastMax){lastMax=m;renderMarks(m)}
- if(!dragging&&(force||p!==lastPage||m!==lastMax)){lastPage=p;setVisual(p,false)}
+ const p=currentPage(),m=maxPage(),z=(zoomLabel?.textContent||'').trim(),maxChanged=m!==lastMax;
+ if(force||maxChanged){lastMax=m;renderMarks(m)}
+ if(!dragging&&(force||p!==lastPage||maxChanged)){lastPage=p;setVisual(p,false)}
  if(force||z!==lastZoom){lastZoom=z;if(zoomLabel)zoomLabel.title=`Zoom ${z}`}
 }
 function maintain(){
- ensureRail();sync(false);requestAnimationFrame(maintain)
+ if(ensureRail())sync(false);requestAnimationFrame(maintain)
 }
-ensureStyle();ensureRail();
-new MutationObserver(()=>ensureRail()).observe(document.body,{childList:true,subtree:true});
+ensureStyle();if(ensureRail())sync(true);
+new MutationObserver(()=>{if(ensureRail())sync(false)}).observe(document.body,{childList:true,subtree:true});
 requestAnimationFrame(maintain);
 })();
