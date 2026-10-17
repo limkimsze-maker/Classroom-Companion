@@ -36,3 +36,33 @@ document.addEventListener('click',schedule,true);
 document.addEventListener('keyup',schedule,true);
 schedule();
 })();
+
+/* PDF rail cleanup: Interact is unnecessary for PDFs; page dial remains zoom-independent. */
+(function(){
+'use strict';
+let lastPdfState=null;
+function syncPdfRail(){
+ const bar=document.getElementById('documentQuickBar');
+ const pdf=document.getElementById('documentPdfCanvas');
+ if(!bar||!pdf)return;
+ const isPdf=getComputedStyle(pdf).display!=='none'&&document.body.classList.contains('document-open-mode');
+ const interact=[...bar.querySelectorAll('button')].find(b=>/interact with displayed content|return to annotation mode/i.test(b.title||''));
+ if(interact){
+  interact.style.display=isPdf?'none':'';
+  interact.hidden=isPdf;
+  interact.setAttribute('aria-hidden',isPdf?'true':'false');
+  interact.tabIndex=isPdf?-1:0;
+ }
+ const dial=document.getElementById('documentPageDial');
+ if(dial){
+  dial.dataset.zoomIndependent='true';
+  dial.title='Drag to jump to any page while keeping the current zoom level';
+ }
+ lastPdfState=isPdf;
+}
+const observer=new MutationObserver(()=>requestAnimationFrame(syncPdfRail));
+observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
+document.addEventListener('change',e=>{if(e.target?.matches?.('#documentQuickBar input[type="number"]'))requestAnimationFrame(syncPdfRail)},true);
+setInterval(syncPdfRail,500);
+syncPdfRail();
+})();
