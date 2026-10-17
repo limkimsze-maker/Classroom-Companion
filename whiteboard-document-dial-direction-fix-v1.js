@@ -41,7 +41,7 @@ function onWheel(e){
  const m=maxPage(box),now=performance.now();
  if(y==null||now-lastEvent>GAP)y=yForPage(stage,currentPage(box,m),m);
  lastEvent=now;
- let dy=-(e.deltaY||0); // forced inverse: trackpad flick down moves dial down / page increases on this setup
+ let dy=(e.deltaY||0); // single dial rule: use browser-reported direction directly
  if(e.deltaMode===1)dy*=18;
  else if(e.deltaMode===2)dy*=stage.clientHeight;
  dy=clamp(dy,-70,70);
