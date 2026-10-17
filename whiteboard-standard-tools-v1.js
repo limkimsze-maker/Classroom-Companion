@@ -1,6 +1,10 @@
 (function(){
 'use strict';
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
+const visibilityStyle=document.createElement('style');
+visibilityStyle.textContent='#textBtn,#eraserBtn,#selectBtn,#highlighterBtn,#redoBtn{display:inline-flex!important}.colors,.sizeControl{display:flex!important}';
+document.head.appendChild(visibilityStyle);
+for(const el of [document.getElementById('textBtn'),document.getElementById('eraserBtn'),document.querySelector('.colors'),document.querySelector('.sizeControl')])if(el)el.hidden=false;
 const edition=(new URLSearchParams(location.search).get('edition')||'en').toLowerCase();
 const labels={
  en:{high:'🖍 Highlighter',redo:'Redo',thickness:'Thickness'},
@@ -10,7 +14,6 @@ const labels={
 };
 const X=labels[edition]||labels.en;
 const tools=document.querySelector('.tools');if(!tools)return;
-const clone=v=>JSON.parse(JSON.stringify(v));
 const snap=()=>JSON.stringify(strokes);
 let highlightDrawing=false,highlightCurrent=null,redoStack=[],restoring=false,mutationBefore=null;
 function rgba(hex,a){
