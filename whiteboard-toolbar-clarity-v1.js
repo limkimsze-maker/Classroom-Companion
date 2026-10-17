@@ -3,6 +3,7 @@
 const edition=(new URLSearchParams(location.search).get('edition')||'en').toLowerCase();
 const restoreLabels={en:'Restore',zh:'恢复',ms:'Pulihkan',ta:'மீட்டமை'};
 const restoreTitles={en:'Restore saved whiteboard',zh:'恢复已保存的白板',ms:'Pulihkan papan putih yang disimpan',ta:'சேமித்த வெண்பலகையை மீட்டமை'};
+const exportLabels={en:'Export PNG',zh:'导出 PNG',ms:'Eksport PNG',ta:'PNG ஏற்றுமதி'};
 let queued=false;
 function setText(el,text){if(el&&el.textContent!==text)el.textContent=text}
 function setAttr(el,name,value){if(el&&el.getAttribute(name)!==value)el.setAttribute(name,value)}
@@ -29,11 +30,20 @@ function tidyToolbar(){
  const docOpen=document.getElementById('openDocumentBtn');
  const label=restoreLabels[edition]||restoreLabels.en;
  const title=restoreTitles[edition]||restoreTitles.en;
- for(const b of tools.querySelectorAll('button')){
+ const exportLabel=exportLabels[edition]||exportLabels.en;
+ for(const b of [...tools.querySelectorAll('button')]){
   if(b===docOpen)continue;
   const txt=(b.textContent||'').trim();
+  const lower=txt.toLowerCase();
+  const bTitle=(b.title||'').trim().toLowerCase();
   if(/^📂\s*(Open|打开|Buka|திற)$/i.test(txt)){
-   setText(b,'📂 '+label);setAttr(b,'title',title);setAttr(b,'aria-label',title);
+   setText(b,'📂 '+label);setAttr(b,'title',title);setAttr(b,'aria-label',title);continue;
+  }
+  if(lower.includes('background')||lower.includes('背景')||lower.includes('latar')||lower.includes('பின்னணி')||bTitle==='background'||bTitle==='背景'||bTitle==='latar'||bTitle==='பின்னணி'){
+   b.remove();continue;
+  }
+  if(/png/i.test(txt)||/png/i.test(b.title||'')){
+   setText(b,'⇩ '+exportLabel);setAttr(b,'title','Export the current whiteboard as a PNG image');setAttr(b,'aria-label','Export whiteboard as PNG');
   }
  }
  if(docOpen){
