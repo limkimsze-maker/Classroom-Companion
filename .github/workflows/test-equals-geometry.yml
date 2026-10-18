@@ -7,6 +7,7 @@ on:
       - fix/short-handwritten-equals-20261018
       - fix/equal-short-wide-spacing-20261018
       - fix/equals-retraced-stroke-20261018
+      - feature/equals-34-labelled-samples-20261018
   workflow_dispatch:
 jobs:
   test:
