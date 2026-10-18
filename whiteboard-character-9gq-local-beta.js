@@ -72,18 +72,60 @@ function importExamples(json){
  prototypes=samples;
  return{count:samples.length,byLabel};
 }
+/* Default recogniser without saved examples. Geometry only; no user
+   handwriting templates in the public JavaScript. Deliberately abstains
+   when 9, g, and q are visually indistinguishable in Auto mode. */
+function builtInShape(strokes,W,H,mode){
+ if(!['digits','lowercase'].includes(mode)||!Array.isArray(strokes)||
+    strokes.length<1||strokes.length>2||!(W>0)||!(H>0))return null;
+ const paths=strokes.map(s=>(s.points||[]).map(p=>({x:p.x*W,y:p.y*H})));
+ const pts=paths.flat();
+ if(pts.length<13)return null;
+ const minX=Math.min(...pts.map(p=>p.x)),maxX=Math.max(...pts.map(p=>p.x));
+ const minY=Math.min(...pts.map(p=>p.y)),maxY=Math.max(...pts.map(p=>p.y));
+ const width=maxX-minX,height=maxY-minY;
+ if(width<12||height<22||width/height<.22||width/height>1.5)return null;
+ const norm=pts.map(p=>({x:(p.x-minX)/width,y:(p.y-minY)/height}));
+ const head=norm.filter(p=>p.y<.58),tail=norm.filter(p=>p.y>.72);
+ if(head.length<8||tail.length<3)return null;
+ const headX=Math.max(...head.map(p=>p.x))-Math.min(...head.map(p=>p.x));
+ const headY=Math.max(...head.map(p=>p.y))-Math.min(...head.map(p=>p.y));
+ if(headX<.40||headY<.25)return null;
+ // Detect a closed or nearly closed upper oval with an extended descender.
+ const sequence=norm.filter(p=>p.y<.68);
+ let turns=0,travel=0;
+ for(let i=2;i<sequence.length;i++){
+  const a=sequence[i-2],b=sequence[i-1],v=sequence[i];
+  const dx1=b.x-a.x,dy1=b.y-a.y,dx2=v.x-b.x,dy2=v.y-b.y;
+  const cross=dx1*dy2-dy1*dx2;
+  if(Math.abs(cross)>.0007)turns+=Math.sign(cross);
+  travel+=Math.hypot(dx2,dy2);
+ }
+ if(travel<1.4||Math.abs(turns)<3)return null;
+ const tailEnd=norm.at(-1);
+ // A digit-only input can safely call a nine-like loop '9'.
+ if(mode==='digits')return{text:'9',tokens:[],uncertain:[],engine:'local-9gq-geometry',format:'number'};
+ // Lowercase q generally has a straighter right-hand descender; a g has
+ // a more strongly curving lower hook. Abstain for intermediate endings.
+ const tailPts=norm.slice(-Math.max(4,Math.ceil(norm.length*.16)));
+ const xSpan=Math.max(...tailPts.map(p=>p.x))-Math.min(...tailPts.map(p=>p.x));
+ if(xSpan<.075&&tailEnd.x>.53)return{text:'q',tokens:[],uncertain:[],engine:'local-9gq-geometry',format:'letter'};
+ if(xSpan>.24&&tailEnd.x<.50)return{text:'g',tokens:[],uncertain:[],engine:'local-9gq-geometry',format:'letter'};
+ return null;
+}
 function match(strokes,W,H,mode){
- if(!prototypes.length||!['auto','digits','lowercase'].includes(mode))return null;
+ if(!prototypes.length)return builtInShape(strokes,W,H,mode);
+ if(!['auto','digits','lowercase'].includes(mode))return null;
  const q=feature(strokes,W,H);if(!q)return null;
  // Prevent a whole equation from being replaced with one character.
  if(q.n>3)return null;
  const ranked=prototypes.map(p=>({label:p.label,d:distance(q,p)})).filter(x=>Number.isFinite(x.d)).sort((a,b)=>a.d-b.d);
- if(!ranked.length)return null;
+ if(!ranked.length)return builtInShape(strokes,W,H,mode);
  const best=ranked[0],competition=ranked.find(x=>x.label!==best.label);
  // Conservative: class must have at least two nearby exemplars, plus a clear
  // distance margin over other classes. Ambiguous handwriting falls back.
  const support=ranked.filter(x=>x.label===best.label&&x.d<best.d+.055).length;
- if(best.d>.085||support<2||(competition&&competition.d-best.d<.035))return null;
+ if(best.d>.085||support<2||(competition&&competition.d-best.d<.035))return builtInShape(strokes,W,H,mode);
  if(mode==='digits'&&best.label!=='9'||mode==='lowercase'&&best.label==='9')return null;
  return{text:best.label,tokens:[],uncertain:[],engine:'local-teacher-9gq',format:'personal'};
 }
@@ -109,7 +151,7 @@ function init(){
  else{document.body.append(btn,input)}
 }
 load();
-root.WhiteboardCharacter9GQ=Object.freeze({feature,match,importExamples,info:()=>({count:prototypes.length})});
+root.WhiteboardCharacter9GQ=Object.freeze({feature,match,importExamples,builtInShape,info:()=>({count:prototypes.length,geometryBuiltIn:true})});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
 else init();
 })(window);
