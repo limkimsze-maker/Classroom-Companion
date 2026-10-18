@@ -4,7 +4,7 @@
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-let selecting=false,area=null,selectionPointer=null,start=null,dialog=null,session=0;
+let selecting=false,area=null,selectionPointer=null,start=null,dialog=null,session=0,pendingLearning=null;
 const history=[];
 const style=document.createElement('style');style.textContent=`
 #handwritingBeautifyBtn{white-space:nowrap}
@@ -21,12 +21,15 @@ const style=document.createElement('style');style.textContent=`
 .handwriting-review img{display:block;max-width:100%;height:110px;object-fit:contain;object-position:left center;background:#fafcfc;border-radius:8px}
 .handwriting-review .handwriting-clean-preview{height:150px;background:white}
 .handwriting-review .handwriting-actions{display:flex;gap:8px;margin-top:14px}
-.handwriting-review .handwriting-actions button:first-child{flex:1}
+.handwriting-review .handwriting-actions .handwriting-apply{flex:1}
 .handwriting-review .handwriting-appearance{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:7px 0}
 .handwriting-review .handwriting-appearance label{margin:0}
 .handwriting-review .handwriting-appearance select{font:13px Arial,sans-serif;max-width:150px;padding:5px 8px;border:1px solid #cfd9de;border-radius:7px;background:white;color:#17324d}
 .handwriting-review [role=status]{min-height:20px;color:#667085}
 .handwriting-review .handwriting-error{color:#b42318}
+.handwriting-review .handwriting-feedback-controls{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:8px}
+.handwriting-review .handwriting-feedback-controls button{font:700 12px Arial,sans-serif}
+.handwriting-review .handwriting-feedback-message{flex:1;min-width:160px;margin:0;font:12px/1.45 Arial,sans-serif;color:#475467}
 .handwriting-review [hidden]{display:none!important}
 `;document.head.appendChild(style);
 const btn=document.createElement('button');btn.id='handwritingBeautifyBtn';btn.type='button';btn.className='btn soft';btn.textContent='✨ Beautify';btn.title='Recognise handwritten numbers, learned letters and equations';tools.insertBefore(btn,document.getElementById('undoBtn'));
@@ -35,7 +38,7 @@ function sayLocal(text){if(typeof say==='function')say(text)}
 function groupBounds(group){const pts=group.flatMap(s=>s.points),xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x=Math.min(...xs),y=Math.min(...ys);return{x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y}}
 function stop(e){e.preventDefault();e.stopImmediatePropagation()}
 function endSelection(){const id=selectionPointer;selecting=false;selectionPointer=null;start=null;area?.remove();area=null;board.classList.remove('handwriting-selecting');btn.classList.remove('active');try{if(id!==null)canvas.releasePointerCapture(id)}catch{}}
-function closeReview(){session++;window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();dialog?.remove();dialog=null}
+function closeReview(){if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}session++;window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();dialog?.remove();dialog=null}
 function svgInk(group){
  const b=groupBounds(group),W=Math.max(10,b.w*cssW),H=Math.max(10,b.h*cssH),els=[];
  for(const s of group){const color=/^#[0-9a-f]{3,8}$/i.test(s.colour||'')?s.colour:'#17324d',points=s.points.map(p=>[(p.x-b.x)*cssW+10,(p.y-b.y)*cssH+10]);
@@ -54,7 +57,7 @@ function undoBeautify(e){
 async function review(group){
  group=group.filter(s=>strokes.includes(s)&&eligible(s));if(!group.length){beginSelection();return}
  if(group.length>180||group.reduce((n,s)=>n+s.points.length,0)>16000){beginSelection();sayLocal('Select a shorter number or equation and try again.');return}
- endSelection();closeReview();const id=session,original=JSON.stringify(group);let recognition=null,readVersion=0,lastReading='',reading=true;
+ endSelection();closeReview();const id=session,original=JSON.stringify(group);let recognition=null,readVersion=0,lastReading='',reading=true,testing=false,feedbackStamp=0;
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
@@ -78,28 +81,66 @@ async function review(group){
  const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Reading handwriting on this device…';
  const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Beautified preview in the original writing area';preview.hidden=true;
  const actions=document.createElement('div');actions.className='handwriting-actions';
- const apply=document.createElement('button');apply.type='button';apply.className='btn soft';apply.textContent='✓ Apply beautify';apply.disabled=true;
+ const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply beautify';apply.disabled=true;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=closeReview;
+ const feedbackArea=document.createElement('div');feedbackArea.className='handwriting-feedback-controls';
+ const test=document.createElement('button');test.type='button';test.className='btn';test.textContent='↻ Learn & Test Again';test.title='Save a confirmed correction locally, then read the SAME original strokes again';
+ const feedback=document.createElement('p');feedback.className='handwriting-feedback-message';feedback.setAttribute('aria-live','polite');
+ feedback.textContent='Correct the reading above, then test the same ink. Draw again afterward to test generalisation.';
+ feedbackArea.append(test,feedback);
+ function clearProvisional(){
+  feedbackStamp++;
+  if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}
+  feedback.textContent='Edit the reading and test again; earlier provisional learning was discarded.';
+ }
  function updatePreview(){
-  const obj=formatted();apply.disabled=!obj||reading;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
+  const obj=formatted();apply.disabled=!obj||reading||testing;test.disabled=!obj||reading||testing||!!pendingLearning;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
   status.textContent=reading?'Reading handwriting on this device…':obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Check the notation. Math accepts LaTeX, such as \\frac{1}{2}; units accept cm2 or cm².':'Enter or correct the reading to continue.';
  }
- input.addEventListener('input',updatePreview);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
+ input.addEventListener('input',()=>{clearProvisional();updatePreview()});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
  colourSelect.addEventListener('change',updatePreview);
  insert.addEventListener('change',()=>{if(!insert.value)return;const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
+ test.onclick=async()=>{
+  if(reading||testing||pendingLearning||!formatted())return;
+  const learner=window.WhiteboardHandwritingLearning,recogniser=window.WhiteboardHandwritingMath;
+  if(!learner?.confirm||!recogniser?.recognize){feedback.textContent='Local learning is unavailable. Refresh Beta and try again.';return}
+  const answer=input.value,mode=modeSelect.value,ticket=++feedbackStamp;
+  let training=null;
+  try{training=learner.confirm(recognition,answer,recogniser.rasterDigit,group,cssW,cssH,mode)}
+  catch{feedback.textContent='Unable to save a learning example. You can still apply the correction.';return}
+  if(!training?.count){feedback.textContent='No new example was saved. You can still apply the corrected text.';return}
+  pendingLearning=training;testing=true;updatePreview();
+  feedback.textContent=training.persistent?'Example saved locally. Re-reading original strokes…':'Example saved for this session. Re-reading original strokes…';
+  try{
+   const again=await recogniser.recognize(group,cssW,cssH,{mode});
+   if(session!==id||dialog!==backdrop||ticket!==feedbackStamp)return;
+   if(again.text===answer){
+    feedback.textContent=again.engine==='local-personal-ink'?
+     'Same strokes now match your saved local example. Draw them again to test generalisation.':
+     'Same strokes now read correctly. Draw them again to test generalisation.';
+   }else feedback.textContent='Re-read result: '+again.text+'. Your correction is saved, but this recogniser still disagrees. Apply the correct preview or edit again.';
+  }catch(error){
+   if(session===id&&dialog===backdrop&&ticket===feedbackStamp)
+    feedback.textContent='Example saved, but the re-read could not finish. You may still Apply or Undo.';
+  }finally{
+   if(session===id&&dialog===backdrop&&ticket===feedbackStamp){testing=false;updatePreview()}
+  }
+ };
  apply.onclick=()=>{
-  if(reading)return;
+  if(reading||testing)return;
   const obj=formatted();if(!obj){updatePreview();return}
   if(!group.every(s=>strokes.includes(s))||JSON.stringify(group)!==original){status.textContent='This handwriting changed. Cancel and select it again.';apply.disabled=true;return}
   const before=clone(strokes),first=Math.min(...group.map(s=>strokes.indexOf(s))),set=new Set(group);
   obj.smartOriginal=clone(group);obj.handwritingBeautified=true;
+  // Committing the preview transfers provisional learning to Undo history.
+  let learning=pendingLearning;pendingLearning=null;
   strokes=strokes.filter(s=>!set.has(s));strokes.splice(first,0,obj);window.WhiteboardMarqueeSelection?.clear();tool='select';closeReview();redraw();
-  let learning=null;try{if(recognition&&(recognition.format!=='latex'||recognition.engine==='local-stacked-fraction'))learning=window.WhiteboardHandwritingLearning?.confirm(recognition,input.value,window.WhiteboardHandwritingMath.rasterDigit)}catch{}
+  if(!learning)try{learning=window.WhiteboardHandwritingLearning?.confirm(recognition,input.value,window.WhiteboardHandwritingMath.rasterDigit,group,cssW,cssH,modeSelect.value)}catch{}
   history.push({before,after:JSON.stringify(strokes),learning});if(history.length>30)history.shift();syncUi();
   sayLocal(learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
- actions.append(apply,cancel);panel.append(title,help,ink,label,input,appearance,status,preview,actions);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
+ actions.append(apply,cancel);panel.append(title,help,ink,label,input,appearance,status,preview,feedbackArea,actions);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
  window.MathJax?.startup?.promise?.then(()=>{if(session===id&&dialog===backdrop)updatePreview()}).catch(()=>{});
  async function readSelection(){
  const version=++readVersion,startText=input.value,replaceReading=!startText||startText===lastReading;recognition=null;reading=true;apply.disabled=true;status.classList.remove('handwriting-error');status.textContent='Reading handwriting on this device…';
@@ -118,7 +159,7 @@ async function review(group){
    if(result.uncertain.length)status.textContent=result.engine==='local-stacked-fraction'?'Stacked fraction detected. Correct any wrong digit before applying; this device can remember the correction.':result.format==='latex'?'Check symbols, fraction bars, powers and limits before applying.':'Some characters were uncertain. Check and correct the reading before applying.';
  }catch(error){if(session!==id||dialog!==backdrop||version!==readVersion||error.name==='AbortError')return;reading=false;updatePreview();status.textContent=error.message||'Could not read this writing. You can type the correct reading.';status.classList.add('handwriting-error');if(document.activeElement===cancel)input.focus()}
  }
- modeSelect.addEventListener('change',()=>{window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();return readSelection()});
+ modeSelect.addEventListener('change',()=>{clearProvisional();window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();return readSelection()});
  return readSelection();
 }
 function beginSelection(){
