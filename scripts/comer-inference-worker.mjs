@@ -17,8 +17,12 @@ function getEngine() {
         encoderUrl: new URL('./encoder_int8.onnx', self.location.href).href,
         decoderUrl: new URL('./decoder_int8.onnx', self.location.href).href,
         executionProvider: 'wasm',
-        beamWidth: 2,
-        maxDecodeSteps: 65
+        beamWidth: (() => {
+          const cores = navigator.hardwareConcurrency || 2;
+          const mem = navigator.deviceMemory || 4;
+          return mem <= 2 || cores <= 2 ? 1 : cores <= 4 ? 2 : 3;
+        })(),
+        maxDecodeSteps: 50
       });
       await engine.init();
       return engine;
@@ -46,7 +50,7 @@ self.onmessage = async ({ data }) => {
     const result = await engine.recognize(
       input,
       vocab,
-      mode === 'number' ? 'number' : 'expression'
+      mode === 'number' ? 'number' : mode === 'expression' ? 'expression' : 'auto'
     );
     self.postMessage({ id, latex: result.latex, totalMs: result.totalMs });
   } catch (error) {
