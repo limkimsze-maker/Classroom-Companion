@@ -59,7 +59,11 @@ function symbol(parts,H){
   const h=bounds([parts[lines.findIndex(l=>l.horizontal)]]),v=bounds([parts[lines.findIndex(l=>l.vertical)]]);
   if(h.cy>v.y+v.h*.22&&h.cy<v.y+v.h*.78)return'+';
  }
- if(parts.length===2&&lines.every(l=>l.straight&&!l.horizontal&&!l.vertical)&&lines[0].slope*lines[1].slope<0)return'×';
+ // Crossed diagonals remain multiplication even with significant pen slant.
+ // A rotated diagonal may otherwise be mistaken for a vertical line.
+ if(parts.length===2&&lines.every(l=>l.straight&&!l.horizontal)
+    &&lines[0].slope*lines[1].slope<0
+    &&parts.every(s=>{const q=bounds([s]);return q.w>H*.20&&q.h>H*.35;}))return'×';
  if(parts.length>=2&&b.w>H*.16&&b.w<H*.95){
   const bar=parts.find((s,i)=>lines[i].vertical&&bounds([s]).h>H*.65);
   if(bar&&parts.some(s=>s!==bar&&bounds([s]).h>H*.5&&bends(s)>=2))return'$';
