@@ -29,6 +29,8 @@ done
 
 # Self-host the matching ONNX Runtime WASM assets required by this bundle.
 find node_modules/onnxruntime-web/dist -maxdepth 1 -name '*.wasm' -exec cp {} vendor/comer/ \;
+# ONNX Runtime 1.24 also loads a companion ES module dynamically.
+find node_modules/onnxruntime-web/dist -maxdepth 1 -name 'ort-wasm*.mjs' -exec cp {} vendor/comer/ \;
 test -s vendor/comer/comer-worker.js
 test -s vendor/comer/encoder_int8.onnx
 test -s vendor/comer/decoder_int8.onnx
