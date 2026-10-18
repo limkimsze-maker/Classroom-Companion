@@ -10,6 +10,8 @@
   window.WhiteboardHandwritingMath=Object.freeze({
     ...existing,
     recognize(strokes,W,H,options={}) {
+      const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
+      if(equal)return Promise.resolve(equal);
       if(options.mode==='math') return demo.recognize(strokes,W,H,options);
       return original(strokes,W,H,options);
     }
