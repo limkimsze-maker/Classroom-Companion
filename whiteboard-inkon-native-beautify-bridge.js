@@ -1,4 +1,4 @@
-/* Original ink-on demo is first for Auto and Math formulas.
+/* Original ink-on demo is first for every Beautify reading mode.
    Preserve the prior V1/UJI fallback only when ink-on cannot yield a valid
    non-empty LaTeX result. Do not treat uncertain but valid output as fact. */
 (function(){
@@ -10,7 +10,6 @@
   const isValid=r=>typeof r?.text==='string'&&r.text.trim().length>0&&r.text.length<=600;
   async function recognize(strokes,W,H,options={}){
     const mode=options.mode||'auto';
-    if (mode!=='auto'&&mode!=='math') return original(strokes,W,H,options);
     try {
       const candidate=await demo.recognize(strokes,W,H,options);
       if(isValid(candidate))return {...candidate,engine:'inkon-original-demo-first'};
@@ -18,8 +17,6 @@
       if(err?.name==='AbortError')throw err;
     }
     // Failure, timeout, or no valid expression: use the existing reader.
-    // For Math mode, use its underlying mathematics reader without entering
-    // this wrapper recursively.
     if(mode==='math'){
       const oldMath=window.WhiteboardMathReader;
       if(typeof oldMath?.recognize==='function')return oldMath.recognize(strokes,W,H,options);
@@ -28,5 +25,5 @@
   }
   window.WhiteboardHandwritingMath=Object.freeze({...existing,recognize});
   const title=document.getElementById('boardSubtitle');
-  if(title) title.textContent='Experimental ink-on-first recognition in Auto · original UJI V1 fallback retained · use non-sensitive sample content';
+  if(title) title.textContent='Experimental ink-on-first Beautify recognition · original UJI V1 fallback retained · use non-sensitive sample content';
 })();
