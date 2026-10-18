@@ -38,7 +38,13 @@ function canonical(text){return String(text).replace(/\s/g,'').replace(/[‐‑�
 function confirm(result,text,raster){
  const original=result?.tokens;if(!Array.isArray(original)||typeof raster!=='function')return null;
  const tokens=original.slice();if(tokens.at(-1)?.char==='=')tokens.pop();
- const corrected=Array.from(canonical(text).replace(/=$/,''));
+ // A corrected stacked fraction teaches each digit, not the LaTeX command.
+ const stacked=result?.engine==='local-stacked-fraction'&&result?.format==='latex';
+ const formatted=stacked?String(text).trim().match(/^\\frac\{(\d{1,6})\}\{(\d{1,6})\}$/):null;
+ if(stacked&&(!formatted||!Array.isArray(result.fractionTokenCounts)
+   ||formatted[1].length!==result.fractionTokenCounts[0]
+   ||formatted[2].length!==result.fractionTokenCounts[1]))return null;
+ const corrected=Array.from(stacked?formatted[1]+formatted[2]:canonical(text).replace(/=$/,''));
  const teachable=(t,char)=>/^[0-9A-Za-z]$/.test(char)&&!['.','$','=','÷'].includes(t.char)&&t.parts?.length;
  if(tokens.length!==corrected.length||tokens.some((t,i)=>!teachable(t,corrected[i])&&canonical(t.char)!==corrected[i]))return null;
  const candidates=[];
