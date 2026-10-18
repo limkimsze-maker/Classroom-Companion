@@ -157,6 +157,7 @@ async function review(group){
   // Do not overwrite a correction entered while recognition was running.
   if(replaceReading&&input.value===startText)input.value=result.text;lastReading=result.text;updatePreview();if(document.activeElement===cancel)input.focus();
   if(result.engine==='local-litre-unit')status.textContent=result.text==='l'?'Litre symbol recognised as l. Check before applying.':'Millilitre unit recognised as ml. Check before applying.';
+  if(result.engine==='local-primary-measurement')status.textContent='Number + measurement unit recognised using P1–P6 unit context. Check before applying.';
   if(result.engine==='local-stacked-fraction'&&!result.uncertain.length)status.textContent='Stacked fraction detected. Check both digits before applying; confirmed examples are remembered locally.';
    if(result.uncertain.length)status.textContent=result.engine==='local-stacked-fraction'?'Stacked fraction detected. Correct any wrong digit before applying; this device can remember the correction.':result.format==='latex'?'Check symbols, fraction bars, powers and limits before applying.':'Some characters were uncertain. Check and correct the reading before applying.';
  }catch(error){if(session!==id||dialog!==backdrop||version!==readVersion||error.name==='AbortError')return;reading=false;updatePreview();status.textContent=error.message||'Could not read this writing. You can type the correct reading.';status.classList.add('handwriting-error');if(document.activeElement===cancel)input.focus()}
