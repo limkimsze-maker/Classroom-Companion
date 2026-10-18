@@ -592,8 +592,12 @@ async function recognize(strokes,W,H,options={}){
   }
   text+=['+','−','×','÷','='].includes(token.char)?' '+token.char+' ':token.char;previous=token;
  }
- const reading=text.replace(/\s+/g,' ').trim();
- const uncorrected=mode==='auto'?normalizeMillilitreCase(reading,tokens):reading;
+ // P1–P6 infix expressions cannot contain two consecutive multiplication
+ // operators without an intervening operand. Preserve the original ink and
+ // collapse only accidental adjacent multiply tokens in Auto reading.
+ const reading=text.replace(/\\s+/g,' ').trim();
+ const cleanReading=mode==='auto'?reading.replace(/(?:\\s*×){2,}(?=\\s|$)/g,' ×').trim():reading;
+ const uncorrected=mode==='auto'?normalizeMillilitreCase(cleanReading,tokens):reading;
  // Ask the offline feedback layer whether previously corrected handwriting
  // with a similar shape was misread the same way. Do not train or overwrite
  // the CNN; require a trustworthy local example and reject conflicts.
