@@ -551,70 +551,10 @@ async function recognize(strokes,W,H,options={}){
  }
 
  const tokens=segment(strokes,W,H),mode=['auto','lowercase','uppercase','digits'].includes(options.mode)?options.mode:'auto';let text='';
- // Apply high-margin trained symbol recognition after stroke grouping but
- // before the generic alphabet CNN. Preserve confirmed operators and j/=/9/g/q.
+ // Recognize only high-confidence trained symbols after existing grouping.
  if(window.WhiteboardTrainedRemaining&&['auto','lowercase','uppercase','digits'].includes(mode)){
   for(const t of tokens){
-   if(t.personal||['+','−','×','÷','=','.','
- if(window.WhiteboardCharacterReader&&mode!=='digits'){
-  const candidates=tokens.filter(t=>!['.','−','÷','='].includes(t.char)&&!(t.personal&&/^[A-Za-z]$/.test(t.char))&&!(t.personal&&mode==='auto'));
-  const results=await window.WhiteboardCharacterReader.predictBatch(candidates.map(t=>rasterDigit(t.parts)),mode,options.onProgress);
-  if(mode==='auto'){
-   const personalLetters=tokens.filter(t=>t.personal&&/^[A-Za-z]$/.test(t.char));
-   const letters=results.filter((r,i)=>!['+','×','$'].includes(candidates[i].char)&&/^[A-Za-z]$/.test(r[0]?.char||'')&&!'BIOQSZiloqsz'.includes(r[0].char)&&r[0].score>.8).length+personalLetters.length;
-   const digits=results.filter(r=>/^[2-9]$/.test(r[0]?.char||'')&&r[0].score>.75).length;
-   // Text containing clear letters uses the dedicated alphabet model, resolving heLL0-style errors.
-   if(letters>=2&&!digits){
-    const dotted=tokens.some(t=>t.parts.length>1&&t.parts.some(p=>{const b=bounds([p]),all=bounds(t.parts);return b.w<all.h*.15&&b.h<all.h*.15&&b.cy<all.y+all.h*.2}));
-    const lower=dotted||personalLetters.some(t=>/^[a-z]$/.test(t.char))||results.some(r=>/^[a-z]$/.test(r[0]?.char||''));
-    const first=results[0]?.[0],title=lower&&first?.score>.9&&'ABDEFGHKNQRT'.includes(first?.char||'!');
-    const selected=candidates.map((t,i)=>({t,i})).filter(({t})=>!['+','×','$'].includes(t.char));
-    if(selected.length){const alphabet=await window.WhiteboardCharacterReader.predictBatch(selected.map(({t})=>rasterDigit(t.parts)),lower?'lowercase':'uppercase',options.onProgress);for(let j=0;j<selected.length;j++){const i=selected[j].i;results[i]=title&&i===0?alphabet[j].map(c=>({...c,char:c.char.toUpperCase()})):alphabet[j]}}
-   }
-  }
-  const letterContext=results.some((r,i)=>!['+','×','$'].includes(candidates[i].char)&&/^[A-Za-z]$/.test(r[0]?.char||'')&&!'BIOQSZiloqsz'.includes(r[0].char)&&r[0].score>.8);
-  const numericContext=!letterContext&&tokens.some(t=>['.','$','+','−','×','÷','='].includes(t.char));
-  for(let i=0;i<candidates.length;i++){
-   const t=candidates[i],choices=results[i],best=choices[0];if(!best)continue;
-   if(mode==='auto'&&['+','×','$'].includes(t.char))continue;
-   if(mode!=='auto'&&t.char==='+'&&bounds(t.parts).h<bounds(t.parts).w*1.35)continue;
-   if(mode==='auto'&&t.char==='1'&&!letterContext)continue;
-   if(numericContext&&/^[0-9]$/.test(t.char)&&/^[BIOQSZiloqsz]$/.test(best.char))continue;
-   if(mode==='auto'&&/^[0-9]$/.test(t.char)&&/^[A-Za-z]$/.test(best.char)&&ujiConfirmsDigit(t))continue;
-   Object.assign(t,best,{choices:choices.slice(0,4)});
-  }
- }
- for(const t of tokens){
-  if(mode==='digits'&&/^[A-Za-z]$/.test(t.char)){const choices=predictDigit(rasterDigit(t.parts));Object.assign(t,choices[0],{choices:choices.slice(0,3)})}
-  if(mode==='lowercase'&&/^[A-Za-z]$/.test(t.char))t.char=t.char.toLowerCase();
-  if(mode==='uppercase'&&/^[A-Za-z]$/.test(t.char))t.char=t.char.toUpperCase();
- }
- const letterHeight=median(tokens.filter(t=>/^[A-Za-z]$/.test(t.char)).map(t=>bounds(t.parts).h).filter(h=>h>0));let previous=null;
- for(const token of tokens){
-  if(previous&&/^[A-Za-z]$/.test(previous.char)&&/^[A-Za-z]$/.test(token.char)){
-   const a=bounds(previous.parts),b=bounds(token.parts),advance=b.cx-a.cx,expected=(Math.max(a.w,letterHeight*.55)+Math.max(b.w,letterHeight*.55))/2;
-   if(advance-expected>letterHeight*.5)text+=' ';
-  }
-  text+=['+','−','×','÷','='].includes(token.char)?' '+token.char+' ':token.char;previous=token;
- }
- // P1–P6 infix expressions cannot contain two consecutive multiplication
- // operators without an intervening operand. Preserve the original ink and
- // collapse only accidental adjacent multiply tokens in Auto reading.
- const reading=text.replace(/\\s+/g,' ').trim();
- const cleanReading=mode==='auto'?reading.replace(/(?:\\s*×){2,}(?=\\s|$)/g,' ×').trim():reading;
- const uncorrected=mode==='auto'?normalizeMillilitreCase(cleanReading,tokens):reading;
- // Ask the offline feedback layer whether previously corrected handwriting
- // with a similar shape was misread the same way. Do not train or overwrite
- // the CNN; require a trustworthy local example and reject conflicts.
- const adapted=window.WhiteboardHandwritingLearning?.matchContext?.(strokes,W,H,options.mode||'auto',rasterDigit,uncorrected);
- if(adapted&&adapted.text!==uncorrected)return{text:adapted.text,tokens:[],
-   uncertain:[],engine:'local-personal-context',
-   format:mode==='math'?'latex':'personal'};
- return{text:uncorrected,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:window.WhiteboardCharacterReader&&mode!=='digits'?'local-emnist-cnn':'local-digits'};
-}
-window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-})();
-].includes(t.char)||!t.parts?.length)continue;
+   if(t.personal||['+','−','×','÷','=','.','$'].includes(t.char)||!t.parts?.length)continue;
    const raw=t.parts.map(p=>p.source).filter(Boolean);
    if(!raw.length)continue;
    const trained=window.WhiteboardTrainedRemaining.match(raw,W,H,mode);
