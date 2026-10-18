@@ -1,4 +1,5 @@
-/* Conservative standalone handwritten equals sign geometry.
+/* Handwritten equals sign geometry, calibrated on 34 locally supplied labelled samples.
+   The user's individual pen strokes are not included in this public source.
    No learned labels, network calls or training exceptions.
    A candidate must be exactly TWO similar parallel horizontal lines. */
 (function(root){
@@ -19,25 +20,25 @@ function detect(strokes,W,H,embedded=false){
   const width=maxX-minX,height=maxY-minY;
   const from=xy[0],to=xy.at(-1),displacement=Math.hypot(from.x-to.x,from.y-to.y);
   const ink=Math.max(1,Math.min(12,Number(stroke.size)||4));
-  if(width<Math.max(embedded?6:12,ink*(embedded?1.3:3.2))||height>Math.max(ink*2.2,width*(embedded?.42:.24)))return null;
+  if(width<Math.max(embedded?3.3:12,ink*(embedded?.78:3.2))||height>Math.max(ink*(embedded?2.1:2.2),width*(embedded?.78:.24)))return null;
   // In classroom pen input, a short horizontal bar can be drawn leftwards,
   // then retraced rightwards without lifting the pen. Its endpoints are then
   // close together, despite a clear horizontal ink band (the user's actual
   // equals-sign diagnostic has this exact pattern). Do not mistake it for
   // a blob or dot: require substantial x travel in BOTH directions.
-  const straight=displacement>=width*.88 &&
-    length<=displacement*1.23 &&
-    Math.abs(from.y-to.y)<=width*(embedded?.42:.16);
+  const straight=displacement>=width*(embedded?.52:.88) &&
+    length<=(embedded?Math.max(width,displacement)*2.6:displacement*1.23) &&
+    Math.abs(from.y-to.y)<=width*(embedded?.78:.16);
   let backwards=0,forwards=0;
   for(let i=1;i<xy.length;i++){
     const dx=xy[i].x-xy[i-1].x;
     if(dx>0)forwards+=dx;
     else backwards-=dx;
   }
-  const retraced=embedded && width>=Math.max(10,ink*1.85) &&
-    height<=Math.max(6.5,ink*1.35) &&
-    length>=width*.95 && length<=width*2.75 &&
-    Math.min(backwards,forwards)>=width*.30;
+  const retraced=embedded && width>=Math.max(3.3,ink*.78) &&
+    height<=Math.max(ink*2.1,width*.78) &&
+    length>=width*.95 && length<=width*3.2 &&
+    Math.min(backwards,forwards)>=width*.15;
   if(!straight&&!retraced)return null;
   bars.push({x:minX,far:maxX,midY:(minY+maxY)/2,width,height,ink,
     middleX:(minX+maxX)/2});
@@ -45,11 +46,11 @@ function detect(strokes,W,H,embedded=false){
  bars.sort((a,b)=>a.midY-b.midY);
  const [top,bottom]=bars,overlap=Math.min(top.far,bottom.far)-Math.max(top.x,bottom.x);
  const avg=(top.width+bottom.width)/2,sep=bottom.midY-top.midY;
- if(overlap<Math.min(top.width,bottom.width)*(embedded?.46:.60))return null;
- if(Math.max(top.width,bottom.width)/Math.min(top.width,bottom.width)>1.65)return null;
- if(Math.abs(top.middleX-bottom.middleX)>avg*(embedded?.40:.26))return null;
+ if(overlap<Math.min(top.width,bottom.width)*(embedded?.30:.60))return null;
+ if(Math.max(top.width,bottom.width)/Math.min(top.width,bottom.width)>(embedded?3.1:1.65))return null;
+ if(Math.abs(top.middleX-bottom.middleX)>(embedded?Math.max(6,avg*.9):avg*.26))return null;
  if(sep<Math.max(3,Math.min(top.ink,bottom.ink)*.72,avg*.055))return null;
- if(sep>(embedded?Math.min(44,Math.max(28,avg*2.6)):Math.max(11,avg*.52)))return null;
+ if(sep>(embedded?Math.min(82,Math.max(30,avg*3.1)):Math.max(11,avg*.52)))return null;
  const box={x:Math.min(top.x,bottom.x),y:top.midY-top.height/2,
   w:Math.max(top.far,bottom.far)-Math.min(top.x,bottom.x),
   h:bottom.midY+bottom.height/2-(top.midY-top.height/2)};
