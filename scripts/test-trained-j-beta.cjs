@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const ctx={window:{}};vm.runInNewContext(fs.readFileSync('whiteboard-trained-j-beta.js','utf8'),ctx);
 const j=ctx.window.WhiteboardTrainedJ;
-assert.equal(j.info().samples,23);
+assert.equal(j.info().samples,26);
 const W=326.58,H=340;
 const stem={size:5,points:[[.55,.50],[.56,.60],[.57,.72],[.55,.80],[.51,.84],[.46,.85],[.42,.81]].map(([x,y])=>({x,y}))};
 const dot={size:5,points:[[.55,.42],[.54,.415],[.54,.425],[.55,.43]].map(([x,y])=>({x,y}))};
@@ -23,3 +23,16 @@ const farDot={points:[[.532,.248],[.532,.236],[.536,.238]].map(([x,y])=>({x,y}))
 assert.equal(j.detect([farStem,farDot],372,360.4)?.text,'j','second handwritten j');
 assert.equal(j.embeddedPairs([wideStem,wideDot,flat,farStem,farDot],372,360.4).length,2,'both j pairs inside equation');
 console.log('PASS extended dot gaps for both j in equation');
+
+const onePointDot={size:5,points:[{x:.562,y:.243}]};
+const tinyStem={size:5,points:[[.566,.353],[.58,.414],[.585,.526],[.578,.577],[.56,.557],[.537,.516]].map(([x,y])=>({x,y}))};
+assert.equal(j.detect([tinyStem,onePointDot],372,360.4)?.text,'j','single point dot belongs to j');
+const fullStrokes=[wideStem,wideDot, {points:[{x:.37,y:.45},{x:.45,y:.30}]},
+{points:[{x:.37,y:.32},{x:.45,y:.43}]},tinyStem,onePointDot,
+{points:[{x:.65,y:.35},{x:.69,y:.35}]},
+{points:[{x:.65,y:.39},{x:.69,y:.39}]},
+{points:[[.796,.327],[.811,.46],[.8,.55],[.74,.54]].map(([x,y])=>({x,y}))},
+{points:[{x:.786,y:.216},{x:.782,y:.223}]},
+{points:[{x:.84,y:.17},{x:.9,y:.24}]}];
+assert.equal(j.embeddedPairs(fullStrokes,372,360.4).length,3,'group three lowercase j letters without multiplication or equals');
+console.log('PASS: 3 j groups in a longer handwritten expression');
