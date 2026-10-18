@@ -124,7 +124,7 @@ async function review(group){
    if(session===id&&dialog===backdrop&&ticket===feedbackStamp)
     feedback.textContent='Example saved, but the re-read could not finish. You may still Apply or Undo.';
   }finally{
-   if(session===id&&dialog===backdrop&&ticket===feedbackStamp){testing=false;updatePreview()}
+   if(session===id&&dialog===backdrop){testing=false;updatePreview()}
   }
  };
  apply.onclick=()=>{
