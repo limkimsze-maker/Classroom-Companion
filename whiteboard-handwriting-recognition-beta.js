@@ -111,8 +111,48 @@ function segment(strokes,W,H){
  }
  return tokens;
 }
+
+/* A stacked fraction is a spatial structure, not three inline characters.
+   Prefer the local digit model for simple fractions before the generic reader. */
+function detectStackedFraction(strokes,W,H){
+ if(strokes.length<3||strokes.length>18)return null;
+ const parts=strokes.filter(s=>Array.isArray(s.points)&&s.points.length&&s.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))).map(raw=>{
+  const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};
+  return{raw,box:bounds([scaled]),line:line(scaled)};
+ });
+ if(parts.length!==strokes.length)return null;
+ const candidates=parts.filter(p=>p.line.horizontal&&p.box.w>=14&&p.box.w>=p.box.h*2.5).sort((a,b)=>b.box.w-a.box.w);
+ for(const bar of candidates){
+  const b=bar.box,above=[],below=[];let invalid=false;
+  for(const part of parts){
+   if(part===bar)continue;
+   const q=part.box,outer=b.w*.23;
+   // All other strokes must belong to this numerator or denominator.
+   if(q.cx<b.x-outer||q.cx>b.x+b.w+outer){invalid=true;break}
+   const separation=Math.max(2,Math.min(7,q.h*.12));
+   if(q.cy<b.cy-separation)above.push(part);
+   else if(q.cy>b.cy+separation)below.push(part);
+   else{invalid=true;break}
+  }
+  if(invalid||!above.length||!below.length)continue;
+  const top=bounds(above.map(p=>({points:[{x:p.box.x,y:p.box.y},{x:p.box.x+p.box.w,y:p.box.y+p.box.h}]})));
+  const bottom=bounds(below.map(p=>({points:[{x:p.box.x,y:p.box.y},{x:p.box.x+p.box.w,y:p.box.y+p.box.h}]})));
+  const tolerance=Math.max(3,Math.min(8,(top.h+bottom.h)*.09));
+  if(top.y+top.h>b.cy+tolerance||bottom.y<b.cy-tolerance||top.cy>=bottom.cy)continue;
+  if(b.w<Math.max(top.w,bottom.w)*.75)continue;
+  // A valid numerator and denominator should each be legible as numbers.
+  const topTokens=segment(above.map(p=>p.raw),W,H),bottomTokens=segment(below.map(p=>p.raw),W,H);
+  const numerator=topTokens.map(t=>t.char).join(''),denominator=bottomTokens.map(t=>t.char).join('');
+  if(!/^\d{1,6}$/.test(numerator)||!/^\d{1,6}$/.test(denominator))continue;
+  const tokens=[...topTokens,...bottomTokens],text='\\frac{'+numerator+'}{'+denominator+'}';
+  return{text,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-stacked-fraction',format:'latex'};
+ }
+ return null;
+}
+
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
+ if(options.mode==='auto'||options.mode==='math'){const fraction=detectStackedFraction(strokes,W,H);if(fraction)return fraction}
  if(options.mode==='math')return window.WhiteboardMathReader.recognize(strokes,W,H,options);
  const tokens=segment(strokes,W,H),mode=['auto','lowercase','uppercase','digits'].includes(options.mode)?options.mode:'auto';let text='';
  if(window.WhiteboardCharacterReader&&mode!=='digits'){
