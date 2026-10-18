@@ -20,8 +20,25 @@ function detect(strokes,W,H,embedded=false){
   const from=xy[0],to=xy.at(-1),displacement=Math.hypot(from.x-to.x,from.y-to.y);
   const ink=Math.max(1,Math.min(12,Number(stroke.size)||4));
   if(width<Math.max(embedded?6:12,ink*(embedded?1.3:3.2))||height>Math.max(ink*2.2,width*(embedded?.42:.24)))return null;
-  if(displacement<width*.88||length>displacement*1.23)return null; // curves or retracing
-  if(Math.abs(from.y-to.y)>width*(embedded?.42:.16))return null;
+  // In classroom pen input, a short horizontal bar can be drawn leftwards,
+  // then retraced rightwards without lifting the pen. Its endpoints are then
+  // close together, despite a clear horizontal ink band (the user's actual
+  // equals-sign diagnostic has this exact pattern). Do not mistake it for
+  // a blob or dot: require substantial x travel in BOTH directions.
+  const straight=displacement>=width*.88 &&
+    length<=displacement*1.23 &&
+    Math.abs(from.y-to.y)<=width*(embedded?.42:.16);
+  let backwards=0,forwards=0;
+  for(let i=1;i<xy.length;i++){
+    const dx=xy[i].x-xy[i-1].x;
+    if(dx>0)forwards+=dx;
+    else backwards-=dx;
+  }
+  const retraced=embedded && width>=Math.max(10,ink*1.85) &&
+    height<=Math.max(6.5,ink*1.35) &&
+    length>=width*.95 && length<=width*2.75 &&
+    Math.min(backwards,forwards)>=width*.30;
+  if(!straight&&!retraced)return null;
   bars.push({x:minX,far:maxX,midY:(minY+maxY)/2,width,height,ink,
     middleX:(minX+maxX)/2});
  }
