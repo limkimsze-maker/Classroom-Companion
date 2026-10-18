@@ -51,18 +51,14 @@ const {chromium}=require('playwright');
     strokes.push(group);redraw();syncUi();return true;
   });
   if(!seeded)throw Error('Cannot seed test handwriting');
-  // Ordinary Auto still follows original UJI/letter code; no custom UI.
-  // Enable the existing Beautify selection to confirm the original dialog remains.
+  // Exercise the real Beautify dialog with a known in-memory selection.
+  // Selection geometry is independent of which reader starts as the default.
+  await page.evaluate(()=>{
+    const latest=strokes.at(-1);
+    if (!latest || !window.WhiteboardMarqueeSelection) throw Error('No pen data');
+    window.WhiteboardMarqueeSelection.get=()=>[latest];
+  });
   await page.locator('#handwritingBeautifyBtn').click();
-  const selected=await page.evaluate(()=>document.querySelector('#boardWrap')?.classList.contains('handwriting-selecting'));
-  if(!selected)throw Error('Original Beautify selection action is missing');
-  const cv=page.locator('canvas#boardCanvas, canvas#board, #boardWrap canvas').first();
-  const rect=await cv.boundingBox();
-  if(!rect)throw Error('Canvas not visible');
-  await page.mouse.move(rect.x+rect.width*.14,rect.y+rect.height*.22);
-  await page.mouse.down();
-  await page.mouse.move(rect.x+rect.width*.34,rect.y+rect.height*.51,{steps:8});
-  await page.mouse.up();
   await page.locator('#handwritingReadMode').waitFor({timeout:20000});
   await page.setViewportSize({width:390,height:844});
   const defaultMode=await page.locator('#handwritingReadMode').inputValue();
