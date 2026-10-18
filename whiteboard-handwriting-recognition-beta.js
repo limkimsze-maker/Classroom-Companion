@@ -102,8 +102,15 @@ function openFourGeometry(group){
 }
 
 function segment(strokes,W,H){
- const parts=strokes.filter(s=>Array.isArray(s.points)&&s.points.length).map(s=>({source:s,size:Number(s.size)||4,points:s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H}))})).filter(s=>s.points.length);
- if(!parts.length)return[];
+ const equalPairs=window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[];
+ const consumed=new Set(equalPairs.flatMap(pair=>pair.indices));
+ const equalTokens=equalPairs.map(pair=>{
+   const ink=pair.indices.map(i=>strokes[i]).map(s=>({source:s,size:Number(s.size)||4,
+     points:s.points.map(p=>({x:p.x*W,y:p.y*H}))}));
+   return {...pair.token,parts:ink};
+ });
+ const parts=strokes.filter((s,i)=>!consumed.has(i)).filter(s=>Array.isArray(s.points)&&s.points.length).map(s=>({source:s,size:Number(s.size)||4,points:s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H}))})).filter(s=>s.points.length);
+ if(!parts.length)return equalTokens;
  if(parts.length===1){const b=bounds(parts),dotSize=Math.max(3,parts[0].size*1.2);if(b.w<dotSize&&b.h<dotSize)return[{char:'.',score:.85,x:b.x,parts}]}
  // Without digits, use horizontal sign width as scale so = and ÷ still group correctly.
  const height=median(parts.map(s=>bounds([s]).h).filter(h=>h>8))||Math.max(16,...parts.map(s=>s.size*4),...parts.filter(s=>line(s).horizontal).map(s=>bounds([s]).w*1.4));
@@ -146,7 +153,7 @@ function segment(strokes,W,H){
   for(const dot of dots){const b=bounds([dot]);rowTokens.push({char:b.cy>=row.cy+height*.15?'.':'×',score:.85,x:b.x,parts:[dot]})}
   rowTokens.sort((a,b)=>a.x-b.x);tokens.push(...rowTokens);
  }
- return tokens;
+ return [...tokens,...equalTokens].sort((a,b)=>a.x-b.x);
 }
 
 /* A stacked fraction is a spatial structure, not three inline characters.
