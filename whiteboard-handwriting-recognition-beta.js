@@ -465,6 +465,19 @@ async function detectPrimaryMeasurement(strokes,W,H,options={}){
  return null;
 }
 
+/* Independent UJI pen-stroke CNN: a conservative second opinion.
+   A high-confidence UJI digit may corroborate MNIST if the mixed EMNIST
+   recognizer has instead suggested a visually similar letter. */
+function ujiConfirmsDigit(token){
+ if(!window.WhiteboardUjiReader||!token?.parts?.length||
+   !/^[0-9]$/.test(token.char)||token.score<.60)return false;
+ try{
+  const ranked=window.WhiteboardUjiReader.read(
+   token.parts.map(p=>p.points.map(q=>({x:q.x,y:q.y}))));
+  return ranked?.[0]?.label===token.char&&ranked[0].p>=.92;
+ }catch{return false}
+}
+
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
  // Beautify 2.0: check teacher-validated local handwriting before inference.
@@ -505,7 +518,7 @@ async function recognize(strokes,W,H,options={}){
   const valid=raw.length>=2&&raw.length<=30&&raw.every(t=>{
    if(op.includes(t.char))return t.score>=.90;
    if(t.char==='.'){return true}
-   return /^[0-9]$/.test(t.char)&&t.score>=.96;
+   return /^[0-9]$/.test(t.char)&&(t.score>=.96||ujiConfirmsDigit(t));
   });
   if(valid){
    const hasOp=raw.some(t=>op.includes(t.char));
@@ -542,6 +555,7 @@ async function recognize(strokes,W,H,options={}){
    if(mode!=='auto'&&t.char==='+'&&bounds(t.parts).h<bounds(t.parts).w*1.35)continue;
    if(mode==='auto'&&t.char==='1'&&!letterContext)continue;
    if(numericContext&&/^[0-9]$/.test(t.char)&&/^[BIOQSZiloqsz]$/.test(best.char))continue;
+   if(mode==='auto'&&/^[0-9]$/.test(t.char)&&/^[A-Za-z]$/.test(best.char)&&ujiConfirmsDigit(t))continue;
    Object.assign(t,best,{choices:choices.slice(0,4)});
   }
  }
