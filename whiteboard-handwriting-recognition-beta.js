@@ -511,31 +511,44 @@ function raisedTwoShape(raw,W,H){
 async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
  if(strokes.length<4||strokes.length>12||!window.WhiteboardPrimaryMathGrammar)return null;
  const parts=strokes.map((s,i)=>{
-  if(!s?.points?.length)return null;
-  const scaled={points:s.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  if(!s?.points?.length||s.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return null;
+  const scaled={points:s.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(s.size)||4};
   return{i,raw:s,box:bounds([scaled]),scaled};
  });
  if(parts.some(p=>!p))return null;
+ // Avoid global row-centre and digit-classifier gates: these misclassified
+ // legitimate area measurements containing a small high final character.
  const maxHeight=Math.max(...parts.map(p=>p.box.h));
- const raised=parts.filter(p=>{
-  const b=p.box,others=parts.filter(q=>q!==p);
-  return b.h>=10&&b.h<maxHeight*.56&&
-   others.filter(q=>q.box.cx<b.cx&&q.box.h>maxHeight*.24).length>=2&&
-   others.every(q=>q.box.cx<b.cx||q.box.h<maxHeight*.22)&&
-   b.cy<Math.min(...others.filter(q=>q.box.cx<b.cx&&q.box.h>maxHeight*.24).map(q=>q.box.cy))-.06*maxHeight;
- });
- if(raised.length!==1)return null;
- const top=raised[0],baseline=parts.filter(p=>p!==top);
- const model=window.WhiteboardTrainedRemaining?.match?.([top.raw],W,H,'digits');
- const digit=predictDigit(rasterDigit([top.scaled]))[0];
- const power=model&&['2','3'].includes(model.char)?model.char:
-   (['2','3'].includes(digit.char)&&digit.score>.52?digit.char:(raisedTwoShape(top.raw,W,H)?'2':null));
- if(!power)return null;
- const primary=window.WhiteboardPrimaryMathGrammar.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
- const base=await primary.recognize(baseline.map(p=>p.raw),W,H,options);
- if(!base||!/^\\d+ (cm|mm|m|km)$/.test(base.text))return null;
- return{...base,text:base.text+(power==='2'?'²':'³'),engine:'local-raised-measurement',
-  tokens:[...(base.tokens||[]),{char:power==='2'?'²':'³',score:digit.score,parts:[top.scaled]}]};
+ const candidates=parts.filter(top=>{
+  const b=top.box;
+  if(b.h<9||b.h>maxHeight*.72||b.w<8)return false;
+  const before=parts.filter(p=>p!==top&&p.box.cx<b.cx-3);
+  if(before.length<3)return false;
+  const last=before.reduce((a,p)=>p.box.cx>a.box.cx?p:a);
+  const baseline=before.filter(p=>p.box.h>maxHeight*.22);
+  if(baseline.length<3)return false;
+  const typicalY=baseline.map(p=>p.box.cy).sort((a,b)=>a-b)[Math.floor(baseline.length/2)];
+  return b.cy<typicalY-maxHeight*.12
+   &&b.cy<last.box.cy-maxHeight*.07
+   &&b.x>=last.box.x+last.box.w*.5
+   &&parts.every(p=>p===top||p.box.cx<b.cx+2);
+ }).sort((a,b)=>b.box.cx-a.box.cx);
+ for(const top of candidates){
+  const geom2=raisedTwoShape(top.raw,W,H);
+  const model=window.WhiteboardTrainedRemaining?.match?.([top.raw],W,H,'digits');
+  let digit=null;
+  if(!geom2&&!model){digit=predictDigit(rasterDigit([top.scaled]))[0]}
+  const power=geom2?'2':model&&['2','3'].includes(model.char)?model.char:
+    digit&&['2','3'].includes(digit.char)&&digit.score>.72?digit.char:null;
+  if(!power)continue;
+  const baseline=parts.filter(p=>p!==top).sort((a,b)=>a.box.cx-b.box.cx);
+  const primary=window.WhiteboardPrimaryMathGrammar.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
+  const base=await primary.recognize(baseline.map(p=>p.raw),W,H,options);
+  if(!base||!/^\d+ (cm|mm|m|km)$/.test(base.text))continue;
+  return{...base,text:base.text+(power==='2'?'²':'³'),engine:'local-raised-measurement',
+    tokens:[...(base.tokens||[]),{char:power==='2'?'²':'³',score:geom2?.93:(digit?.score||model?.score||.85),parts:[top.scaled]}]};
+ }
+ return null;
 }
 
 async function recognize(strokes,W,H,options={}){
