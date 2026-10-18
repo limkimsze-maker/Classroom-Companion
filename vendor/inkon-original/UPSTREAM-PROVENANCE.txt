@@ -1,0 +1,12 @@
+Original source: https://github.com/kimseungdae/ink-on
+Demo: https://vue-math-handwrite.vercel.app/
+Pinned upstream source revision: 2585994ee11fe2ed98065c555c4aae8ee9096209
+Built directly from the demo's original inference.worker.ts, preprocessing.ts,
+tokenizer.ts and latex-repair.ts.
+Demo's original 50 decoder steps, dynamic beam width, Auto mode and KaTeX
+candidate validation are preserved.
+Only the ONNX WASM runtime location is added to worker initialization.
+Separate adapter converts existing whiteboard strokes to the demo's input.
+The existing Beautify confirmation and Undo logic are NOT replaced.
+Upstream code licence: Apache-2.0. CoMER model weights require
+separate licence/provenance review before broader school deployment.

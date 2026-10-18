@@ -1,0 +1,56 @@
+name: Verify exact ink-on demo inside Beautify
+on:
+  push:
+    branches:
+      - feature/inkon-demo-native-beautify-20261018
+    paths:
+      - 'scripts/inkon-original-beautify-adapter.mjs'
+      - 'scripts/build-inkon-original-beautify.sh'
+      - 'scripts/test-inkon-original-beautify.cjs'
+      - 'whiteboard-comer-beta.html'
+      - 'whiteboard-handwriting-beautify-inkon-beta.js'
+      - 'whiteboard-inkon-native-beautify-bridge.js'
+      - '.github/workflows/verify-inkon-original-beautify.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  browser-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bundle pinned exact ink-on demo and its original pretrained model
+        run: bash scripts/build-inkon-original-beautify.sh
+      - name: Preserve default MOE-safe Beta
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          original=Path('whiteboard-smart-beta.html').read_text()
+          experimental=Path('whiteboard-comer-beta.html').read_text()
+          assert "connect-src 'none'" in original
+          assert "whiteboard-moe-local-only-guard-v1.js" in original
+          assert "whiteboard-inkon-native-beautify-bridge.js" not in original
+          assert "whiteboard-inkon-native-beautify-bridge.js" in experimental
+          assert "whiteboard-comer-bridge-beta.js" not in experimental
+          assert "whiteboard-handwriting-beautify-inkon-beta.js" in experimental
+          print('PASS: Original MOE-safe Beta unchanged and experimental native Beautify preserved.')
+          PY
+      - name: Validate original ink-on worker and current Beautify using Chromium
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/inkon-http.log 2>&1 &
+          sleep 2
+          node scripts/test-inkon-original-beautify.cjs
+      - name: Commit verified, self-hosted upstream demo assets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add vendor/inkon-original
+          if ! git diff --cached --quiet; then
+            git commit -m 'Vendor exact ink-on demo model and browser runtime [skip ci]'
+            git push
+          fi
