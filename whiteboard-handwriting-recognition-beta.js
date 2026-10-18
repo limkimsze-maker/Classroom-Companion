@@ -66,6 +66,37 @@ function symbol(parts,H){
  }
  return null;
 }
+
+/* Open-top handwritten 4s can be confused with 6 by the MNIST image classifier.
+   Require an unmistakable three-stroke crossbar/stem/left-leg structure to override it. */
+function openFourGeometry(group){
+ if(group.length<3||group.length>4)return false;
+ const b=bounds(group);if(b.w<12||b.h<14)return false;
+ const bar=group.find(s=>{
+  const q=bounds([s]);return line(s).horizontal&&q.w>=b.w*.58&&q.h<=Math.max(5,b.h*.15)&&q.cy>=b.y+b.h*.28&&q.cy<=b.y+b.h*.78;
+ });
+ if(!bar)return false;
+ const hb=bounds([bar]),remain=group.filter(s=>s!==bar);
+ const stem=remain.find(s=>{
+  const q=bounds([s]);return q.h>=b.h*.62&&q.w<=b.w*.35
+   &&q.cy>=b.y+b.h*.40&&q.cy<=b.y+b.h*.70
+   &&q.y<=hb.cy-b.h*.13&&q.y+q.h>=hb.cy+b.h*.20
+   &&q.cx>=b.x+b.w*.22&&q.cx<=b.x+b.w*.86
+   &&hb.x<=q.cx-b.w*.07&&hb.x+hb.w>=q.cx+b.w*.12;
+ });
+ if(!stem)return false;
+ const sb=bounds([stem]);
+ return remain.some(s=>{
+  if(s===stem)return false;
+  const q=bounds([s]);return q.h>=b.h*.22
+   &&q.y<=hb.cy-b.h*.19&&q.y+q.h>=hb.cy-b.h*.13
+   &&q.cx<=sb.cx+b.w*.05
+   &&q.cx>=b.x-b.w*.15
+   &&q.w>=b.w*.12
+   &&q.x<b.x+b.w*.48;
+ });
+}
+
 function segment(strokes,W,H){
  const parts=strokes.filter(s=>Array.isArray(s.points)&&s.points.length).map(s=>({source:s,size:Number(s.size)||4,points:s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H}))})).filter(s=>s.points.length);
  if(!parts.length)return[];
@@ -100,6 +131,8 @@ function segment(strokes,W,H){
     const candidates=dots.filter(s=>{const d=bounds([s]);return Math.abs(d.cx-b.cx)<Math.max(5,b.w*.3)&&Math.abs(d.cy-b.cy)<height*.55}),above=candidates.find(s=>bounds([s]).cy<b.cy-height*.10),below=candidates.find(s=>bounds([s]).cy>b.cy+height*.10);
     if(above&&below){dots=dots.filter(s=>s!==above&&s!==below);rowTokens.push({char:'÷',score:1,x:b.x,parts:[...group,above,below]});continue}
    }
+   // Geometry beats a mistaken digit prediction (or a previously accepted bad sample).
+   if(openFourGeometry(group)){rowTokens.push({char:'4',score:.96,x:b.x,parts:group,engine:'open-four-geometry'});continue}
    const pixels=rasterDigit(group),personal=window.WhiteboardHandwritingLearning?.match(pixels);
    if(personal){rowTokens.push({...personal,x:b.x,parts:group});continue}
    if(op){rowTokens.push({char:op,score:1,x:b.x,parts:group});continue}
@@ -145,7 +178,7 @@ function detectStackedFraction(strokes,W,H){
   const numerator=topTokens.map(t=>t.char).join(''),denominator=bottomTokens.map(t=>t.char).join('');
   if(!/^\d{1,6}$/.test(numerator)||!/^\d{1,6}$/.test(denominator))continue;
   const tokens=[...topTokens,...bottomTokens],text='\\frac{'+numerator+'}{'+denominator+'}';
-  return{text,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-stacked-fraction',format:'latex'};
+  return{text,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-stacked-fraction',format:'latex',fractionTokenCounts:[topTokens.length,bottomTokens.length]};
  }
  return null;
 }
