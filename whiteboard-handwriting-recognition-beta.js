@@ -488,6 +488,9 @@ function ujiConfirmsDigit(token){
 async function recognize(strokes,W,H,options={}){
  const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
  if(equal)return equal;
+ // Explicitly imported, on-device 9/g/q exemplars; abstain on uncertain matches.
+ const user9gq=window.WhiteboardCharacter9GQ?.match?.(strokes,W,H,options.mode||'auto');
+ if(user9gq)return user9gq;
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
  // Beautify 2.0: check teacher-validated local handwriting before inference.
  // This is a cautious shape match, not retraining the digit/math neural models.
