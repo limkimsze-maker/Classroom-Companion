@@ -286,8 +286,48 @@ function normalizeMillilitreCase(text,tokens){
  return 'ml';
 }
 
+
+/* Recognise a standalone, loop-top cursive l as capital L in Auto.
+   The upper loop and two lower tail tips distinguish it from a real X.
+   Do not alter digit/Math modes or context-sensitive lowercase ml. */
+function loopedStandaloneL(strokes,W,H){
+ if(strokes.length<1||strokes.length>2)return false;
+ const groups=strokes.map(s=>Array.isArray(s.points)?s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H})):[]);
+ if(groups.some(g=>g.length<2))return false;
+ const pts=groups.flat(),b=bounds([{points:pts}]);
+ if(b.h<35||b.w<11||b.w/b.h<.15||b.w/b.h>.78)return false;
+ const upper=pts.filter(p=>p.y<=b.y+b.h*.38);
+ const neck=pts.filter(p=>p.y>=b.y+b.h*.44&&p.y<=b.y+b.h*.68);
+ if(upper.length<4||neck.length<2)return false;
+ const min=x=>Math.min(...x),max=x=>Math.max(...x);
+ const topSpan=max(upper.map(p=>p.x))-min(upper.map(p=>p.x));
+ const neckSpan=max(neck.map(p=>p.x))-min(neck.map(p=>p.x));
+ const topCentre=upper.reduce((n,p)=>n+p.x,0)/upper.length;
+ if(topSpan>b.w*.68||neckSpan>b.w*.55||topCentre<b.x+b.w*.48)return false;
+ const ends=groups.flatMap(g=>[g[0],g[g.length-1]]).filter(p=>p.y>=b.y+b.h*.73);
+ if(ends.length<2||max(ends.map(p=>p.x))-min(ends.map(p=>p.x))<b.w*.45)return false;
+ const capHasTurn=groups.some(g=>{
+  let direction=0;
+  for(let i=1;i<g.length;i++){
+   if(g[i].y>b.y+b.h*.42||g[i-1].y>b.y+b.h*.42)continue;
+   const dx=g[i].x-g[i-1].x;
+   if(Math.abs(dx)<Math.max(1,b.w*.025))continue;
+   const sign=Math.sign(dx);
+   if(direction&&sign!==direction)return true;
+   direction=sign;
+  }
+  return false;
+ });
+ return capHasTurn;
+}
+
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
+
+ if(options.mode==='auto'&&loopedStandaloneL(strokes,W,H)){
+  const parts=strokes.map(s=>({points:s.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(s.size)||4}));
+  return{text:'L',tokens:[{char:'L',score:.95,parts}],uncertain:[],engine:'local-cursive-l',format:'letter'};
+ }
  if(options.mode==='auto'){const litre=await detectLitreUnit(strokes,W,H,options);if(litre)return litre}
  if(options.mode==='auto'||options.mode==='math'){const raised=await detectRaisedUnit(strokes,W,H,options);if(raised)return raised}
  if(options.mode==='auto'||options.mode==='math'){const fraction=detectStackedFraction(strokes,W,H);if(fraction)return fraction}
