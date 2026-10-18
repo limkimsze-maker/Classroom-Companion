@@ -492,7 +492,7 @@ async function recognize(strokes,W,H,options={}){
   const valid=raw.length>=2&&raw.length<=30&&raw.every(t=>{
    if(op.includes(t.char))return t.score>=.90;
    if(t.char==='.'){return true}
-   return /^[0-9]$/.test(t.char)&&t.score>=.99;
+   return /^[0-9]$/.test(t.char)&&t.score>=.96;
   });
   if(valid){
    const hasOp=raw.some(t=>op.includes(t.char));
