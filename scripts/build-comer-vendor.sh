@@ -10,6 +10,10 @@ npx --no-install esbuild scripts/comer-inference-worker.mjs \
   --bundle --minify --platform=browser --format=iife --target=es2022 \
   --outfile=vendor/comer/comer-worker.js
 
+npx --no-install esbuild scripts/comer-preprocess-entry.mjs \
+  --bundle --minify --platform=browser --format=iife --target=es2022 \
+  --outfile=vendor/comer/comer-preprocess.js
+
 # Models are fetched at build-time only, never from pupil browsers.
 base="https://github.com/kimseungdae/ink-on/releases/download/v0.1.0"
 for name in encoder_int8.onnx decoder_int8.onnx vocab.json; do
@@ -32,6 +36,7 @@ find node_modules/onnxruntime-web/dist -maxdepth 1 -name '*.wasm' -exec cp {} ve
 # ONNX Runtime 1.24 also loads a companion ES module dynamically.
 find node_modules/onnxruntime-web/dist -maxdepth 1 -name 'ort-wasm*.mjs' -exec cp {} vendor/comer/ \;
 test -s vendor/comer/comer-worker.js
+test -s vendor/comer/comer-preprocess.js
 test -s vendor/comer/encoder_int8.onnx
 test -s vendor/comer/decoder_int8.onnx
 test -s vendor/comer/vocab.json
