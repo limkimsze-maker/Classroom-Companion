@@ -68,7 +68,7 @@ async function review(group){
  const appearance=document.createElement('div');appearance.className='handwriting-appearance';
  const modeLabel=document.createElement('label');modeLabel.htmlFor='handwritingReadMode';modeLabel.textContent='Read';
  const modeSelect=document.createElement('select');modeSelect.id='handwritingReadMode';modeSelect.setAttribute('aria-label','Handwriting reading mode');
- for(const [value,text]of [['auto','Auto'],['math','Math formulas'],['lowercase','Letters a–z'],['uppercase','Letters A–Z'],['digits','Numbers']]){const option=document.createElement('option');option.value=value;option.textContent=text;modeSelect.appendChild(option)}modeSelect.value='math';appearance.append(modeLabel,modeSelect);
+ for(const [value,text]of [['auto','Auto'],['math','Math formulas'],['lowercase','Letters a–z'],['uppercase','Letters A–Z'],['digits','Numbers']]){const option=document.createElement('option');option.value=value;option.textContent=text;modeSelect.appendChild(option)}modeSelect.value='auto';appearance.append(modeLabel,modeSelect);
  const colourLabel=document.createElement('label');colourLabel.htmlFor='handwritingColour';colourLabel.textContent='Colour';
  const colourSelect=document.createElement('select');colourSelect.id='handwritingColour';colourSelect.setAttribute('aria-label','Beautified writing colour');
  const palette=[['#17324d','Navy'],['#000000','Black'],['#2563eb','Blue'],['#dc2626','Red'],['#15803d','Green'],['#7c3aed','Purple']];
