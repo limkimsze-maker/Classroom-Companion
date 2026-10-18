@@ -95,3 +95,13 @@ const scribble=S([[.608,.39],[.614,.4],[.62,.39],[.614,.38],[.608,.39]],5);
 assert.equal(pair([...glyph,upper,scribble,...rhs],372,404.244).length,0,
   'compact scribble should not be accepted as retraced equals');
 console.log('PASS: diagnostic-derived retraced equals stroke and scribble negative control');
+
+/* Extreme scale categories revealed by 34 locally analysed signs.
+   Not a copy of the user's pen strokes. */
+const micro=[line(.43,.42,.441,.42,5),line(.431,.457,.448,.459,5)];
+assert.equal(pair([...glyph,...micro,...rhs],356.4,395.7).length,1,'micro equals size class');
+const large=[line(.3,.32,.49,.32,5),line(.31,.46,.52,.46,5)];
+assert.equal(pair([...glyph,...large,...rhs],356.4,395.7).length,1,'large spaced equals size class');
+const colonWide=[line(.4,.42,.405,.42,6),line(.401,.465,.406,.465,6)];
+assert.equal(pair([...glyph,...colonWide,...rhs],800,400).length,0,'dots stay dots, not equals');
+console.log('PASS: small and large labelled size classes, colon negative');
