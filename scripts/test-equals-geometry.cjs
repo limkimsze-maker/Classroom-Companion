@@ -105,3 +105,19 @@ assert.equal(pair([...glyph,...large,...rhs],356.4,395.7).length,1,'large spaced
 const colonWide=[line(.4,.42,.405,.42,6),line(.401,.465,.406,.465,6)];
 assert.equal(pair([...glyph,...colonWide,...rhs],800,400).length,0,'dots stay dots, not equals');
 console.log('PASS: small and large labelled size classes, colon negative');
+
+/* Regression: captured failed equation contained a 6.18px upper bar and a
+   19.75px lower bar, a width ratio 3.195. These GENERATED strokes only
+   reproduce that geometry, not the user's raw handwriting coordinates. */
+const unevenTop=line(.603,.324,.61961,.325,5);
+const unevenBottom=line(.597,.356,.6501,.355,5);
+const realShape=pair([...glyph,unevenTop,unevenBottom,...rhs],372,404.244);
+assert.equal(realShape.length,1,'uneven 6px / 20px = pair detected in expression');
+assert.deepEqual(Array.from(realShape[0].indices),[2,3]);
+const fourToOne=[
+ line(.6,.324,.614,.324,5),
+ line(.594,.356,.652,.356,5)
+];
+assert.equal(pair([...glyph,...fourToOne,...rhs],372,404.244).length,0,
+  'ratio well above supported range should not be promoted to equals');
+console.log('PASS: diagnostic-measured unequal equals bars and out-of-range negative');
