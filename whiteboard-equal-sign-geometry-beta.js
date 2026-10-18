@@ -20,7 +20,7 @@ function detect(strokes,W,H,embedded=false){
   const width=maxX-minX,height=maxY-minY;
   const from=xy[0],to=xy.at(-1),displacement=Math.hypot(from.x-to.x,from.y-to.y);
   const ink=Math.max(1,Math.min(12,Number(stroke.size)||4));
-  if(width<Math.max(embedded?3.3:12,ink*(embedded?.65:3.2))||height>Math.max(ink*(embedded?2.1:2.2),width*(embedded?.78:.24)))return null;
+  if(width<Math.max(embedded?3.3:12,ink*(embedded?.78:3.2))||height>Math.max(ink*(embedded?2.1:2.2),width*(embedded?.78:.24)))return null;
   // In classroom pen input, a short horizontal bar can be drawn leftwards,
   // then retraced rightwards without lifting the pen. Its endpoints are then
   // close together, despite a clear horizontal ink band (the user's actual
@@ -35,7 +35,7 @@ function detect(strokes,W,H,embedded=false){
     if(dx>0)forwards+=dx;
     else backwards-=dx;
   }
-  const retraced=embedded && width>=Math.max(3.3,ink*.65) &&
+  const retraced=embedded && width>=Math.max(3.3,ink*.78) &&
     height<=Math.max(ink*2.1,width*.78) &&
     length>=width*.95 && length<=width*3.2 &&
     Math.min(backwards,forwards)>=width*.15;
