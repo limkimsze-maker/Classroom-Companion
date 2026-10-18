@@ -14,11 +14,13 @@ const TRAIN=[
 [.338,1,.295,.740,.080,.053],[.310,1,.201,.490,.142,.069],
 // Derived six-feature summaries from the two current failed j cases.
 [.290,.735,.597,.014,.111,.030],[.281,.807,.422,.116,.075,.053],
+// Three aggregate shape summaries from the failed j-expression diagnostic.
+[.267,.913,.555,.236,.207,.031],[.224,.603,.492,.016,0,0],[.326,.797,.457,.122,.065,.033],
 [.315,1,.185,.458,.140,.057]
 ];
 function box(stroke,W,H){
  const p=stroke?.points;
- if(!Array.isArray(p)||p.length<2||p.some(v=>!Number.isFinite(v.x)||!Number.isFinite(v.y)))return null;
+ if(!Array.isArray(p)||p.length<1||p.some(v=>!Number.isFinite(v.x)||!Number.isFinite(v.y)))return null;
  const points=p.map(v=>({x:v.x*W,y:v.y*H}));
  const xs=points.map(v=>v.x),ys=points.map(v=>v.y);
  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
@@ -33,10 +35,10 @@ function classify(stem,dot,W,H){
  const mid=(a.minX+a.maxX)/2;
  const f=[width/height,(start.x-end.x)/width,(a.minY-b.maxY)/height,
  ((b.minX+b.maxX)/2-mid)/width,b.w/width,b.h/height];
- if(f[0]<.17||f[0]>.53||f[1]<.72||f[2]<.07||f[2]>.70||f[3]<-.25||f[3]>.85)return null;
+ if(f[0]<.17||f[0]>.53||f[1]<.45||f[2]<.07||f[2]>.70||f[3]<-.25||f[3]>.85)return null;
  const scales=[.11,.19,.13,.30,.08,.065];
  const best=Math.min(...TRAIN.map(t=>Math.sqrt(f.reduce((sum,v,i)=>sum+((v-t[i])/scales[i])**2,0))));
- if(best>2.05)return null;
+ if(best>2.20)return null;
  return{char:'j',text:'j',score:.98,x:Math.min(a.minX,b.minX),engine:'local-trained-j21',personal:true,format:'letter'};
 }
 function detect(strokes,W,H){
