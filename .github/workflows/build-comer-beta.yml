@@ -3,10 +3,15 @@ on:
   push:
     branches:
       - feature/comer-handwriting-beta-20261018
+      - feature/comer-measurement-grammar-20261018
     paths:
       - 'scripts/comer-inference-worker.mjs'
       - 'scripts/build-comer-vendor.sh'
       - 'scripts/test-comer-browser.cjs'
+      - 'scripts/test-comer-quantity.cjs'
+      - 'whiteboard-comer-beta.html'
+      - 'whiteboard-comer-bridge-beta.js'
+      - 'whiteboard-comer-quantity-beta.js'
       - '.github/workflows/build-comer-beta.yml'
   workflow_dispatch:
 
@@ -40,6 +45,8 @@ jobs:
           assert Path("vendor/comer/comer-worker.js").stat().st_size > 10000
           print("Isolated CoMER Beta guard checks OK.")
           PY
+      - name: Test general measurement grammar
+        run: node scripts/test-comer-quantity.cjs
       - name: Verify browser inference in Chromium
         run: |
           npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund playwright@1.56.1
