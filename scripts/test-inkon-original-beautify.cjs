@@ -40,6 +40,23 @@ const {chromium}=require('playwright');
   if(outcome.error)throw Error('Actual upstream worker failed: '+outcome.error);
   if(outcome.engine!=='inkon-original-demo')throw Error('Incorrect recognizer: '+outcome.engine);
   if(!outcome.text.trim())throw Error('Demo returned empty latex');
+  const priority = await page.evaluate(async()=>{
+    const demo=window.WhiteboardInkOnOriginalDemo;
+    const originalDemo=demo.recognize;
+    const math=window.WhiteboardMathReader,oldMath=math.recognize;
+    const ink=[{size:3,points:[{x:.1,y:.1},{x:.2,y:.2}]}];
+    let fallbacks=0;
+    try {
+      demo.recognize=async()=>({text:'=',engine:'inkon-original-demo',format:'latex'});
+      const good=await window.WhiteboardHandwritingMath.recognize(ink,700,250,{mode:'auto'});
+      demo.recognize=async()=>{throw Error('Model produced no valid reading')};
+      math.recognize=async()=>{fallbacks++;return {text:'=',engine:'legacy-math',uncertain:[]}};
+      const bad=await window.WhiteboardHandwritingMath.recognize(ink,700,250,{mode:'math'});
+      return {good:good.text,engine:good.engine,fallbacks,bad:bad.engine};
+    }finally{demo.recognize=originalDemo;math.recognize=oldMath}
+  });
+  console.log('ink-on first / fallback results:',JSON.stringify(priority));
+  if(priority.good!=='='||priority.engine!=='inkon-original-demo-first'||priority.fallbacks!==1||priority.bad!=='legacy-math')throw Error('Recognizer routing failed');
   // Mobile regression: create a harmless local pen stroke and open the ACTUAL
   // Beautify review dialog, then assert the visible dropdown starts in Auto.
   // Open selection at desktop width; inspect the same modal at phone width.
