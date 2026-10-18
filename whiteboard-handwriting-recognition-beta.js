@@ -113,6 +113,7 @@ function segment(strokes,W,H){
 }
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
+ if(options.mode==='math')return window.WhiteboardMathReader.recognize(strokes,W,H,options);
  const tokens=segment(strokes,W,H),mode=['auto','lowercase','uppercase','digits'].includes(options.mode)?options.mode:'auto';let text='';
  if(window.WhiteboardCharacterReader&&mode!=='digits'){
   const candidates=tokens.filter(t=>!['.','−','÷','='].includes(t.char)&&!(t.personal&&/^[A-Za-z]$/.test(t.char))&&!(t.personal&&mode==='auto'));

@@ -1,0 +1,40 @@
+{
+  "model": "m4jkiuwr/htt-mini",
+  "revision": "58170cc16748a5652e5e58caf93019fb8b0603c4",
+  "runtime": "onnxruntime-web@1.18.0",
+  "vocabulary_tokens": 258,
+  "files": {
+    "HAND-TO-TEX-LICENSE": {
+      "bytes": 1084,
+      "sha256": "a288057377315bf7297fa1b9a966d579920b361b9d4752fc7c79c8604d41f9c4"
+    },
+    "ort-wasm.wasm": {
+      "bytes": 9758086,
+      "sha256": "ebe7ec327f83aabc07e3b58487522481ccff10941f24182ab0428d0123652ff2"
+    },
+    "encoder-u8.onnx": {
+      "bytes": 11269588,
+      "sha256": "5f7ad673be99dfe3626a598fc22dc7330469bc76cbfe79b8a0c9d54f050e1b17"
+    },
+    "decoder_step.onnx": {
+      "bytes": 7241361,
+      "sha256": "a06a382a4b21445e0ef4d5ba33db4dc4eb9250ca4ff4bace7a90d50342ef18ed"
+    },
+    "ort.wasm-1.18.0.min.js": {
+      "bytes": 142930,
+      "sha256": "90533a3fd7006df7f897c0d63c468996da5c8e430e39964d92ebe586c4996614"
+    },
+    "ort-wasm-simd.wasm": {
+      "bytes": 10595041,
+      "sha256": "f533b5f21790563d7556c611c3835ac65848ee326da2689aac54ed7d9cc8c6a4"
+    },
+    "vocab.json": {
+      "bytes": 3870,
+      "sha256": "04eb943751749d1d88312e5b8450f48b70efded4bf92abf3041c49e97a490222"
+    },
+    "ONNX-RUNTIME-LICENSE": {
+      "bytes": 1073,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+    }
+  }
+}

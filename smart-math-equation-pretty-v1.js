@@ -171,6 +171,9 @@ function make(parsed){
 // The handwriting action uses the same parser, SVG renderer and fonts as Equation.
 // A selected symbol is valid handwriting even when it is not a complete equation.
 function handwritingObject(text,placement,colour){
+ const unit=window.WhiteboardMathRenderer?.unitText(text);
+ if(unit)return equationObject({expression:unit,simple:false},{layout:'inline',placement,colour});
+ if(/[\\∫∑∏∞≤≥≠≈±²³_{}]/.test(String(text)))return window.WhiteboardMathRenderer?.create(text,placement,colour)||null;
  const options={layout:'inline',placement,colour},parsed=parseEquation(text);
  if(parsed)return equationObject(parsed,options);
  const source=String(text??'').trim(),aliases={'-':'−','–':'−','—':'−','－':'−','*':'×','✕':'×','✖':'×','＊':'×','/':'÷','／':'÷','∕':'÷','＋':'+','＝':'='},expression=aliases[source]||source;

@@ -137,3 +137,32 @@ and changes from another tab. The large bundled model is never retrained.
 The review has a compact Colour dropdown, initially using the selected ink colour.
 The preview and applied transparent SVG use the chosen colour while retaining the
 Equation font and original writing bounds. Colour changes do not affect learning.
+
+## Whole-expression mathematics and units — 18 October 2026
+
+Beautify now offers an explicit Math formulas reading mode using the existing
+MIT-licensed htt-mini MathWriting model. This replaces isolated-character
+segmentation for mathematical layouts, preserving fraction bars, scripts, roots,
+integrals and other structures in the recognition output. It does not evaluate
+or rearrange an expression into vertical working. The math SVG fits the exact
+selected ink rectangle and supports the existing colour dropdown and Undo.
+
+Ordinary text and unit quantities retain the Equation font. cm2/cm^2/cm²,
+mm²/m²/km², cubic units, mass, capacity, time, temperature and compound units
+are supported as display notation; values are never converted automatically.
+The Insert menu offers correction templates and common units.
+
+Source revisions, licenses, asset hashes, compatibility conversion and limits
+are recorded in `vendor/handwriting/math/NOTICE.md` and its manifest.
+
+Validation uses the actual ONNX WebAssembly runtime in worker threads and
+MathJax 3.2.2 rendering. Fraction 1/2, x² and √2 stroke fixtures read correctly;
+a drawn integral is also identified. The compact model can still misread
+individual letters/digits: on illustrative fixtures 2+3 read as 2+2 and a+b=c
+as 0+b=c, so the previous character reader remains the default for ordinary
+writing and every math reading requires preview and confirmation. No broad
+accuracy rate or world-leading performance is claimed for this integration.
+DOM/event integration tests cover selection, actual worker completion, units,
+font, colour, cancellation, manual corrections and Undo. All five frozen bar
+model systems retain their original code and pass their existing checks.
+A live browser visual pass was not available in this environment.
