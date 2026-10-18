@@ -544,7 +544,7 @@ async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
   const baseline=parts.filter(p=>p!==top).sort((a,b)=>a.box.cx-b.box.cx);
   const primary=window.WhiteboardPrimaryMathGrammar.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
   const base=await primary.recognize(baseline.map(p=>p.raw),W,H,options);
-  if(!base||!/^\\d+ (cm|mm|m|km)$/.test(base.text))continue;
+  if(!base||!/^\d+ (cm|mm|m|km)$/.test(base.text))continue;
   return{...base,text:base.text+(power==='2'?'²':'³'),engine:'local-raised-measurement',
     tokens:[...(base.tokens||[]),{char:power==='2'?'²':'³',score:geom2?.93:(digit?.score||model?.score||.85),parts:[top.scaled]}]};
  }
