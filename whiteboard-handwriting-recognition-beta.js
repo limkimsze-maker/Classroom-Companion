@@ -382,6 +382,13 @@ async function detectMeasuredQuantity(strokes,W,H,options={}){
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
 
+ // Beautify 2.0: check teacher-validated local handwriting before inference.
+ // This is a cautious shape match, not retraining the digit/math neural models.
+ const remembered=window.WhiteboardHandwritingLearning?.matchInk?.(strokes,W,H,options.mode||'auto',rasterDigit);
+ if(remembered)return{text:remembered.text,tokens:[],uncertain:[],
+  engine:'local-personal-ink',format:options.mode==='math'||/^\\(?:frac|dfrac|tfrac)\b/.test(remembered.text)?'latex':'personal'};
+
+
  if(options.mode==='auto'&&loopedStandaloneL(strokes,W,H)){
   const parts=strokes.map(s=>({points:s.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(s.size)||4}));
   return{text:'L',tokens:[{char:'L',score:.95,parts}],uncertain:[],engine:'local-cursive-l',format:'letter'};
