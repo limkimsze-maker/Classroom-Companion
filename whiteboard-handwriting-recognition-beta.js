@@ -440,7 +440,15 @@ async function recognize(strokes,W,H,options={}){
   text+=['+','−','×','÷','='].includes(token.char)?' '+token.char+' ':token.char;previous=token;
  }
  const reading=text.replace(/\s+/g,' ').trim();
- return{text:mode==='auto'?normalizeMillilitreCase(reading,tokens):reading,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:window.WhiteboardCharacterReader&&mode!=='digits'?'local-emnist-cnn':'local-digits'};
+ const uncorrected=mode==='auto'?normalizeMillilitreCase(reading,tokens):reading;
+ // Ask the offline feedback layer whether previously corrected handwriting
+ // with a similar shape was misread the same way. Do not train or overwrite
+ // the CNN; require a trustworthy local example and reject conflicts.
+ const adapted=window.WhiteboardHandwritingLearning?.matchContext?.(strokes,W,H,options.mode||'auto',rasterDigit,uncorrected);
+ if(adapted&&adapted.text!==uncorrected)return{text:adapted.text,tokens:[],
+   uncertain:[],engine:'local-personal-context',
+   format:mode==='math'?'latex':'personal'};
+ return{text:uncorrected,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:window.WhiteboardCharacterReader&&mode!=='digits'?'local-emnist-cnn':'local-digits'};
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
 })();
