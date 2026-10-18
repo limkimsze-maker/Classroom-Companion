@@ -42,7 +42,7 @@ const {chromium}=require('playwright');
   if(!outcome.text.trim())throw Error('Demo returned empty latex');
   // Mobile regression: create a harmless local pen stroke and open the ACTUAL
   // Beautify review dialog, then assert the visible dropdown starts in Auto.
-  await page.setViewportSize({width:390,height:844});
+  await page.setViewportSize({width:390,height:1260});
   const seeded=await page.evaluate(()=>{
     const group={erase:false,colour:'#17324d',size:4,points:[
       {x:.23,y:.31},{x:.245,y:.31},{x:.26,y:.34},{x:.27,y:.39},{x:.26,y:.44}
