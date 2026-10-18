@@ -74,3 +74,24 @@ assert.deepEqual(Array.from(separated[0].indices),[2,3]);
 const distant=[line(.40,.42,.424,.427,5),line(.408,.66,.429,.668,5)];
 assert.equal(pair([...glyph,...distant,...rhs],800,400).length,0,'unrelated far-apart strokes stay separate');
 console.log('PASS: short vertically separated equals strokes from photographed handwriting');
+
+/* Synthetic reproduction of the geometry found in an actual selected-ink
+   diagnostic: upper bar drawn once; lower bar drawn LEFT then RETRACED RIGHT.
+   The original bar's endpoint displacement is only 2px over a 12px width,
+   so the old straightness check wrongly rejected it. Coordinates below are
+   generated rather than copying any private user ink into the repository. */
+const upper = S([[.610,.38],[.608,.376],[.613,.374],[.623,.372],
+                  [.638,.371],[.648,.370]],5);
+const lower = S([[.628,.397],[.621,.398],[.613,.400],[.608,.407],
+                  [.604,.411],[.612,.405],[.619,.402],[.628,.398],[.635,.398]],5);
+const genuine=[...glyph,upper,lower,...rhs];
+const actualLike=pair(genuine,372,404.244);
+assert.equal(actualLike.length,1,'detect retraced lower equals bar in complete expression');
+assert.deepEqual(Array.from(actualLike[0].indices),[2,3]);
+const lone=[upper,lower];
+assert.equal(detect(lone,372,404.244),null,
+  'standalone strict equals detection remains conservative');
+const scribble=S([[.608,.39],[.614,.4],[.62,.39],[.614,.38],[.608,.39]],5);
+assert.equal(pair([...glyph,upper,scribble,...rhs],372,404.244).length,0,
+  'compact scribble should not be accepted as retraced equals');
+console.log('PASS: diagnostic-derived retraced equals stroke and scribble negative control');
