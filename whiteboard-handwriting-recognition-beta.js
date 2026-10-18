@@ -276,6 +276,16 @@ async function detectLitreUnit(strokes,W,H,options={}){
  return{text:'ml',tokens,uncertain:[],engine:'local-litre-unit',format:'unit'};
 }
 
+/* Preserve lowercase ml when Auto has classified a short handwritten m and a
+   taller narrow cursive l as capitals. Genuine same-height ML stays uppercase. */
+function normalizeMillilitreCase(text,tokens){
+ if(!/^[Mm][Ll]$/.test(text)||tokens.length!==2||!tokens.every(t=>t.parts?.length))return text;
+ const m=bounds(tokens[0].parts),l=bounds(tokens[1].parts);
+ if(m.h<10||m.w<m.h*.4||l.h<m.h*1.10||l.w>m.w*.98||l.w>l.h*.8||l.cx<=m.cx)return text;
+ tokens[0].char='m';tokens[1].char='l';
+ return 'ml';
+}
+
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
  if(options.mode==='auto'){const litre=await detectLitreUnit(strokes,W,H,options);if(litre)return litre}
@@ -323,7 +333,8 @@ async function recognize(strokes,W,H,options={}){
   }
   text+=['+','−','×','÷','='].includes(token.char)?' '+token.char+' ':token.char;previous=token;
  }
- return{text:text.replace(/\s+/g,' ').trim(),tokens,uncertain:tokens.filter(t=>t.score<.85),engine:window.WhiteboardCharacterReader&&mode!=='digits'?'local-emnist-cnn':'local-digits'};
+ const reading=text.replace(/\s+/g,' ').trim();
+ return{text:mode==='auto'?normalizeMillilitreCase(reading,tokens):reading,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:window.WhiteboardCharacterReader&&mode!=='digits'?'local-emnist-cnn':'local-digits'};
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
 })();
