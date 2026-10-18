@@ -10,6 +10,7 @@
   let worker = null;
   let pending = null;
   let serial = 0;
+  let operation = 0; // invalidates outstanding composite reads on Cancel or mode switch
 
   function abort(reason) {
     serial += 1;
@@ -23,6 +24,7 @@
   }
 
   function cancel() {
+    operation++;
     abort('Reading cancelled');
     previous.cancel?.();
   }
@@ -103,12 +105,61 @@
     });
   }
 
+
+  const cancelled = () => Object.assign(new Error('Reading cancelled'), { name: 'AbortError' });
+  // For a quantity, preserve the model's complete result if it is already well-formed.
+  // Otherwise try a small number of geometry-derived number/unit partitions,
+  // asking CoMER to read BOTH parts rather than substituting a guessed label.
+  async function recognizeWithMeasurements(strokes, W, H, options = {}) {
+    const ticket = ++operation;
+    const grammar = window.WhiteboardCoMERQuantity;
+    const check = () => { if (!enabled || ticket !== operation) throw cancelled(); };
+    const full = await recognizeCoMER(strokes, W, H, options).catch(error => {
+      if (error.name === 'AbortError') throw error;
+      return {text:'', error:error.message};
+    });
+    check();
+    if (!grammar) {
+      if (full.text) return full;
+      throw new Error(full.error || 'CoMER measurement grammar is unavailable.');
+    }
+    const good = grammar.whole(full.text || '');
+    if (good) {
+      return {...full, text: good.text, engine:'local-comer-quantity'};
+    }
+    const candidates = grammar.splitCandidates(strokes);
+    // This is conservative: if the script is a full equation such as 2+3,
+    // do not accept a coincidental guessed unit without clear number/unit spacing.
+    for (const partition of candidates.slice(0, 4)) {
+      check();
+      try {
+        const number = await recognizeCoMER(partition.prefix, W, H, {...options,comerMode:'number'});
+        check();
+        const value = grammar.numeric(number.text);
+        if (!value) continue;
+        const unit = await recognizeCoMER(partition.suffix, W, H, {...options,comerMode:'expression'});
+        check();
+        const joined = grammar.combine(value, unit.text);
+        if (joined) {
+          return {text:joined.text,tokens:[],uncertain:[{score:0}],
+            engine:'local-comer-quantity-split',format:'unit',
+            components:{number:value, unit:unit.text}};
+        }
+      } catch (error) {
+        check();
+        if (error.name === 'AbortError') throw error;
+      }
+    }
+    if (full.text) return full;
+    throw new Error(full.error || 'CoMER could not read this measurement. Correct the text in the preview.');
+  }
+
   // Reuse the existing Beautify panel, its confirmation and Undo semantics.
   // The recognizer calls this reader only for the explicit Math formulas mode.
   window.WhiteboardMathReader = Object.freeze({
     recognize(strokes, W, H, options = {}) {
       if (!enabled) return previous.recognize(strokes, W, H, options);
-      return recognizeCoMER(strokes, W, H, options);
+      return recognizeWithMeasurements(strokes, W, H, options);
     },
     cancel,
     traces: previous.traces
