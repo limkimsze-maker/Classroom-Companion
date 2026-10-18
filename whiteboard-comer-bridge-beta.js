@@ -48,7 +48,7 @@
     });
   }
 
-  function recognizeCoMER(strokes, W, H) {
+  function recognizeCoMER(strokes, W, H, options = {}) {
     if (pending) abort('A newer handwriting read started');
     const id = ++serial;
     const raw = prepare(strokes, W, H);
@@ -92,7 +92,7 @@
           abort('CoMER worker failed');
           reject(new Error('CoMER assets may be missing. Use the existing Math formulas reader or complete the local asset setup.'));
         };
-        currentWorker.postMessage({ id, input, mode: 'expression' });
+        currentWorker.postMessage({ id, input, mode: options.comerMode === 'number' ? 'number' : 'expression' });
       } catch (error) {
         if (pending?.id === id) {
           clearTimeout(pending.timer);
@@ -108,7 +108,7 @@
   window.WhiteboardMathReader = Object.freeze({
     recognize(strokes, W, H, options = {}) {
       if (!enabled) return previous.recognize(strokes, W, H, options);
-      return recognizeCoMER(strokes, W, H);
+      return recognizeCoMER(strokes, W, H, options);
     },
     cancel,
     traces: previous.traces
