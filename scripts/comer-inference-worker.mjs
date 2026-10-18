@@ -1,7 +1,7 @@
 /* Bundled into vendor/comer/comer-worker.js by scripts/build-comer-vendor.sh.
    Inference executes entirely inside a same-origin Web Worker. */
 import * as ort from 'onnxruntime-web';
-import { InferenceEngine, preprocessStrokes, isStrokeMeaningful, loadVocab } from 'ink-on/core';
+import { InferenceEngine, loadVocab } from 'ink-on/core';
 
 ort.env.wasm.numThreads = 1; // GitHub Pages normally has no COOP/COEP shared-memory headers.
 ort.env.wasm.simd = true;
@@ -36,15 +36,15 @@ function getVocab() {
 }
 
 self.onmessage = async ({ data }) => {
-  const { id, strokes, mode } = data || {};
+  const { id, input, mode } = data || {};
   if (!Number.isSafeInteger(id)) return;
   try {
-    if (!isStrokeMeaningful(strokes)) {
-      throw new Error('Draw a mathematical expression with several clear pen points.');
+    if (!input || !(input.tensor instanceof Float32Array) || !(input.mask instanceof Uint8Array)) {
+      throw new Error('Invalid preprocessed handwriting input.');
     }
     const [engine, vocab] = await Promise.all([getEngine(), getVocab()]);
     const result = await engine.recognize(
-      preprocessStrokes(strokes),
+      input,
       vocab,
       mode === 'number' ? 'number' : 'expression'
     );
