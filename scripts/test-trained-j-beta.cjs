@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const ctx={window:{}};vm.runInNewContext(fs.readFileSync('whiteboard-trained-j-beta.js','utf8'),ctx);
 const j=ctx.window.WhiteboardTrainedJ;
-assert.equal(j.info().samples,21);
+assert.equal(j.info().samples,23);
 const W=326.58,H=340;
 const stem={size:5,points:[[.55,.50],[.56,.60],[.57,.72],[.55,.80],[.51,.84],[.46,.85],[.42,.81]].map(([x,y])=>({x,y}))};
 const dot={size:5,points:[[.55,.42],[.54,.415],[.54,.425],[.55,.43]].map(([x,y])=>({x,y}))};
