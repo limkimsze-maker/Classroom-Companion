@@ -9,6 +9,7 @@ on:
       - 'scripts/inkon-original-beautify-adapter.mjs'
       - 'scripts/build-inkon-original-beautify.sh'
       - 'scripts/test-inkon-original-beautify.cjs'
+      - 'scripts/test-inkon-first-fallback.cjs'
       - 'whiteboard-comer-beta.html'
       - 'whiteboard-handwriting-beautify-inkon-beta.js'
       - 'whiteboard-inkon-native-beautify-bridge.js'
@@ -40,6 +41,8 @@ jobs:
           assert "whiteboard-handwriting-beautify-inkon-beta.js" in experimental
           print('PASS: Original MOE-safe Beta unchanged and experimental native Beautify preserved.')
           PY
+      - name: Test ink-on-first recognition routing and fallback
+        run: node scripts/test-inkon-first-fallback.cjs
       - name: Validate original ink-on worker and current Beautify using Chromium
         run: |
           npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund playwright@1.56.1
