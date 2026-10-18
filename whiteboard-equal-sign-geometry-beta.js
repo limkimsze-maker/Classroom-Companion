@@ -47,7 +47,7 @@ function detect(strokes,W,H,embedded=false){
  const [top,bottom]=bars,overlap=Math.min(top.far,bottom.far)-Math.max(top.x,bottom.x);
  const avg=(top.width+bottom.width)/2,sep=bottom.midY-top.midY;
  if(overlap<Math.min(top.width,bottom.width)*(embedded?.30:.60))return null;
- if(Math.max(top.width,bottom.width)/Math.min(top.width,bottom.width)>(embedded?3.1:1.65))return null;
+ if(Math.max(top.width,bottom.width)/Math.min(top.width,bottom.width)>(embedded?3.8:1.65))return null;
  if(Math.abs(top.middleX-bottom.middleX)>(embedded?Math.max(6,avg*.9):avg*.26))return null;
  if(sep<Math.max(3,Math.min(top.ink,bottom.ink)*.72,avg*.055))return null;
  if(sep>(embedded?Math.min(82,Math.max(30,avg*3.1)):Math.max(11,avg*.52)))return null;
