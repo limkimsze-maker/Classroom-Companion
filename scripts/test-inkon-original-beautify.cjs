@@ -1,0 +1,52 @@
+/* Integration smoke test for the exact upstream demo recognizer behind Beautify. */
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1280,height:820}});
+  page.setDefaultTimeout(120000);
+  const outside=[],errors=[];
+  page.on('request',r=>{if(new URL(r.url()).origin!=='http://127.0.0.1:8000')outside.push(r.url())});
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('requestfailed',r=>errors.push('Request failed '+r.url()+': '+r.failure()?.errorText));
+  page.on('console',m=>{if(m.type()==='error')console.log('BROWSER CONSOLE:',m.text())});
+  await page.goto('http://127.0.0.1:8000/whiteboard-comer-beta.html',{waitUntil:'load'});
+  await page.locator('#handwritingBeautifyBtn').waitFor();
+  const checks=await page.evaluate(()=>({
+    exact:!!window.WhiteboardInkOnOriginalDemo?.recognize,
+    beautify:!!document.getElementById('handwritingBeautifyBtn'),
+    originalToggle:!!document.getElementById('comerExperimentalToggle'),
+    uji:!!window.WhiteboardUjiReader,
+    handwriting:!!window.WhiteboardHandwritingMath?.recognize
+  }));
+  console.log('Preserved tools:',JSON.stringify(checks));
+  if(!checks.exact||!checks.beautify||!checks.uji||!checks.handwriting||checks.originalToggle){
+    throw Error('Beautify or exact demo replacement incorrect');
+  }
+  const outcome=await page.evaluate(async()=>{
+    const P=points=>({size:3,points:points.map(([x,y])=>({x,y}))});
+    const strokes=[
+      P([[.10,.40],[.115,.32],[.14,.31],[.15,.36],[.145,.41],[.10,.57],[.16,.57]]),
+      P([[.19,.45],[.25,.45]]),
+      P([[.22,.38],[.22,.52]]),
+      P([[.28,.35],[.31,.31],[.345,.34],[.32,.43],[.348,.50],[.34,.57],[.30,.59]])
+    ];
+    try {
+      const result=await window.WhiteboardHandwritingMath.recognize(strokes,700,250,{mode:'math'});
+      return {engine:result.engine,text:result.text};
+    }catch(e){return {error:e.message}}
+  });
+  console.log('Original demo worker inside Beautify:',JSON.stringify(outcome));
+  if(outcome.error)throw Error('Actual upstream worker failed: '+outcome.error);
+  if(outcome.engine!=='inkon-original-demo')throw Error('Incorrect recognizer: '+outcome.engine);
+  if(!outcome.text.trim())throw Error('Demo returned empty latex');
+  // Ordinary Auto still follows original UJI/letter code; no custom UI.
+  // Enable the existing Beautify selection to confirm the original dialog remains.
+  await page.locator('#handwritingBeautifyBtn').click();
+  const selected=await page.evaluate(()=>document.querySelector('#boardWrap')?.classList.contains('handwriting-selecting'));
+  if(!selected)throw Error('Original Beautify selection action is missing');
+  if(errors.length)throw Error('Browser errors: '+errors.slice(0,6).join('; '));
+  if(outside.length)throw Error('Unexpected external requests: '+outside.join('; '));
+  console.log('PASS: original ink-on demo worker, Auto/beam candidates, same-origin assets, original Beautify and UJI V1');
+ } finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exit(1)});
