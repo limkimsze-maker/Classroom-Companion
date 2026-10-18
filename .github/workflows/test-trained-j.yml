@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/trained-lowercase-j-20261018
+      - fix/j-wide-dot-gap-20261018
   pull_request:
     paths:
       - whiteboard-trained-j-beta.js

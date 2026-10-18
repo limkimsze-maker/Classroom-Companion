@@ -12,6 +12,8 @@ const TRAIN=[
 [.337,1,.336,.441,.168,.055],[.364,.956,.320,.295,.037,.023],
 [.377,.958,.242,.386,.092,.043],[.343,1,.203,.669,.102,.119],
 [.338,1,.295,.740,.080,.053],[.310,1,.201,.490,.142,.069],
+// Derived six-feature summaries from the two current failed j cases.
+[.290,.735,.597,.014,.111,.030],[.281,.807,.422,.116,.075,.053],
 [.315,1,.185,.458,.140,.057]
 ];
 function box(stroke,W,H){
@@ -31,7 +33,7 @@ function classify(stem,dot,W,H){
  const mid=(a.minX+a.maxX)/2;
  const f=[width/height,(start.x-end.x)/width,(a.minY-b.maxY)/height,
  ((b.minX+b.maxX)/2-mid)/width,b.w/width,b.h/height];
- if(f[0]<.17||f[0]>.53||f[1]<.72||f[2]<.07||f[2]>.44||f[3]<-.25||f[3]>.85)return null;
+ if(f[0]<.17||f[0]>.53||f[1]<.72||f[2]<.07||f[2]>.70||f[3]<-.25||f[3]>.85)return null;
  const scales=[.11,.19,.13,.30,.08,.065];
  const best=Math.min(...TRAIN.map(t=>Math.sqrt(f.reduce((sum,v,i)=>sum+((v-t[i])/scales[i])**2,0))));
  if(best>2.05)return null;
