@@ -244,8 +244,41 @@ async function detectRaisedUnit(strokes,W,H,options={}){
  return null;
 }
 
+
+/* Context-sensitive litre recognition: a tall, cursive l is often misread as
+   8 in the mixed model. Preserve ordinary numerals by requiring a letter
+   candidate, and for ml require a strong handwritten m and a taller narrow l. */
+async function detectLitreUnit(strokes,W,H,options={}){
+ if(!window.WhiteboardCharacterReader||strokes.length<1||strokes.length>2)return null;
+ const parts=strokes.map(raw=>{
+  if(!raw?.points?.length||raw.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return null;
+  const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};
+  return{scaled,box:bounds([scaled])};
+ });
+ if(parts.some(p=>!p))return null;
+ parts.sort((a,b)=>a.box.cx-b.box.cx);
+ const last=parts.at(-1),b=last.box,aspect=b.w/Math.max(1,b.h);
+ if(b.h<24||b.w<4||aspect<.12||aspect>.68)return null;
+ const imgs=parts.map(p=>rasterDigit([p.scaled]));
+ const preds=await window.WhiteboardCharacterReader.predictBatch(imgs,'lowercase',options.onProgress);
+ const ell=preds.at(-1)||[],ellScore=ell.find(q=>q.char.toLowerCase()==='l')?.score||0;
+ if(ellScore<.055)return null;
+ if(parts.length===1){
+  const num=predictDigit(imgs[0])[0];
+  if(ellScore<.12||num.char==='8'&&num.score>.96)return null;
+  return{text:'l',tokens:[{char:'l',score:Math.max(.85,ellScore),parts:[last.scaled]}],uncertain:[],engine:'local-litre-unit',format:'unit'};
+ }
+ const first=parts[0],a=first.box,m=preds[0]||[],mScore=m.find(q=>q.char.toLowerCase()==='m')?.score||0;
+ if(mScore<.68||a.h<15||b.h<a.h*1.18||a.w<a.h*.52)return null;
+ if(b.x<a.x+a.w*.60||b.x>a.x+a.w+a.h*.85||b.cy>a.cy+a.h*.33)return null;
+ if(ellScore<.08)return null;
+ const tokens=[{char:'m',score:mScore,parts:[first.scaled]},{char:'l',score:Math.max(.82,ellScore),parts:[last.scaled]}];
+ return{text:'ml',tokens,uncertain:[],engine:'local-litre-unit',format:'unit'};
+}
+
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
+ if(options.mode==='auto'){const litre=await detectLitreUnit(strokes,W,H,options);if(litre)return litre}
  if(options.mode==='auto'||options.mode==='math'){const raised=await detectRaisedUnit(strokes,W,H,options);if(raised)return raised}
  if(options.mode==='auto'||options.mode==='math'){const fraction=detectStackedFraction(strokes,W,H);if(fraction)return fraction}
  if(options.mode==='math')return window.WhiteboardMathReader.recognize(strokes,W,H,options);
