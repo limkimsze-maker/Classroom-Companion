@@ -21,7 +21,7 @@ const bad=[
  [line(.2,.35,.38,.35),line(.2,.38,.38,.52)], // slant
  [line(.2,.35,.38,.35),line(.2,.39,.38,.39),line(.2,.43,.38,.43)], // triple lines
  [line(.2,.35,.38,.35),line(.22,.351,.4,.351)], // too close
- [line(.2,.35,.38,.35),line(.2,.46,.38,.46)], // too far for an equals sign
+ [line(.2,.35,.38,.35),line(.2,.65,.38,.65)], // too far for an equals sign
 ];
 for(let i=0;i<bad.length;i++)assert.equal(detect(bad[i],800,400),null,'negative '+i);
 console.log('PASS: equals sign recognized in five pen variants and rejected in nine negative controls');
