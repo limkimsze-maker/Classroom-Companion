@@ -183,8 +183,70 @@ function detectStackedFraction(strokes,W,H){
  return null;
 }
 
+
+/* Detect small raised powers on known measurement units before ordinary text
+   reading can move the exponent to the front (e.g. cm² => 2CM). */
+async function detectRaisedUnit(strokes,W,H,options={}){
+ if(strokes.length<2||strokes.length>10||!window.WhiteboardCharacterReader)return null;
+ const parts=strokes.map(raw=>{
+  if(!Array.isArray(raw.points)||!raw.points.length||raw.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return null;
+  const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};
+  return{raw,scaled,box:bounds([scaled])};
+ });
+ if(parts.some(p=>!p))return null;
+ const byHeight=parts.slice().sort((a,b)=>a.box.cy-b.box.cy);
+ const knownUnits=['cm','mm','km','kg','mg','ml','min','m','g','l','s','h'];
+ for(let upperCount=1;upperCount<=Math.min(2,parts.length-1);upperCount++){
+  const raised=byHeight.slice(0,upperCount),baseline=byHeight.slice(upperCount).sort((a,b)=>a.box.cx-b.box.cx);
+  if(!baseline.length||baseline.length>6)continue;
+  const upperBox=bounds(raised.map(p=>p.scaled)),baseBox=bounds(baseline.map(p=>p.scaled));
+  if(baseBox.h<12||baseBox.w<9||upperBox.w<3||upperBox.h<3)continue;
+  if(upperBox.h>baseBox.h*.87||upperBox.cy>=baseBox.cy-baseBox.h*.36)continue;
+  if(upperBox.x<baseBox.x+baseBox.w*.60||upperBox.cx<baseBox.cx+baseBox.w*.22)continue;
+  if(upperBox.y+upperBox.h>baseBox.y+baseBox.h*.42)continue;
+  if(upperBox.x>baseBox.x+baseBox.w*1.90)continue;
+  const upperTokens=segment(raised.map(p=>p.raw),W,H);
+  if(upperTokens.length!==1||!['2','3'].includes(upperTokens[0].char)||upperTokens[0].score<.55)continue;
+  const rasters=baseline.map(p=>rasterDigit([p.scaled]));
+  const predictions=await window.WhiteboardCharacterReader.predictBatch(rasters,'lowercase',options.onProgress);
+  const candidates=[];
+  for(const unit of knownUnits){
+   const n=unit.length,prefix=baseline.length-n;
+   if(prefix<0||prefix>3)continue;
+   let combined=1,valid=true,prefixText='';
+   for(let i=0;i<prefix;i++){
+    const p=predictDigit(rasters[i])[0];
+    if(!p||p.score<.76){valid=false;break}
+    prefixText+=p.char;combined*=p.score;
+   }
+   if(!valid)continue;
+   for(let i=0;i<n;i++){
+    const choice=predictions[prefix+i]?.find(q=>q.char.toLowerCase()===unit[i]);
+    if(!choice||choice.score<.12){valid=false;break}
+    combined*=choice.score;
+   }
+   if(valid&&combined>.08)candidates.push({unit,prefixText,confidence:combined});
+  }
+  if(!candidates.length)continue;
+  candidates.sort((a,b)=>b.confidence-a.confidence);
+  const best=candidates[0],unit=best.unit==='ml'?'mL':best.unit==='l'?'L':best.unit;
+  const top=upperTokens[0],tokens=[
+   ...baseline.map((p,i)=>({
+    char:i<best.prefixText.length?best.prefixText[i]:unit[i-best.prefixText.length],
+    score:i<best.prefixText.length?predictDigit(rasters[i])[0].score:predictions[i]?.find(q=>q.char.toLowerCase()===best.unit[i-best.prefixText.length])?.score||.85,
+    parts:[p.scaled]
+   })),
+   top
+  ];
+  const text=(best.prefixText?best.prefixText+' ':'')+unit+(top.char==='2'?'²':'³');
+  return{text,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-raised-unit',format:'unit',baseTokenCount:baseline.length};
+ }
+ return null;
+}
+
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
+ if(options.mode==='auto'||options.mode==='math'){const raised=await detectRaisedUnit(strokes,W,H,options);if(raised)return raised}
  if(options.mode==='auto'||options.mode==='math'){const fraction=detectStackedFraction(strokes,W,H);if(fraction)return fraction}
  if(options.mode==='math')return window.WhiteboardMathReader.recognize(strokes,W,H,options);
  const tokens=segment(strokes,W,H),mode=['auto','lowercase','uppercase','digits'].includes(options.mode)?options.mode:'auto';let text='';
