@@ -142,7 +142,23 @@ async function review(group){
   document.getElementById('penBtn')?.click();
   sayLocal(learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
- actions.append(apply,cancel);panel.append(title,help,ink,label,input,appearance,status,preview,feedbackArea,actions);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
+ actions.append(apply,cancel);const exportInk=document.createElement('button');
+ exportInk.type='button';exportInk.textContent='Export selected pen strokes (JSON)';
+ exportInk.style.cssText='margin-top:8px;font-size:13px;max-width:100%;white-space:normal';
+ exportInk.title='Downloads only this selected handwriting and its local recognition feedback. No upload or network request.';
+ exportInk.onclick=()=>{
+  // Export selected strokes only; never export the whiteboard's documents.
+  const payload={schema:'classroom-equals-diagnostic-v1',mode:modeSelect.value,
+   recognised:recognition?.text||'',corrected:input.value,
+   selection:{width:cssW,height:cssH},
+   strokes:group.map(s=>({size:Number(s.size)||4,points:s.points.map(p=>({x:p.x,y:p.y}))}))};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='equals-handwriting-strokes.json';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ };
+ panel.append(title,help,ink,label,input,appearance,status,preview,feedbackArea,actions);panel.appendChild(exportInk);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
  window.MathJax?.startup?.promise?.then(()=>{if(session===id&&dialog===backdrop)updatePreview()}).catch(()=>{});
  async function readSelection(){
  const version=++readVersion,startText=input.value,replaceReading=!startText||startText===lastReading;recognition=null;reading=true;apply.disabled=true;status.classList.remove('handwriting-error');status.textContent='Reading handwriting on this device…';
