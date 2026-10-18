@@ -135,9 +135,11 @@ async function review(group){
   obj.smartOriginal=clone(group);obj.handwritingBeautified=true;
   // Committing the preview transfers provisional learning to Undo history.
   let learning=pendingLearning;pendingLearning=null;
-  strokes=strokes.filter(s=>!set.has(s));strokes.splice(first,0,obj);window.WhiteboardMarqueeSelection?.clear();tool='select';closeReview();redraw();
+  strokes=strokes.filter(s=>!set.has(s));strokes.splice(first,0,obj);window.WhiteboardMarqueeSelection?.clear();tool='pen';closeReview();redraw();
   if(!learning)try{learning=window.WhiteboardHandwritingLearning?.confirm(recognition,input.value,window.WhiteboardHandwritingMath.rasterDigit,group,cssW,cssH,modeSelect.value)}catch{}
   history.push({before,after:JSON.stringify(strokes),learning});if(history.length>30)history.shift();syncUi();
+  // Use the existing Pen button handler too, so selection state and toolbar UI reset.
+  document.getElementById('penBtn')?.click();
   sayLocal(learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
  actions.append(apply,cancel);panel.append(title,help,ink,label,input,appearance,status,preview,feedbackArea,actions);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
