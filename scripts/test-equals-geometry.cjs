@@ -63,3 +63,14 @@ const colon=[
 ];
 assert.equal(pair([...glyph,...colon,...rhs],800,400).length,0,'colon dots must not turn to equals');
 console.log('PASS: small slightly slanted mobile equals signs within equations');
+
+const smallFar=[
+ line(.40,.42,.424,.427,5),
+ line(.408,.50,.429,.508,5)
+];
+const separated=pair([...glyph,...smallFar,...rhs],800,400);
+assert.equal(separated.length,1,'short uneven equals bars, widely separated vertically');
+assert.deepEqual(Array.from(separated[0].indices),[2,3]);
+const distant=[line(.40,.42,.424,.427,5),line(.408,.66,.429,.668,5)];
+assert.equal(pair([...glyph,...distant,...rhs],800,400).length,0,'unrelated far-apart strokes stay separate');
+console.log('PASS: short vertically separated equals strokes from photographed handwriting');
