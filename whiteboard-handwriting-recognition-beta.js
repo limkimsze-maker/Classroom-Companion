@@ -498,7 +498,7 @@ async function recognize(strokes,W,H,options={}){
    const hasOp=raw.some(t=>op.includes(t.char));
    const hasDigit=raw.some(t=>/^[0-9]$/.test(t.char));
    if(hasDigit){
-    const reading=raw.map(t=>op.includes(t.char)?' '+t.char+' ':t.char).join('').replace(/\\s+/g,' ').trim();
+    const reading=raw.map(t=>op.includes(t.char)?' '+t.char+' ':t.char).join('').replace(/\s+/g,' ').trim();
     return{text:reading,tokens:raw,uncertain:[],engine:hasOp?'local-primary-arithmetic-grammar':'local-primary-digit-sequence',format:'number'};
    }
   }
