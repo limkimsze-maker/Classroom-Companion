@@ -51,7 +51,15 @@
   function recognizeCoMER(strokes, W, H) {
     if (pending) abort('A newer handwriting read started');
     const id = ++serial;
-    const data = prepare(strokes, W, H);
+    const raw = prepare(strokes, W, H);
+    const prep = window.WhiteboardCoMERPreprocess;
+    if (!prep?.preprocessStrokes || !prep?.isStrokeMeaningful) {
+      return Promise.reject(new Error('CoMER preprocessor missing; refresh the experimental page.'));
+    }
+    if (!prep.isStrokeMeaningful(raw)) {
+      return Promise.reject(new Error('Draw a clearer expression and select its strokes.'));
+    }
+    const input = prep.preprocessStrokes(raw);
     if (typeof Worker !== 'function') {
       return Promise.reject(new Error('CoMER requires browser Web Worker support.'));
     }
@@ -84,7 +92,7 @@
           abort('CoMER worker failed');
           reject(new Error('CoMER assets may be missing. Use the existing Math formulas reader or complete the local asset setup.'));
         };
-        currentWorker.postMessage({ id, strokes: data, mode: 'expression' });
+        currentWorker.postMessage({ id, input, mode: 'expression' });
       } catch (error) {
         if (pending?.id === id) {
           clearTimeout(pending.timer);
