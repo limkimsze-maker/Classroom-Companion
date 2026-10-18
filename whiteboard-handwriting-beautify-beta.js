@@ -58,7 +58,7 @@ async function review(group){
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Choose Math for fractions, roots, powers, integrals and other notation. Use Insert for symbols or units such as cm². For words or O/0, choose Letters. Check the preview before applying.';
+ const help=document.createElement('p');help.textContent='Auto recognises clearly stacked fractions such as ½. Choose Math formulas for roots, powers, integrals and complex notation. Use Insert for symbols or units such as cm². For words or O/0, choose Letters. Check the preview before applying.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=600;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised numbers, letters, units or mathematical notation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
@@ -113,7 +113,8 @@ async function review(group){
   if(session!==id||dialog!==backdrop||version!==readVersion)return;recognition=result;reading=false;
   // Do not overwrite a correction entered while recognition was running.
   if(replaceReading&&input.value===startText)input.value=result.text;lastReading=result.text;updatePreview();if(document.activeElement===cancel)input.focus();
-  if(result.uncertain.length)status.textContent=result.format==='latex'?'Check symbols, fraction bars, powers and limits before applying.':'Some characters were uncertain. Check and correct the reading before applying.';
+  if(result.engine==='local-stacked-fraction'&&!result.uncertain.length)status.textContent='Stacked fraction detected. Check the numerator, denominator and preview before applying.';
+   if(result.uncertain.length)status.textContent=result.engine==='local-stacked-fraction'?'Stacked fraction detected. Check both numbers before applying.':result.format==='latex'?'Check symbols, fraction bars, powers and limits before applying.':'Some characters were uncertain. Check and correct the reading before applying.';
  }catch(error){if(session!==id||dialog!==backdrop||version!==readVersion||error.name==='AbortError')return;reading=false;updatePreview();status.textContent=error.message||'Could not read this writing. You can type the correct reading.';status.classList.add('handwriting-error');if(document.activeElement===cancel)input.focus()}
  }
  modeSelect.addEventListener('change',()=>{window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();return readSelection()});
