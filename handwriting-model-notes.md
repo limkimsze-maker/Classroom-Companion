@@ -1,16 +1,76 @@
 # Beta handwriting recognition
 
-The Beautify action recognises separately written digits 0–9, decimal points,
-dollar signs, and + − × ÷ =. It always opens an editable confirmation before
+The Beautify action recognises separately written Latin letters, digits 0–9,
+decimal points, dollar signs, and + − × ÷ =. It always opens an editable confirmation before
 replacing ink. Cancel preserves the original writing; Undo restores the complete
 pre-conversion board. Connected handwriting, unusual digit shapes, and overlapping
-characters can require correction. This is a first version for numbers and math,
-not a general handwriting-to-words recognizer.
+characters can require correction. Words with separated letters are supported;
+connected/cursive word recognition is outside this character-based recognizer.
 
 All recognition runs locally in JavaScript. The app loads its bundled model as a
 same-origin script. It does not upload handwriting, request a third-party OCR
 service, require the browser's experimental handwriting API, use `eval`, or relax
 the MOE Safe Mode network policy.
+
+## Pretrained letter and mixed-character models
+
+The Beta bundles two licensed pretrained EMNIST CNNs. Letters no longer depend on
+personal examples. The models are downloaded at build time and converted to
+per-output-channel signed int8 weights with floating biases. Batch normalization
+is folded into preceding linear convolutions where valid; normalization after
+ReLU remains a separate affine operation. Neither Keras nor ONNX is executed in
+the browser. The two model payloads total approximately 1 MB of JavaScript.
+
+Sources and attribution:
+
+- [EMNIST dataset, NIST](https://www.nist.gov/itl/products-and-services/emnist-dataset),
+  Cohen, Afshar, Tapson and van Schaik, "EMNIST: an extension of MNIST to handwritten letters" (2017).
+- Radu Dogaru and Ioana Dogaru, [NL-CNN](https://github.com/radu-dogaru/NL-CNN-a-compact-fast-trainable-convolutional-neural-net),
+  checkpoint `nlcnn_emnist_90_45.h5`, 47 EMNIST classes including digits and letters.
+  MIT notice: `vendor/handwriting/NL-CNN-LICENSE.txt`.
+- Hannah How, [Handwritten Letter Recognition with CNNs](https://github.com/c0smo-55/emnist-cnn-letter-classifier),
+  checkpoint `models/improved_model_best.h5`, 26 letter classes. Its documented
+  training augmentation includes rotation, shift and zoom variations.
+  MIT notice: `vendor/handwriting/LETTERS-CNN-LICENSE.txt`.
+
+The converter `scripts/build-handwriting-cnn-models.py` checks the downloaded
+checkpoint SHA-256 hashes before converting them:
+
+| Checkpoint filename passed to converter | SHA-256 |
+| --- | --- |
+| nlcnn-emnist.h5 | 05aec3037fbedceedddf5dcac722ecd4dfe9f2fb15bc2f71f664ed0ca2644d44 |
+| letters-cnn.h5 | 11a41fe3e7d25463559645c0e9a6e10b498c536e92388fca113f5c759b148f61 |
+
+Validation used the official EMNIST ByClass test IDX files, mirrored at
+`Royc30ne/emnist-byclass`, revision `cb159e07d5b743e2579859e6f890671b35ce5ad6`.
+The image archive SHA-256 is
+`5ec835bd5d5b1a66378a132e727fef20fe994b3cc666899befcca5ac766f50cd`;
+the label archive SHA-256 is
+`501e305eeeacb093b162592d80e8a2632040872360fa6d85cfcb2200d91ca92a`.
+EMNIST IDX images are transposed to upright orientation before evaluation.
+
+The converted mixed model correctly classified 105,295 / 116,323 test characters
+(90.52%, ignoring letter case). The dedicated letter model correctly classified
+55,391 / 58,405 test letters (94.84%, ignoring case). These tests used the converted
+quantized weights. Separate JavaScript inference checks classified 246 / 260
+sampled test letters correctly. Direct whiteboard-stroke fixtures passed 72 / 72
+size, position, slant, and pen-thickness variants. Benchmark figures concern
+isolated characters, not whole-word, segmentation, or individual-user accuracy.
+
+The review offers Auto, Letters a–z, Letters A–Z, and Numbers. The dedicated letter
+model folds letter case, so explicit letter modes set the desired output case.
+Auto uses the mixed model, switches to the letter model for clear text selections,
+and retains mathematical operators; Numbers uses the original digit model.
+Similar shapes such as I/l, O/0 and x/× can still require review or a reading mode.
+Low-confidence glyphs get a second, slightly resized/thickened inference view.
+Character spacing is used to retain word gaps without rearranging the writing.
+
+CNN recognition runs in a same-origin Worker, with progress and immediate
+cancellation. If Workers are unavailable, a local fallback yields between glyphs.
+Cancel, closing a review and switching reading modes invalidate older jobs;
+outdated predictions cannot overwrite edits. Apply waits for the active read.
+Personal examples remain local and retain priority; mode selection can override
+digit-versus-letter interpretation without deleting those examples.
 
 ## Digit model
 
@@ -53,9 +113,8 @@ whiteboard are unchanged.
 ## Learning from confirmed corrections
 
 Apply beautify quietly saves normalized examples of confirmed digits and Latin
-letters A–Z / a–z on this browser and device. Letters have no bundled general
-alphabet model: correct a new letter's first reading and Apply to teach its shape.
-Subsequent recognition uses sufficiently similar personal examples alongside the
+letters A–Z / a–z on this browser and device. Subsequent recognition uses
+sufficiently similar personal examples alongside the pretrained CNNs and
 unchanged digit model. Uppercase/lowercase and lookalikes such as O/0, l/1 and x/×
 still need review. This is for separately written characters and math expressions,
 not cursive word recognition. Dots above narrow i/j stems are grouped with them.
