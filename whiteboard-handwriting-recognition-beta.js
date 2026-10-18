@@ -331,14 +331,14 @@ function readMeasuredDigits(ink,W,H){
  if(!tokens.length)return null;
  // Digits such as 8 and 9 can have upper loops and lower strokes written separately.
  // Only combine strongly vertically overlapping pen strokes with a confident digit.
- if(ink.length===2&&tokens.length===2){
+ if(ink.length===2){
   const a=ink[0].box,b=ink[1].box;
   const overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
   if(overlap>Math.min(a.w,b.w)*.45&&Math.abs(a.cy-b.cy)>Math.min(a.h,b.h)*.50
      &&Math.abs(a.cx-b.cx)<Math.max(a.w,b.w)*.55){
    const both=ink.map(p=>({points:p.raw.points.map(q=>({x:q.x*W,y:q.y*H})),size:Number(p.raw.size)||4}));
    const best=predictDigit(rasterDigit(both))[0];
-   if(/^[0-9]$/.test(best?.char||'')&&best.score>.93)tokens=[{...best,parts:both,x:Math.min(a.x,b.x)}];
+   if(['8','9'].includes(best?.char)&&best.score>.93)tokens=[{...best,parts:both,x:Math.min(a.x,b.x)}];
   }
  }
  if(tokens.length>12||tokens.some(t=>!(/^\d$/.test(t.char)||t.char==='.')||t.score<.65))return null;
