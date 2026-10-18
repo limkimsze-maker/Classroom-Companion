@@ -23,3 +23,14 @@ assert.equal(api.match(unrelated,300,300,'auto'),null);
 const equation=[...nine,...g,...q,...nine];
 assert.equal(api.match(equation,300,300,'auto'),null);
 console.log('PASS local private 9/g/q import, conservative matching, mode gating, unrelated ink and equation');
+
+
+const emptyCtx={window:{localStorage:{getItem:()=>null,setItem(){}},document:{}},localStorage:{getItem:()=>null,setItem(){}},document:{readyState:'loading',addEventListener(){}},Float32Array,Math,Array,Number,JSON};
+vm.runInNewContext(fs.readFileSync('whiteboard-character-9gq-local-beta.js','utf8'),emptyCtx);
+const builtIn=emptyCtx.window.WhiteboardCharacter9GQ;
+assert.equal(builtIn.info().count,0);
+assert.equal(builtIn.info().geometryBuiltIn,true);
+assert.equal(builtIn.match(unrelated,300,300,'auto'),null);
+assert.equal(builtIn.match(equation,300,300,'auto'),null);
+assert.equal(builtIn.match(nine,300,300,'auto'),null,'do not claim visually ambiguous 9/g/q in Auto');
+console.log('PASS built-in conservative fallback without import');
