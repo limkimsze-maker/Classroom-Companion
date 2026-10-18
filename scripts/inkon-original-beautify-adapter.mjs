@@ -86,7 +86,8 @@ function adaptWhiteboardStrokes(strokes,W,H) {
   return strokes.map(s=>{
     if (!Array.isArray(s.points)||s.points.length===0) throw new Error('Invalid handwriting.');
     return {
-      lineWidth:Math.max(1,Math.min(24,Number(s.size)||3)),
+      // The original Vue demo's MathCanvas uses line-width=3 regardless of ink colour/size.
+      lineWidth:3,
       points:s.points.map(p=>{
         if (!Number.isFinite(p.x)||!Number.isFinite(p.y)||++pointsCount>16000) {
           throw new Error('Invalid or excessively long handwriting.');
