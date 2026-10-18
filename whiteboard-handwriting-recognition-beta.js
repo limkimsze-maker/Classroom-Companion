@@ -292,7 +292,7 @@ function normalizeMillilitreCase(text,tokens){
    The upper loop and two lower tail tips distinguish it from a real X.
    Do not alter digit/Math modes or context-sensitive lowercase ml. */
 function loopedStandaloneL(strokes,W,H){
- if(strokes.length<1||strokes.length>2)return false;
+ if(strokes.length<1||strokes.length>3)return false;
  const groups=strokes.map(s=>Array.isArray(s.points)?s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H})):[]);
  if(groups.some(g=>g.length<2))return false;
  const pts=groups.flat(),b=bounds([{points:pts}]);
@@ -323,44 +323,62 @@ function loopedStandaloneL(strokes,W,H){
 }
 
 
-/* Resolve a numeric quantity followed by lowercase millilitres. The unit
-   reader works on its two glyphs separately, avoiding false capital ML. */
-async function detectMillilitreQuantity(strokes,W,H,options={}){
- if(!window.WhiteboardCharacterReader||strokes.length<3||strokes.length>6)return null;
- const sorted=strokes.map(raw=>{
+/* General measurement reading. First recognise the numeric prefix with the digit
+   model, then recognise the unit independently. No fixed number+unit phrases. */
+function readMeasuredDigits(ink,W,H){
+ if(!ink.length||ink.length>20)return null;
+ let tokens=segment(ink.map(p=>p.raw),W,H);
+ if(!tokens.length)return null;
+ // Digits such as 8 and 9 can have upper loops and lower strokes written separately.
+ // Only combine strongly vertically overlapping pen strokes with a confident digit.
+ if(ink.length===2&&tokens.length===2){
+  const a=ink[0].box,b=ink[1].box;
+  const overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+  if(overlap>Math.min(a.w,b.w)*.45&&Math.abs(a.cy-b.cy)>Math.min(a.h,b.h)*.50
+     &&Math.abs(a.cx-b.cx)<Math.max(a.w,b.w)*.55){
+   const both=ink.map(p=>({points:p.raw.points.map(q=>({x:q.x*W,y:q.y*H})),size:Number(p.raw.size)||4}));
+   const best=predictDigit(rasterDigit(both))[0];
+   if(/^[0-9]$/.test(best?.char||'')&&best.score>.93)tokens=[{...best,parts:both,x:Math.min(a.x,b.x)}];
+  }
+ }
+ if(tokens.length>12||tokens.some(t=>!(/^\d$/.test(t.char)||t.char==='.')||t.score<.65))return null;
+ tokens=tokens.slice().sort((a,b)=>bounds(a.parts).cx-bounds(b.parts).cx);
+ const value=tokens.map(t=>t.char).join('');
+ if(!/^\d+(?:\.\d+)?$/.test(value))return null;
+ return{value,tokens};
+}
+async function detectMeasuredQuantity(strokes,W,H,options={}){
+ if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>24)return null;
+ const items=strokes.map(raw=>{
   if(!Array.isArray(raw?.points)||!raw.points.length||raw.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return null;
   const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};
   return{raw,box:bounds([scaled])};
  });
- if(sorted.some(p=>!p))return null;
- sorted.sort((a,b)=>a.box.cx-b.box.cx);
- const unitStrokes=sorted.slice(-2).map(p=>p.raw),numeric=sorted.slice(0,-2);
- if(numeric.length>3)return null;
- const lastDigitBox=bounds(numeric.map(p=>({points:[{x:p.box.x,y:p.box.y},{x:p.box.x+p.box.w,y:p.box.y+p.box.h}]})));
- const firstUnit=sorted.at(-2).box;
- if(firstUnit.cx<lastDigitBox.x+lastDigitBox.w*.8)return null;
- let quantity=segment(numeric.map(p=>p.raw),W,H);
- // A pupil may draw the two loops of an 8 separately. Character segmentation
- // sees "00"; use the combined digit only with clear vertical alignment and
- // a high-confidence 8 prediction, never for side-by-side digits.
- if(numeric.length===2){
-  const a=numeric[0].box,b=numeric[1].box;
-  const overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
-  const aligned=overlap>Math.min(a.w,b.w)*.50
-   &&Math.abs(a.cy-b.cy)>Math.min(a.h,b.h)*.57
-   &&Math.abs(a.cx-b.cx)<Math.max(a.w,b.w)*.55;
-  if(aligned){
-   const combined=numeric.map(p=>({points:p.raw.points.map(q=>({x:q.x*W,y:q.y*H})),size:Number(p.raw.size)||4}));
-   const best=predictDigit(rasterDigit(combined))[0];
-   if(best?.char==='8'&&best.score>.92)quantity=[{...best,parts:combined,x:Math.min(a.x,b.x)}];
+ if(items.some(p=>!p))return null;
+ items.sort((a,b)=>a.box.cx-b.box.cx);
+ // Try two-letter ml, then one- to three-stroke cursive L.
+ // Spatial shape decides the suffix; the digits are not read as a word.
+ for(const unitSize of [2,1,3]){
+  if(items.length<=unitSize)continue;
+  const leading=items.slice(0,-unitSize),suffix=items.slice(-unitSize);
+  const lastNumber=leading.at(-1).box;
+  const suffixBox=bounds(suffix.map(p=>({points:[{x:p.box.x,y:p.box.y},{x:p.box.x+p.box.w,y:p.box.y+p.box.h}]})));
+  if(suffixBox.cx<=lastNumber.cx+Math.min(3,lastNumber.w*.08))continue;
+  let unit=null,unitTokens=null;
+  if(unitSize===2){
+   const reading=await detectLitreUnit(suffix.map(p=>p.raw),W,H,options);
+   if(reading?.text==='ml'){unit='ml';unitTokens=reading.tokens}
   }
+  if(!unit&&loopedStandaloneL(suffix.map(p=>p.raw),W,H)){
+   unit='L';unitTokens=[{char:'L',score:.96,parts:suffix.map(p=>({points:p.raw.points.map(q=>({x:q.x*W,y:q.y*H})),size:Number(p.raw.size)||4}))}];
+  }
+  if(!unit)continue;
+  const digits=readMeasuredDigits(leading,W,H);
+  if(!digits)continue;
+  const tokens=[...digits.tokens,...unitTokens],text=digits.value+(unit==='ml'?' ml':'L');
+  return{text,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-measurement-quantity',format:'unit'};
  }
- if(!quantity.length||quantity.length>3||quantity.some(p=>!/^\d$/.test(p.char)||p.score<.65))return null;
- const suffix=await detectLitreUnit(unitStrokes,W,H,options);
- if(suffix?.text!=='ml')return null;
- const digits=quantity.map(t=>t.char).join('');
- const tokens=[...quantity,...suffix.tokens];
- return{text:digits+' ml',tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-measurement-quantity',format:'unit'};
+ return null;
 }
 
 async function recognize(strokes,W,H,options={}){
@@ -370,7 +388,7 @@ async function recognize(strokes,W,H,options={}){
   const parts=strokes.map(s=>({points:s.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(s.size)||4}));
   return{text:'L',tokens:[{char:'L',score:.95,parts}],uncertain:[],engine:'local-cursive-l',format:'letter'};
  }
- if(options.mode==='auto'){const measurement=await detectMillilitreQuantity(strokes,W,H,options);if(measurement)return measurement}
+ if(options.mode==='auto'){const measurement=await detectMeasuredQuantity(strokes,W,H,options);if(measurement)return measurement}
  if(options.mode==='auto'){const litre=await detectLitreUnit(strokes,W,H,options);if(litre)return litre}
  if(options.mode==='auto'||options.mode==='math'){const raised=await detectRaisedUnit(strokes,W,H,options);if(raised)return raised}
  if(options.mode==='auto'||options.mode==='math'){const fraction=detectStackedFraction(strokes,W,H);if(fraction)return fraction}
