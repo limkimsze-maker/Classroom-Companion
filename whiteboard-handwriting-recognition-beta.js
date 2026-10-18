@@ -296,32 +296,30 @@ function loopedStandaloneL(strokes,W,H){
  const groups=strokes.map(s=>Array.isArray(s.points)?s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H})):[]);
  if(groups.some(g=>g.length<2))return false;
  const pts=groups.flat(),b=bounds([{points:pts}]);
- if(b.h<35||b.w<11||b.w/b.h<.15||b.w/b.h>.78)return false;
- const upper=pts.filter(p=>p.y<=b.y+b.h*.38);
- const neck=pts.filter(p=>p.y>=b.y+b.h*.44&&p.y<=b.y+b.h*.68);
- if(upper.length<4||neck.length<2)return false;
- const min=x=>Math.min(...x),max=x=>Math.max(...x);
- const topSpan=max(upper.map(p=>p.x))-min(upper.map(p=>p.x));
- const neckSpan=max(neck.map(p=>p.x))-min(neck.map(p=>p.x));
+ if(b.h<32||b.w<11||b.w/b.h<.14||b.w/b.h>.81)return false;
+ const upper=pts.filter(p=>p.y<=b.y+b.h*.41),neck=pts.filter(p=>p.y>=b.y+b.h*.43&&p.y<=b.y+b.h*.69),lower=pts.filter(p=>p.y>=b.y+b.h*.73);
+ if(upper.length<3||neck.length<2||lower.length<3)return false;
+ const span=ps=>Math.max(...ps.map(p=>p.x))-Math.min(...ps.map(p=>p.x));
  const topCentre=upper.reduce((n,p)=>n+p.x,0)/upper.length;
- if(topSpan>b.w*.68||neckSpan>b.w*.55||topCentre<b.x+b.w*.48)return false;
- const ends=groups.flatMap(g=>[g[0],g[g.length-1]]).filter(p=>p.y>=b.y+b.h*.73);
- if(ends.length<2||max(ends.map(p=>p.x))-min(ends.map(p=>p.x))<b.w*.45)return false;
- const capHasTurn=groups.some(g=>{
+ if(span(upper)>b.w*.67||span(neck)>b.w*.59||topCentre<b.x+b.w*.39||topCentre>b.x+b.w*.88)return false;
+ // Both lower legs are part of the shape even when either is a midpoint
+ // in a connected stroke; pen endpoints alone are not reliable evidence.
+ if(span(lower)<b.w*.58||!lower.some(p=>p.x<b.x+b.w*.26)||!lower.some(p=>p.x>b.x+b.w*.74))return false;
+ // A genuine upper hook/loop reverses its horizontal stroke direction.
+ const upperHook=groups.some(g=>{
   let direction=0;
   for(let i=1;i<g.length;i++){
-   if(g[i].y>b.y+b.h*.42||g[i-1].y>b.y+b.h*.42)continue;
+   if(g[i].y>b.y+b.h*.55||g[i-1].y>b.y+b.h*.55)continue;
    const dx=g[i].x-g[i-1].x;
-   if(Math.abs(dx)<Math.max(1,b.w*.025))continue;
+   if(Math.abs(dx)<Math.max(.7,b.w*.013))continue;
    const sign=Math.sign(dx);
-   if(direction&&sign!==direction)return true;
+   if(direction&&direction!==sign)return true;
    direction=sign;
   }
   return false;
  });
- return capHasTurn;
+ return upperHook;
 }
-
 
 /* General measurement reading. First recognise the numeric prefix with the digit
    model, then recognise the unit independently. No fixed number+unit phrases. */
