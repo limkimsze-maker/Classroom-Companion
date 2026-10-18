@@ -1,0 +1,10 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const src=fs.readFileSync('whiteboard-handwriting-recognition-beta.js','utf8');
+const context={window:{},Math,Number,Array,Float32Array,Int8Array};vm.createContext(context);
+vm.runInContext(src+'\nthis.__raisedTwoShape=raisedTwoShape;',context);
+const toStroke=(points)=>({points:points.map(([x,y])=>({x,y}))});
+const raised2=toStroke([[.751,.342],[.765,.333],[.789,.343],[.797,.363],[.784,.391],[.767,.399],[.786,.413],[.793,.429],[.779,.434],[.763,.433],[.750,.429]]);
+assert(context.__raisedTwoShape(raised2,372,360.4),'raised 2 shape must be found');
+const vertical=toStroke([[.75,.32],[.75,.36],[.75,.43]]);
+assert(!context.__raisedTwoShape(vertical,372,360.4),'vertical glyph must abstain');
+console.log('PASS superscript 2 geometry and non-two rejection');
