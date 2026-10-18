@@ -28,11 +28,11 @@ function detect(strokes,W,H,embedded=false){
  bars.sort((a,b)=>a.midY-b.midY);
  const [top,bottom]=bars,overlap=Math.min(top.far,bottom.far)-Math.max(top.x,bottom.x);
  const avg=(top.width+bottom.width)/2,sep=bottom.midY-top.midY;
- if(overlap<Math.min(top.width,bottom.width)*.60)return null;
+ if(overlap<Math.min(top.width,bottom.width)*(embedded?.46:.60))return null;
  if(Math.max(top.width,bottom.width)/Math.min(top.width,bottom.width)>1.65)return null;
  if(Math.abs(top.middleX-bottom.middleX)>avg*.26)return null;
  if(sep<Math.max(3,Math.min(top.ink,bottom.ink)*.72,avg*.055))return null;
- if(sep>Math.max(embedded?22:11,avg*(embedded?1.45:.52)))return null;
+ if(sep>(embedded?Math.min(44,Math.max(28,avg*2.6)):Math.max(11,avg*.52)))return null;
  const box={x:Math.min(top.x,bottom.x),y:top.midY-top.height/2,
   w:Math.max(top.far,bottom.far)-Math.min(top.x,bottom.x),
   h:bottom.midY+bottom.height/2-(top.midY-top.height/2)};
