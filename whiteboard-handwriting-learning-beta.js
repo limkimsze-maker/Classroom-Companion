@@ -84,7 +84,8 @@ const validInk=s=>s&&typeof s.id==='string'&&s.id.length<80&&
  typeof s.text==='string'&&s.text.length>0&&s.text.length<=180&&
  ['auto','math','lowercase','uppercase','digits'].includes(s.mode)&&
  /^[0-9a-f]{196}$/.test(s.feature||'')&&Number.isInteger(s.n)&&s.n>=1&&s.n<=180&&
- Number.isFinite(s.aspect)&&s.aspect>.005&&s.aspect<1000;
+ Number.isFinite(s.aspect)&&s.aspect>.005&&s.aspect<1000&&
+ (!('raw' in s)||(typeof s.raw==='string'&&s.raw.length<=180));
 function readInk(){
  if(inkBlocked)return inkMemory;
  let raw;try{raw=localStorage.getItem(INK_KEY)}catch{inkBlocked=true;return inkMemory}
@@ -119,18 +120,65 @@ function makeInk(strokes,W,H,raster,mode){
  const feat=feature(raster(scaled)),aspect=width/height;
  return feat&&Number.isFinite(aspect)?{feature:feat,aspect,n:strokes.length,mode}:null;
 }
-function matchInk(strokes,W,H,mode,raster){
+function compactReading(value){
+ return String(value??'').replace(/\s+/g,'').replace(/[‐‑–—−]/g,'-').replace(/\*/g,'×').replace(/⁄/g,'/');
+}
+function fuzzyInkMatch(strokes,W,H,mode,raster,observed){
  const examples=readInk();if(!examples.length)return null;
  const query=makeInk(strokes,W,H,raster,mode);if(!query)return null;
- const neighbors=examples.filter(s=>s.mode===mode&&s.n===query.n&&
-   Math.abs(Math.log(s.aspect/query.aspect))<.035)
-   .map(s=>({s,d:distance(query.feature,s.feature)})).sort((a,b)=>a.d-b.d);
- const best=neighbors[0];if(!best||best.d>.006)return null;
- const rival=neighbors.find(q=>q.s.text!==best.s.text);
- if(rival&&rival.d-best.d<.009)return null;
- return{text:best.s.text,score:1-best.d,source:'personal-ink-memory'};
+ const raw=typeof observed==='string'?compactReading(observed):'';
+ // A local example is spatial evidence, not a blanket find/replace command.
+ const neighbors=examples.filter(s=>s.mode===mode&&
+   Math.abs(s.n-query.n)<=1&&Math.abs(Math.log(s.aspect/query.aspect))<.17)
+   .map(s=>({s,d:distance(query.feature,s.feature),
+     aligned:raw&&s.raw&&compactReading(s.raw)===raw}))
+   .sort((a,b)=>a.d-b.d);
+ if(!neighbors.length)return null;
+ // Exact replays remain fast and work with already-saved v2 examples.
+ const strict=neighbors.find(q=>q.s.n===query.n&&
+    Math.abs(Math.log(q.s.aspect/query.aspect))<.035&&q.d<=.006);
+ if(strict){
+  const conflict=neighbors.some(q=>q.s.text!==strict.s.text&&
+     q.d-strict.d<.009);
+  if(!conflict)return{text:strict.s.text,score:1-strict.d,source:'personal-ink-memory'};
+ }
+ const groups=new Map();
+ for(const q of neighbors){
+  const key=compactReading(q.s.text);
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(q);
+ }
+ let winner=null;
+ for(const group of groups.values()){
+  group.sort((a,b)=>a.d-b.d);
+  const consistent=group.filter(q=>q.d<=.13);
+  const corroborated=consistent.length>=2;
+  // A learned reading must either have the same earlier misreading
+  // and strong geometric agreement or at least two consistent examples.
+  const anchored=consistent.find(q=>q.aligned&&q.d<=.105);
+  const oldExamples=consistent.filter(q=>!q.s.raw);
+  const acceptable=anchored&&(anchored.d<=.045||corroborated)||
+    corroborated&&oldExamples.length>=2&&group[0].d<=.03;
+  if(!acceptable)continue;
+  const alignedCount=consistent.filter(q=>q.aligned).length;
+  const best=group[0],score=best.d-(anchored?.aligned?.025:0)-Math.min(3,alignedCount)*.003;
+  if(!winner||score<winner.score)winner={group,best,score};
+ }
+ if(!winner)return null;
+ // Any nearby contradictory teacher label prevents an unsafe override.
+ const competing=neighbors.filter(q=>
+   compactReading(q.s.text)!==compactReading(winner.best.s.text)&&
+   q.d<=Math.max(.055,winner.best.d+.035));
+ if(competing.length)return null;
+ return{text:winner.best.s.text,score:1-winner.best.d,source:'personal-context-memory'};
 }
-function rememberInk(strokes,W,H,mode,text,raster){
+function matchInk(strokes,W,H,mode,raster){
+ return fuzzyInkMatch(strokes,W,H,mode,raster,null);
+}
+function matchContext(strokes,W,H,mode,raster,observed){
+ return fuzzyInkMatch(strokes,W,H,mode,raster,observed);
+}
+function rememberInk(strokes,W,H,mode,text,raster,observed){
  if(typeof text!=='string'||!text.trim()||text.length>180||/[\u0000-\u001f\u007f]/.test(text))return null;
  const query=makeInk(strokes,W,H,raster,mode);if(!query)return null;
  const chosen=text.trim(),previousSamples=readInk().slice();
@@ -138,7 +186,8 @@ function rememberInk(strokes,W,H,mode,text,raster){
    s.feature===query.feature&&Math.abs(s.aspect-query.aspect)<.0001);
  if(superseded.length===1&&superseded[0].text===chosen)return null;
  const samples=previousSamples.filter(s=>!superseded.includes(s));
- const created={...query,text:chosen,id:Date.now().toString(36)+'-'+(++serial).toString(36)+'-'+Math.random().toString(36).slice(2,10)};
+ const original=typeof observed==='string'&&observed.length<=180?observed:'';
+ const created={...query,text:chosen,raw:original,id:Date.now().toString(36)+'-'+(++serial).toString(36)+'-'+Math.random().toString(36).slice(2,10)};
  samples.push(created);
  const before=samples.slice(),seen={};
  for(let i=samples.length-1;i>=0;i--){
@@ -159,7 +208,7 @@ function undoInk(transaction){
 }
 function confirm(result,text,raster,strokes,W,H,mode='auto'){
  const chars=confirmCharacters(result,text,raster);
- const ink=rememberInk(strokes,W,H,mode,text,raster);
+ const ink=rememberInk(strokes,W,H,mode,text,raster,result?.text);
  if(!chars&&!ink)return null;
  return{added:chars?.added||[],removed:chars?.removed||[],ink,
   count:(chars?.count||0)+(ink?.count||0),
@@ -171,5 +220,5 @@ function undo(transaction){
  undoInk(transaction.ink);
 }
 
-window.WhiteboardHandwritingLearning={match,matchInk,confirm,undo,info:()=>({examples:read().length,inkExamples:readInk().length,persistent:!blocked&&!inkBlocked})};
+window.WhiteboardHandwritingLearning={match,matchInk,matchContext,confirm,undo,info:()=>({examples:read().length,inkExamples:readInk().length,persistent:!blocked&&!inkBlocked})};
 })();
