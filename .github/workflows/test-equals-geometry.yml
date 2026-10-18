@@ -1,0 +1,29 @@
+name: Verify equals sign recognition
+on:
+  push:
+    branches:
+      - fix/equal-sign-geometry-20261018
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Geometric equals and negative-control tests
+        run: node scripts/test-equals-geometry.cjs
+      - name: Ensure isolated Beta only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          beta=Path("whiteboard-comer-beta.html").read_text()
+          original=Path("whiteboard-smart-beta.html").read_text()
+          assert "whiteboard-equal-sign-geometry-beta.js" in beta
+          assert "whiteboard-equal-sign-geometry-beta.js" not in original
+          assert "whiteboard-moe-local-only-guard-v1.js" in original
+          assert "whiteboard-handwriting-beautify-inkon-beta.js" in beta
+          assert "whiteboard-inkon-native-beautify-bridge.js" in beta
+          print("PASS: original whiteboard and ink-on integration preserved")
+          PY
