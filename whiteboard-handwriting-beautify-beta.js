@@ -95,7 +95,7 @@ async function review(group){
   const before=clone(strokes),first=Math.min(...group.map(s=>strokes.indexOf(s))),set=new Set(group);
   obj.smartOriginal=clone(group);obj.handwritingBeautified=true;
   strokes=strokes.filter(s=>!set.has(s));strokes.splice(first,0,obj);window.WhiteboardMarqueeSelection?.clear();tool='select';closeReview();redraw();
-  let learning=null;try{if(recognition&&recognition.format!=='latex')learning=window.WhiteboardHandwritingLearning?.confirm(recognition,input.value,window.WhiteboardHandwritingMath.rasterDigit)}catch{}
+  let learning=null;try{if(recognition&&(recognition.format!=='latex'||recognition.engine==='local-stacked-fraction'))learning=window.WhiteboardHandwritingLearning?.confirm(recognition,input.value,window.WhiteboardHandwritingMath.rasterDigit)}catch{}
   history.push({before,after:JSON.stringify(strokes),learning});if(history.length>30)history.shift();syncUi();
   sayLocal(learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
@@ -113,8 +113,8 @@ async function review(group){
   if(session!==id||dialog!==backdrop||version!==readVersion)return;recognition=result;reading=false;
   // Do not overwrite a correction entered while recognition was running.
   if(replaceReading&&input.value===startText)input.value=result.text;lastReading=result.text;updatePreview();if(document.activeElement===cancel)input.focus();
-  if(result.engine==='local-stacked-fraction'&&!result.uncertain.length)status.textContent='Stacked fraction detected. Check the numerator, denominator and preview before applying.';
-   if(result.uncertain.length)status.textContent=result.engine==='local-stacked-fraction'?'Stacked fraction detected. Check both numbers before applying.':result.format==='latex'?'Check symbols, fraction bars, powers and limits before applying.':'Some characters were uncertain. Check and correct the reading before applying.';
+  if(result.engine==='local-stacked-fraction'&&!result.uncertain.length)status.textContent='Stacked fraction detected. Check both digits before applying; confirmed examples are remembered locally.';
+   if(result.uncertain.length)status.textContent=result.engine==='local-stacked-fraction'?'Stacked fraction detected. Correct any wrong digit before applying; this device can remember the correction.':result.format==='latex'?'Check symbols, fraction bars, powers and limits before applying.':'Some characters were uncertain. Check and correct the reading before applying.';
  }catch(error){if(session!==id||dialog!==backdrop||version!==readVersion||error.name==='AbortError')return;reading=false;updatePreview();status.textContent=error.message||'Could not read this writing. You can type the correct reading.';status.classList.add('handwriting-error');if(document.activeElement===cancel)input.focus()}
  }
  modeSelect.addEventListener('change',()=>{window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();return readSelection()});
