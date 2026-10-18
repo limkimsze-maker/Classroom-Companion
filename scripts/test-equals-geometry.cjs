@@ -37,3 +37,29 @@ assert.equal(extracted.length,1,'full expression contains one equals pair');
 assert.deepEqual(Array.from(extracted[0].indices),[2,3],'match two equals pen strokes');
 assert.equal(pair([...glyph,...rhs],800,400).length,0,'unrelated symbol strokes do not create equals');
 console.log('PASS: embedded equals pair extracted from multi-character expression');
+
+
+const shortEquals=[
+ line(.41,.43,.431,.422,6),
+ line(.414,.476,.435,.465,6)
+];
+const equationA=[
+ line(.07,.25,.12,.58),line(.18,.3,.24,.48),
+ line(.3,.28,.37,.56),...shortEquals,
+ line(.56,.29,.61,.58)
+];
+const a=pair(equationA,800,400);
+assert.equal(a.length,1,'4 + 5 = 9 with tiny slanted equals lines');
+assert.deepEqual(Array.from(a[0].indices),[3,4]);
+const equationB=[
+ line(.07,.25,.12,.58),line(.18,.27,.24,.54),
+ line(.30,.28,.37,.56),
+ line(.41,.43,.431,.422,6),line(.414,.476,.435,.465,6),
+ line(.56,.29,.61,.58)
+];
+assert.equal(pair(equationB,800,400).length,1,'9 x 9 = 81 short dashes');
+const colon=[
+ line(.41,.43,.415,.43,6),line(.41,.476,.415,.476,6)
+];
+assert.equal(pair([...glyph,...colon,...rhs],800,400).length,0,'colon dots must not turn to equals');
+console.log('PASS: small slightly slanted mobile equals signs within equations');
