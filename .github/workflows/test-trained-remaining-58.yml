@@ -1,0 +1,21 @@
+name: Test remaining 58 handwriting
+on:
+  push:
+    branches:
+      - feature/remaining-58-supervised-beta-20261018
+  pull_request:
+    paths:
+      - whiteboard-trained-remaining-beta.js
+      - scripts/test-trained-remaining-58.cjs
+jobs:
+  trained-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/test-trained-remaining-58.cjs
+      - run: node scripts/test-trained-j-beta.cjs
+      - run: node scripts/test-trained-97-handwriting.cjs
+      - run: node scripts/test-equals-geometry.cjs
