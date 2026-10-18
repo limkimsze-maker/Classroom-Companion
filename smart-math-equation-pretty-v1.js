@@ -154,10 +154,27 @@ function positionedInlineSvg(expression,placement,colour){
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><text x="${left*sx}" y="${ascent*sy}" font-family="${font()}" font-size="${size}" font-weight="700" fill="${ink}" textLength="${advance*sx}" lengthAdjust="spacingAndGlyphs">${esc(expression)}</text></svg>`;
  return{svg,W,H};
 }
+
+/* Render area and volume powers at a smaller raised size, retaining the
+   Equation font and exact selected handwriting bounds. */
+function positionedUnitPowerSvg(expression,placement,colour){
+ const m=String(expression).match(/^(.+?)([²³])$/);
+ if(!m)return positionedInlineSvg(expression,placement,colour);
+ const ink=/^#[0-9a-f]{6}$/i.test(colour||'')?colour:'#17324d';
+ const W=Math.max(8,placement.w*Math.max(1,cssW)),H=Math.max(8,placement.h*Math.max(1,cssH));
+ let baseWidth=m[1].length*64;
+ if(typeof ctx!=='undefined'&&typeof ctx.measureText==='function'){
+  ctx.save();try{ctx.font='700 108px '+font();baseWidth=Math.max(16,ctx.measureText(m[1]).width)}finally{ctx.restore()}
+ }
+ const virtualWidth=Math.max(42,baseWidth+41);
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+virtualWidth+' 157" preserveAspectRatio="none"><g fill="'+ink+'" font-family="'+font()+'" font-weight="700"><text x="1" y="149" font-size="108">'+esc(m[1])+'</text><text x="'+(baseWidth+2)+'" y="58" font-size="57">'+(m[2]==='²'?'2':'3')+'</text></g></svg>';
+ return{svg,W,H};
+}
+
 function equationObject(parsed,options={}){
  const {a,op,b,result,simple,expression}=parsed,isDivision=simple&&op==='÷'&&!parsed.right;
  const inline=options.layout==='inline',placement=inline&&options.placement;
- const made=inline?(placement?positionedInlineSvg(expression,placement,options.colour):inlineSvg(expression)):isDivision?divisionSvg(a,b):simple&&op!=='÷'?verticalSvg(a,op,b,result):inlineSvg(expression),svg=made.svg;
+ const made=inline?(placement?(options.unitSuperscript?positionedUnitPowerSvg(expression,placement,options.colour):positionedInlineSvg(expression,placement,options.colour)):inlineSvg(expression)):isDivision?divisionSvg(a,b):simple&&op!=='÷'?verticalSvg(a,op,b,result):inlineSvg(expression),svg=made.svg;
  const pxW=made.W,pxH=made.H;
  const W=Math.max(1,cssW),H=Math.max(1,cssH),scale=Math.min(1,W*.78/pxW,H*.55/pxH),w=pxW*scale/W,h=pxH*scale/H;
  const obj={type:'image',src:svgData(svg),x:clamp(isDivision?.24:.31,0,1-w),y:clamp(isDivision?.18:.24,0,1-h),w,h,smartGenerated:true,smartType:'equation',smartId:uid(),smartOriginal:[],equationExpression:expression,equationLayout:inline?'inline':isDivision?'long-division':simple&&op!=='÷'?'vertical':'inline'};
@@ -172,7 +189,7 @@ function make(parsed){
 // A selected symbol is valid handwriting even when it is not a complete equation.
 function handwritingObject(text,placement,colour){
  const unit=window.WhiteboardMathRenderer?.unitText(text);
- if(unit)return equationObject({expression:unit,simple:false},{layout:'inline',placement,colour});
+ if(unit)return equationObject({expression:unit,simple:false},{layout:'inline',placement,colour,unitSuperscript:/[²³]$/.test(unit)});
  if(/[\\∫∑∏∞≤≥≠≈±²³_{}]/.test(String(text)))return window.WhiteboardMathRenderer?.create(text,placement,colour)||null;
  const options={layout:'inline',placement,colour},parsed=parseEquation(text);
  if(parsed)return equationObject(parsed,options);
