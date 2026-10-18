@@ -463,7 +463,13 @@ async function detectPrimaryMeasurement(strokes,W,H,options={}){
 
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
- if(options.mode==='auto'){const unit=await detectPrimaryMeasurement(strokes,W,H,options);if(unit)return unit}
+ if(options.mode==='auto'){
+  const primary=window.WhiteboardPrimaryMathGrammar?.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
+  const result=primary?await primary.recognize(strokes,W,H,options):null;
+  if(result)return result;
+  const unit=await detectPrimaryMeasurement(strokes,W,H,options);
+  if(unit)return unit;
+ }
 
  // Beautify 2.0: check teacher-validated local handwriting before inference.
  // This is a cautious shape match, not retraining the digit/math neural models.
@@ -481,6 +487,23 @@ async function recognize(strokes,W,H,options={}){
  if(options.mode==='auto'||options.mode==='math'){const raised=await detectRaisedUnit(strokes,W,H,options);if(raised)return raised}
  if(options.mode==='auto'||options.mode==='math'){const fraction=detectStackedFraction(strokes,W,H);if(fraction)return fraction}
  if(options.mode==='math')return window.WhiteboardMathReader.recognize(strokes,W,H,options);
+ if(options.mode==='auto'){
+  const raw=segment(strokes,W,H),op=['+','−','×','÷','='];
+  const valid=raw.length>=2&&raw.length<=30&&raw.every(t=>{
+   if(op.includes(t.char))return t.score>=.90;
+   if(t.char==='.'){return true}
+   return /^[0-9]$/.test(t.char)&&t.score>=.99;
+  });
+  if(valid){
+   const hasOp=raw.some(t=>op.includes(t.char));
+   const hasDigit=raw.some(t=>/^[0-9]$/.test(t.char));
+   if(hasDigit){
+    const reading=raw.map(t=>op.includes(t.char)?' '+t.char+' ':t.char).join('').replace(/\\s+/g,' ').trim();
+    return{text:reading,tokens:raw,uncertain:[],engine:hasOp?'local-primary-arithmetic-grammar':'local-primary-digit-sequence',format:'number'};
+   }
+  }
+ }
+
  const tokens=segment(strokes,W,H),mode=['auto','lowercase','uppercase','digits'].includes(options.mode)?options.mode:'auto';let text='';
  if(window.WhiteboardCharacterReader&&mode!=='digits'){
   const candidates=tokens.filter(t=>!['.','−','÷','='].includes(t.char)&&!(t.personal&&/^[A-Za-z]$/.test(t.char))&&!(t.personal&&mode==='auto'));
