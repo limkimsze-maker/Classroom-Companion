@@ -488,6 +488,38 @@ function ujiConfirmsDigit(token){
  }catch{return false}
 }
 
+/* Recognise an exponent on a measured quantity before the base-only
+   grammar can return "4 cm" and discard its raised 2. */
+async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
+ if(strokes.length<4||strokes.length>12||!window.WhiteboardPrimaryMathGrammar)return null;
+ const parts=strokes.map((s,i)=>{
+  if(!s?.points?.length)return null;
+  const scaled={points:s.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  return{i,raw:s,box:bounds([scaled]),scaled};
+ });
+ if(parts.some(p=>!p))return null;
+ const maxHeight=Math.max(...parts.map(p=>p.box.h));
+ const raised=parts.filter(p=>{
+  const b=p.box,others=parts.filter(q=>q!==p);
+  return b.h>=10&&b.h<maxHeight*.56&&
+   others.filter(q=>q.box.cx<b.cx&&q.box.h>maxHeight*.24).length>=2&&
+   others.every(q=>q.box.cx<b.cx||q.box.h<maxHeight*.22)&&
+   b.cy<Math.min(...others.filter(q=>q.box.cx<b.cx&&q.box.h>maxHeight*.24).map(q=>q.box.cy))-.06*maxHeight;
+ });
+ if(raised.length!==1)return null;
+ const top=raised[0],baseline=parts.filter(p=>p!==top);
+ const model=window.WhiteboardTrainedRemaining?.match?.([top.raw],W,H,'digits');
+ const digit=predictDigit(rasterDigit([top.scaled]))[0];
+ const power=model&&['2','3'].includes(model.char)?model.char:
+   (['2','3'].includes(digit.char)&&digit.score>.52?digit.char:null);
+ if(!power)return null;
+ const primary=window.WhiteboardPrimaryMathGrammar.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
+ const base=await primary.recognize(baseline.map(p=>p.raw),W,H,options);
+ if(!base||!/^\\d+ (cm|mm|m|km)$/.test(base.text))return null;
+ return{...base,text:base.text+(power==='2'?'²':'³'),engine:'local-raised-measurement',
+  tokens:[...(base.tokens||[]),{char:power==='2'?'²':'³',score:digit.score,parts:[top.scaled]}]};
+}
+
 async function recognize(strokes,W,H,options={}){
  const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
  if(equal)return equal;
@@ -509,6 +541,8 @@ async function recognize(strokes,W,H,options={}){
 
 
  if(options.mode==='auto'){
+  const raisedMeasurement=await detectRaisedMeasuredQuantity(strokes,W,H,options);
+  if(raisedMeasurement)return raisedMeasurement;
   const primary=window.WhiteboardPrimaryMathGrammar?.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
   const result=primary?await primary.recognize(strokes,W,H,options):null;
   const contextual=candidate=>{
