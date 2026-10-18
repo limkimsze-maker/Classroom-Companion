@@ -379,8 +379,91 @@ async function detectMeasuredQuantity(strokes,W,H,options={}){
  return null;
 }
 
+
+/* P1-P6 measurement syntax: interpret numerals and adjacent unit letters as
+   different symbol classes. The alphabet model alone may call handwritten
+   k a 2 and a descender g an L; a digit-first segmentation plus letter
+   geometry avoids treating those as a four-digit number.
+   Never use a hardcoded number (97, 35, etc.) in these rules. */
+function kgStemGeometry(strokes){
+ const parts=strokes.map(p=>p.scaled),b=bounds(parts),pts=parts.flatMap(p=>p.points);
+ if(b.h<22||b.w<10||b.w>b.h*.8)return false;
+ const left=pts.filter(p=>p.x<=b.x+b.w*.34),right=pts.filter(p=>p.x>=b.x+b.w*.65);
+ if(left.length<3||right.length<2)return false;
+ const range=ps=>Math.max(...ps.map(p=>p.y))-Math.min(...ps.map(p=>p.y));
+ return range(left)>=b.h*.65&&right.some(p=>p.y>b.y+b.h*.22&&p.y<b.y+b.h*.66)
+   &&right.some(p=>p.y>=b.y+b.h*.58);
+}
+function kgDescenderGeometry(strokes,digitBox,stemBox){
+ const b=bounds(strokes.map(p=>p.scaled)),bottom=b.y+b.h,digitBottom=digitBox.y+digitBox.h;
+ return digitBox.h>25&&b.h>digitBox.h*.49&&b.w>digitBox.h*.12&&
+  b.y>=digitBox.y+digitBox.h*.14&&
+  bottom>=digitBottom+digitBox.h*.13&&
+  bottom>=stemBox.y+stemBox.h+digitBox.h*.10;
+}
+async function detectPrimaryMeasurement(strokes,W,H,options={}){
+ if(!window.WhiteboardCharacterReader||strokes.length<4||strokes.length>16)return null;
+ const items=strokes.map(raw=>{
+  if(!Array.isArray(raw?.points)||raw.points.length<2||raw.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return null;
+  const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};
+  return{raw,scaled,box:bounds([scaled])};
+ });
+ if(items.some(p=>!p))return null;
+ items.sort((a,b)=>a.box.cx-b.box.cx);
+ // Two-letter SI/common primary units. "ml" remains lowercase by request.
+ const units=['kg','mg','cm','mm','km','ml'];
+ for(const suffixCount of [2,3,4]){
+  if(items.length<=suffixCount)continue;
+  const prefix=items.slice(0,-suffixCount),tail=items.slice(-suffixCount);
+  if(prefix.length>12||prefix.length<1)continue;
+  const digitBox=bounds(prefix.map(p=>p.scaled));
+  if(digitBox.h<18)continue;
+  const lastDigit=prefix.at(-1).box;
+  if(tail[0].box.cx<=lastDigit.cx+Math.min(3,lastDigit.w*.07))continue;
+  // A numeric prefix is a separate hypothesis, evaluated by the digit model.
+  const number=readMeasuredDigits(prefix,W,H);
+  if(!number)continue;
+  for(let divide=1;divide<suffixCount;divide++){
+   const first=tail.slice(0,divide),second=tail.slice(divide);
+   const firstBox=bounds(first.map(p=>p.scaled)),secondBox=bounds(second.map(p=>p.scaled));
+   if(secondBox.cx<=firstBox.cx+Math.min(3,firstBox.w*.1)||
+      firstBox.cy<digitBox.y-digitBox.h||secondBox.cy<digitBox.y-digitBox.h)continue;
+   const shapeK=kgStemGeometry(first),shapeG=kgDescenderGeometry(second,digitBox,firstBox);
+   const images=[rasterDigit(first.map(p=>p.scaled)),rasterDigit(second.map(p=>p.scaled))];
+   const predictions=await window.WhiteboardCharacterReader.predictBatch(images,'lowercase',options.onProgress);
+   const prob=(idx,char)=>predictions[idx]?.find(x=>x.char.toLowerCase()===char)?.score||0;
+   const ranked=[];
+   for(const unit of units){
+    const firstScore=prob(0,unit[0]),secondScore=prob(1,unit[1]);
+    const geometryKg=unit==='kg'&&shapeK&&shapeG;
+    // Do not force a weak word-list match: require both letters to have
+    // model evidence, or positive structural evidence for a descending g.
+    if(!geometryKg&&(firstScore<.30||secondScore<.24))continue;
+    if(unit==='kg'&&!shapeG&&secondScore<.82)continue;
+    const score=Math.log(Math.max(1e-9,firstScore))+Math.log(Math.max(1e-9,secondScore))+
+       (geometryKg?5.8:0);
+    ranked.push({unit,score,firstScore,secondScore,geometryKg});
+   }
+   ranked.sort((a,b)=>b.score-a.score);
+   const best=ranked[0];
+   if(!best||(ranked[1]&&best.score-ranked[1].score<1))continue;
+   // For ambiguous "2L" / "kg", visible k-stem + g-descender
+   // is required unless both letter-classifier probabilities are strong.
+   if(best.unit==='kg'&&!best.geometryKg&&Math.min(best.firstScore,best.secondScore)<.82)continue;
+   const tokens=[...number.tokens,
+    {char:best.unit[0],score:Math.max(.55,best.firstScore),parts:first.map(p=>p.scaled)},
+    {char:best.unit[1],score:Math.max(.55,best.secondScore),parts:second.map(p=>p.scaled)}];
+   return{text:number.value+' '+best.unit,tokens,
+     uncertain:tokens.filter(t=>t.score<.85),
+     engine:'local-primary-measurement',format:'unit'};
+  }
+ }
+ return null;
+}
+
 async function recognize(strokes,W,H,options={}){
  if(strokes.length>180||strokes.reduce((n,s)=>n+(s.points?.length||0),0)>16000)throw Error('Select a shorter number or equation and try again.');
+ if(options.mode==='auto'){const unit=await detectPrimaryMeasurement(strokes,W,H,options);if(unit)return unit}
 
  // Beautify 2.0: check teacher-validated local handwriting before inference.
  // This is a cautious shape match, not retraining the digit/math neural models.
