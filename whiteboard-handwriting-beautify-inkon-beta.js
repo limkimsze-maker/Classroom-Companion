@@ -4,6 +4,22 @@
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+let readerRecovery=null;
+async function ensureReader(){
+ if(window.WhiteboardHandwritingMath?.recognize)return window.WhiteboardHandwritingMath;
+ if(!readerRecovery)readerRecovery=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='whiteboard-handwriting-recognition-beta.js?v=20261018-mobile-recover2';
+  script.async=true;
+  script.onload=()=>window.WhiteboardHandwritingMath?.recognize
+   ?resolve(window.WhiteboardHandwritingMath)
+   :reject(new Error('The handwriting script loaded but did not initialise. Please export the selected strokes and report this error.'));
+  script.onerror=()=>reject(new Error('Could not download the handwriting reader. Please check the connection and reopen Beta.'));
+  document.head.appendChild(script);
+ }).catch(error=>{readerRecovery=null;throw error});
+ return readerRecovery;
+}
+
 let selecting=false,area=null,selectionPointer=null,start=null,dialog=null,session=0,pendingLearning=null;
 const history=[];
 const style=document.createElement('style');style.textContent=`
@@ -165,7 +181,7 @@ async function review(group){
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
   if(session!==id||dialog!==backdrop||version!==readVersion)return;
-  if(!window.WhiteboardHandwritingMath)throw Error('The handwriting reader is not ready. Refresh the page and try again.');
+  if(!window.WhiteboardHandwritingMath?.recognize){status.textContent='Reconnecting handwriting reader…';await ensureReader();}
   if(modeSelect.value==='math')await window.MathJax?.startup?.promise;
   if(session!==id||dialog!==backdrop||version!==readVersion)return;
   const result=await window.WhiteboardHandwritingMath.recognize(group,cssW,cssH,{mode:modeSelect.value,onProgress:(done,total)=>{if(session===id&&version===readVersion&&input.value===startText)status.textContent=modeSelect.value==='math'?'Reading mathematical notation on this device…':`Reading characters ${done} of ${total}…`}});
