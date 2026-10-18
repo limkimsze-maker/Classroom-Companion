@@ -488,6 +488,9 @@ function ujiConfirmsDigit(token){
 async function recognize(strokes,W,H,options={}){
  const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
  if(equal)return equal;
+ // Supervised compact template model; abstain on uncertain handwritten shapes.
+ const trained=window.WhiteboardTrained9GQEquals?.recognize?.(strokes,W,H,options.mode||'auto');
+ if(trained)return trained;
  // Explicitly imported, on-device 9/g/q exemplars; abstain on uncertain matches.
  const user9gq=window.WhiteboardCharacter9GQ?.match?.(strokes,W,H,options.mode||'auto');
  if(user9gq)return user9gq;
