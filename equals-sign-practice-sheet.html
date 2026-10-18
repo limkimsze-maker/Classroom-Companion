@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><title>Equals Sign Handwriting Collection</title>
+<style>
+:root{font:16px system-ui,sans-serif;color:#17324d;background:#eef5f6}*{box-sizing:border-box}body{margin:0;padding:12px;max-width:850px;margin:auto}h1{font-size:1.4rem;margin:.25em 0}p{line-height:1.4;color:#526273;margin:9px 0 14px}.toolbar{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}button{padding:11px 14px;font-weight:700;border-radius:11px;border:1px solid #bad3d0;background:white;color:#17324d;touch-action:manipulation}button.main{background:#0f766e;color:white}button:disabled{opacity:.35}.sheet{position:relative;background:white;border:2px solid #c2d8d9;border-radius:15px;overflow:hidden}canvas{display:block;width:100%;height:min(53vh,450px);min-height:285px;touch-action:none;cursor:crosshair}.hint{position:absolute;left:16px;top:9px;color:#adb9be;font-size:.85rem;pointer-events:none}#status{margin:10px 0;min-height:24px;font-weight:650}#count{font-weight:750}.samples{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:9px;margin-top:10px}.sample{background:white;border:1px solid #d8e2e3;border-radius:9px;padding:7px;text-align:center}.sample canvas{height:65px;min-height:0}.sample small{display:block;color:#64748b}.footer{font-size:.85rem;margin-top:14px}button:focus-visible{outline:3px solid #0f766e}
+</style></head><body>
+<h1>✍️ Equals-sign practice sheet</h1>
+<p>Draw <strong>one = sign at a time</strong> in the blank area, naturally, using two pen strokes. Tap <strong>Save = example</strong> after each sign. Repeat about 15–30 times, varying size and speed. The examples stay on this device until you export them.</p>
+<div class="sheet"><span class="hint" id="hint">Draw your = here</span><canvas id="sheet" aria-label="Blank drawing sheet for one equals sign"></canvas></div>
+<div class="toolbar"><button id="undo" type="button">↶ Undo stroke</button><button id="clear" type="button">Clear sheet</button><button class="main" id="save" type="button">✓ Save = example</button></div>
+<div id="status" role="status">Ready to draw.</div>
+<div class="toolbar"><button class="main" id="export" type="button">⬇ Export all examples (JSON)</button><button id="remove" type="button">Remove last saved</button></div>
+<div id="count">Saved equals signs: 0</div><div class="samples" id="samples"></div>
+<p class="footer">All drawing and storage are local to your browser. No sign-in or upload. After exporting, upload the JSON file to this ChatGPT conversation for analysis. Do not draw names or other identifying details.</p>
+<script>
+(function(){
+'use strict';
+const canvas=document.getElementById('sheet'),ctx=canvas.getContext('2d'),status=document.getElementById('status'),hint=document.getElementById('hint'),count=document.getElementById('count'),samples=document.getElementById('samples');
+const key='classroom-equals-labelled-samples-v1';
+let saved=[];try{const s=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(s))saved=s.filter(x=>Array.isArray(x.strokes)&&x.strokes.length===2).slice(0,100)}catch{}
+let strokes=[],active=null,W=1,H=1;
+function saveLocal(){try{localStorage.setItem(key,JSON.stringify(saved))}catch{status.textContent='Browser storage unavailable. Please export your examples.'}}
+function fit(){const r=canvas.getBoundingClientRect();W=Math.max(1,r.width);H=Math.max(1,r.height);const d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*d);canvas.height=Math.round(H*d);ctx.setTransform(d,0,0,d,0,0);redraw()}
+function renderStroke(context,s,w,h){const p=s.points;if(!p.length)return;context.strokeStyle='#17324d';context.lineWidth=Math.max(3,Math.min(9,w/90));context.lineCap='round';context.lineJoin='round';context.beginPath();context.moveTo(p[0].x*w,p[0].y*h);for(let i=1;i<p.length;i++)context.lineTo(p[i].x*w,p[i].y*h);if(p.length===1)context.lineTo(p[0].x*w+.01,p[0].y*h+.01);context.stroke()}
+function redraw(){ctx.clearRect(0,0,W,H);for(const s of strokes)renderStroke(ctx,s,W,H);if(active)renderStroke(ctx,active,W,H);hint.style.display=strokes.length||active?'none':'block';document.getElementById('undo').disabled=!strokes.length;document.getElementById('save').disabled=strokes.length!==2||!!active}
+function xy(e){const r=canvas.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-r.left)/Math.max(r.width,1))),y:Math.min(1,Math.max(0,(e.clientY-r.top)/Math.max(r.height,1)))}}
+canvas.addEventListener('pointerdown',e=>{if(active||strokes.length>=2)return;if(e.button!==0&&e.pointerType==='mouse')return;active={size:5,points:[xy(e)]};try{canvas.setPointerCapture(e.pointerId)}catch{}redraw();e.preventDefault()});
+canvas.addEventListener('pointermove',e=>{if(!active)return;const p=xy(e),a=active.points.at(-1);if(Math.hypot((p.x-a.x)*W,(p.y-a.y)*H)>=.6){active.points.push(p);redraw()}e.preventDefault()});
+function stop(e){if(!active)return;const p=xy(e);active.points.push(p);strokes.push(active);active=null;try{canvas.releasePointerCapture(e.pointerId)}catch{};redraw();status.textContent=strokes.length===2?'Two strokes drawn. Tap Save = example.':'Draw the second horizontal line.';e.preventDefault()}
+canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);
+document.getElementById('undo').onclick=()=>{strokes.pop();status.textContent='Last stroke undone.';redraw()};
+document.getElementById('clear').onclick=()=>{strokes=[];status.textContent='Sheet cleared.';redraw()};
+document.getElementById('save').onclick=()=>{
+if(strokes.length!==2)return;
+const xs=strokes.flatMap(s=>s.points.map(p=>p.x)),ys=strokes.flatMap(s=>s.points.map(p=>p.y));
+const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+if((x1-x0)*W<5||(y1-y0)*H<3){status.textContent='Sign too small; please draw it again.';return}
+saved.push({label:'=',strokes:JSON.parse(JSON.stringify(strokes)),canvas:{width:W,height:H},savedAt:new Date().toISOString()});
+if(saved.length>100)saved.shift();saveLocal();strokes=[];redraw();show();status.textContent='Saved! Draw a different = sign.'};
+function show(){count.textContent='Saved equals signs: '+saved.length;document.getElementById('remove').disabled=!saved.length;document.getElementById('export').disabled=!saved.length;samples.replaceChildren();
+for(let i=0;i<saved.length;i++){const card=document.createElement('div');card.className='sample';const mini=document.createElement('canvas');mini.width=200;mini.height=100;const c=mini.getContext('2d'),item=saved[i];let x0=1,y0=1,x1=0,y1=0;for(const s of item.strokes)for(const p of s.points){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y)}
+const k=Math.min(160/Math.max(1,(x1-x0)*200),65/Math.max(1,(y1-y0)*100));c.save();c.translate(100-100*(x0+x1)/2*k,50-50*(y0+y1)/2*k);c.scale(k,k);for(const s of item.strokes)renderStroke(c,s,200,100);c.restore();
+const label=document.createElement('small');label.textContent='Example '+(i+1);card.append(mini,label);samples.appendChild(card)}}
+document.getElementById('remove').onclick=()=>{if(saved.length){saved.pop();saveLocal();show();status.textContent='Last saved sign removed.'}};
+document.getElementById('export').onclick=()=>{
+const data={schema:'classroom-equals-labelled-samples-v1',label:'=',version:1,sampleCount:saved.length,coordinateSystem:'normalised 0..1; canvas width/height in CSS pixels',samples:saved};
+const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='equals-sign-training-examples.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='Export complete. Upload the downloaded JSON file in ChatGPT.'};
+new ResizeObserver(fit).observe(canvas);fit();show();
+})();
+</script></body></html>
