@@ -339,7 +339,22 @@ async function detectMillilitreQuantity(strokes,W,H,options={}){
  const lastDigitBox=bounds(numeric.map(p=>({points:[{x:p.box.x,y:p.box.y},{x:p.box.x+p.box.w,y:p.box.y+p.box.h}]})));
  const firstUnit=sorted.at(-2).box;
  if(firstUnit.cx<lastDigitBox.x+lastDigitBox.w*.8)return null;
- const quantity=segment(numeric.map(p=>p.raw),W,H);
+ let quantity=segment(numeric.map(p=>p.raw),W,H);
+ // A pupil may draw the two loops of an 8 separately. Character segmentation
+ // sees "00"; use the combined digit only with clear vertical alignment and
+ // a high-confidence 8 prediction, never for side-by-side digits.
+ if(numeric.length===2){
+  const a=numeric[0].box,b=numeric[1].box;
+  const overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+  const aligned=overlap>Math.min(a.w,b.w)*.50
+   &&Math.abs(a.cy-b.cy)>Math.min(a.h,b.h)*.57
+   &&Math.abs(a.cx-b.cx)<Math.max(a.w,b.w)*.55;
+  if(aligned){
+   const combined=numeric.map(p=>({points:p.raw.points.map(q=>({x:q.x*W,y:q.y*H})),size:Number(p.raw.size)||4}));
+   const best=predictDigit(rasterDigit(combined))[0];
+   if(best?.char==='8'&&best.score>.92)quantity=[{...best,parts:combined,x:Math.min(a.x,b.x)}];
+  }
+ }
  if(!quantity.length||quantity.length>3||quantity.some(p=>!/^\d$/.test(p.char)||p.score<.65))return null;
  const suffix=await detectLitreUnit(unitStrokes,W,H,options);
  if(suffix?.text!=='ml')return null;
