@@ -94,7 +94,7 @@
           abort('CoMER worker failed');
           reject(new Error('CoMER assets may be missing. Use the existing Math formulas reader or complete the local asset setup.'));
         };
-        currentWorker.postMessage({ id, input, mode: options.comerMode === 'number' ? 'number' : 'expression' });
+        currentWorker.postMessage({ id, input, mode: options.comerMode === 'number' ? 'number' : options.comerMode === 'expression' ? 'expression' : 'auto' });
       } catch (error) {
         if (pending?.id === id) {
           clearTimeout(pending.timer);
