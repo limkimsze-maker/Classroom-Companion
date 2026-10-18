@@ -6,5 +6,5 @@ const toStroke=(points)=>({points:points.map(([x,y])=>({x,y}))});
 const raised2=toStroke([[.751,.342],[.765,.333],[.789,.343],[.797,.363],[.784,.391],[.767,.399],[.786,.413],[.793,.429],[.779,.434],[.763,.433],[.750,.429]]);
 assert(context.window.__raisedTwoShape(raised2,372,360.4),'raised 2 shape must be found');
 const vertical=toStroke([[.75,.32],[.75,.36],[.75,.43]]);
-assert(!context.__raisedTwoShape(vertical,372,360.4),'vertical glyph must abstain');
+assert(!context.window.__raisedTwoShape(vertical,372,360.4),'vertical glyph must abstain');
 console.log('PASS superscript 2 geometry and non-two rejection');
