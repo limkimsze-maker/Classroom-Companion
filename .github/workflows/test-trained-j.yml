@@ -1,0 +1,20 @@
+name: Trained J handwriting regression
+on:
+  push:
+    branches:
+      - feature/trained-lowercase-j-20261018
+  pull_request:
+    paths:
+      - whiteboard-trained-j-beta.js
+      - scripts/test-trained-j-beta.cjs
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/test-trained-j-beta.cjs
+      - run: node scripts/test-trained-97-handwriting.cjs
+      - run: node scripts/test-equals-geometry.cjs

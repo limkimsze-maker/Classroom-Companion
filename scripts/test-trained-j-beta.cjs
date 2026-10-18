@@ -1,0 +1,15 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const ctx={window:{}};vm.runInNewContext(fs.readFileSync('whiteboard-trained-j-beta.js','utf8'),ctx);
+const j=ctx.window.WhiteboardTrainedJ;
+assert.equal(j.info().samples,21);
+const W=326.58,H=340;
+const stem={size:5,points:[[.55,.50],[.56,.60],[.57,.72],[.55,.80],[.51,.84],[.46,.85],[.42,.81]].map(([x,y])=>({x,y}))};
+const dot={size:5,points:[[.55,.42],[.54,.415],[.54,.425],[.55,.43]].map(([x,y])=>({x,y}))};
+assert.equal(j.detect([stem,dot],W,H)?.text,'j','two stroke lowercase j');
+assert.equal(j.detect([dot,stem],W,H)?.text,'j','reverse pen order');
+const flat={size:5,points:[{x:.5,y:.5},{x:.7,y:.5}]};
+assert.equal(j.detect([flat,dot],W,H),null,'bar and dot not j');
+assert.equal(j.detect([stem,flat],W,H),null,'hook without dot not j');
+assert.equal(j.embeddedPairs([stem,dot],W,H).length,0,'standalone tested separately');
+assert.equal(j.embeddedPairs([stem,dot,flat],W,H).length,1,'embedded j can be grouped');
+console.log('PASS: derived 21 j examples, grouping, reject other symbols');
