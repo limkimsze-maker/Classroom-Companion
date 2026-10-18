@@ -35,8 +35,12 @@ and division. Every prediction remains subject to user review.
 
 ## Formatting and integration
 
-The confirmation preview and final object call WhiteboardEquationFormatter.createInline,
-using the Equation parser and font. Beautify always keeps the writing horizontal
+The confirmation preview and final object call WhiteboardEquationFormatter.createHandwriting,
+using the Equation parser, renderer and font. Individual symbols such as +, −, ×,
+÷, =, $, decimal points and brackets are accepted as handwriting without requiring
+a complete equation. The typed Equation action retains its equation validation.
+Standalone = and ÷ use their horizontal stroke width to group their marks when
+no digit is selected; a single dot is read as a decimal point. Beautify always keeps the writing horizontal
 in the original selected ink area, preserving its position and dimensions instead
 of rearranging it into vertical or long-division working. Currency, decimal places
 and a trailing equals sign are retained. The transparent SVG fits the visible

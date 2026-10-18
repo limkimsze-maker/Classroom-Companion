@@ -69,7 +69,9 @@ function symbol(parts,H){
 function segment(strokes,W,H){
  const parts=strokes.filter(s=>Array.isArray(s.points)&&s.points.length).map(s=>({source:s,size:Number(s.size)||4,points:s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H}))})).filter(s=>s.points.length);
  if(!parts.length)return[];
- const height=median(parts.map(s=>bounds([s]).h).filter(h=>h>8))||Math.max(16,...parts.map(s=>s.size*4));
+ if(parts.length===1){const b=bounds(parts),dotSize=Math.max(3,parts[0].size*1.2);if(b.w<dotSize&&b.h<dotSize)return[{char:'.',score:.85,x:b.x,parts}]}
+ // Without digits, use horizontal sign width as scale so = and ÷ still group correctly.
+ const height=median(parts.map(s=>bounds([s]).h).filter(h=>h>8))||Math.max(16,...parts.map(s=>s.size*4),...parts.filter(s=>line(s).horizontal).map(s=>bounds([s]).w*1.4));
  const tall=parts.filter(s=>bounds([s]).h>height*.4),rows=[];
  for(const s of tall.sort((a,b)=>bounds([a]).cy-bounds([b]).cy)){
   const cy=bounds([s]).cy;let row=rows.find(r=>Math.abs(cy-r.cy)<height*.65);

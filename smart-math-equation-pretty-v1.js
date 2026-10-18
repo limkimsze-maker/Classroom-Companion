@@ -169,9 +169,18 @@ function make(parsed){
  strokes.push(obj);redraw();syncUi();try{tool='select';syncUi()}catch{}notify(L.made);
 }
 // The handwriting action uses the same parser, SVG renderer and fonts as Equation.
+// A selected symbol is valid handwriting even when it is not a complete equation.
+function handwritingObject(text,placement,colour){
+ const options={layout:'inline',placement,colour},parsed=parseEquation(text);
+ if(parsed)return equationObject(parsed,options);
+ const source=String(text??'').trim(),aliases={'-':'−','–':'−','—':'−','－':'−','*':'×','✕':'×','✖':'×','＊':'×','/':'÷','／':'÷','∕':'÷','＋':'+','＝':'='},expression=aliases[source]||source;
+ if(!/^[+−×÷=.$€£¥%√^()]$/.test(expression))return null;
+ return equationObject({expression,simple:false},options);
+}
 window.WhiteboardEquationFormatter=Object.freeze({
  create:text=>{const parsed=parseEquation(text);return parsed?equationObject(parsed):null},
  createInline:(text,placement,colour)=>{const parsed=parseEquation(text);return parsed?equationObject(parsed,{layout:'inline',placement,colour}):null},
+ createHandwriting:handwritingObject,
  font
 });
 

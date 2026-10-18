@@ -58,10 +58,10 @@ async function review(group){
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Numbers, decimals, $, + − × ÷ =, and learned letters A–Z / a–z. For a new letter, correct its reading once and apply. Confirmed characters help this browser learn your handwriting.';
+ const help=document.createElement('p');help.textContent='Numbers, letters and individual symbols (+ − × ÷ =). For a new letter, correct its reading once and apply to teach this browser.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
- const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=180;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised equation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
+ const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=180;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised numbers, letters or symbols');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
  const appearance=document.createElement('div');appearance.className='handwriting-appearance';
  const colourLabel=document.createElement('label');colourLabel.htmlFor='handwritingColour';colourLabel.textContent='Colour';
  const colourSelect=document.createElement('select');colourSelect.id='handwritingColour';colourSelect.setAttribute('aria-label','Beautified writing colour');
@@ -75,14 +75,14 @@ async function review(group){
  const apply=document.createElement('button');apply.type='button';apply.className='btn soft';apply.textContent='✓ Apply beautify';apply.disabled=true;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=closeReview;
  function updatePreview(){
-  const obj=window.WhiteboardEquationFormatter?.createInline(input.value,groupBounds(group),colourSelect.value);apply.disabled=!obj;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
+  const obj=window.WhiteboardEquationFormatter?.createHandwriting(input.value,groupBounds(group),colourSelect.value);apply.disabled=!obj;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
-  status.textContent=obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Correct the numbers, operators or brackets to continue.':'Enter or correct the reading to continue.';
+  status.textContent=obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Enter a number, letter, individual symbol or complete expression.':'Enter or correct the reading to continue.';
  }
  input.addEventListener('input',updatePreview);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
  colourSelect.addEventListener('change',updatePreview);
  apply.onclick=()=>{
-  const obj=window.WhiteboardEquationFormatter?.createInline(input.value,groupBounds(group),colourSelect.value);if(!obj){updatePreview();return}
+  const obj=window.WhiteboardEquationFormatter?.createHandwriting(input.value,groupBounds(group),colourSelect.value);if(!obj){updatePreview();return}
   if(!group.every(s=>strokes.includes(s))||JSON.stringify(group)!==original){status.textContent='This handwriting changed. Cancel and select it again.';apply.disabled=true;return}
   const before=clone(strokes),first=Math.min(...group.map(s=>strokes.indexOf(s))),set=new Set(group);
   obj.smartOriginal=clone(group);obj.handwritingBeautified=true;
