@@ -490,6 +490,24 @@ function ujiConfirmsDigit(token){
 
 /* Recognise an exponent on a measured quantity before the base-only
    grammar can return "4 cm" and discard its raised 2. */
+function raisedTwoShape(raw,W,H){
+ // A raised 2 has a rounded upper turn and a distinct leftward lower bar.
+ // Inspect the pen trajectory, not only the general-purpose digit CNN.
+ const points=raw?.points?.map(p=>({x:p.x*W,y:p.y*H}))||[];
+ if(points.length<10)return false;
+ const xx=points.map(p=>p.x),yy=points.map(p=>p.y);
+ const left=Math.min(...xx),right=Math.max(...xx),top=Math.min(...yy),bottom=Math.max(...yy),width=right-left,height=bottom-top;
+ if(width<9||height<10||width/height<.30||width/height>1.5)return false;
+ const start=points[0],end=points.at(-1);
+ if(start.y>top+height*.35||end.y<top+height*.70||end.x>left+width*.36)return false;
+ // The final pen segment moves appreciably left with little vertical drift.
+ const tail=points.findLast(p=>p.y<bottom-height*.10&&p.x>left+width*.66);
+ if(!tail)return false;
+ const last=points.slice(-Math.max(4,Math.floor(points.length*.23)));
+ const barWidth=Math.max(...last.map(p=>p.x))-Math.min(...last.map(p=>p.x));
+ const barHeight=Math.max(...last.map(p=>p.y))-Math.min(...last.map(p=>p.y));
+ return barWidth>width*.40&&barHeight<height*.20&&tail.x>end.x+width*.35;
+}
 async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
  if(strokes.length<4||strokes.length>12||!window.WhiteboardPrimaryMathGrammar)return null;
  const parts=strokes.map((s,i)=>{
@@ -511,7 +529,7 @@ async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
  const model=window.WhiteboardTrainedRemaining?.match?.([top.raw],W,H,'digits');
  const digit=predictDigit(rasterDigit([top.scaled]))[0];
  const power=model&&['2','3'].includes(model.char)?model.char:
-   (['2','3'].includes(digit.char)&&digit.score>.52?digit.char:null);
+   (['2','3'].includes(digit.char)&&digit.score>.52?digit.char:(raisedTwoShape(top.raw,W,H)?'2':null));
  if(!power)return null;
  const primary=window.WhiteboardPrimaryMathGrammar.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
  const base=await primary.recognize(baseline.map(p=>p.raw),W,H,options);
