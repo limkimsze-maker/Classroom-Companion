@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/inkon-demo-native-beautify-20261018
+      - fix/inkon-beautify-auto-cache-20261018
     paths:
       - 'scripts/inkon-original-beautify-adapter.mjs'
       - 'scripts/build-inkon-original-beautify.sh'

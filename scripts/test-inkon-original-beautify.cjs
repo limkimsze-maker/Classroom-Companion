@@ -40,11 +40,35 @@ const {chromium}=require('playwright');
   if(outcome.error)throw Error('Actual upstream worker failed: '+outcome.error);
   if(outcome.engine!=='inkon-original-demo')throw Error('Incorrect recognizer: '+outcome.engine);
   if(!outcome.text.trim())throw Error('Demo returned empty latex');
-  // Ordinary Auto still follows original UJI/letter code; no custom UI.
-  // Enable the existing Beautify selection to confirm the original dialog remains.
+  // Mobile regression: create a harmless local pen stroke and open the ACTUAL
+  // Beautify review dialog, then assert the visible dropdown starts in Auto.
+  // Open selection at desktop width; inspect the same modal at phone width.
+  const seeded=await page.evaluate(()=>{
+    const group={erase:false,colour:'#17324d',size:4,points:[
+      {x:.23,y:.31},{x:.245,y:.31},{x:.26,y:.34},{x:.27,y:.39},{x:.26,y:.44}
+    ]};
+    if(typeof strokes==='undefined'||typeof redraw!=='function')return false;
+    strokes.push(group);redraw();syncUi();return true;
+  });
+  if(!seeded)throw Error('Cannot seed test handwriting');
+  // Exercise the real Beautify dialog with a known in-memory selection.
+  // Selection geometry is independent of which reader starts as the default.
+  await page.evaluate(()=>{
+    const latest=strokes.at(-1);
+    if (!latest || !window.WhiteboardMarqueeSelection) throw Error('No pen data');
+    window.WhiteboardMarqueeSelection.get=()=>[latest];
+  });
   await page.locator('#handwritingBeautifyBtn').click();
-  const selected=await page.evaluate(()=>document.querySelector('#boardWrap')?.classList.contains('handwriting-selecting'));
-  if(!selected)throw Error('Original Beautify selection action is missing');
+  await page.locator('#handwritingReadMode').waitFor({timeout:20000});
+  await page.setViewportSize({width:390,height:844});
+  const defaultMode=await page.locator('#handwritingReadMode').inputValue();
+  console.log('Mobile Beautify default read mode:', defaultMode);
+  if(defaultMode!=='auto')throw Error('Beautify must default to Auto, got '+defaultMode);
+  await page.locator('#handwritingReadMode').selectOption('math');
+  if(await page.locator('#handwritingReadMode').inputValue()!=='math')
+    throw Error('Math formulas option no longer accessible');
+  console.log('PASS: mobile Beautify starts on Auto; Math formulas remains selectable');
+
   if(errors.length)throw Error('Browser errors: '+errors.slice(0,6).join('; '));
   if(outside.length)throw Error('Unexpected external requests: '+outside.join('; '));
   console.log('PASS: original ink-on demo worker, Auto/beam candidates, same-origin assets, original Beautify and UJI V1');
