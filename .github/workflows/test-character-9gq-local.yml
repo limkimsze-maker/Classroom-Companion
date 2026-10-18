@@ -1,0 +1,19 @@
+name: Test private 9 g q character learning
+on:
+  push:
+    branches:
+      - feature/private-9gq-sample-import-20261018
+  pull_request:
+    paths:
+      - whiteboard-character-9gq-local-beta.js
+      - scripts/test-character-9gq-local.cjs
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify private 9/g/q local learning and abstention
+        run: node scripts/test-character-9gq-local.cjs
