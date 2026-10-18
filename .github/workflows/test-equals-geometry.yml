@@ -4,6 +4,7 @@ on:
     branches:
       - fix/equal-sign-geometry-20261018
       - fix/embedded-equals-20261018
+      - fix/short-handwritten-equals-20261018
   workflow_dispatch:
 jobs:
   test:
