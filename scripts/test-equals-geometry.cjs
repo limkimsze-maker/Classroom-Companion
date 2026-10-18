@@ -121,3 +121,19 @@ const fourToOne=[
 assert.equal(pair([...glyph,...fourToOne,...rhs],372,404.244).length,0,
   'ratio well above supported range should not be promoted to equals');
 console.log('PASS: diagnostic-measured unequal equals bars and out-of-range negative');
+
+/* New standalone two-stroke class based on phone diagnostic measurements.
+   Generated stand-ins only; raw selected handwriting never committed. */
+const phoneW=372,phoneH=404.244;
+const phoneExamples=[
+ [line(.42,.43,.448,.421,5),line(.43,.466,.457,.457,5)], // 10px, 10px
+ [line(.45,.46,.479,.459,5),line(.44,.514,.467,.510,5)], // 10px, 10px; offset
+ [line(.45,.452,.484,.451,5),line(.44,.506,.477,.508,5)] // 13px, 14px
+];
+for(let i=0;i<phoneExamples.length;i++)
+ assert.equal(detect(phoneExamples[i],phoneW,phoneH)?.text,'=','tiny standalone equal '+i);
+const tinyDots=[line(.452,.491,.461,.494,5),line(.462,.539,.481,.525,5)];
+assert.equal(detect(tinyDots,phoneW,phoneH),null,'very tiny uneven dotted marks remain uncertain');
+assert.equal(detect([line(.41,.42,.44,.42,5)],phoneW,phoneH),null,'minus is not equals');
+assert.equal(detect([line(.41,.42,.44,.42,5),line(.425,.4,.425,.45,5)],phoneW,phoneH),null,'plus is not equals');
+console.log('PASS: small standalone equals controls and non-equals negatives');
