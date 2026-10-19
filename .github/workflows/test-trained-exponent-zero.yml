@@ -1,0 +1,19 @@
+name: Unit-first trained exponent and zero
+on:
+  push:
+    branches: [fix/unitfirst-trained-exponent-and-zero-20261019]
+  pull_request:
+    paths: [whiteboard-unit-exponent-trained-beta.js, whiteboard-handwriting-recognition-beta.js, scripts/test-unit-first-exponent-zero.cjs]
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/test-unit-first-exponent-zero.cjs
+      - run: node scripts/test-unified-unit-first.cjs
+      - run: node scripts/test-reader-syntax.cjs
+      - run: node scripts/test-teacher-units-override.cjs
+      - run: node scripts/test-teacher-confusables.cjs
