@@ -5,7 +5,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let readerRecovery=null;
-const readerBuild='20261019-simulations1';
+const readerBuild='20261020-context1';
 const requiredReaders=[
  ['whiteboard-handwriting-digit-model-beta.js',()=>window.WhiteboardDigitModel],
  ['whiteboard-handwriting-character-models-beta.js',()=>window.WhiteboardCharacterModels],
@@ -22,6 +22,8 @@ const requiredReaders=[
  ['whiteboard-teacher-units-beta.js',()=>window.WhiteboardTeacherUnits],
  ['whiteboard-teacher-confusables-beta.js',()=>window.WhiteboardTeacherConfusables],
  ['whiteboard-unit-exponent-trained-beta.js',()=>window.WhiteboardUnitExponent],
+ ['whiteboard-handwriting-context-model-beta.js',()=>window.WhiteboardHandwritingContextModel],
+ ['whiteboard-handwriting-context-beta.js',()=>window.WhiteboardHandwritingContext],
  ['whiteboard-handwriting-recognition-beta.js',()=>window.WhiteboardHandwritingMath?.recognize&&window.WhiteboardHandwritingMath.build===readerBuild]
 ];
 async function ensureReader(){
@@ -67,6 +69,11 @@ const style=document.createElement('style');style.textContent=`
 .handwriting-review .handwriting-feedback-controls{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:8px}
 .handwriting-review .handwriting-feedback-controls button{font:700 12px Arial,sans-serif}
 .handwriting-review .handwriting-feedback-message{flex:1;min-width:160px;margin:0;font:12px/1.45 Arial,sans-serif;color:#475467}
+.handwriting-review .handwriting-context{background:#f0f8f6;border:1px solid #c4e5de;border-radius:9px;padding:9px 11px;margin:8px 0}
+.handwriting-review .handwriting-context p{margin:0 0 7px}
+.handwriting-review .handwriting-context-options{display:flex;flex-wrap:wrap;gap:7px}
+.handwriting-review .handwriting-context-options button{background:white;border:1px solid #9dc9c0;border-radius:7px;padding:7px 10px;font:700 15px Arial,sans-serif;color:#17324d;cursor:pointer}
+.handwriting-review .handwriting-context-options button[aria-pressed=true]{background:#0f766e;color:white}
 .handwriting-review [hidden]{display:none!important}
 `;document.head.appendChild(style);
 const btn=document.createElement('button');btn.id='handwritingBeautifyBtn';btn.type='button';btn.className='btn soft';btn.textContent='✨ Beautify';btn.title='Recognise handwritten numbers, learned letters and equations';tools.insertBefore(btn,document.getElementById('undoBtn'));
@@ -116,6 +123,7 @@ async function review(group){
  for(const [value,text]of [['','Insert…'],['\\frac{1}{2}','Fraction ½'],['x^{2}','Power x²'],['\\sqrt{x}','Root √'],['\\int_{0}^{1} x\\,dx','Integral ∫'],['\\sum_{i=1}^{n} i','Sum ∑'],['\\alpha','Greek α'],['\\pi','Pi π'],['\\leq','Less or equal ≤'],['\\infty','Infinity ∞'],['\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}','Matrix'],['cm²','cm² · area'],['m²','m² · area'],['cm³','cm³ · volume'],['m³','m³ · volume'],['mm','mm · length'],['cm','cm · length'],['m','m · length'],['km','km · length'],['mg','mg · mass'],['g','g · mass'],['kg','kg · mass'],['mL','mL · capacity'],['L','L · capacity'],['s','s · time'],['min','min · time'],['h','h · time'],['°C','°C · temperature'],['m/s²','m/s² · acceleration'],['km/h','km/h · speed']]){const option=document.createElement('option');option.value=value;option.textContent=text;insert.appendChild(option)}appearance.appendChild(insert);
  function formatted(){const b=groupBounds(group);return modeSelect.value==='math'&&!window.WhiteboardMathRenderer?.unitText(input.value)?window.WhiteboardMathRenderer?.create(input.value,b,colourSelect.value):window.WhiteboardEquationFormatter?.createHandwriting(input.value,b,colourSelect.value)}
  const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Reading handwriting on this device…';
+ const contextArea=document.createElement('section');contextArea.className='handwriting-context';contextArea.id='handwritingContextChoices';contextArea.setAttribute('aria-label','Possible handwriting readings');contextArea.hidden=true;
  const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Beautified preview in the original writing area';preview.hidden=true;
  const actions=document.createElement('div');actions.className='handwriting-actions';
  const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply beautify';apply.disabled=true;
@@ -135,7 +143,28 @@ async function review(group){
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
   status.textContent=reading?'Reading handwriting on this device…':obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Check the notation. Math accepts LaTeX, such as \\frac{1}{2}; units accept cm2 or cm².':'Enter or correct the reading to continue.';
  }
- input.addEventListener('input',()=>{clearProvisional();updatePreview()});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
+ function renderContext(result){
+  contextArea.replaceChildren();contextArea.hidden=true;
+  const choices=result?.context?.alternatives||[];
+  if(choices.length<2)return;
+  const message=document.createElement('p');message.textContent='Possible readings — compare the unit or superscript with your ink.';
+  const buttons=document.createElement('div');buttons.className='handwriting-context-options';
+  for(const choice of choices){
+   if(typeof choice.text!=='string'||choice.text.length>180)continue;
+   const option=document.createElement('button');option.type='button';option.textContent=choice.text;
+   option.setAttribute('aria-label','Use reading '+choice.text);option.setAttribute('aria-pressed',String(input.value===choice.text));
+   option.onclick=()=>{
+    if(reading||testing)return;
+    clearProvisional();input.value=choice.text;
+    recognition={...result,text:choice.text,tokens:choice.tokens||[],uncertain:[]};
+    for(const button of buttons.children)button.setAttribute('aria-pressed',String(button===option));
+    updatePreview();status.textContent='Reading selected. Check the preview, then apply.';
+   };
+   buttons.appendChild(option);
+  }
+  contextArea.append(message,buttons);contextArea.hidden=buttons.children.length<2;
+ }
+ input.addEventListener('input',()=>{clearProvisional();contextArea.hidden=true;updatePreview()});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
  colourSelect.addEventListener('change',updatePreview);
  insert.addEventListener('change',()=>{if(!insert.value)return;clearProvisional();const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
  test.onclick=async()=>{
@@ -188,6 +217,7 @@ async function review(group){
   const payload={schema:'classroom-equals-diagnostic-v1',mode:modeSelect.value,
    recognised:recognition?.text||'',corrected:input.value,
    recognitionEngine:recognition?.engine||null,readerBuild:window.WhiteboardHandwritingMath?.build||null,
+   contextReview:recognition?.context?{originalText:recognition.context.originalText,applied:recognition.context.applied,alternatives:recognition.context.alternatives.map(c=>c.text)}:null,
    selection:{width:cssW,height:cssH},
    strokes:group.map(s=>({size:Number(s.size)||4,points:s.points.map(p=>({x:p.x,y:p.y}))}))};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
@@ -196,10 +226,10 @@ async function review(group){
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
- panel.append(title,help,ink,label,input,appearance,status,preview,feedbackArea,actions);panel.appendChild(exportInk);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
+ panel.append(title,help,ink,label,input,appearance,status,contextArea,preview,feedbackArea,actions);panel.appendChild(exportInk);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
  window.MathJax?.startup?.promise?.then(()=>{if(session===id&&dialog===backdrop)updatePreview()}).catch(()=>{});
  async function readSelection(){
- const version=++readVersion,startText=input.value,replaceReading=!startText||startText===lastReading;recognition=null;reading=true;apply.disabled=true;status.classList.remove('handwriting-error');status.textContent='Reading handwriting on this device…';
+ const version=++readVersion,startText=input.value,replaceReading=!startText||startText===lastReading;recognition=null;contextArea.hidden=true;reading=true;apply.disabled=true;status.classList.remove('handwriting-error');status.textContent='Reading handwriting on this device…';
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
   if(session!==id||dialog!==backdrop||version!==readVersion)return;
@@ -209,7 +239,7 @@ async function review(group){
   const result=await window.WhiteboardHandwritingMath.recognize(group,cssW,cssH,{mode:modeSelect.value,onProgress:(done,total)=>{if(session===id&&version===readVersion&&input.value===startText)status.textContent=modeSelect.value==='math'?'Reading mathematical notation on this device…':`Reading characters ${done} of ${total}…`}});
   if(session!==id||dialog!==backdrop||version!==readVersion)return;recognition=result;reading=false;
   // Do not overwrite a correction entered while recognition was running.
-  if(replaceReading&&input.value===startText)input.value=result.text;lastReading=result.text;updatePreview();if(document.activeElement===cancel)input.focus();
+  if(replaceReading&&input.value===startText)input.value=result.text;lastReading=result.text;updatePreview();if(input.value===result.text)renderContext(result);if(document.activeElement===cancel)input.focus();
   if(result.engine==='local-litre-unit')status.textContent=result.text==='l'?'Litre symbol recognised as l. Check before applying.':'Millilitre unit recognised as ml. Check before applying.';
   if(result.engine==='local-primary-measurement')status.textContent='Number + measurement unit recognised using P1–P6 unit context. Check before applying.';
   if(result.engine==='local-general-primary-grammar')status.textContent='Pretrained digit + letter models recognised a primary measurement. Check before applying.';

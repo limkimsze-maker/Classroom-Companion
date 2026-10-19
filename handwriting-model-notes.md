@@ -284,3 +284,20 @@ comparison preserves all 452 previously correct readings and increases the
 correct count to 492. The final powered-unit priority change was checked on
 every one of its 117 eligible examples; the other 907 follow the unchanged
 route. These training controls measure compatibility, not independent accuracy.
+
+## Local notation context model — 20 October 2026
+
+Build `20261020-context1` adds a statistical language model fitted to 48,000
+generated notation strings. It combines notation context with independent visual
+evidence, protects confirmed corrections and trained measurements, and presents
+possible readings in the existing Beautify review. Choosing an alternative does
+not teach or replace ink until Apply. Its token alignment is retained for learning;
+Cancel and Undo keep their existing behavior. No network service is used.
+
+The unchanged 924-case benchmark improves from 765 to 767 exact readings, with
+no lost correct readings. Wrong readings without a review flag decrease from
+136 to 111. This is a modest automatic accuracy gain and a larger gain in exposing
+uncertainty; the 99% target remains unmet. The new model does not understand
+surrounding documents or questions and never calculates an equation's answer to
+choose a reading. See `handwriting-context-model.md` for scope and reproduction,
+and `handwriting-context-report.html` for the full comparison.

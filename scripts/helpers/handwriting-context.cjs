@@ -14,7 +14,8 @@ module.exports=function createContext(memory=new Map()){
   'whiteboard-equal-sign-geometry-beta.js','whiteboard-trained-9gq-equals-beta.js',
   'whiteboard-trained-j-beta.js','whiteboard-trained-remaining-beta.js',
   'whiteboard-teacher-units-beta.js','whiteboard-teacher-confusables-beta.js',
-  'whiteboard-unit-exponent-trained-beta.js','whiteboard-handwriting-recognition-beta.js'
+  'whiteboard-unit-exponent-trained-beta.js','whiteboard-handwriting-context-model-beta.js',
+  'whiteboard-handwriting-context-beta.js','whiteboard-handwriting-recognition-beta.js'
  ])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
  return context;
 };

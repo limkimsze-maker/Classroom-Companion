@@ -1103,7 +1103,7 @@ async function recognizeUnitFirst(strokes,W,H,options){
  }
  return uncertainPrefix;
 }
-async function recognize(strokes,W,H,options={}){
+async function recognizeBeforeContext(strokes,W,H,options={}){
  options={...options,mode:options.mode||'auto'};
  if(!Array.isArray(strokes)||!Number.isFinite(W)||!Number.isFinite(H)||W<1||H<1||
     strokes.length>180||strokes.reduce((n,s)=>n+(s?.points?.length||0),0)>16000||
@@ -1184,6 +1184,138 @@ async function recognize(strokes,W,H,options={}){
  return reconcile(original);
 }
 
+// Compare complete, spatially valid measurement hypotheses after the existing
+// readers have produced their result. Each hypothesis must consume all ink.
+async function recognizeWithContext(strokes,W,H,options,reading){
+ const context=window.WhiteboardHandwritingContext;
+ if(!context||options.context===false||(options.mode||'auto')!=='auto'||
+  !window.WhiteboardCharacterReader||!window.WhiteboardUjiReader||
+  strokes.length<2||strokes.length>32||reading?.format==='latex'||
+  /personal|teacher-confusable|teacher-unit-operator|trained-cursive|local-operator/.test(reading?.engine||'')||
+  !/[0-9?]/.test(reading?.text||''))return reading;
+ // The context model has no basis for changing a clear number or arithmetic
+ // statement. In particular, it never evaluates an equation to pick an answer.
+ if(completeNumericExpression(reading.text)&&!reading.uncertain?.length&&
+  /numeric-ensemble|primary-arithmetic|primary-digit/.test(reading.engine||''))return reading;
+ const items=strokes.map((raw,index)=>{
+  const scaled={source:raw,index,size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  return{raw,scaled,box:bounds([scaled])};
+ }).sort((a,b)=>a.box.cx-b.box.cx);
+ const layouts=[],groupsByKey=new Map(),key=parts=>parts.map(p=>p.index).sort((a,b)=>a-b).join(',');
+ for(let count=1;count<=Math.min(11,items.length-1);count++){
+  const suffix=items.slice(-count),prefix=items.slice(0,-count),pb=bounds(prefix.map(p=>p.scaled));
+  for(let upper=0;upper<=Math.min(3,suffix.length-1);upper++){
+   const body=upper?suffix.slice(0,-upper):suffix,raised=upper?suffix.slice(-upper):[];
+   const bb=bounds(body.map(p=>p.scaled)),height=Math.max(pb.h,bb.h);
+   if(bb.h<10||pb.h<12||pb.x+pb.w>bb.x+Math.max(2,height*.025)||
+    bb.h>pb.h*1.4||closedZeroInk(body[0].raw,W,H))continue;
+   const groups=groupUnitInk(body);if(!groups.length||groups.length>3)continue;
+   if(groups.some(g=>bounds(g).h<height*.22))continue;
+   if(raised.length){
+    const rb=bounds(raised.map(p=>p.scaled));
+    if(rb.h<7||rb.w<3||rb.h>height*.76||rb.x<bb.x+bb.w*.70||
+     rb.cy>=bb.cy-height*.16||rb.y+rb.h>bb.y+bb.h*.70)continue;
+   }else if(Math.abs(bb.y+bb.h-pb.y-pb.h)>height*.42)continue;
+   if(groups.some(g=>Math.abs(bounds(g).y+bounds(g).h-bb.y-bb.h)>height*.42))continue;
+   groups.forEach(g=>groupsByKey.set(key(g),g));
+   layouts.push({prefix,body,raised,groups,pb,bb,height});
+  }
+ }
+ if(!layouts.length)return reading;
+ const entries=[...groupsByKey],rasters=entries.map(([,parts])=>rasterDigit(parts));
+ const alpha=await window.WhiteboardCharacterReader.predictBatch(rasters,'lowercase',options.onProgress);
+ const evidence=new Map(entries.map(([id,parts],i)=>{
+  const pen=window.WhiteboardUjiReader.read(parts.map(p=>p.points))||[];
+  const digit=predictDigit(rasters[i]);
+  const personal=window.WhiteboardHandwritingLearning?.match?.(rasters[i]);
+  return[id,{parts,alpha:alpha[i],pen,digit,personal}];
+ }));
+ function probability(e,char){
+  if(e.personal)return e.personal.char===char?e.personal.score:0;
+  if(/^[0-9]$/.test(char))return .6*(e.digit.find(p=>p.char===char)?.score||0)+.4*(e.pen.find(p=>p.label===char)?.p||0);
+  const letter=char.toLowerCase(),a=e.alpha.find(p=>p.char===letter)?.score||0;
+  const p=e.pen.reduce((sum,p)=>sum+(/^[A-Za-z]$/.test(p.label)&&p.label.toLowerCase()===letter?p.p:0),0);
+  return .55*a+.45*p;
+ }
+ const prefixCache=new Map(),proposals=[],baselineProposals=[];
+ const original=context.canonical(reading.text);
+ const pinned=String(reading.text).match(/^\s*([−-]?\d+(?:\.\d+)?(?:\s*[+−×÷=]\s*[−-]?\d+(?:\.\d+)?)*)/)?.[1];
+ const pinPrefix=pinned&&(/[A-Za-z?]/.test(reading.text)||/[+−×÷=]/.test(reading.text));
+ const originalUnit=String(reading.text).match(/([A-Za-z]+[²³]?)\s*$/)?.[1];
+ const protectedMeasurement=reading.engine==='unit-first-trained-measurement'&&!reading.uncertain?.length;
+ for(const layout of layouts){
+  const {prefix,body,raised,groups,pb,bb,height}=layout;
+  const prefixId=prefix.map(p=>p.scaled.index).join(',');
+  if(!prefixCache.has(prefixId))prefixCache.set(prefixId,await readUnitPrefix(prefix,W,H,options,true));
+  const number=prefixCache.get(prefixId);if(!number)continue;
+  if(pinPrefix&&context.canonical(number.text)!==context.canonical(pinned))continue;
+  let powers=[{char:'',score:1,parts:[]}];
+  if(raised.length){
+   const parts=raised.map(p=>p.scaled),digits=predictDigit(rasterDigit(parts));
+   const pen=window.WhiteboardUjiReader.read(parts.map(p=>p.points))||[];
+   const trained=raised.length===1?window.WhiteboardUnitExponent?.match?.(raised[0].raw,W,H):null;
+   powers=['2','3'].map(char=>({char:char==='2'?'²':'³',parts,
+    score:.45*(digits.find(p=>p.char===char)?.score||0)+.40*(pen.find(p=>p.label===char)?.p||0)+.15*(trained?.label===(char==='2'?'²':'³')?trained.score:0)}))
+    .filter(p=>p.score>=.10);
+  }
+  for(const power of powers){
+   const words=(power.char?context.poweredUnits.filter(u=>u.endsWith(power.char)).map(u=>u.slice(0,-1)):context.units)
+    .filter(word=>word.length===groups.length);
+   for(const word of words){
+    const votes=groups.map((g,i)=>probability(evidence.get(key(g)),word[i]));
+    if(votes.some(p=>p<.10)||Math.max(...votes)<.50)continue;
+    // A g in a unit must have a descender. This keeps strong digit 9s intact.
+    if(word.endsWith('g')&&bb.y+bb.h<pb.y+pb.h+height*.09)continue;
+    const tokens=[...number.tokens,...groups.map((parts,i)=>({char:word[i],score:votes[i],parts})),
+     ...(power.char?[{char:power.char,score:power.score,parts:power.parts}]:[])];
+    const text=number.text+' '+word+power.char;
+    const visualScore=(votes.reduce((n,p)=>n+Math.log(Math.max(.001,p)),0)+
+     (power.char?Math.log(power.score):0))/(votes.length+Number(!!power.char));
+    proposals.push({text,tokens,uncertain:tokens.filter(t=>t.score<.85),visualScore,
+     minSupport:Math.min(...votes,power.score),prefix:number.text,unit:word+power.char,
+     engine:'local-context-language-model',format:'unit'});
+    const start=context.canonical(number.text),tail=original.startsWith(start)?original.slice(start.length):'';
+    if(tail.length===groups.length+Number(!!power.char)){
+     const support=groups.map((g,i)=>probability(evidence.get(key(g)),tail[i]));
+     if(power.char)support.push(tail.at(-1)===power.char?power.score:1-power.score);
+     const visual=support.reduce((n,p)=>n+Math.log(Math.max(.001,p)),0)/support.length;
+     baselineProposals.push({text:reading.text,visualScore:visual,original:true});
+    }
+   }
+  }
+ }
+ if(!proposals.length)return reading;
+ const ordered=context.rank(proposals),best=ordered[0];
+ const baseline=context.rank(baselineProposals)[0]||{text:reading.text,score:-.25+.45*context.score(reading.text),visualScore:-.25};
+ const same=context.canonical(best.text)===original;
+ const other=ordered.find(p=>context.canonical(p.text)!==context.canonical(best.text));
+ const margin=best.score-(other?.score??-100),gain=best.score-baseline.score;
+ const validOriginalUnit=originalUnit&&[...context.units,...context.poweredUnits].includes(originalUnit);
+ const canChange=!same&&!protectedMeasurement&&margin>=.30&&gain>=.45&&best.minSupport>=.30&&
+  (!validOriginalUnit||best.visualScore-baseline.visualScore>=.55);
+ const selected=canChange?best:reading;
+ // Preserve valid taught measurements; expose substantial visual disagreement
+ // for review instead of silently replacing the teacher's trained exponent.
+ const alternatives=ordered.filter(p=>context.canonical(p.text)!==context.canonical(selected.text)&&
+  p.minSupport>=.20&&p.score>=(canChange?best.score:baseline.score)-.80).slice(0,2);
+ if(!canChange&&!alternatives.length)return reading;
+ const choices=[{text:selected.text,tokens:selected.tokens||[],original:!canChange},
+  ...alternatives.map(p=>({text:p.text,tokens:p.tokens,original:false}))];
+ if(canChange&&!choices.some(p=>context.canonical(p.text)===original))choices.push({text:reading.text,tokens:reading.tokens||[],original:true});
+ const uncertainty={char:'?',score:0,parts:[],engine:'context-review'};
+ return{...selected,uncertain:[...(selected.uncertain||[]),uncertainty],
+  context:{model:'local-notation-trigram-v1',applied:canChange,originalText:reading.text,
+   alternatives:choices.slice(0,3),needsReview:true}};
+}
+async function recognize(strokes,W,H,options={}){
+ const reading=await recognizeBeforeContext(strokes,W,H,options);
+ try{return await recognizeWithContext(strokes,W,H,options,reading)}
+ catch(error){
+  if(error?.name==='AbortError')throw error;
+  // An optional context failure must not discard a completed handwriting read.
+  return{...reading,context:{unavailable:true}};
+ }
+}
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261019-simulations1';
+window.WhiteboardHandwritingMath.build='20261020-context1';
 })();

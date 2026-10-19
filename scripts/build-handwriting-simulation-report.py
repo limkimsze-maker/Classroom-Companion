@@ -6,12 +6,19 @@ import sys
 
 folder = pathlib.Path(sys.argv[1])
 root = pathlib.Path(__file__).resolve().parent.parent
-before = sum((json.loads((folder / name).read_text())["records"] for name in
-              ("development-baseline.json", "validation-baseline.json")), [])
-after_run = json.loads((folder / "final-all.json").read_text())
+context_mode = '--context' in sys.argv
+prefix = 'handwriting-context' if context_mode else 'handwriting-simulation'
+if context_mode:
+    archived = json.loads((root / 'handwriting-simulation-results.json').read_text())
+    before = [row | {'actual': row['after'], 'correct': row['afterCorrect'], 'flagged': row['afterFlagged']}
+              for row in archived['records']]
+else:
+    before = sum((json.loads((folder / name).read_text())["records"] for name in
+                  ("development-baseline.json", "validation-baseline.json")), [])
+after_run = json.loads((folder / ("all-context.json" if context_mode else "final-all.json")).read_text())
 assert hashlib.sha256((root / "whiteboard-handwriting-recognition-beta.js").read_bytes()).hexdigest() == after_run["readerSha256"], "Rerun the benchmark after changing the reader"
-compatibility = json.loads((folder / "teacher-compatibility-final.json").read_text())
-measurements = json.loads((folder / "measured-controls-final.json").read_text())
+compatibility = json.loads((folder / ("teacher-final.json" if context_mode else "teacher-compatibility-final.json")).read_text())
+measurements = json.loads((folder / ("measured-final.json" if context_mode else "measured-controls-final.json")).read_text())
 assert compatibility["readerSha256"] == measurements["readerSha256"] == after_run["readerSha256"], "Control summaries must use the evaluated reader"
 assert not compatibility["regressions"]
 assert not measurements["failures"] and all(row["correct"] for row in measurements["diagnostics"])
@@ -28,7 +35,7 @@ for row in after:
                    "beforeCorrect": old["correct"], "afterCorrect": row["correct"],
                    "beforeFlagged": old["flagged"], "afterFlagged": row["flagged"]})
 data = {"schema": "classroom-simulation-comparison-v1", "build": after_run["build"],
-        "readerSha256": after_run["readerSha256"], "baselineCommit": "e2ab6ba61d3fafd324b1b30c7d98cb27381ed0b5",
+        "readerSha256": after_run["readerSha256"], "baselineCommit": "2ccb7c45ae610b7750413d21e0c9b70ee0d801ce" if context_mode else "e2ab6ba61d3fafd324b1b30c7d98cb27381ed0b5",
         "method": after_run["method"], "targetPercent": 99,
         "compatibility": {"teacherExamples": compatibility["total"],
                           "previouslyCorrect": compatibility["beforeCorrect"],
@@ -38,7 +45,11 @@ data = {"schema": "classroom-simulation-comparison-v1", "build": after_run["buil
                           "diagnosticExports": len(measurements["diagnostics"]),
                           "method": "Existing training examples and targeted replay controls, not independent accuracy estimates."},
         "records": rows}
-(root / "handwriting-simulation-results.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+if context_mode:
+    data['contextSources'] = {name: hashlib.sha256((root / name).read_bytes()).hexdigest()
+                              for name in ['whiteboard-handwriting-context-model-beta.js', 'whiteboard-handwriting-context-beta.js']}
+    data['contextMethod'] = 'Small statistical notation language model fitted to 48,000 generated strings, fused with independent visual evidence. Personal corrections and valid trained measurements are protected; no equation solving or network requests.'
+(root / (prefix + '-results.json')).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 template = r'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Handwriting simulation results · Classroom Companion</title>
@@ -101,5 +112,13 @@ el('download').addEventListener('click',()=>{const url=URL.createObjectURL(new B
 render();
 </script></main></body></html>'''
 encoded = json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")
-(root / "handwriting-simulation-report.html").write_text(template.replace("__DATA__", encoded) + "\n")
+if context_mode:
+    template = template.replace('19 October 2026', '20 October 2026').replace('What the handwriting simulations actually show', 'What the local context check changes')
+    template = template.replace('Before these changes', 'Before context checking').replace('Pretrained model weights are unchanged.', 'Pretrained handwriting weights are unchanged.')
+    template = template.replace('Baseline: e2ab6ba.', 'Baseline: 2ccb7c4.').replace('20261019-simulations1', '20261020-context1')
+    template = template.replace('handwriting-simulation-results.json', 'handwriting-context-results.json')
+    template = template.replace('<p id="compatibility"></p>', '<p>The added model is a small statistical notation language model trained on 48,000 generated strings. It compares complete measurements with the existing visual models and offers alternatives for review. It does not understand surrounding documents or natural-language questions, and it never evaluates an equation to choose its answer.</p><p id="compatibility"></p>')
+    template = template.replace('<div id="flagCount"></div>', '<div id="flagCount"></div><p class="small" id="previousUnflagged"></p>')
+    template = template.replace("el('accuracy').textContent=", "el('previousUnflagged').textContent='Before context: '+rows.filter(r=>!r.beforeCorrect&&!r.beforeFlagged).length+' unflagged wrong readings';el('accuracy').textContent=")
+(root / (prefix + '-report.html')).write_text(template.replace("__DATA__", encoded) + "\n")
 print("Built simulation report and comparison JSON for", len(rows), "cases")
