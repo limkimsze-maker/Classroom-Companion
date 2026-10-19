@@ -5,18 +5,39 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let readerRecovery=null;
+const readerBuild='20261019-recognition-audit1';
+const requiredReaders=[
+ ['whiteboard-handwriting-digit-model-beta.js',()=>window.WhiteboardDigitModel],
+ ['whiteboard-handwriting-character-models-beta.js',()=>window.WhiteboardCharacterModels],
+ ['whiteboard-handwriting-character-inference-beta.js',()=>window.WhiteboardCharacterInference],
+ ['whiteboard-handwriting-character-reader-beta.js',()=>window.WhiteboardCharacterReader],
+ ['whiteboard-handwriting-learning-beta.js',()=>window.WhiteboardHandwritingLearning],
+ ['vendor/handwriting/uji/reader-weights-beta.js',()=>window.WhiteboardUjiWeights],
+ ['vendor/handwriting/uji/reader-beta.js',()=>window.WhiteboardUjiReader],
+ ['whiteboard-primary-grammar-beta.js',()=>window.WhiteboardPrimaryMathGrammar],
+ ['whiteboard-equal-sign-geometry-beta.js',()=>window.WhiteboardEqualSign],
+ ['whiteboard-trained-9gq-equals-beta.js',()=>window.WhiteboardTrained9GQEquals],
+ ['whiteboard-trained-j-beta.js',()=>window.WhiteboardTrainedJ],
+ ['whiteboard-trained-remaining-beta.js',()=>window.WhiteboardTrainedRemaining],
+ ['whiteboard-teacher-units-beta.js',()=>window.WhiteboardTeacherUnits],
+ ['whiteboard-teacher-confusables-beta.js',()=>window.WhiteboardTeacherConfusables],
+ ['whiteboard-unit-exponent-trained-beta.js',()=>window.WhiteboardUnitExponent],
+ ['whiteboard-handwriting-recognition-beta.js',()=>window.WhiteboardHandwritingMath?.recognize&&window.WhiteboardHandwritingMath.build===readerBuild]
+];
 async function ensureReader(){
- if(window.WhiteboardHandwritingMath?.recognize)return window.WhiteboardHandwritingMath;
- if(!readerRecovery)readerRecovery=new Promise((resolve,reject)=>{
-  const script=document.createElement('script');
-  script.src='whiteboard-handwriting-recognition-beta.js?v=20261019-unitfirst-v2';
-  script.async=true;
-  script.onload=()=>window.WhiteboardHandwritingMath?.recognize
-   ?resolve(window.WhiteboardHandwritingMath)
-   :reject(new Error('The handwriting script loaded but did not initialise. Please export the selected strokes and report this error.'));
-  script.onerror=()=>reject(new Error('Could not download the handwriting reader. Please check the connection and reopen Beta.'));
-  document.head.appendChild(script);
- }).catch(error=>{readerRecovery=null;throw error});
+ if(requiredReaders.every(([,ready])=>ready()))return window.WhiteboardHandwritingMath;
+ if(!readerRecovery)readerRecovery=(async()=>{
+  for(const [path,ready]of requiredReaders){
+   if(ready())continue;
+   await new Promise((resolve,reject)=>{
+    const script=document.createElement('script');script.src=path+'?v='+readerBuild;script.async=false;
+    script.onload=()=>ready()?resolve():reject(new Error('A handwriting model could not initialise. Reopen Beta and try again.'));
+    script.onerror=()=>reject(new Error('A handwriting model could not load. Check the connection and reopen Beta.'));
+    document.head.appendChild(script);
+   });
+  }
+  return window.WhiteboardHandwritingMath;
+ })().finally(()=>{readerRecovery=null});
  return readerRecovery;
 }
 
@@ -54,7 +75,7 @@ function sayLocal(text){if(typeof say==='function')say(text)}
 function groupBounds(group){const pts=group.flatMap(s=>s.points),xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x=Math.min(...xs),y=Math.min(...ys);return{x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y}}
 function stop(e){e.preventDefault();e.stopImmediatePropagation()}
 function endSelection(){const id=selectionPointer;selecting=false;selectionPointer=null;start=null;area?.remove();area=null;board.classList.remove('handwriting-selecting');btn.classList.remove('active');try{if(id!==null)canvas.releasePointerCapture(id)}catch{}}
-function closeReview(){if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}session++;window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();dialog?.remove();dialog=null}
+function closeReview(){if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}session++;window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.();dialog?.remove();dialog=null}
 function svgInk(group){
  const b=groupBounds(group),W=Math.max(10,b.w*cssW),H=Math.max(10,b.h*cssH),els=[];
  for(const s of group){const color=/^#[0-9a-f]{3,8}$/i.test(s.colour||'')?s.colour:'#17324d',points=s.points.map(p=>[(p.x-b.x)*cssW+10,(p.y-b.y)*cssH+10]);
@@ -116,7 +137,7 @@ async function review(group){
  }
  input.addEventListener('input',()=>{clearProvisional();updatePreview()});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
  colourSelect.addEventListener('change',updatePreview);
- insert.addEventListener('change',()=>{if(!insert.value)return;const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
+ insert.addEventListener('change',()=>{if(!insert.value)return;clearProvisional();const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
  test.onclick=async()=>{
   if(reading||testing||pendingLearning||!formatted())return;
   const learner=window.WhiteboardHandwritingLearning,recogniser=window.WhiteboardHandwritingMath;
@@ -182,7 +203,7 @@ async function review(group){
  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  try{
   if(session!==id||dialog!==backdrop||version!==readVersion)return;
-  if(!window.WhiteboardHandwritingMath?.recognize){status.textContent='Reconnecting handwriting reader…';await ensureReader();}
+  await ensureReader();
   if(modeSelect.value==='math')await window.MathJax?.startup?.promise;
   if(session!==id||dialog!==backdrop||version!==readVersion)return;
   const result=await window.WhiteboardHandwritingMath.recognize(group,cssW,cssH,{mode:modeSelect.value,onProgress:(done,total)=>{if(session===id&&version===readVersion&&input.value===startText)status.textContent=modeSelect.value==='math'?'Reading mathematical notation on this device…':`Reading characters ${done} of ${total}…`}});
@@ -199,7 +220,7 @@ async function review(group){
   if(/^\d+(?:\.\d+)?\s+(?:mm|cm|km|m)[²³]$/.test(result.text||''))status.textContent='Reader '+(window.WhiteboardHandwritingMath?.build||'unknown')+' · '+(result.engine||'unknown')+' · exponent '+result.text.slice(-1)+' (diagnostic)';
  }catch(error){if(session!==id||dialog!==backdrop||version!==readVersion||error.name==='AbortError')return;reading=false;updatePreview();status.textContent=error.message||'Could not read this writing. You can type the correct reading.';status.classList.add('handwriting-error');if(document.activeElement===cancel)input.focus()}
  }
- modeSelect.addEventListener('change',()=>{clearProvisional();window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();return readSelection()});
+ modeSelect.addEventListener('change',()=>{clearProvisional();window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.();return readSelection()});
  return readSelection();
 }
 function beginSelection(){

@@ -38,7 +38,7 @@ const {chromium}=require('playwright');
   });
   console.log('Original demo worker inside Beautify:',JSON.stringify(outcome));
   if(outcome.error)throw Error('Actual upstream worker failed: '+outcome.error);
-  if(outcome.engine!=='inkon-original-demo-first')throw Error('Incorrect recognizer: '+outcome.engine);
+  if(outcome.engine!=='inkon-original-demo')throw Error('Incorrect recognizer: '+outcome.engine);
   if(!outcome.text.trim())throw Error('Demo returned empty latex');
   // Mobile regression: create a harmless local pen stroke and open the ACTUAL
   // Beautify review dialog, then assert the visible dropdown starts in Auto.
@@ -71,6 +71,6 @@ const {chromium}=require('playwright');
 
   if(errors.length)throw Error('Browser errors: '+errors.slice(0,6).join('; '));
   if(outside.length)throw Error('Unexpected external requests: '+outside.join('; '));
-  console.log('PASS: original ink-on demo worker, Auto/beam candidates, same-origin assets, original Beautify and UJI V1');
+  console.log('PASS: original ink-on demo worker, Auto/beam candidates, same-origin assets, original Beautify and existing UJI');
  } finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

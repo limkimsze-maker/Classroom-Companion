@@ -1,5 +1,34 @@
 # Beta handwriting recognition
 
+## Recognition flow audit — 19 October 2026
+
+Build `20261019-recognition-audit1` puts confirmed local whole-ink corrections
+before every unit/model route, including the original ink-on Math adapter.
+The final contextual correction check also covers early unit returns. Undo
+removes the confirmation and restores the earlier reader behavior.
+
+When complete unit templates abstain, a separate component route isolates the
+raised exponent, groups the unit body without the numeric glyph-width limit,
+and reads the letters and power with the actual alphabet/digit CNNs. Quantity
+ink is read separately. This supports multi-stroke m and multi-stroke powers
+without merging the unit and exponent into an ordinary capital letter.
+
+Both Beta pages now load the bundled teacher data and the same review UI.
+The review checks/reloads missing recognition dependencies instead of silently
+continuing with a reduced reader. Inserting notation clears provisional
+learning; Cancel/mode changes cancel the original ink-on worker as well.
+Numbers bypasses the standalone j override, uppercase mode returns J, and
+the repeated-multiplication/whitespace cleanup uses working regular expressions.
+
+Validation includes actual-model correction/reload/Undo checks, Math routing,
+independent letter/exponent recognition, two-stroke m, independently lifted
+multi-stroke unit writing, explicit reading modes, 152 recombined training-unit
+cases, and the earlier four diagnostic exports. A raster centerline analysis
+of the latest screenshot reads `10 m²`; it cannot recover original pen lifts
+or timing and is not an exact replay of that new handwriting. These checks
+are regressions, not a general handwriting accuracy rate. Existing broad
+recognition limitations remain.
+
 ## Unit-first repair — 19 October 2026
 
 The experimental `whiteboard-comer-beta.html` loads build
@@ -15,7 +44,9 @@ of the existing 1,024 labelled teacher examples, grouped by actual stroke count.
 The other unit/operator scores retain their existing model. Rebuild these
 centroids with `node scripts/build-teacher-units.cjs /path/to/training.json`.
 Only compact features are bundled; the original teacher traces are not included.
-UJI Pen Characters V1 remains integrated; V2 has not been added.
+The existing UJI weights are unchanged. Their upstream metadata identifies the
+training source as UJI Pen Characters Version 2; the independent stroke fixtures
+use Version 1. No new UJI dataset or replacement weights were added in this repair.
 
 Validation: all four supplied diagnostic exports replay as `10 m³`, including
 the earlier `15 m?` result. All 152 area/volume training examples composed with

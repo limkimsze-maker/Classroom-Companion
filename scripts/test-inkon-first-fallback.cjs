@@ -1,20 +1,17 @@
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
 const source=fs.readFileSync('whiteboard-inkon-native-beautify-bridge.js','utf8');
-async function test(demoFn,expected,mode='auto'){
- let fallbackCalls=0;
- const original={recognize:async()=>{fallbackCalls++;return {text:'legacy',engine:'legacy',uncertain:[]}},rasterDigit:()=>{}};
- const math={recognize:async()=>{fallbackCalls++;return {text:'math-legacy',engine:'legacy-math',uncertain:[]}}};
- const window={WhiteboardHandwritingMath:original,WhiteboardInkOnOriginalDemo:{recognize:demoFn},WhiteboardMathReader:math};
- const document={getElementById:()=>null};
- vm.runInNewContext(source,{window,document});
- const result=await window.WhiteboardHandwritingMath.recognize([],700,250,{mode});
- assert.equal(result.text,expected.text);assert.equal(fallbackCalls,expected.fallback);
-}
 (async()=>{
- await test(async()=>({text:'=',engine:'inkon-original-demo'}),{text:'=',fallback:0});
- await test(async()=>({text:'  ',engine:'inkon-original-demo'}),{text:'legacy',fallback:1});
- await test(async()=>{throw Error('no reading')},{text:'legacy',fallback:1});
- await test(async()=>{throw Error('no reading')},{text:'math-legacy',fallback:1},'math');
- await test(async()=>({text:'x + 2'}),{text:'x + 2',fallback:0},'lowercase');
- console.log('PASS: ink-on always first, equal sign preserved, fallback only on missing result, across modes');
-})().catch(e=>{console.error(e);process.exit(1)});
+ let demoCalls=0,originalCalls=0,demoCancels=0,mathCancels=0;
+ const demo={recognize:async()=>{demoCalls++;return{text:'x + 2',engine:'inkon-original-demo'}},cancel:()=>demoCancels++};
+ const window={WhiteboardInkOnOriginalDemo:demo,WhiteboardHandwritingMath:{build:'test',recognize:async(s,W,H,o)=>{
+  originalCalls++;return o.mathRecognizer?o.mathRecognizer(s,W,H,o):{text:'local Auto'};
+ }},WhiteboardMathReader:{cancel:()=>mathCancels++}};
+ vm.runInNewContext(source,{window,document:{getElementById:()=>null}});
+ assert.equal((await window.WhiteboardHandwritingMath.recognize([],700,250,{mode:'auto'})).text,'local Auto');
+ assert.equal(demoCalls,0);
+ assert.equal((await window.WhiteboardHandwritingMath.recognize([],700,250,{mode:'math'})).text,'x + 2');
+ assert.equal(demoCalls,1);assert.equal(originalCalls,2,'Math must pass the shared personal-correction entrypoint');
+ window.WhiteboardMathReader.cancel();assert.equal(demoCancels,1);assert.equal(mathCancels,1);
+ assert.equal(window.WhiteboardHandwritingMath.build,'test');
+ console.log('PASS Auto preserves local reader, Math delegates through shared recognition, and cancellation reaches both readers');
+})().catch(error=>{console.error(error);process.exitCode=1});

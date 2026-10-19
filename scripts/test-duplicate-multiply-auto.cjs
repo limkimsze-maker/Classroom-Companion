@@ -1,8 +1,13 @@
-const assert=require('node:assert/strict');
-const fix=t=>t.replace(/(?:\\s*×){2,}(?=\\s|$)/g,' ×').trim();
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync('whiteboard-handwriting-recognition-beta.js','utf8');
+const context={window:{}};vm.createContext(context);
+vm.runInContext(source.replace(/\}\)\(\);\s*$/,'window.__normalizeReading=normalizeReading;})();'),context);
+const fix=t=>context.window.__normalizeReading(t,'auto');
 assert.equal(fix('j × × j = 81'),'j × j = 81');
 assert.equal(fix('j × j = 81'),'j × j = 81');
 assert.equal(fix('3 × 4 × 5'),'3 × 4 × 5');
 assert.equal(fix('j + j = 81'),'j + j = 81');
 assert.equal(fix('3 × × × 4'),'3 × 4');
-console.log('PASS accidental adjacent multiplication deduplication');
+assert.equal(fix('  1   +  2 '),'1 + 2');
+assert.equal(context.window.__normalizeReading('j × × j','lowercase'),'j × × j');
+console.log('PASS actual reader multiplication deduplication and whitespace normalization');

@@ -3,6 +3,10 @@
 'use strict';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const median=a=>{a=a.slice().sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:0};
+function normalizeReading(text,mode){
+ const reading=String(text).replace(/\s+/g,' ').trim();
+ return mode==='auto'?reading.replace(/(?:\s*×){2,}(?=\s|$)/g,' ×').trim():reading;
+}
 let layers=null;
 function predictDigit(pixels){
  const model=window.WhiteboardDigitModel;if(!model)throw Error('The local handwriting model has not loaded. Refresh the page.');
@@ -575,8 +579,8 @@ async function recognizeCore(strokes,W,H,options={}){
  const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
  if(equal)return equal;
  if(['auto','lowercase','uppercase','digits'].includes(options.mode||'auto')){const teacher=window.WhiteboardTeacherConfusables?.match?.(strokes,W,H,options.mode||'auto',.955,.08);if(teacher)return{text:teacher.text,tokens:[],uncertain:[],engine:teacher.engine,format:'letter'};}
- const trainedJ=window.WhiteboardTrainedJ?.detect?.(strokes,W,H);
- if(trainedJ)return{...trainedJ,tokens:[],uncertain:[]};
+ const trainedJ=options.mode!=='digits'&&window.WhiteboardTrainedJ?.detect?.(strokes,W,H);
+ if(trainedJ)return{...trainedJ,text:options.mode==='uppercase'?'J':trainedJ.text,tokens:[],uncertain:[]};
  // Unit-first: isolate a raised final 2/3 before interpreting the numeric prefix.
  // Prefer the isolated exponent's own trained label over similar whole-unit patterns.
  if(options.mode==='auto'&&window.WhiteboardTeacherUnits&&strokes.length>=3&&strokes.length<=12){
@@ -748,9 +752,8 @@ async function recognizeCore(strokes,W,H,options={}){
  // P1–P6 infix expressions cannot contain two consecutive multiplication
  // operators without an intervening operand. Preserve the original ink and
  // collapse only accidental adjacent multiply tokens in Auto reading.
- const reading=text.replace(/\\s+/g,' ').trim();
- const cleanReading=mode==='auto'?reading.replace(/(?:\\s*×){2,}(?=\\s|$)/g,' ×').trim():reading;
- const uncorrected=mode==='auto'?normalizeMillilitreCase(cleanReading,tokens):reading;
+ const cleanReading=normalizeReading(text,mode);
+ const uncorrected=mode==='auto'?normalizeMillilitreCase(cleanReading,tokens):cleanReading;
  // Ask the offline feedback layer whether previously corrected handwriting
  // with a similar shape was misread the same way. Do not train or overwrite
  // the CNN; require a trustworthy local example and reject conflicts.
@@ -783,6 +786,70 @@ function closedZeroInk(stroke,W,H){
   turns+=diff;
  }
  return Math.abs(turns)>=4.7&&Math.abs(turns)<=8.2;
+}
+// A new writing style may be distant from a complete-unit template. Keep the
+// raised ink separate and read the unit letters and exponent independently.
+// Never let ordinary text segmentation merge m and its power into a W.
+async function recognizeUnitComponents(strokes,W,H,options){
+ if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>18)return null;
+ const items=strokes.map(raw=>{
+  const scaled={size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  return{raw,scaled,box:bounds([scaled])};
+ }).sort((a,b)=>a.box.cx-b.box.cx);
+ const proposals=[];
+ for(let count=2;count<=Math.min(10,items.length);count++){
+  const suffix=items.slice(-count),prefix=items.slice(0,-count);
+  if(closedZeroInk(suffix[0].raw,W,H))continue;
+  for(let upperCount=1;upperCount<=Math.min(3,suffix.length-1);upperCount++){
+  const raised=suffix.slice(-upperCount),baseline=suffix.slice(0,-upperCount);
+  const rb=bounds(raised.map(p=>p.scaled)),bb=bounds(baseline.map(p=>p.scaled));
+  const tall=Math.max(bb.h,...prefix.map(p=>p.box.h));
+  // Cut the complete right-hand exponent from the complete unit body. Small
+  // finishing strokes or the top of a multi-stroke m are not separate powers.
+  if(bb.h<10||rb.h<6||rb.w<3||rb.h>tall*.85||
+    rb.cx<=bb.cx||rb.x<bb.x+bb.w*.60||rb.cy>=bb.cy-tall*.12||
+    rb.y+rb.h>bb.y+bb.h*.70)continue;
+  if(prefix.length&&bounds(prefix.map(p=>p.scaled)).cx>=bounds(baseline.map(p=>p.scaled)).cx)continue;
+  const upperRaster=rasterDigit(raised.map(p=>p.scaled)),power=predictDigit(upperRaster)[0];
+  if(!['2','3'].includes(power?.char)||power.score<.97)continue;
+  // Group only the unit's ink. A wide m written in two strokes must not be
+  // split by the numeric segmenter's narrower glyph-width limit.
+  const groups=baseline.map(p=>[p.scaled]);
+  let merged=true;
+  while(merged){
+   merged=false;
+   for(let i=0;i<groups.length&&!merged;i++)for(let j=i+1;j<groups.length;j++){
+    const a=bounds(groups[i]),b=bounds(groups[j]),h=Math.max(a.h,b.h),both=bounds([...groups[i],...groups[j]]);
+    const overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+    if(overlap>=-Math.max(1,h*.035)&&both.w<h*2.1&&Math.abs(a.cy-b.cy)<h*.65){
+     groups[i].push(...groups[j]);groups.splice(j,1);merged=true;break;
+    }
+   }
+  }
+  groups.sort((a,b)=>bounds(a).cx-bounds(b).cx);
+  const tokens=groups.map(parts=>({parts}));
+  if(!tokens.length||tokens.length>2)continue;
+  const alpha=await window.WhiteboardCharacterReader.predictBatch(tokens.map(t=>rasterDigit(t.parts)),'lowercase',options.onProgress);
+  const word=alpha.map(r=>r[0]?.char).join('');
+  if(!['m','mm','cm','km'].includes(word)||alpha.some(r=>!r[0]||r[0].score<.90||r[0].score-(r[1]?.score||0)<.30))continue;
+  let number='',numberTokens=[];
+  if(prefix.length){
+   const read=await recognizeCore(prefix.map(p=>p.raw),W,H,{...options,mode:'digits'});
+   if(!/^\d+(?:\.\d+)?$/.test(read?.text||'')||read.uncertain?.length)continue;
+   number=read.text;
+   if(prefix.length===number.length)number=number.split('').map((digit,i)=>closedZeroInk(prefix[i].raw,W,H)?'0':digit).join('');
+   numberTokens=(read.tokens||[]).map((t,i)=>({...t,char:number[i]||t.char}));
+  }
+  const exponent=power.char==='2'?'²':'³';
+  proposals.push({text:(number?number+' ':'')+word+exponent,score:Math.min(power.score,...alpha.map(r=>r[0].score)),
+   tokens:[...numberTokens,...tokens.map((t,i)=>({...t,char:word[i],score:alpha[i][0].score})),
+    {char:exponent,score:power.score,parts:raised.map(p=>p.scaled)}]});
+  }
+ }
+ proposals.sort((a,b)=>b.score-a.score);
+ const best=proposals[0];
+ if(!best||proposals.some(p=>p.text!==best.text&&best.score-p.score<.03))return null;
+ return{text:best.text,tokens:best.tokens,uncertain:[],engine:'unit-first-components',format:'unit'};
 }
 async function recognizeUnitFirst(strokes,W,H,options){
  const teacher=window.WhiteboardTeacherUnits;
@@ -896,9 +963,35 @@ async function recognizeUnitFirst(strokes,W,H,options){
  return null;
 }
 async function recognize(strokes,W,H,options={}){
+ options={...options,mode:options.mode||'auto'};
+ if(!Array.isArray(strokes)||!Number.isFinite(W)||!Number.isFinite(H)||W<1||H<1||
+    strokes.length>180||strokes.reduce((n,s)=>n+(s?.points?.length||0),0)>16000||
+    strokes.some(s=>!Array.isArray(s?.points)||!s.points.length||
+     s.points.some(p=>!Number.isFinite(p?.x)||!Number.isFinite(p?.y)))){
+  throw Error('Select valid pen strokes and try again.');
+ }
+ // Confirmed personal ink must precede every trained model and unit heuristic.
+ // Otherwise Learn & Test Again could save a correction that is never consulted.
+ const learned=window.WhiteboardHandwritingLearning?.matchInk?.(strokes,W,H,options.mode,rasterDigit);
+ if(learned)return{text:learned.text,tokens:[],uncertain:[],engine:'local-personal-ink',
+  format:options.mode==='math'?'latex':'personal'};
+ const reconcile=reading=>{
+  const corrected=window.WhiteboardHandwritingLearning?.matchContext?.(
+   strokes,W,H,options.mode,rasterDigit,reading?.text);
+  return corrected&&corrected.text!==reading?.text?{text:corrected.text,tokens:[],uncertain:[],
+   engine:'local-personal-context',format:options.mode==='math'?'latex':'personal'}:reading;
+ };
+ const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
+ if(equal)return reconcile(equal);
+ const mathRecognizer=options.mathRecognizer||window.WhiteboardInkOnOriginalDemo?.recognize;
+ if(options.mode==='math'&&typeof mathRecognizer==='function'){
+  return reconcile(await mathRecognizer(strokes,W,H,options));
+ }
  if((options.mode||'auto')==='auto'){
   const measured=await recognizeUnitFirst(strokes,W,H,options);
-  if(measured)return measured;
+  if(measured)return reconcile(measured);
+  const components=await recognizeUnitComponents(strokes,W,H,options);
+  if(components)return reconcile(components);
  }
  const original=await recognizeCore(strokes,W,H,options);
  // For a quantity with an explicitly raised final glyph, do not let older
@@ -908,12 +1001,12 @@ async function recognize(strokes,W,H,options={}){
   const last=items.at(-1),prior=items.at(-2);
   if(last&&prior&&last.box.cy<prior.box.cy&&raisedThreeContour(last.raw,W,H)){
    // A strongly identifiable 3 must never be silently replaced by ².
-   return{...original,text:original.text.replace(/[²³]$/,'³'),engine:'raised-three-safety'};
+   return reconcile({...original,text:original.text.replace(/[²³]$/,'³'),engine:'raised-three-safety'});
   }
  }
- return original;
+ return reconcile(original);
 }
 
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261019-unitfirst-v2';
+window.WhiteboardHandwritingMath.build='20261019-recognition-audit1';
 })();
