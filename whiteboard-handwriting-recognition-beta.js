@@ -571,7 +571,7 @@ async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
  return null;
 }
 
-async function recognize(strokes,W,H,options={}){
+async function recognizeCore(strokes,W,H,options={}){
  const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
  if(equal)return equal;
  if(['auto','lowercase','uppercase','digits'].includes(options.mode||'auto')){const teacher=window.WhiteboardTeacherConfusables?.match?.(strokes,W,H,options.mode||'auto',.955,.08);if(teacher)return{text:teacher.text,tokens:[],uncertain:[],engine:teacher.engine,format:'letter'};}
@@ -759,6 +759,30 @@ async function recognize(strokes,W,H,options={}){
    uncertain:[],engine:'local-personal-context',
    format:mode==='math'?'latex':'personal'};
  return{text:uncorrected,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:window.WhiteboardCharacterReader&&mode!=='digits'?'local-emnist-cnn':'local-digits'};
+}
+// Reconcile the final recognised measurement with an independently supported
+// superscript contour. This avoids re-decoding the numeric prefix after an
+// earlier grammar has already recognised it successfully.
+async function recognize(strokes,W,H,options={}){
+ const result=await recognizeCore(strokes,W,H,options);
+ if((options.mode||'auto')!=='auto'||!result||strokes.length<3||strokes.length>12)return result;
+ if(!/^\d+(?:\.\d+)?\s+(?:mm|cm|km|m)[²³]$/.test(result.text||''))return result;
+ const items=strokes.map(raw=>{
+  if(!raw?.points?.length)return null;
+  const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  return{raw,box:bounds([scaled])};
+ });
+ if(items.some(p=>!p))return result;
+ items.sort((a,b)=>a.box.cx-b.box.cx);
+ const top=items.at(-1),rest=items.slice(0,-1),last=rest.at(-1);
+ const tall=Math.max(...rest.map(p=>p.box.h));
+ const isRaised=top.box.h>=8&&top.box.h<tall*.78&&
+   top.box.cx>last.box.cx&&top.box.cy<last.box.cy-tall*.12;
+ if(isRaised&&raisedThreeContour(top.raw,W,H)&&result.text.endsWith('²')){
+  return{...result,text:result.text.slice(0,-1)+'³',
+   engine:'verified-raised-three-reconciliation'};
+ }
+ return result;
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
 })();
