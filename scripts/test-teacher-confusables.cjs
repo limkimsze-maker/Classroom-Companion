@@ -1,0 +1,17 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+for(const f of ['whiteboard-teacher-confusables-beta.js','whiteboard-handwriting-recognition-beta.js'])new vm.Script(fs.readFileSync(f,'utf8'),{filename:f});
+const ctx={window:{},atob,Float32Array,Math};vm.createContext(ctx);
+vm.runInContext(fs.readFileSync('whiteboard-teacher-confusables-beta.js','utf8'),ctx);
+const m=ctx.window.WhiteboardTeacherConfusables;
+assert.deepEqual([...m.info().labels],['I','l','i','1','t','f']);
+assert.equal(m.info().samples,189);assert.equal(m.info().prototypes,18);
+const sample=[{points:[{x:.4,y:.3},{x:.45,y:.5},{x:.5,y:.7}]}];
+assert(Array.isArray(m.rank(sample,333,260)));
+assert(m.rank(sample,333,260,'digits').every(x=>x.label==='1'));
+assert(m.rank(sample,333,260,'lowercase').every(x=>['l','i','t','f'].includes(x.label)));
+assert(!m.info().labels.includes('='));
+const s=fs.readFileSync('whiteboard-handwriting-recognition-beta.js','utf8');
+assert(s.includes('WhiteboardTeacherConfusables.match(raw,W,H,mode'));
+const h=fs.readFileSync('whiteboard-comer-beta.html','utf8');
+assert(h.indexOf('whiteboard-teacher-confusables-beta.js')<h.indexOf('whiteboard-handwriting-recognition-beta.js'));
+console.log('PASS confusable trained labels, fallback boundaries, priority and reader syntax');

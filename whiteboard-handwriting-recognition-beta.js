@@ -554,6 +554,7 @@ async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
 async function recognize(strokes,W,H,options={}){
  const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
  if(equal)return equal;
+ if(['auto','lowercase','uppercase','digits'].includes(options.mode||'auto')){const teacher=window.WhiteboardTeacherConfusables?.match?.(strokes,W,H,options.mode||'auto',.955,.08);if(teacher)return{text:teacher.text,tokens:[],uncertain:[],engine:teacher.engine,format:'letter'};}
  const trainedJ=window.WhiteboardTrainedJ?.detect?.(strokes,W,H);
  if(trainedJ)return{...trainedJ,tokens:[],uncertain:[]};
  const teacher=options.mode==='auto'&&window.WhiteboardTeacherUnits;
@@ -651,6 +652,7 @@ async function recognize(strokes,W,H,options={}){
  }
 
  const tokens=segment(strokes,W,H),mode=['auto','lowercase','uppercase','digits'].includes(options.mode)?options.mode:'auto';let text='';
+ if(window.WhiteboardTeacherConfusables){for(const t of tokens){if(!t.parts?.length||['+','−','×','÷','=','.','$'].includes(t.char))continue;const raw=t.parts.map(p=>p.source).filter(Boolean);if(!raw.length)continue;const fresh=window.WhiteboardTeacherConfusables.match(raw,W,H,mode,.955,.08);if(fresh)Object.assign(t,fresh);}}
  // Recognize only high-confidence trained symbols after existing grouping.
  if(window.WhiteboardTrainedRemaining&&['auto','lowercase','uppercase','digits'].includes(mode)){
   for(const t of tokens){
