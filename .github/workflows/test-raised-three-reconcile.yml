@@ -1,0 +1,17 @@
+name: Superscript reconciliation
+on:
+  push:
+    branches: [fix/raised-three-final-reconcile-20261019]
+  pull_request:
+    paths: [whiteboard-handwriting-recognition-beta.js, scripts/test-raised-three-reconcile.cjs]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/test-raised-three-reconcile.cjs
+      - run: node scripts/test-reader-syntax.cjs
+      - run: node scripts/test-teacher-units-override.cjs
