@@ -784,5 +784,6 @@ async function recognize(strokes,W,H,options={}){
  }
  return result;
 }
-window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,build:'20261019-engine-trace4'};
+window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
+window.WhiteboardHandwritingMath.build='20261019-engine-trace4';
 })();
