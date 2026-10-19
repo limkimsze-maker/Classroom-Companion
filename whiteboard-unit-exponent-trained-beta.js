@@ -24,7 +24,7 @@ function rank(stroke,W,H){const f=feature(stroke,W,H);if(!f)return[];
  return Object.entries(C).map(([label,v])=>{let score=0;for(let j=0;j<64;j++)score+=f[j]*v[j];return{label,score};}).sort((a,b)=>b.score-a.score);
 }
 function match(stroke,W,H){const scores=rank(stroke,W,H);if(scores.length<2)return null;
- const [a,b]=scores;return a.score>=.80&&a.score-b.score>=.075
+ const [a,b]=scores;return a.score>=.77&&a.score-b.score>=.09
   ?{label:a.label,score:a.score,margin:a.score-b.score,engine:'teacher-final-exponent-45'}:null;
 }
 root.WhiteboardUnitExponent=Object.freeze({rank,match,info:()=>({sourceSampleCount:45,trainedLabels:['²','³'],source:'final stroke of m²/m³ unit training'})});
