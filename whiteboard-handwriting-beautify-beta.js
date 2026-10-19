@@ -136,9 +136,14 @@ async function review(group){
  const initialColour=(group.find(s=>/^#[0-9a-f]{6}$/i.test(s.colour||''))?.colour||'#17324d').toLowerCase();
  if(!palette.some(([hex])=>hex===initialColour))palette.push([initialColour,'Original ink']);
  for(const [hex,name]of palette){const option=document.createElement('option');option.value=hex;option.textContent=name;colourSelect.appendChild(option)}colourSelect.value=initialColour;appearance.append(colourLabel,colourSelect);
+ const correctionLabel=document.createElement('label');correctionLabel.style.cssText='display:inline-flex;align-items:center;gap:6px;white-space:normal;font-size:12px';
+ const correctionToggle=document.createElement('input');correctionToggle.type='checkbox';correctionToggle.checked=true;correctionToggle.id='handwritingCorrectArithmetic';
+ correctionLabel.append(correctionToggle,document.createTextNode('Correct arithmetic answers'));appearance.appendChild(correctionLabel);
  const insert=document.createElement('select');insert.id='handwritingInsert';insert.setAttribute('aria-label','Insert a mathematical symbol, structure or measurement unit');
  for(const [value,text]of [['','Insert…'],['\\frac{1}{2}','Fraction ½'],['x^{2}','Power x²'],['\\sqrt{x}','Root √'],['\\int_{0}^{1} x\\,dx','Integral ∫'],['\\sum_{i=1}^{n} i','Sum ∑'],['\\alpha','Greek α'],['\\pi','Pi π'],['\\leq','Less or equal ≤'],['\\infty','Infinity ∞'],['\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}','Matrix'],['cm²','cm² · area'],['m²','m² · area'],['cm³','cm³ · volume'],['m³','m³ · volume'],['mm','mm · length'],['cm','cm · length'],['m','m · length'],['km','km · length'],['mg','mg · mass'],['g','g · mass'],['kg','kg · mass'],['mL','mL · capacity'],['L','L · capacity'],['s','s · time'],['min','min · time'],['h','h · time'],['°C','°C · temperature'],['m/s²','m/s² · acceleration'],['km/h','km/h · speed']]){const option=document.createElement('option');option.value=value;option.textContent=text;insert.appendChild(option)}appearance.appendChild(insert);
- function formatted(){const b=groupBounds(group);return modeSelect.value==='math'&&!window.WhiteboardMathRenderer?.unitText(input.value)?window.WhiteboardMathRenderer?.create(input.value,b,colourSelect.value):window.WhiteboardEquationFormatter?.createHandwriting(input.value,b,colourSelect.value)}
+ function arithmeticResult(){return window.WhiteboardBetaArithmetic?.verify(input.value)}
+ function displayReading(){const result=arithmeticResult();return correctionToggle.checked&&result?.supported&&!result.correct?result.corrected:input.value}
+ function formatted(){const b=groupBounds(group),value=displayReading();return modeSelect.value==='math'&&!window.WhiteboardMathRenderer?.unitText(value)?window.WhiteboardMathRenderer?.create(value,b,colourSelect.value):window.WhiteboardEquationFormatter?.createHandwriting(value,b,colourSelect.value)}
  const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Reading handwriting on this device…';
  const contextArea=document.createElement('section');contextArea.className='handwriting-context';contextArea.id='handwritingContextChoices';contextArea.setAttribute('aria-label','Possible handwriting readings');contextArea.hidden=true;
  const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Beautified preview in the original writing area';preview.hidden=true;
@@ -158,10 +163,11 @@ async function review(group){
   feedback.textContent='Edit the reading and test again; earlier provisional learning was discarded.';
  }
  function updatePreview(){
+  const arithmetic=arithmeticResult();
   const obj=formatted();apply.disabled=!obj||reading||testing;test.disabled=!obj||reading||testing||!!pendingLearning;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
   stopRead.hidden=!reading&&!testing;retryRead.disabled=reading||testing;
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
-  status.textContent=reading?'Reading handwriting on this device…':obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Check the notation. Math accepts LaTeX, such as \\frac{1}{2}; units accept cm2 or cm².':'Enter or correct the reading to continue.';
+  status.textContent=reading?'Reading handwriting on this device…':obj&&correctionToggle.checked&&arithmetic?.supported&&!arithmetic.correct?'Arithmetic correction in preview: '+arithmetic.original+' → '+arithmetic.corrected+'. Untick to keep the written answer.':obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Check the notation. Math accepts LaTeX, such as \\frac{1}{2}; units accept cm2 or cm².':'Enter or correct the reading to continue.';
  }
  function renderContext(result){
   contextArea.replaceChildren();contextArea.hidden=true;
@@ -195,6 +201,7 @@ async function review(group){
  stopRead.onclick=()=>stopReading(true);
  retryRead.onclick=()=>readSelection();
  input.addEventListener('input',()=>{stopReading(false);clearProvisional();contextArea.hidden=true;updatePreview()});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
+ correctionToggle.addEventListener('change',updatePreview);
  colourSelect.addEventListener('change',updatePreview);
  insert.addEventListener('change',()=>{if(!insert.value)return;stopReading(false);clearProvisional();contextArea.hidden=true;const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
  test.onclick=async()=>{
