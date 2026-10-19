@@ -7,8 +7,7 @@ let html=fs.readFileSync('whiteboard-comer-beta.html','utf8');
 const banner=`<aside id="wordExampleBar" style="padding:10px 14px;background:#e7f7f4;border:1px solid #9dc9c0;border-radius:12px;font:14px/1.5 Arial,sans-serif"><strong>Try word checking</strong> · Public UJI V1 pen samples, composed into words. Choose a sample, then drag around it to review.<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:5px"><button type="button" data-word-example="C">Try C / c</button><button type="button" data-word-example="cat">Try cat</button><button type="button" data-word-example="the cat">Try the cat</button><a href="whiteboard-comer-beta.html?v=20261020-words1">Open your whiteboard</a><span id="wordExampleLabel" aria-live="polite"></span></div></aside>`;
 html=html.replace('<div class="shell">','<div class="shell">'+banner);
 if(!html.includes('id="wordExampleBar"'))throw Error('Demo insertion point missing');
-const script=`<script>
-/* UJI Pen Characters V1, CC BY 4.0. D. Llorens, F. Prat, A. Marzal and J. M. Vilar.
+const script=`/* UJI Pen Characters V1, CC BY 4.0. D. Llorens, F. Prat, A. Marzal and J. M. Vilar.
  * https://doi.org/10.24432/C5731G — isolated glyph compositions, not natural words.
  * This page loads the unmodified production reader and Beautify controller. */
 (function(){
@@ -23,7 +22,8 @@ const script=`<script>
   document.getElementById('handwritingBeautifyBtn').click();
  }));
 })();
-</script>`;
-html=html.replace('</body>',script+'\n</body>');
+`;
+fs.writeFileSync('whiteboard-handwriting-word-demo-beta.js',script);
+html=html.replace('</body>','<script src="whiteboard-handwriting-word-demo-beta.js?v=20261020-words1"></script>\n</body>');
 fs.writeFileSync('handwriting-word-check-demo.html',html);
 console.log('Built public word-choice demo from the production Beta and labelled UJI V1 samples');
