@@ -166,6 +166,7 @@ async function review(group){
   // Export selected strokes only; never export the whiteboard's documents.
   const payload={schema:'classroom-equals-diagnostic-v1',mode:modeSelect.value,
    recognised:recognition?.text||'',corrected:input.value,
+   recognitionEngine:recognition?.engine||null,readerBuild:window.WhiteboardHandwritingMath?.build||null,
    selection:{width:cssW,height:cssH},
    strokes:group.map(s=>({size:Number(s.size)||4,points:s.points.map(p=>({x:p.x,y:p.y}))}))};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
@@ -195,6 +196,7 @@ async function review(group){
   if(result.engine==='local-primary-arithmetic-grammar')status.textContent='Arithmetic expression recognised using digit and operator context. Check before applying.';
   if(result.engine==='local-stacked-fraction'&&!result.uncertain.length)status.textContent='Stacked fraction detected. Check both digits before applying; confirmed examples are remembered locally.';
    if(result.uncertain.length)status.textContent=result.engine==='local-stacked-fraction'?'Stacked fraction detected. Correct any wrong digit before applying; this device can remember the correction.':result.format==='latex'?'Check symbols, fraction bars, powers and limits before applying.':'Some characters were uncertain. Check and correct the reading before applying.';
+  if(/^\d+(?:\.\d+)?\s+(?:mm|cm|km|m)[²³]$/.test(result.text||''))status.textContent='Reader '+(window.WhiteboardHandwritingMath?.build||'unknown')+' · '+(result.engine||'unknown')+' · exponent '+result.text.slice(-1)+' (diagnostic)';
  }catch(error){if(session!==id||dialog!==backdrop||version!==readVersion||error.name==='AbortError')return;reading=false;updatePreview();status.textContent=error.message||'Could not read this writing. You can type the correct reading.';status.classList.add('handwriting-error');if(document.activeElement===cancel)input.focus()}
  }
  modeSelect.addEventListener('change',()=>{clearProvisional();window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();return readSelection()});
