@@ -1,0 +1,34 @@
+name: Beta handwriting 924-case benchmark
+on:
+  push:
+    paths:
+      - .github/workflows/beta-handwriting-benchmark.yml
+  workflow_dispatch:
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run original 924-case UJI V1 benchmark on current Beta reader
+        run: node scripts/benchmark-handwriting-simulations.cjs --split all --out beta-handwriting-current-results.json
+      - name: Print category breakdown and historical comparison
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const now=JSON.parse(fs.readFileSync('beta-handwriting-current-results.json'));
+          const old=JSON.parse(fs.readFileSync('handwriting-context-results.json'));
+          const records=old.records||[];
+          const base={correct:records.filter(x=>x.afterCorrect).length,total:records.length};
+          console.log('HISTORICAL',JSON.stringify(base));
+          console.log('CURRENT',JSON.stringify(now.summary));
+          console.log('CATEGORIES',JSON.stringify(now.by,null,2));
+          console.log('BUILD',now.build,'READER_SHA256',now.readerSha256);
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: beta-handwriting-924-current
+          path: beta-handwriting-current-results.json
