@@ -1183,6 +1183,38 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
   if(letter)return reconcile(letter);
   const components=await recognizeUnitComponents(strokes,W,H,options);
   if(components)return reconcile(components);
+  // A raised exponent is stronger structural evidence than a plain baseline
+  // unit. Do not let a partial unit reading silently drop the final power.
+  // Preserve the original ink and surface an uncertain exponent for review.
+  const ordered=strokes.map(raw=>{
+   const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};
+   return{raw,box:bounds([scaled])};
+  }).sort((a,b)=>a.box.cx-b.box.cx);
+  const exponent=ordered.at(-1),preceding=ordered.slice(0,-1);
+  if(exponent&&preceding.length>=2){
+   const height=Math.max(...preceding.map(p=>p.box.h));
+   const nearest=preceding.at(-1),e=exponent.box;
+   const raised=e.h>=7&&e.h<height*.78&&e.cx>nearest.box.cx&&
+    e.cy<nearest.box.cy-height*.12;
+   if(raised){
+    const body=await recognizeBaseUnitComponents(preceding.map(p=>p.raw),W,H,options);
+    if(body&&/^\d+(?:\.\d+)? (?:mm|cm|km|m)$/.test(body.text)){
+     const shape3=raisedThreeContour(exponent.raw,W,H);
+     const shape2=raisedTwoShape(exponent.raw,W,H);
+     const digits=predictDigit(rasterDigit([{points:exponent.raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(exponent.raw.size)||4}]));
+     const best=digits[0],runner=digits[1];
+     const agreed=best&&['2','3'].includes(best.char)&&best.score>=.90&&
+       best.score-(runner?.score||0)>=.30;
+     const power=shape3&&!shape2?'³':shape2&&!shape3?'²':
+       agreed?(best.char==='2'?'²':'³'):'?';
+     const token={char:power,score:power==='?'?0:shape2||shape3?.93:best.score,
+       parts:[{points:exponent.raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(exponent.raw.size)||4}]};
+     return reconcile({...body,text:body.text+power,tokens:[...(body.tokens||[]),token],
+       uncertain:[...(body.uncertain||[]),...(power==='?'?[token]:[])],
+       engine:'unit-first-raised-suffix',format:'unit'});
+    }
+   }
+  }
   const baseUnit=await recognizeBaseUnitComponents(strokes,W,H,options);
   if(baseUnit)return reconcile(baseUnit);
   const numeric=await recognizeNumericContext(strokes,W,H,options);
