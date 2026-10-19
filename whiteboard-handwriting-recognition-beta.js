@@ -794,9 +794,69 @@ function completeNumericExpression(text){
  const number='[−-]?\\d+(?:\\.\\d+)?',sum=number+'(?:[+−×÷]'+number+')*';
  return new RegExp('^'+sum+'(?:='+sum+')*$').test(String(text).replace(/\s+/g,''));
 }
-async function readUnitPrefix(prefix,W,H,options){
- let read;
- try{read=await recognizeCore(prefix.map(p=>p.raw),W,H,{...options,mode:'digits'})}catch(_){}
+// Use the independent pen, digit and mixed-character models together for a
+// numeric context. No arithmetic result is evaluated to choose a numeral.
+async function recognizeNumericContext(strokes,W,H,options){
+ if(!window.WhiteboardCharacterReader||!window.WhiteboardUjiReader)return null;
+ let tokens=segment(strokes,W,H);
+ if(!tokens.length||tokens.length>30||tokens.some(t=>!t.parts?.length))return null;
+ const operators=['+','−','×','÷','='];
+ const uji=parts=>window.WhiteboardUjiReader.read(parts.map(p=>p.points));
+ // A disconnected left leg and right stem can be one open 4. Require two
+ // independent classifiers to support the joined ink before merging it.
+ for(let i=0;i<tokens.length-1;i++){
+  const a=tokens[i],b=tokens[i+1];
+  if(operators.includes(a.char)||operators.includes(b.char)||a.personal||b.personal)continue;
+  const aa=bounds(a.parts),bb=bounds(b.parts),height=Math.max(aa.h,bb.h),parts=[...a.parts,...b.parts],both=bounds(parts);
+  if(Math.min(aa.h,bb.h)<height*.55||bb.x-aa.x-aa.w>height*.40||both.w>height*1.5)continue;
+  const pen=uji(parts);if(pen?.[0]?.label!=='4'||pen[0].p<.99)continue;
+  const pixels=rasterDigit(parts),mixed=window.WhiteboardCharacterInference?.predict(pixels,'auto');
+  const four=mixed?.find(p=>p.char==='4')?.score||0;
+  if(four<.8&&predictDigit(pixels).find(p=>p.char==='4').score<.95)continue;
+  tokens.splice(i,2,{char:'4',score:Math.min(pen[0].p,Math.max(four,.85)),parts,x:both.x,engine:'numeric-joined-four'});
+ }
+ const glyphs=tokens.filter(t=>!operators.includes(t.char)&&t.char!=='.');
+ if(!glyphs.length)return null;
+ const mixed=await window.WhiteboardCharacterReader.predictBatch(glyphs.map(t=>rasterDigit(t.parts)),'auto',options.onProgress);
+ const hasOperator=tokens.some(t=>operators.includes(t.char));
+ const equivalents={O:'0',o:'0',I:'1',l:'1',Z:'2',z:'2',S:'5',s:'5',B:'8',g:'9',q:'9'};
+ for(let i=0;i<glyphs.length;i++){
+  const token=glyphs[i],alpha=mixed[i],top=alpha[0],pen=uji(token.parts),best=pen?.[0];
+  if(token.personal){if(!/^\d$/.test(token.char))return null;continue}
+  // The dollar geometry can also describe an open 4. Repair it only when
+  // the two independent readers explicitly agree on 4; preserve money signs.
+  if(token.char==='$'&&!(top?.char==='4'&&top.score>=.8&&best?.label==='4'&&best.p>=.85))return null;
+  // Clear alphabet evidence with a matching pen-reader letter is not a number.
+  if(!hasOperator&&/^[A-Za-z]$/.test(top?.char||'')&&top.score>=.90&&
+    !'BIOQSZiloqsz'.includes(top.char)&&best?.label.toLowerCase()===top.char.toLowerCase())return null;
+  const digits=predictDigit(rasterDigit(token.parts)),digit=digits[0];
+  let char=digit.char,score=digit.score;
+  if(best&&/^\d$/.test(best.label)&&best.p>=.96&&best.p-(pen[1]?.p||0)>=.90){
+   const support=alpha.reduce((sum,p)=>sum+((p.char===best.label||equivalents[p.char]===best.label)?p.score:0),0);
+   // Strong pen evidence may resolve hooked 1s and open 4s even when the
+   // image-only reader is uncertain. Keep the disagreement visible in score.
+   if(best.label!==char){char=best.label;score=Math.min(best.p,Math.max(support,digits.find(p=>p.char===char).score));}
+   else score=Math.min(best.p,Math.max(score,support));
+  }else if(/^\d$/.test(top?.char||'')&&top.score>=.96&&
+    (top.char===digit.char||best?.label===top.char&&best.p>=.70)){
+   char=top.char;score=Math.min(top.score,Math.max(digits.find(p=>p.char===char).score,best?.label===char?best.p:0));
+  }
+  const support=alpha.reduce((sum,p)=>sum+((p.char===char||equivalents[p.char]===char)?p.score:0),0);
+  const penAgrees=best?.label===char&&best.p>=.85;
+  const strongLetter=/^[A-Za-z]$/.test(top?.char||'')&&!equivalents[top.char]&&top.score>=.75;
+  if(strongLetter&&!penAgrees)return null;
+  if(score<.55&&!penAgrees)return null;
+  if(!hasOperator&&support<.10&&!penAgrees)return null;
+  Object.assign(token,{char,score,engine:'numeric-model-consensus'});
+ }
+ const text=tokens.map(t=>operators.includes(t.char)?' '+t.char+' ':t.char).join('').replace(/\s+/g,' ').trim();
+ if(!completeNumericExpression(text))return null;
+ return{text,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-numeric-ensemble',format:'number'};
+}
+async function readUnitPrefix(prefix,W,H,options,typedOnly=false){
+ let read=await recognizeNumericContext(prefix.map(p=>p.raw),W,H,options);
+ if(typedOnly&&!read)return null;
+ try{read??=await recognizeCore(prefix.map(p=>p.raw),W,H,{...options,mode:'digits'})}catch(_){}
  if(!read||!completeNumericExpression(read.text)){
   const digits=readMeasuredDigits(prefix,W,H);
   if(!digits)return null;
@@ -808,6 +868,94 @@ async function readUnitPrefix(prefix,W,H,options){
   tokens=tokens.map((t,i)=>({...t,char:text[i]||t.char}));
  }
  return{text,tokens,uncertain:read.uncertain||[]};
+}
+function groupUnitInk(baseline){
+ const groups=baseline.map(p=>[p.scaled]);let merged=true;
+ while(merged){
+  merged=false;
+  for(let i=0;i<groups.length&&!merged;i++)for(let j=i+1;j<groups.length;j++){
+   const a=bounds(groups[i]),b=bounds(groups[j]),h=Math.max(a.h,b.h),both=bounds([...groups[i],...groups[j]]);
+   const overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+   if(overlap>=-Math.max(1,h*.035)&&both.w<h*2.1&&Math.abs(a.cy-b.cy)<h*.65){
+    groups[i].push(...groups[j]);groups.splice(j,1);merged=true;break;
+   }
+  }
+ }
+ return groups.sort((a,b)=>bounds(a).cx-bounds(b).cx);
+}
+function completeUnitProposal(proposals){
+ const complete=proposals.filter(p=>!proposals.some(q=>q.word.length>p.word.length&&
+  q.word.endsWith(p.word)&&q.score>=p.score-.03&&q.raised.length===p.raised.length&&
+  q.raised.every((raw,i)=>raw===p.raised[i])));
+ complete.sort((a,b)=>b.score-a.score);
+ const best=complete[0];
+ return !best||complete.some(p=>p.text!==best.text&&best.score-p.score<.03)?null:best;
+}
+async function readUnitLetters(groups,options){
+ const alpha=await window.WhiteboardCharacterReader.predictBatch(groups.map(rasterDigit),'lowercase',options.onProgress);
+ return groups.map((parts,i)=>{
+  const choices=alpha[i],top=choices[0];if(!top)return null;
+  let char=top.char,score=top.score,confidence=top.score,penLabel='';
+  const strong=top.score>=.95&&top.score-(choices[1]?.score||0)>=.50;
+  if(window.WhiteboardUjiReader){
+   const pen=window.WhiteboardUjiReader.read(parts.map(p=>p.points)),best=pen?.[0];
+   penLabel=best?.label||'';
+   if(!strong&&/^[A-Za-z]$/.test(penLabel)&&best.p>=.985&&best.p-(pen[1]?.p||0)>=.95){
+    const wanted=penLabel.toLowerCase(),support=choices.find(p=>p.char===wanted)?.score||0;
+    if(support>=.10||best.p>.9995){char=wanted;score=best.p;confidence=Math.min(best.p,support);}
+   }
+  }
+  return{char,score,confidence,penLabel,trusted:strong||score>=.985,
+   // A narrow final l in ml shares its contour with 1/I. The m supplies the
+   // letter context; its uncertainty remains visible to the teacher.
+   narrowL:char==='l'&&top.char==='l'&&top.score>=.55&&top.score-(choices[1]?.score||0)>=.20};
+ });
+}
+async function recognizeIsolatedPenLetter(strokes,W,H,options){
+ if(!window.WhiteboardUjiReader||!window.WhiteboardCharacterReader||strokes.length>5)return null;
+ const items=strokes.map(raw=>({scaled:{size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))}}));
+ const groups=groupUnitInk(items);if(groups.length!==1)return null;
+ const b=bounds(groups[0]);if(b.h<10||b.w>b.h*1.7)return null;
+ const pen=window.WhiteboardUjiReader.read(groups[0].map(p=>p.points)),best=pen?.[0];
+ if(!best||!/^[A-Za-z]$/.test(best.label)||best.p<.985||best.p-(pen[1]?.p||0)<.95)return null;
+ const letters=await readUnitLetters(groups,options),chosen=letters[0];
+ if(!chosen||chosen.char!==best.label.toLowerCase()||!chosen.trusted)return null;
+ const token={char:best.label,score:chosen.confidence,parts:groups[0],x:b.x};
+ return{text:best.label,tokens:[token],uncertain:token.score<.85?[token]:[],engine:'local-pen-letter-consensus',format:'letter'};
+}
+// Baseline units use the same independent letters as powered units. A coarse
+// whole-unit template must not turn a clearly read c into a second m.
+async function recognizeBaseUnitComponents(strokes,W,H,options){
+ if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>32)return null;
+ const items=strokes.map(raw=>{
+  const scaled={size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  return{raw,scaled,box:bounds([scaled])};
+ }).sort((a,b)=>a.box.cx-b.box.cx),proposals=[];
+ for(let count=1;count<=Math.min(8,items.length-1);count++){
+  const suffix=items.slice(-count),prefix=items.slice(0,-count);
+  if(closedZeroInk(suffix[0].raw,W,H))continue;
+  const groups=groupUnitInk(suffix);
+  if(!groups.length||groups.length>2)continue;
+  const boxes=groups.map(bounds),body=bounds(suffix.map(p=>p.scaled));
+  if(body.h<10||prefix.at(-1).box.cx>=body.x+Math.min(3,body.w*.05))continue;
+  if(boxes.some(b=>Math.abs(b.y+b.h-body.y-body.h)>body.h*.35))continue;
+  const letters=await readUnitLetters(groups,options);
+  let word=letters.map(r=>r?.char).join('');
+  if(word==='l'&&letters[0].penLabel==='L')word='L';
+  if(!['m','mm','cm','km','kg','mg','ml','g','L'].includes(word)||
+    letters.some((r,i)=>!r||!r.trusted&&!(word==='ml'&&i===1&&r.narrowL)))continue;
+  const read=await readUnitPrefix(prefix,W,H,options,true);if(!read)continue;
+  // A standalone g needs the visible descender that separates it from 6/9.
+  if(word==='g'){
+   const numeric=bounds(prefix.map(p=>p.scaled));
+   if(body.y+body.h<numeric.y+numeric.h+numeric.h*.10)continue;
+  }
+  const unitTokens=groups.map((parts,i)=>({parts,char:word[i],score:letters[i].confidence}));
+  proposals.push({word,raised:[],text:read.text+' '+word,uncertain:[...read.uncertain,...unitTokens.filter(t=>t.score<.85)],
+   score:Math.min(...letters.map(r=>r.score)),tokens:[...read.tokens,...unitTokens]});
+ }
+ const best=completeUnitProposal(proposals);
+ return best?{text:best.text,tokens:best.tokens,uncertain:best.uncertain,engine:'unit-first-letter-components',format:'unit'}:null;
 }
 // A new writing style may be distant from a complete-unit template. Keep the
 // raised ink separate and read the unit letters and exponent independently.
@@ -832,28 +980,20 @@ async function recognizeUnitComponents(strokes,W,H,options){
     rb.cx<=bb.cx||rb.x<bb.x+bb.w*.60||rb.cy>=bb.cy-tall*.12||
     rb.y+rb.h>bb.y+bb.h*.70)continue;
   if(prefix.length&&bounds(prefix.map(p=>p.scaled)).cx>=bounds(baseline.map(p=>p.scaled)).cx)continue;
-  const upperRaster=rasterDigit(raised.map(p=>p.scaled)),power=predictDigit(upperRaster)[0];
-  if(!['2','3'].includes(power?.char)||power.score<.97)continue;
+  const upperRaster=rasterDigit(raised.map(p=>p.scaled)),powerChoices=predictDigit(upperRaster);
+  let power=powerChoices[0];
+  if(!['2','3'].includes(power?.char)||power.score<.97){
+   const pen=window.WhiteboardUjiReader?.read(raised.map(p=>p.scaled.points)),best=pen?.[0];
+   if(!best||!['2','3'].includes(best.label)||best.p<.985||best.p-(pen[1]?.p||0)<.95)continue;
+   power={char:best.label,score:Math.min(best.p,powerChoices.find(p=>p.char===best.label).score),evidence:best.p};
+  }
   // Group only the unit's ink. A wide m written in two strokes must not be
   // split by the numeric segmenter's narrower glyph-width limit.
-  const groups=baseline.map(p=>[p.scaled]);
-  let merged=true;
-  while(merged){
-   merged=false;
-   for(let i=0;i<groups.length&&!merged;i++)for(let j=i+1;j<groups.length;j++){
-    const a=bounds(groups[i]),b=bounds(groups[j]),h=Math.max(a.h,b.h),both=bounds([...groups[i],...groups[j]]);
-    const overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
-    if(overlap>=-Math.max(1,h*.035)&&both.w<h*2.1&&Math.abs(a.cy-b.cy)<h*.65){
-     groups[i].push(...groups[j]);groups.splice(j,1);merged=true;break;
-    }
-   }
-  }
-  groups.sort((a,b)=>bounds(a).cx-bounds(b).cx);
+  const groups=groupUnitInk(baseline);
   const tokens=groups.map(parts=>({parts}));
   if(!tokens.length||tokens.length>2)continue;
-  const alpha=await window.WhiteboardCharacterReader.predictBatch(tokens.map(t=>rasterDigit(t.parts)),'lowercase',options.onProgress);
-  const word=alpha.map(r=>r[0]?.char).join('');
-  if(!['m','mm','cm','km'].includes(word)||alpha.some(r=>!r[0]||r[0].score<.90||r[0].score-(r[1]?.score||0)<.30))continue;
+  const letters=await readUnitLetters(groups,options),word=letters.map(r=>r?.char).join('');
+  if(!['m','mm','cm','km'].includes(word)||letters.some(r=>!r?.trusted))continue;
   let number='',numberTokens=[],numberUncertain=[];
   if(prefix.length){
    const read=await readUnitPrefix(prefix,W,H,options);
@@ -863,20 +1003,17 @@ async function recognizeUnitComponents(strokes,W,H,options){
    numberUncertain=read.uncertain;
   }
   const exponent=power.char==='2'?'²':'³';
-  proposals.push({word,raised:raised.map(p=>p.raw),uncertain:numberUncertain,text:(number?number+' ':'')+word+exponent,score:Math.min(power.score,...alpha.map(r=>r[0].score)),
-   tokens:[...numberTokens,...tokens.map((t,i)=>({...t,char:word[i],score:alpha[i][0].score})),
-    {char:exponent,score:power.score,parts:raised.map(p=>p.scaled)}]});
+  const unitTokens=[...tokens.map((t,i)=>({...t,char:word[i],score:letters[i].confidence})),
+    {char:exponent,score:power.score,parts:raised.map(p=>p.scaled)}];
+  proposals.push({word,raised:raised.map(p=>p.raw),uncertain:[...numberUncertain,...unitTokens.filter(t=>t.score<.85)],text:(number?number+' ':'')+word+exponent,score:Math.min(power.evidence||power.score,...letters.map(r=>r.score)),
+   tokens:[...numberTokens,...unitTokens]});
   }
  }
  // A confidently read cm/mm/km is one complete unit. Do not also count its
  // first letter as a numeric digit (c -> 5) and manufacture ambiguity with m.
  // Both candidates must use the identical complete superscript ink.
- const complete=proposals.filter(p=>!proposals.some(q=>q.word.length>p.word.length&&
-  q.word.endsWith(p.word)&&q.score>=p.score-.03&&q.raised.length===p.raised.length&&
-  q.raised.every((raw,i)=>raw===p.raised[i])));
- complete.sort((a,b)=>b.score-a.score);
- const best=complete[0];
- if(!best||complete.some(p=>p.text!==best.text&&best.score-p.score<.03))return null;
+ const best=completeUnitProposal(proposals);
+ if(!best)return null;
  return{text:best.text,tokens:best.tokens,uncertain:best.uncertain,engine:'unit-first-components',format:'unit'};
 }
 async function recognizeUnitFirst(strokes,W,H,options){
@@ -992,10 +1129,45 @@ async function recognize(strokes,W,H,options={}){
   return reconcile(await mathRecognizer(strokes,W,H,options));
  }
  if((options.mode||'auto')==='auto'){
+  // Imported confusable corrections and the trained dotted j retain their
+  // existing priority over generic isolated-character inference.
+  const confusable=window.WhiteboardTeacherConfusables?.match?.(strokes,W,H,'auto',.955,.08);
+  if(confusable)return reconcile({text:confusable.text,tokens:[],uncertain:[],engine:confusable.engine,format:'letter'});
+  const trainedJ=window.WhiteboardTrainedJ?.detect?.(strokes,W,H);
+  if(trainedJ)return reconcile({...trainedJ,tokens:[],uncertain:[]});
+  if(strokes.length<=4&&window.WhiteboardDigitModel){
+   const geometry=segment(strokes,W,H);
+   if(geometry.length===1&&['+','−','×','÷','='].includes(geometry[0].char))
+    return reconcile({text:geometry[0].char,tokens:geometry,uncertain:[],engine:'local-operator-geometry',format:'symbol'});
+  }
+  // Preserve a taught complete powered unit before looking for a number;
+  // its first letter must not be consumed as a numeric prefix.
+  const notation=window.WhiteboardTeacherUnits?.match?.(strokes,W,H,{minScore:.94,minMargin:.045});
+  if(notation&&/^(?:mm|cm|km|m)[²³]$/.test(notation.text))return reconcile(notation);
+  // A complete number plus a raised unit is a measurement, even when its
+  // full silhouette resembles a taught word such as min. Keep that verified
+  // spatial reading ahead of whole-selection notation matching.
   const measured=await recognizeUnitFirst(strokes,W,H,options);
   if(measured&&!measured.uncertain?.length)return reconcile(measured);
+  // Preserve the existing whole-selection teaching priority over generic
+  // digit and letter inference for standalone taught units and symbols.
+  if(notation)return reconcile(notation);
+  if(loopedStandaloneL(strokes,W,H)){
+   const taught=window.WhiteboardTeacherUnits?.rank?.(strokes,W,H,{only:['L']})?.[0];
+   if(taught?.label==='L'&&taught.score>=.85){
+    const parts=strokes.map(raw=>({source:raw,size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))}));
+    const token={char:'L',score:taught.score,parts};
+    return reconcile({text:'L',tokens:[token],uncertain:[],engine:'trained-cursive-l-consensus',format:'unit'});
+   }
+  }
+  const letter=await recognizeIsolatedPenLetter(strokes,W,H,options);
+  if(letter)return reconcile(letter);
   const components=await recognizeUnitComponents(strokes,W,H,options);
   if(components)return reconcile(components);
+  const baseUnit=await recognizeBaseUnitComponents(strokes,W,H,options);
+  if(baseUnit)return reconcile(baseUnit);
+  const numeric=await recognizeNumericContext(strokes,W,H,options);
+  if(numeric)return reconcile(numeric);
   if(measured)return reconcile(measured);
  }
  const original=await recognizeCore(strokes,W,H,options);
@@ -1013,5 +1185,5 @@ async function recognize(strokes,W,H,options={}){
 }
 
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261019-equation-units1';
+window.WhiteboardHandwritingMath.build='20261019-simulations1';
 })();

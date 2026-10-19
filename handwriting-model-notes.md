@@ -250,3 +250,37 @@ DOM/event integration tests cover selection, actual worker completion, units,
 font, colour, cancellation, manual corrections and Undo. All five frozen bar
 model systems retain their original code and pass their existing checks.
 A live browser visual pass was not available in this environment.
+
+## Auto reading simulation improvements — 19 October 2026
+
+Build `20261019-simulations1` combines the existing digit, mixed-character and pen
+models for numeric expressions. It conservatively rejoins disconnected open 4s,
+retains complete compound units, and reads unfamiliar unit letters and powers
+independently when the complete-unit templates abstain. Complete raised
+measurements take priority over a misleading whole-selection word template;
+standalone taught units, symbols, confusables and personal corrections retain
+their priority over generic letter and digit inference. Equation grammar checks
+the complete prefix without calculating an answer. Weak model support stays
+available for teacher review.
+
+Completed character workers and their decoded models are reused across batches;
+explicit cancellation still terminates the worker. Bounded caches reuse identical
+Float32 raster predictions and return cloned choices. Tests check exact neural
+score equality and protect cached results from caller mutation. Model weights
+and the digit model are unchanged.
+
+The fixed 924-case Auto benchmark improves from 541/924 (58.5%) to 765/924
+(82.8%), with 423/440 numbers and 82/88 arithmetic readings correct. The 99%
+overall target is not reached. Case-sensitive isolated letters and unfamiliar
+powered units remain weak. These are compositions of existing UJI V1 glyphs,
+not independent naturally written expressions; no benchmark examples were added
+to training. See `handwriting-simulation-benchmark.md` for methods, limits and
+reproduction, and `handwriting-simulation-report.html` for every before/after
+reading and the separately displayed verification partition.
+
+Validation passes 27 code/model checks, all 152 numeric-prefix measurement
+controls and five diagnostic exports. The 1,024-example teacher compatibility
+comparison preserves all 452 previously correct readings and increases the
+correct count to 492. The final powered-unit priority change was checked on
+every one of its 117 eligible examples; the other 907 follow the unchanged
+route. These training controls measure compatibility, not independent accuracy.

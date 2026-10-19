@@ -10,7 +10,7 @@ const ink=[
 ];
 function run(unit,opts={}){
  let numberCalls=0,wholeCalls=0;
- const ctx={window:{WhiteboardTeacherUnits:{rank:(suffix,W,H,{only})=>{
+ const ctx={window:{WhiteboardTeacherUnits:{match:opts.weak?undefined:()=>({text:opts.wholeUnit||'min',engine:'mock-whole-notation',uncertain:[]}),rank:(suffix,W,H,{only})=>{
   if(suffix.length!==2)return[];
   const other=unit==='m²'?'m³':'m²';
   return[{label:unit,score:opts.weak?.83:.98},{label:other,score:opts.weak?.82:.72}];
@@ -23,6 +23,7 @@ function run(unit,opts={}){
 (async()=>{
  let z=await run('m³');assert.equal(z.r.text,'10 m³');assert.equal(z.calls,1);
  z=await run('m²');assert.equal(z.r.text,'10 m²');assert.equal(z.calls,1);
+ z=await run('cm²',{wholeUnit:'cm²'});assert.equal(z.r.text,'cm²');assert.equal(z.calls,undefined,'a taught complete powered unit cannot lose its first letter to a numeric prefix');
  z=await run('m²',{weak:true});assert.equal(z.r.text,'10 m?');
- console.log('PASS unit-first prefix isolation, cubic/square contrast, uncertain exponent');
+ console.log('PASS unit-first prefix isolation, complete measurement precedes misleading whole notation, cubic/square contrast, uncertain exponent');
 })().catch(e=>{console.error(e);process.exitCode=1});

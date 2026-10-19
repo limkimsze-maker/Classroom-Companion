@@ -41,7 +41,9 @@ async function expect(ink,expected,width=W,height=H,certain=true){
   for(const [sx,sy,dx,dy]of [[.8,.8,.05,.06],[1.1,.9,-.04,.05],[.95,1.08,.03,-.02]]){
    const ink=sample.strokes.map(s=>({...s,points:s.points.map(p=>({x:p.x*sx+dx,y:p.y*sy+dy}))}));
    const result=await expect(ink,'6 − 2 = 4 cm²',width,height,sx!==1.1);
-   if(sx===1.1)assert(result.uncertain.some(t=>t.char==='2'),'stretched weak numeral remains flagged for review without losing the unit');
+   // The independent pen reader may corroborate the stretched numeral. Any
+   // remaining weak predictions must still refer to the original equation.
+   assert(result.uncertain.every(t=>'6−2=4cm²'.includes(t.char)));
   }
   await expect(sample.strokes.slice().reverse(),'6 − 2 = 4 cm²',width,height);
  }

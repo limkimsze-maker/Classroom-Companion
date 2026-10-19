@@ -15,6 +15,7 @@
 
 (function (root) {
   let net = null;
+  const predictionCache = new Map();
 
   function decode(t) {
     const bin = typeof atob === "function" ? atob(t.data) : Buffer.from(t.data, "base64").toString("binary");
@@ -128,8 +129,15 @@
   function read(strokes) {
     if (!net) net = load(root.WhiteboardUjiWeights);
     if (!net) return null;
-    const p = forward(rasterize(strokes, net.raster));
-    return net.classes.map((label, i) => ({ label, p: p[i] })).sort((a, b) => b.p - a.p);
+    const img = rasterize(strokes, net.raster);
+    const key = String.fromCharCode(...new Uint8Array(img.buffer));
+    const cached = predictionCache.get(key);
+    if (cached) return cached.map((item) => ({ ...item }));
+    const p = forward(img);
+    const result = net.classes.map((label, i) => ({ label, p: p[i] })).sort((a, b) => b.p - a.p);
+    if (predictionCache.size >= 192) predictionCache.delete(predictionCache.keys().next().value);
+    predictionCache.set(key, result.map((item) => ({ ...item })));
+    return result;
   }
 
   const api = { read, rasterize: (s) => (net || (net = load(root.WhiteboardUjiWeights))) && rasterize(s, net.raster) };

@@ -2,6 +2,7 @@
 (function(root){
 'use strict';
 const decoded=new Map();
+const predictions=new Map();
 function model(name){
  if(decoded.has(name))return decoded.get(name);
  const raw=globalThis.WhiteboardCharacterModels?.[name];if(!raw)throw Error('Letter recognition has not loaded. Refresh the page.');
@@ -58,11 +59,15 @@ function resizeView(pixels,sx,sy,thicken){
 function predict(pixels,mode='auto',variations=true){
  if(!pixels||pixels.length!==784||pixels.some(v=>!Number.isFinite(v)))throw Error('Invalid character image.');
  const factor=pixels.some(v=>v>1)?1/255:1,normalized=Float32Array.from(pixels,v=>v*factor),name=mode==='lowercase'||mode==='uppercase'?'letters':'mixed';
+ const key=mode+':'+variations+':'+String.fromCharCode(...new Uint8Array(normalized.buffer));
+ const cached=predictions.get(key);if(cached)return cached.map(p=>({...p}));
  let choices=forward(normalized,name);
  if(variations&&choices[0].score<.8){
   const alternate=forward(resizeView(normalized,.94,1.04,true),name),score=new Map(choices.map(c=>[c.char,c.score*.65]));for(const c of alternate)score.set(c.char,(score.get(c.char)||0)+c.score*.35);choices=[...score].map(([char,score])=>({char,score})).sort((a,b)=>b.score-a.score);
  }
  if(mode==='lowercase')choices=choices.map(c=>({...c,char:c.char.toLowerCase()}));
+ if(predictions.size>=192)predictions.delete(predictions.keys().next().value);
+ predictions.set(key,choices.map(p=>({...p})));
  return choices;
 }
 root.WhiteboardCharacterInference={predict,forward,resizeView};
