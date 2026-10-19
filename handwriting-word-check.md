@@ -6,6 +6,10 @@ the original ink with the proposed readings, select a choice, then Apply.
 An isolated ambiguous `c`/`C` can now offer both cases. Explicit Letters a–z
 and Letters A–Z modes constrain word suggestions to the requested case.
 
+`handwriting-word-check-demo.html` lets you try three public pen samples with
+the production Beta reader and review dialog. It composes labelled writer 1
+UJI V1 glyphs into C, cat and the cat; it supplies no mocked predictions.
+
 ## What the checker does
 
 The browser combines the existing EMNIST alphabet classifier (65%) and the
