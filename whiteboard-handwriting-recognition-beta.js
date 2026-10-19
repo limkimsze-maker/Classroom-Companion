@@ -763,33 +763,91 @@ async function recognizeCore(strokes,W,H,options={}){
 // Reconcile the final recognised measurement with an independently supported
 // superscript contour. This avoids re-decoding the numeric prefix after an
 // earlier grammar has already recognised it successfully.
-function resolveTrainedSquareCube(strokes,W,H,result){
- if(!window.WhiteboardTeacherUnits||!result||!/^\d+(?:\.\d+)?\s+m[²³]$/.test(result.text||'')||strokes.length<3)return result;
- const parts=strokes.map(raw=>{const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};return{raw,box:bounds([scaled])}}).sort((a,b)=>a.box.cx-b.box.cx);
- const unitParts=parts.slice(-2),quantity=parts.slice(0,-2);
- if(!quantity.length)return result;
- const last=unitParts[1],base=unitParts[0];
- const raised=last.box.h>=8&&last.box.h<base.box.h*.87&&last.box.cy<base.box.cy-base.box.h*.10&&last.box.cx>base.box.cx;
- if(!raised)return result;
- const ranked=window.WhiteboardTeacherUnits.rank(unitParts.map(p=>p.raw),W,H,{only:['m²','m³']});
- const a=ranked[0],b=ranked[1];
- const strong=a&&a.score>=.91&&(!b||a.score-b.score>=.045);
- const three=raisedThreeContour(last.raw,W,H);
- let chosen=strong?a.label:null;
- // Strong independent evidence of a written 3 can disambiguate a near tie.
- if(!chosen&&three&&a&&a.score>=.84)chosen='m³';
- if(!chosen)return{...result,text:result.text.replace(/m[²³]$/,'m?'),engine:'teacher-m2-m3-uncertain',uncertain:[{char:'?',score:0,parts:[]}]};
- return{...result,text:result.text.replace(/m[²³]$/,chosen),engine:'teacher-m2-m3-authoritative'};
+// Unified measurement route. Select a trained unit from a spatial suffix,
+// then recognize ONLY the left-hand number. Older whole-phrase/unit heuristic
+// paths are not allowed to override the trained unit when this route applies.
+async function recognizeUnitFirst(strokes,W,H,options){
+ const teacher=window.WhiteboardTeacherUnits;
+ if(!teacher||strokes.length<3||strokes.length>18)return null;
+ const sorted=strokes.map(raw=>{
+  if(!raw?.points?.length)return null;
+  const ink={points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  return{raw,box:bounds([ink])};
+ });
+ if(sorted.some(p=>!p))return null;
+ sorted.sort((a,b)=>a.box.cx-b.box.cx);
+ const area=['mm²','cm²','m²','km²','mm³','cm³','m³'];
+ // Compound units can take more than one pen stroke; search plausible suffixes.
+ // Prefer long trained units over raw character-by-character interpretations.
+ for(let n=Math.min(5,sorted.length-1);n>=2;n--){
+  const suffix=sorted.slice(-n),prefix=sorted.slice(0,-n);
+  const final=suffix.at(-1),preceding=suffix.at(-2);
+  // A large digit immediately before m must stay in the numeric prefix;
+  // do not accidentally interpret the 0 in 10 as part of a longer unit.
+  const first=suffix[0],body=suffix.slice(1,-1);
+  if(body.length&&first.box.h>Math.max(...body.map(p=>p.box.h))*1.35)continue;
+  const tall=Math.max(...prefix.map(p=>p.box.h),preceding.box.h);
+  const raised=final.box.h>=8&&final.box.h<tall*.78
+    &&final.box.cx>preceding.box.cx
+    &&final.box.cy<preceding.box.cy-tall*.12;
+  if(!raised)continue;
+  const candidates=teacher.rank(suffix.map(p=>p.raw),W,H,{only:area});
+  const best=candidates[0],runner=candidates[1];
+  const contourThree=raisedThreeContour(final.raw,W,H);
+  let unit=best&&best.score>=.90&&(!runner||best.score-runner.score>=.04)?best.label:null;
+  // Trained unit labels establish the base unit; corroborated contour may
+  // distinguish a raised 3 from a 2 when prototypes are close.
+  if(contourThree&&best&&best.score>=.80){
+   const cubic=best.label.endsWith('³')?best:
+     candidates.find(x=>x.label===best.label.replace('²','³'));
+   if(cubic&&cubic.score>=best.score-.13)unit=cubic.label;
+  }
+  if(!unit&&best&&best.score>=.78&&runner&&
+     best.label.replace(/[²³]$/,'')===runner.label.replace(/[²³]$/,'')){
+   // Preserve the identified base unit, but do not invent an exponent.
+   unit=best.label.replace(/[²³]$/,'')+'?';
+  }
+  if(!unit)continue;
+  // Never run the old whole-measurement decoder on the quantity.
+  const numberInk=prefix.map(p=>p.raw);
+  let numeric=null;
+  try{
+   const read=await recognizeCore(numberInk,W,H,{...options,mode:'digits'});
+   if(/^\d+(?:\.\d+)?$/.test(read?.text||''))numeric=read.text;
+  }catch(_){}
+  if(!numeric){
+   try{
+    const parsed=readMeasuredDigits(prefix.map(p=>({raw:p.raw,box:p.box})),W,H);
+    if(parsed)numeric=parsed.value;
+   }catch(_){}
+  }
+  if(!numeric){
+   // Trained unit is protected even when the number reader abstains.
+   return{text:'? '+unit,engine:'unit-first-number-uncertain',format:'unit',
+     tokens:[],uncertain:[{char:'?',score:0,parts:[]}]};
+  }
+  return{text:numeric+' '+unit,engine:'unit-first-trained-measurement',format:'unit',
+    tokens:[],uncertain:unit.endsWith('?')?[{char:'?',score:0,parts:[]}]:[]};
+ }
+ return null;
 }
 async function recognize(strokes,W,H,options={}){
- const result=await recognizeCore(strokes,W,H,options);
- if((options.mode||'auto')!=='auto'||!result)return result;
- // For m² and m³ the labelled whole-unit recognizer is authoritative.
- // Never allow old raised-digit heuristics to silently choose between them.
- if(/^\d+(?:\.\d+)?\s+m[²³]$/.test(result.text||'')){
-  return resolveTrainedSquareCube(strokes,W,H,result);
+ if((options.mode||'auto')==='auto'){
+  const measured=await recognizeUnitFirst(strokes,W,H,options);
+  if(measured)return measured;
  }
- return result;
+ const original=await recognizeCore(strokes,W,H,options);
+ // For a quantity with an explicitly raised final glyph, do not let older
+ // baseline grammar silently force squared/cubed if new trained unit abstains.
+ if((options.mode||'auto')==='auto'&&/^\d+(?:\.\d+)?\s+(?:mm|cm|km|m)[²³]$/.test(original?.text||'')){
+  const items=strokes.map(raw=>({raw,box:bounds([{points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))}])})).sort((a,b)=>a.box.cx-b.box.cx);
+  const last=items.at(-1),prior=items.at(-2);
+  if(last&&prior&&last.box.cy<prior.box.cy&&raisedThreeContour(last.raw,W,H)){
+   // A strongly identifiable 3 must never be silently replaced by ².
+   return{...original,text:original.text.replace(/[²³]$/,'³'),engine:'raised-three-safety'};
+  }
+ }
+ return original;
 }
 
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
