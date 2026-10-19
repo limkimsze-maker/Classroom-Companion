@@ -565,10 +565,11 @@ async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
  }).sort((a,b)=>b.box.cx-a.box.cx);
  for(const top of candidates){
   const geom2=raisedTwoShape(top.raw,W,H);
+  const geom3=!geom2&&raisedThreeContour(top.raw,W,H);
   const model=window.WhiteboardTrainedRemaining?.match?.([top.raw],W,H,'digits');
   let digit=null;
   if(!geom2&&!model){digit=predictDigit(rasterDigit([top.scaled]))[0]}
-  const power=geom2?'2':model&&['2','3'].includes(model.char)?model.char:
+  const power=geom2?'2':geom3?'3':model&&['2','3'].includes(model.char)?model.char:
     digit&&['2','3'].includes(digit.char)&&digit.score>.72?digit.char:null;
   if(!power)continue;
   const baseline=parts.filter(p=>p!==top).sort((a,b)=>a.box.cx-b.box.cx);
