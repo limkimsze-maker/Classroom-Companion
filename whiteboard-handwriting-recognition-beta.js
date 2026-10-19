@@ -897,5 +897,5 @@ async function recognize(strokes,W,H,options={}){
 }
 
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261019-powertrain45';
+window.WhiteboardHandwritingMath.build='20261019-powertrain45b';
 })();
