@@ -508,6 +508,26 @@ function raisedTwoShape(raw,W,H){
  const barHeight=Math.max(...last.map(p=>p.y))-Math.min(...last.map(p=>p.y));
  return barWidth>width*.40&&barHeight<height*.20&&tail.x>end.x+width*.35;
 }
+/* Detect two right-facing lobes of a handwritten raised 3.
+   Unlike 2, the last stroke returns left and lacks a lower baseline bar.
+   Geometry is used only after a genuine upper-right raised position check. */
+function raisedThreeContour(raw,W,H){
+ const pts=(raw?.points||[]).map(p=>({x:p.x*W,y:p.y*H}));
+ if(pts.length<14)return false;
+ const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+ const left=Math.min(...xs),right=Math.max(...xs),top=Math.min(...ys),bottom=Math.max(...ys);
+ const w=right-left,h=bottom-top;
+ if(w<8||h<11||w/h<.22||w/h>1.10)return false;
+ const norm=pts.map(p=>({x:(p.x-left)/w,y:(p.y-top)/h}));
+ const first=norm[0],last=norm.at(-1);
+ if(first.y>.3||first.x>.65||last.y<.78||last.x>.26)return false;
+ const upper=norm.filter(p=>p.y>=.16&&p.y<=.48);
+ const middle=norm.filter(p=>p.y>=.48&&p.y<=.62);
+ const lower=norm.filter(p=>p.y>=.7&&p.y<=.93);
+ return upper.some(p=>p.x>.83)&&middle.some(p=>p.x<.55)&&
+        lower.some(p=>p.x>.65)&&
+        norm.slice(-Math.max(4,Math.floor(norm.length*.16))).every(p=>p.y>.78);
+}
 async function detectRaisedMeasuredQuantity(strokes,W,H,options={}){
  if(strokes.length<4||strokes.length>12||!window.WhiteboardPrimaryMathGrammar)return null;
  const parts=strokes.map((s,i)=>{
@@ -565,11 +585,14 @@ async function recognize(strokes,W,H,options={}){
   if(top.box.h>=8&&top.box.h<maxH*.78&&top.box.cy<last.box.cy-maxH*.12&&top.box.cx>last.box.cx){
    const exponent=window.WhiteboardTeacherUnits.rank([top.raw],W,H,{only:['²','³']});
    const best=exponent[0],next=exponent[1];
-   if(best&&best.score>=.85&&(!next||best.score-next.score>=.025)){
+   // Clear two-lobed handwriting can identify ³ when prototypes tie or vote ².
+   const contour3=raisedThreeContour(top.raw,W,H);
+   const power=contour3?'³':best&&best.score>=.85&&(!next||best.score-next.score>=.025)?best.label:null;
+   if(power){
     const primary=window.WhiteboardPrimaryMathGrammar?.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
     const baseline=primary?await primary.recognize(rest.map(p=>p.raw),W,H,options):null;
     if(baseline&&/^\d+ (?:cm|mm|km|m)$/.test(baseline.text)){
-     return{...baseline,text:baseline.text+best.label,engine:'teacher-unit-first-exponent',uncertain:[]};
+     return{...baseline,text:baseline.text+power,engine:'teacher-unit-first-exponent',uncertain:[]};
     }
    }
   }
