@@ -3,7 +3,7 @@ const r=fs.readFileSync('whiteboard-handwriting-recognition-beta.js','utf8'),h=f
 new vm.Script(r,{filename:'reader'});
 assert(r.includes("teacher-unit-first-exponent"));
 assert(r.includes("only:['²','³']"));
-assert(r.includes("baseline.text+best.label"));
+assert(r.includes("baseline.text+power"));
 assert(r.includes(String.raw`/^\d+ (?:cm|mm|km|m)$/`));
-assert(h.includes('whiteboard-handwriting-recognition-beta.js?v=20261019-unitfirst1'));
+assert(h.includes('whiteboard-handwriting-recognition-beta.js?v=20261019-raisedthree2'));
 console.log('PASS exponent-priority wiring and reader syntax');
