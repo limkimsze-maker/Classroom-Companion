@@ -568,7 +568,7 @@ async function recognize(strokes,W,H,options={}){
    if(best&&best.score>=.85&&(!next||best.score-next.score>=.025)){
     const primary=window.WhiteboardPrimaryMathGrammar?.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
     const baseline=primary?await primary.recognize(rest.map(p=>p.raw),W,H,options):null;
-    if(baseline&&/^\\d+ (?:cm|mm|km|m)$/.test(baseline.text)){
+    if(baseline&&/^\d+ (?:cm|mm|km|m)$/.test(baseline.text)){
      return{...baseline,text:baseline.text+best.label,engine:'teacher-unit-first-exponent',uncertain:[]};
     }
    }
