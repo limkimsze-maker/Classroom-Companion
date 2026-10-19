@@ -10,10 +10,10 @@ const strokes=[
  mk([[.477,.43],[.477,.47],[.483,.41],[.488,.47],[.493,.42],[.498,.48]]),
  mk([[.505,.345],[.513,.345],[.514,.36],[.505,.368],[.510,.372],[.513,.386],[.501,.387]])
 ];
-async function run(exponent){
+async function run(exponent,stronglySquared=false){
  const window={
   WhiteboardTeacherUnits:{rank:(ss,W,H,options)=>ss.length===2?
-   [{label:'m²',score:.913},{label:'m³',score:.685}]:[]},
+   [{label:'m²',score:stronglySquared?.875:.885},{label:'m³',score:stronglySquared?.640:.816}]:[]},
   WhiteboardUnitExponent:{match:()=>({label:exponent,score:.89,margin:.1})}
  };
  const context={window,Math,Float32Array,Int8Array};
@@ -29,5 +29,6 @@ async function run(exponent){
 (async()=>{
  assert.equal((await run('³')).text,'10 m³');
  assert.equal((await run('²')).text,'10 m²');
+ assert.equal((await run('³',true)).text,'10 m?');
  console.log('PASS: 10 m³, 10 m² and closed 0 from a forced 15');
 })().catch(e=>{console.error(e);process.exitCode=1});
