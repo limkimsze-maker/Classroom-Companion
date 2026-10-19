@@ -4,8 +4,21 @@
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='function'||typeof syncUi!=='function')return;
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-let readerRecovery=null;
-const readerBuild='20261020-words1';
+let activeReviewAbort=null;
+const readerBuild='20261020-words2';
+function abortError(){return Object.assign(new Error('Reading cancelled'),{name:'AbortError'})}
+function stopReaders(){window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.()}
+function boundedRead(task,signal,milliseconds){
+ return new Promise((resolve,reject)=>{
+  let finished=false,timer;
+  const finish=(fn,value)=>{if(finished)return;finished=true;clearTimeout(timer);signal.removeEventListener('abort',aborted);fn(value)};
+  const aborted=()=>finish(reject,abortError());
+  if(signal.aborted){aborted();return}
+  signal.addEventListener('abort',aborted,{once:true});
+  timer=setTimeout(()=>finish(reject,Object.assign(new Error('Reading took too long. Your ink is safe. Type the reading or try again.'),{name:'TimeoutError'})),milliseconds);
+  Promise.resolve().then(()=>{if(signal.aborted)throw abortError();return task()}).then(value=>finish(resolve,value),error=>finish(reject,error));
+ });
+}
 const requiredReaders=[
  ['whiteboard-handwriting-digit-model-beta.js',()=>window.WhiteboardDigitModel],
  ['whiteboard-handwriting-character-models-beta.js',()=>window.WhiteboardCharacterModels],
@@ -24,25 +37,27 @@ const requiredReaders=[
  ['whiteboard-unit-exponent-trained-beta.js',()=>window.WhiteboardUnitExponent],
  ['whiteboard-handwriting-context-model-beta.js',()=>window.WhiteboardHandwritingContextModel],
  ['whiteboard-handwriting-context-beta.js',()=>window.WhiteboardHandwritingContext],
- ['whiteboard-handwriting-word-list-beta.js',()=>window.WhiteboardHandwritingWordList],
- ['whiteboard-handwriting-words-beta.js',()=>window.WhiteboardHandwritingWords],
  ['whiteboard-handwriting-recognition-beta.js',()=>window.WhiteboardHandwritingMath?.recognize&&window.WhiteboardHandwritingMath.build===readerBuild]
 ];
-async function ensureReader(){
+async function ensureReader(signal){
+ if(signal.aborted)throw abortError();
  if(requiredReaders.every(([,ready])=>ready()))return window.WhiteboardHandwritingMath;
- if(!readerRecovery)readerRecovery=(async()=>{
   for(const [path,ready]of requiredReaders){
+   if(signal.aborted)throw abortError();
    if(ready())continue;
    await new Promise((resolve,reject)=>{
     const script=document.createElement('script');script.src=path+'?v='+readerBuild;script.async=false;
-    script.onload=()=>ready()?resolve():reject(new Error('A handwriting model could not initialise. Reopen Beta and try again.'));
-    script.onerror=()=>reject(new Error('A handwriting model could not load. Check the connection and reopen Beta.'));
+    let settled=false;
+    const finish=(error)=>{if(settled)return;settled=true;clearTimeout(timer);signal.removeEventListener('abort',aborted);script.onload=null;script.onerror=null;if(error){script.remove();reject(error)}else resolve()};
+    const aborted=()=>finish(abortError());
+    const timer=setTimeout(()=>finish(new Error('A handwriting model took too long to load. Type the reading or try again.')),10000);
+    script.onload=()=>finish(ready()?null:new Error('A handwriting model could not initialise. Type the reading or try again.'));
+    script.onerror=()=>finish(new Error('A handwriting model could not load. Type the reading or try again.'));
+    signal.addEventListener('abort',aborted,{once:true});
     document.head.appendChild(script);
    });
   }
   return window.WhiteboardHandwritingMath;
- })().finally(()=>{readerRecovery=null});
- return readerRecovery;
 }
 
 let selecting=false,area=null,selectionPointer=null,start=null,dialog=null,session=0,pendingLearning=null;
@@ -61,7 +76,7 @@ const style=document.createElement('style');style.textContent=`
 .handwriting-review input{box-sizing:border-box;width:100%;font-size:24px;font-weight:700;padding:9px;border:1px solid #9dd9d0;border-radius:9px;margin:6px 0}
 .handwriting-review img{display:block;max-width:100%;height:110px;object-fit:contain;object-position:left center;background:#fafcfc;border-radius:8px}
 .handwriting-review .handwriting-clean-preview{height:150px;background:white}
-.handwriting-review .handwriting-actions{display:flex;gap:8px;margin-top:14px}
+.handwriting-review .handwriting-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .handwriting-review .handwriting-actions .handwriting-apply{flex:1}
 .handwriting-review .handwriting-appearance{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:7px 0}
 .handwriting-review .handwriting-appearance label{margin:0}
@@ -84,7 +99,7 @@ function sayLocal(text){if(typeof say==='function')say(text)}
 function groupBounds(group){const pts=group.flatMap(s=>s.points),xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x=Math.min(...xs),y=Math.min(...ys);return{x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y}}
 function stop(e){e.preventDefault();e.stopImmediatePropagation()}
 function endSelection(){const id=selectionPointer;selecting=false;selectionPointer=null;start=null;area?.remove();area=null;board.classList.remove('handwriting-selecting');btn.classList.remove('active');try{if(id!==null)canvas.releasePointerCapture(id)}catch{}}
-function closeReview(){if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}session++;window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.();dialog?.remove();dialog=null}
+function closeReview(){if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}session++;activeReviewAbort?.abort();activeReviewAbort=null;stopReaders();dialog?.remove();dialog=null}
 function svgInk(group){
  const b=groupBounds(group),W=Math.max(10,b.w*cssW),H=Math.max(10,b.h*cssH),els=[];
  for(const s of group){const color=/^#[0-9a-f]{3,8}$/i.test(s.colour||'')?s.colour:'#17324d',points=s.points.map(p=>[(p.x-b.x)*cssW+10,(p.y-b.y)*cssH+10]);
@@ -107,7 +122,7 @@ async function review(group){
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Auto can offer word, letter-case, unit and superscript choices. Choose a reading or edit it to update the preview. Learn & Test Again saves a provisional example on this browser and re-reads the same ink. Draw again to test new handwriting. Cancel discards provisional learning; Apply keeps it and Undo reverses it.';
+ const help=document.createElement('p');help.textContent='Auto can offer word, letter-case, unit and superscript choices. Type a correction at any time to stop reading and update the preview. Learn & Test Again saves a provisional example on this browser and re-reads the same ink. Draw again to test new handwriting. Cancel discards provisional learning; Apply keeps it and Undo reverses it.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=600;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised numbers, letters, units or mathematical notation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
@@ -130,6 +145,8 @@ async function review(group){
  const actions=document.createElement('div');actions.className='handwriting-actions';
  const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply beautify';apply.disabled=true;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=closeReview;
+ const stopRead=document.createElement('button');stopRead.id='handwritingStopReadBtn';stopRead.type='button';stopRead.className='btn';stopRead.textContent='Stop reading';
+ const retryRead=document.createElement('button');retryRead.id='handwritingRetryReadBtn';retryRead.type='button';retryRead.className='btn';retryRead.textContent='Read again';retryRead.hidden=true;
  const feedbackArea=document.createElement('div');feedbackArea.className='handwriting-feedback-controls';
  const test=document.createElement('button');test.type='button';test.className='btn';test.textContent='↻ Learn & Test Again';test.title='Save a confirmed correction locally, then read the SAME original strokes again';
  const feedback=document.createElement('p');feedback.className='handwriting-feedback-message';feedback.setAttribute('aria-live','polite');
@@ -142,6 +159,7 @@ async function review(group){
  }
  function updatePreview(){
   const obj=formatted();apply.disabled=!obj||reading||testing;test.disabled=!obj||reading||testing||!!pendingLearning;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
+  stopRead.hidden=!reading&&!testing;retryRead.disabled=reading||testing;
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
   status.textContent=reading?'Reading handwriting on this device…':obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Check the notation. Math accepts LaTeX, such as \\frac{1}{2}; units accept cm2 or cm².':'Enter or correct the reading to continue.';
  }
@@ -168,9 +186,17 @@ async function review(group){
   }
   contextArea.append(message,buttons);contextArea.hidden=buttons.children.length<2;
  }
- input.addEventListener('input',()=>{clearProvisional();contextArea.hidden=true;updatePreview()});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
+ function stopReading(message){
+  if(!reading&&!testing)return;
+  readVersion++;feedbackStamp++;activeReviewAbort?.abort();activeReviewAbort=null;stopReaders();
+  reading=false;testing=false;retryRead.hidden=false;updatePreview();
+  if(message)status.textContent='Reading stopped. Type the reading, apply your correction, or read again.';
+ }
+ stopRead.onclick=()=>stopReading(true);
+ retryRead.onclick=()=>readSelection();
+ input.addEventListener('input',()=>{stopReading(false);clearProvisional();contextArea.hidden=true;updatePreview()});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
  colourSelect.addEventListener('change',updatePreview);
- insert.addEventListener('change',()=>{if(!insert.value)return;clearProvisional();const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
+ insert.addEventListener('change',()=>{if(!insert.value)return;stopReading(false);clearProvisional();contextArea.hidden=true;const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
  test.onclick=async()=>{
   if(reading||testing||pendingLearning||!formatted())return;
   const learner=window.WhiteboardHandwritingLearning,recogniser=window.WhiteboardHandwritingMath;
@@ -181,9 +207,10 @@ async function review(group){
   catch{feedback.textContent='Unable to save a learning example. You can still apply the correction.';return}
   if(!training?.count){feedback.textContent='No new example was saved. You can still apply the corrected text.';return}
   pendingLearning=training;testing=true;updatePreview();
+  const controller=new AbortController();activeReviewAbort?.abort();activeReviewAbort=controller;
   feedback.textContent=training.persistent?'Example saved locally. Re-reading original strokes…':'Example saved for this session. Re-reading original strokes…';
   try{
-   const again=await recogniser.recognize(group,cssW,cssH,{mode});
+   const again=await boundedRead(()=>recogniser.recognize(group,cssW,cssH,{mode,signal:controller.signal}),controller.signal,mode==='math'?180000:25000);
    if(session!==id||dialog!==backdrop||ticket!==feedbackStamp)return;
    if(again.text===answer){
     feedback.textContent=again.engine==='local-personal-ink'?
@@ -191,10 +218,12 @@ async function review(group){
      'Same strokes now read correctly. Draw them again to test generalisation.';
    }else feedback.textContent='Re-read result: '+again.text+'. Your correction is saved, but this recogniser still disagrees. Apply the correct preview or edit again.';
   }catch(error){
+   if(activeReviewAbort===controller){controller.abort();stopReaders()}
    if(session===id&&dialog===backdrop&&ticket===feedbackStamp)
     feedback.textContent='Example saved, but the re-read could not finish. You may still Apply or Undo.';
   }finally{
-   if(session===id&&dialog===backdrop){testing=false;updatePreview()}
+   if(activeReviewAbort===controller)activeReviewAbort=null;
+   if(session===id&&dialog===backdrop&&ticket===feedbackStamp){testing=false;updatePreview()}
   }
  };
  apply.onclick=()=>{
@@ -212,7 +241,7 @@ async function review(group){
   document.getElementById('penBtn')?.click();
   sayLocal(learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
- actions.append(apply,cancel);const exportInk=document.createElement('button');
+ actions.append(apply,stopRead,retryRead,cancel);const exportInk=document.createElement('button');
  exportInk.type='button';exportInk.textContent='Export selected pen strokes (JSON)';
  exportInk.style.cssText='margin-top:8px;font-size:13px;max-width:100%;white-space:normal';
  exportInk.title='Downloads only this selected handwriting and its local recognition feedback. No upload or network request.';
@@ -233,14 +262,18 @@ async function review(group){
  panel.append(title,help,ink,label,input,appearance,status,contextArea,preview,feedbackArea,actions);panel.appendChild(exportInk);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
  window.MathJax?.startup?.promise?.then(()=>{if(session===id&&dialog===backdrop)updatePreview()}).catch(()=>{});
  async function readSelection(){
- const version=++readVersion,startText=input.value,replaceReading=!startText||startText===lastReading;recognition=null;contextArea.hidden=true;reading=true;apply.disabled=true;status.classList.remove('handwriting-error');status.textContent='Reading handwriting on this device…';
- await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ activeReviewAbort?.abort();
+ const controller=new AbortController();activeReviewAbort=controller;
+ const version=++readVersion,startText=input.value,replaceReading=!startText||startText===lastReading,mode=modeSelect.value;
+ recognition=null;contextArea.hidden=true;reading=true;testing=false;retryRead.hidden=true;updatePreview();status.classList.remove('handwriting-error');status.textContent='Reading handwriting on this device…';
  try{
-  if(session!==id||dialog!==backdrop||version!==readVersion)return;
-  await ensureReader();
-  if(modeSelect.value==='math')await window.MathJax?.startup?.promise;
-  if(session!==id||dialog!==backdrop||version!==readVersion)return;
-  const result=await window.WhiteboardHandwritingMath.recognize(group,cssW,cssH,{mode:modeSelect.value,onProgress:(done,total)=>{if(session===id&&version===readVersion&&input.value===startText)status.textContent=modeSelect.value==='math'?'Reading mathematical notation on this device…':`Reading characters ${done} of ${total}…`}});
+  const result=await boundedRead(async()=>{
+   await new Promise(resolve=>setTimeout(resolve,0));
+   await ensureReader(controller.signal);
+   if(mode==='math')await window.MathJax?.startup?.promise;
+   if(controller.signal.aborted)throw abortError();
+   return window.WhiteboardHandwritingMath.recognize(group,cssW,cssH,{mode,signal:controller.signal,onProgress:(done,total)=>{if(session===id&&version===readVersion&&input.value===startText)status.textContent=mode==='math'?'Reading mathematical notation on this device…':`Reading characters ${done} of ${total}…`}});
+  },controller.signal,mode==='math'?180000:25000);
   if(session!==id||dialog!==backdrop||version!==readVersion)return;recognition=result;reading=false;
   // Do not overwrite a correction entered while recognition was running.
   if(replaceReading&&input.value===startText)input.value=result.text;lastReading=result.text;updatePreview();if(input.value===result.text)renderContext(result);if(document.activeElement===cancel)input.focus();
@@ -252,9 +285,14 @@ async function review(group){
   if(result.engine==='local-stacked-fraction'&&!result.uncertain.length)status.textContent='Stacked fraction detected. Check both digits before applying; confirmed examples are remembered locally.';
    if(result.uncertain.length)status.textContent=result.engine==='local-stacked-fraction'?'Stacked fraction detected. Correct any wrong digit before applying; this device can remember the correction.':result.format==='latex'?'Check symbols, fraction bars, powers and limits before applying.':'Some characters were uncertain. Check and correct the reading before applying.';
   if(/^\d+(?:\.\d+)?\s+(?:mm|cm|km|m)[²³]$/.test(result.text||''))status.textContent='Reader '+(window.WhiteboardHandwritingMath?.build||'unknown')+' · '+(result.engine||'unknown')+' · exponent '+result.text.slice(-1)+' (diagnostic)';
- }catch(error){if(session!==id||dialog!==backdrop||version!==readVersion||error.name==='AbortError')return;reading=false;updatePreview();status.textContent=error.message||'Could not read this writing. You can type the correct reading.';status.classList.add('handwriting-error');if(document.activeElement===cancel)input.focus()}
+ }catch(error){
+  if(session!==id||dialog!==backdrop||version!==readVersion)return;
+  controller.abort();stopReaders();reading=false;retryRead.hidden=false;updatePreview();
+  status.textContent=error.name==='AbortError'?'Reading stopped. Type the reading or read again.':error.message||'Could not read this writing. You can type the correct reading.';
+  status.classList.add('handwriting-error');if(document.activeElement===cancel)input.focus();
+ }finally{if(activeReviewAbort===controller)activeReviewAbort=null}
  }
- modeSelect.addEventListener('change',()=>{clearProvisional();window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.();return readSelection()});
+ modeSelect.addEventListener('change',()=>{stopReading(false);clearProvisional();return readSelection()});
  return readSelection();
 }
 function beginSelection(){

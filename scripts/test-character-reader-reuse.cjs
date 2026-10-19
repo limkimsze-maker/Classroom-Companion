@@ -14,5 +14,8 @@ vm.runInContext(fs.readFileSync('whiteboard-handwriting-character-reader-beta.js
  reader.cancel();assert(workers[0].closed);
  await reader.predictBatch([[0]],'auto');assert.equal(workers.length,2);
  const pending=reader.predictBatch([[0]],'auto');reader.cancel();await assert.rejects(pending,{name:'AbortError'});
+ const controller=new AbortController(),aborted=reader.predictBatch([[0]],'auto',undefined,controller.signal);controller.abort();await assert.rejects(aborted,{name:'AbortError'});
+ await assert.rejects(reader.predictBatch([[0]],'auto',undefined,controller.signal),{name:'AbortError'});
+ assert.equal((await reader.predictBatch([[0]],'auto'))[0][0].char,'4','a cancelled request cannot poison a retry');
  console.log('PASS character worker reuse, explicit cancellation and clean restart');
 })().catch(error=>{console.error(error);process.exitCode=1});

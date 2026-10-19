@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const ctx={window:null};ctx.window=ctx;vm.createContext(ctx);
+const ctx={window:null,setTimeout};ctx.window=ctx;vm.createContext(ctx);
 for(const file of ['whiteboard-handwriting-word-list-beta.js','whiteboard-handwriting-words-beta.js'])vm.runInContext(fs.readFileSync(file,'utf8'),ctx);
 const words=ctx.WhiteboardHandwritingWords;
 const evidence=(choices,personal)=>({letters:Object.entries(choices).map(([char,score])=>({char,score})).sort((a,b)=>b.score-a.score),personal});

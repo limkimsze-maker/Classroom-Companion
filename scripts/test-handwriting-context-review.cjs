@@ -24,9 +24,9 @@ document={body,head,activeElement:null,createElement:tag=>new Element(tag),query
 const raw={size:4,points:[{x:.2,y:.3},{x:.25,y:.4}]},alternateTokens=[{char:'3',parts:[{points:[{x:20,y:30},{x:25,y:40}]}]}];
 let recognition={text:'10 m²',tokens:[],uncertain:[{char:'?',score:0}],engine:'local-context-language-model',format:'unit',context:{applied:false,originalText:'10 m²',alternatives:[{text:'10 m²',tokens:[]},{text:'10 m³',tokens:alternateTokens}]}};
 let confirmed=[],undone=[],cancelled=0;
-const ctx={document,console,Math,JSON,Number,Set,setTimeout,clearTimeout,encodeURIComponent,
+const ctx={document,console,Math,JSON,Number,Set,setTimeout,clearTimeout,encodeURIComponent,AbortController,
  canvas:{releasePointerCapture(){}},strokes:[raw],cssW:800,cssH:600,tool:'select',redraw(){},syncUi(){},addEventListener(){},requestAnimationFrame:fn=>setTimeout(fn,0),
- WhiteboardHandwritingMath:{build:'20261020-words1',recognize:async()=>recognition,rasterDigit(){}},
+ WhiteboardHandwritingMath:{build:'20261020-words2',recognize:async()=>recognition,rasterDigit(){}},
  WhiteboardHandwritingLearning:{confirm(...args){confirmed.push(args);return{count:1,persistent:true}},undo:tx=>undone.push(tx)},
  WhiteboardEquationFormatter:{font:()=> 'Arial',createHandwriting:(text,b,colour)=>text?{type:'image',src:'preview:'+text,colour,...b}:null},
  WhiteboardCharacterReader:{cancel(){cancelled++}},WhiteboardMarqueeSelection:{get:()=>ctx.strokes,clear(){}}};

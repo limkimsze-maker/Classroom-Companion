@@ -3,6 +3,12 @@
 'use strict';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const median=a=>{a=a.slice().sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:0};
+function checkCancelled(options){if(options.signal?.aborted)throw Object.assign(new Error('Reading cancelled'),{name:'AbortError'})}
+async function readCharacters(images,mode,options){
+ checkCancelled(options);
+ const result=await window.WhiteboardCharacterReader.predictBatch(images,mode,options.onProgress,options.signal);
+ checkCancelled(options);return result;
+}
 function normalizeReading(text,mode){
  const reading=String(text).replace(/\s+/g,' ').trim();
  return mode==='auto'?reading.replace(/(?:\s*×){2,}(?=\s|$)/g,' ×').trim():reading;
@@ -226,7 +232,7 @@ async function detectRaisedUnit(strokes,W,H,options={}){
   const upperTokens=segment(raised.map(p=>p.raw),W,H);
   if(upperTokens.length!==1||!['2','3'].includes(upperTokens[0].char)||upperTokens[0].score<.55)continue;
   const rasters=baseline.map(p=>rasterDigit([p.scaled]));
-  const predictions=await window.WhiteboardCharacterReader.predictBatch(rasters,'lowercase',options.onProgress);
+  const predictions=await readCharacters(rasters,'lowercase',options);
   const candidates=[];
   for(const unit of knownUnits){
    const n=unit.length,prefix=baseline.length-n;
@@ -278,7 +284,7 @@ async function detectLitreUnit(strokes,W,H,options={}){
  const last=parts.at(-1),b=last.box,aspect=b.w/Math.max(1,b.h);
  if(b.h<24||b.w<4||aspect<.12||aspect>.68)return null;
  const imgs=parts.map(p=>rasterDigit([p.scaled]));
- const preds=await window.WhiteboardCharacterReader.predictBatch(imgs,'lowercase',options.onProgress);
+ const preds=await readCharacters(imgs,'lowercase',options);
  const ell=preds.at(-1)||[],ellScore=ell.find(q=>q.char.toLowerCase()==='l')?.score||0;
  const looped=loopedStandaloneL([last.raw],W,H);
  if(ellScore<.055&&!looped)return null;
@@ -448,7 +454,7 @@ async function detectPrimaryMeasurement(strokes,W,H,options={}){
       firstBox.cy<digitBox.y-digitBox.h||secondBox.cy<digitBox.y-digitBox.h)continue;
    const shapeK=kgStemGeometry(first),shapeG=kgDescenderGeometry(second,digitBox,firstBox);
    const images=[rasterDigit(first.map(p=>p.scaled)),rasterDigit(second.map(p=>p.scaled))];
-   const predictions=await window.WhiteboardCharacterReader.predictBatch(images,'lowercase',options.onProgress);
+   const predictions=await readCharacters(images,'lowercase',options);
    const prob=(idx,char)=>predictions[idx]?.find(x=>x.char.toLowerCase()===char)?.score||0;
    const ranked=[];
    for(const unit of units){
@@ -710,7 +716,7 @@ async function recognizeCore(strokes,W,H,options={}){
 
  if(window.WhiteboardCharacterReader&&mode!=='digits'){
   const candidates=tokens.filter(t=>!['.','−','÷','='].includes(t.char)&&!(t.personal&&/^[A-Za-z]$/.test(t.char))&&!(t.personal&&mode==='auto'));
-  const results=await window.WhiteboardCharacterReader.predictBatch(candidates.map(t=>rasterDigit(t.parts)),mode,options.onProgress);
+  const results=await readCharacters(candidates.map(t=>rasterDigit(t.parts)),mode,options);
   if(mode==='auto'){
    const personalLetters=tokens.filter(t=>t.personal&&/^[A-Za-z]$/.test(t.char));
    const letters=results.filter((r,i)=>!['+','×','$'].includes(candidates[i].char)&&/^[A-Za-z]$/.test(r[0]?.char||'')&&!'BIOQSZiloqsz'.includes(r[0].char)&&r[0].score>.8).length+personalLetters.length;
@@ -721,7 +727,7 @@ async function recognizeCore(strokes,W,H,options={}){
     const lower=dotted||personalLetters.some(t=>/^[a-z]$/.test(t.char))||results.some(r=>/^[a-z]$/.test(r[0]?.char||''));
     const first=results[0]?.[0],title=lower&&first?.score>.9&&'ABDEFGHKNQRT'.includes(first?.char||'!');
     const selected=candidates.map((t,i)=>({t,i})).filter(({t})=>!['+','×','$'].includes(t.char));
-    if(selected.length){const alphabet=await window.WhiteboardCharacterReader.predictBatch(selected.map(({t})=>rasterDigit(t.parts)),lower?'lowercase':'uppercase',options.onProgress);for(let j=0;j<selected.length;j++){const i=selected[j].i;results[i]=title&&i===0?alphabet[j].map(c=>({...c,char:c.char.toUpperCase()})):alphabet[j]}}
+    if(selected.length){const alphabet=await readCharacters(selected.map(({t})=>rasterDigit(t.parts)),lower?'lowercase':'uppercase',options);for(let j=0;j<selected.length;j++){const i=selected[j].i;results[i]=title&&i===0?alphabet[j].map(c=>({...c,char:c.char.toUpperCase()})):alphabet[j]}}
    }
   }
   const letterContext=results.some((r,i)=>!['+','×','$'].includes(candidates[i].char)&&/^[A-Za-z]$/.test(r[0]?.char||'')&&!'BIOQSZiloqsz'.includes(r[0].char)&&r[0].score>.8);
@@ -817,7 +823,7 @@ async function recognizeNumericContext(strokes,W,H,options){
  }
  const glyphs=tokens.filter(t=>!operators.includes(t.char)&&t.char!=='.');
  if(!glyphs.length)return null;
- const mixed=await window.WhiteboardCharacterReader.predictBatch(glyphs.map(t=>rasterDigit(t.parts)),'auto',options.onProgress);
+ const mixed=await readCharacters(glyphs.map(t=>rasterDigit(t.parts)),'auto',options);
  const hasOperator=tokens.some(t=>operators.includes(t.char));
  const equivalents={O:'0',o:'0',I:'1',l:'1',Z:'2',z:'2',S:'5',s:'5',B:'8',g:'9',q:'9'};
  for(let i=0;i<glyphs.length;i++){
@@ -892,7 +898,7 @@ function completeUnitProposal(proposals){
  return !best||complete.some(p=>p.text!==best.text&&best.score-p.score<.03)?null:best;
 }
 async function readUnitLetters(groups,options){
- const alpha=await window.WhiteboardCharacterReader.predictBatch(groups.map(rasterDigit),'lowercase',options.onProgress);
+ const alpha=await readCharacters(groups.map(rasterDigit),'lowercase',options);
  return groups.map((parts,i)=>{
   const choices=alpha[i],top=choices[0];if(!top)return null;
   let char=top.char,score=top.score,confidence=top.score,penLabel='';
@@ -1223,7 +1229,7 @@ async function recognizeWithContext(strokes,W,H,options,reading){
  }
  if(!layouts.length)return reading;
  const entries=[...groupsByKey],rasters=entries.map(([,parts])=>rasterDigit(parts));
- const alpha=await window.WhiteboardCharacterReader.predictBatch(rasters,'lowercase',options.onProgress);
+ const alpha=await readCharacters(rasters,'lowercase',options);
  const evidence=new Map(entries.map(([id,parts],i)=>{
   const pen=window.WhiteboardUjiReader.read(parts.map(p=>p.points))||[];
   const digit=predictDigit(rasters[i]);
@@ -1308,14 +1314,17 @@ async function recognizeWithContext(strokes,W,H,options,reading){
    alternatives:choices.slice(0,3),needsReview:true}};
 }
 async function recognize(strokes,W,H,options={}){
+ checkCancelled(options);
  const reading=await recognizeBeforeContext(strokes,W,H,options);
+ checkCancelled(options);
  // Word checking is an optional review layer. A failure retains the existing
  // reading and must not prevent the independent measurement context check.
  let words=reading;
  try{words=await window.WhiteboardHandwritingWords?.check(strokes,W,H,options,reading,{segment,rasterDigit})||reading}
  catch(error){if(error?.name==='AbortError')throw error;}
+ checkCancelled(options);
  if(words!==reading)return words;
- try{return await recognizeWithContext(strokes,W,H,options,reading)}
+ try{const result=await recognizeWithContext(strokes,W,H,options,reading);checkCancelled(options);return result}
  catch(error){
   if(error?.name==='AbortError')throw error;
   // An optional context failure must not discard a completed handwriting read.
@@ -1323,5 +1332,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-words1';
+window.WhiteboardHandwritingMath.build='20261020-words2';
 })();

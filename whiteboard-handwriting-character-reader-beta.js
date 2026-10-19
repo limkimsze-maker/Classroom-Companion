@@ -11,17 +11,21 @@ function startWorker(images,mode,onProgress){
   worker.postMessage({id,images,mode});
  });
 }
-async function predictBatch(images,mode='auto',onProgress){
+async function predictBatch(images,mode='auto',onProgress,signal){
+ if(signal?.aborted)throw abortError();
  // Keep a completed worker and its decoded models alive between batches.
  // A new job still cancels any unfinished request, including a local fallback.
  if(active)cancel();else epoch++;
  const generation=epoch;
- if(typeof Worker==='function')try{return await startWorker(images,mode,onProgress)}catch(error){if(error.name==='AbortError')throw error}
+ const aborted=()=>{if(epoch===generation)cancel()};signal?.addEventListener('abort',aborted,{once:true});
+ try{
+ if(typeof Worker==='function')try{const result=await startWorker(images,mode,onProgress);if(epoch!==generation||signal?.aborted)throw abortError();return result}catch(error){if(error.name==='AbortError')throw error}
  const api=window.WhiteboardCharacterInference;if(!api)throw Error('The letter model is not ready. Refresh the page.');
  const result=[];for(let i=0;i<images.length;i++){
-  await new Promise(resolve=>setTimeout(resolve,0));if(epoch!==generation)throw abortError();
+  await new Promise(resolve=>setTimeout(resolve,0));if(epoch!==generation||signal?.aborted)throw abortError();
   result.push(api.predict(images[i],mode));onProgress?.(i+1,images.length);
  }return result;
+ }finally{signal?.removeEventListener('abort',aborted)}
 }
 window.WhiteboardCharacterReader={predictBatch,cancel};
 })();

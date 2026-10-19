@@ -106,3 +106,28 @@ is 113/160; verification is 129/192. This is suggestion coverage requiring
 human review, not automatic recognition accuracy. The original text is
 never automatically rewritten. All per-case readings and suggestions are
 in `handwriting-word-check-results.json`. The 99% target remains unmet.
+
+## Responsiveness recovery — build 20261020-words2
+
+The review dialog bounds an Auto/letter/digit read to 25 seconds and a Math
+read to 180 seconds. Each missing core script has a 10-second loading limit.
+Optional word-vocabulary downloads no longer prevent the core reader from
+starting, and vocabulary scripts download without blocking page parsing.
+
+Stop reading cancels the current request and its background reader. Typing a
+correction also stops the request and immediately enables Apply for valid
+text. Read again retries a stopped or failed request. Cancel, mode changes,
+timeouts and superseded requests invalidate late results. Provisional learning
+retains its existing Apply/Cancel/Undo behavior, including after a stopped
+learning check. Word-shape evidence processing yields between small groups
+so the interface can handle input and cancellation.
+
+The public sample buttons stay disabled until their handlers load. Selecting
+a different sample restarts selection instead of accidentally switching it off.
+
+All 31 code, model and controller checks pass, including forced stalled model
+loads, stalled recognisers, manual correction while busy, late results, Stop,
+retry, learning checks and Apply/Undo. All 152 measurement controls and the five
+saved diagnostics still pass. The accuracy results above remain the recorded
+words1 experiment; this recovery update adds no new handwriting training or
+accuracy estimate.

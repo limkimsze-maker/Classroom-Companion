@@ -70,8 +70,11 @@ async function check(strokes,W,H,options,reading,api){
  const boxes=tokens.map(t=>bounds(t.parts)),height=median(boxes.map(b=>b.h));
  if(height<10||boxes.some(b=>b.h<height*.30||Math.abs(b.y+b.h-median(boxes.map(q=>q.y+q.h)))>height*.55))return reading;
  const rasters=tokens.map(t=>api.rasterDigit(t.parts));
- const alpha=await window.WhiteboardCharacterReader.predictBatch(rasters,'lowercase',options.onProgress);
- const evidence=tokens.map((token,i)=>{
+ const alpha=await window.WhiteboardCharacterReader.predictBatch(rasters,'lowercase',options.onProgress,options.signal);
+ const evidence=[];
+ for(let i=0;i<tokens.length;i++){
+  if(i%4===0){await new Promise(resolve=>setTimeout(resolve,0));if(options.signal?.aborted)throw Object.assign(new Error('Reading cancelled'),{name:'AbortError'});}
+  const token=tokens[i];
   const personal=window.WhiteboardHandwritingLearning?.match?.(rasters[i]);
   const raw=token.parts.map(p=>p.source);
   const taught=window.WhiteboardTeacherConfusables?.match?.(raw,W,H,mode,.955,.08);
@@ -79,8 +82,8 @@ async function check(strokes,W,H,options,reading,api){
   const pen=window.WhiteboardUjiReader.read(token.parts.map(p=>p.points))||[];
   const letters=alpha[i].map(p=>({char:p.char.toLowerCase(),score:.65*p.score+
    .35*pen.reduce((sum,q)=>sum+(q.label.toLowerCase()===p.char.toLowerCase()?q.p:0),0)})).sort((a,b)=>b.score-a.score);
-  return{letters,personal:fixed,pen,box:boxes[i]};
- });
+  evidence.push({letters,personal:fixed,pen,box:boxes[i]});
+ }
  // A measurement route can occasionally read an entire word as a number and
  // unit. Offer a word only when at least three clear, non-digit-like letters
  // independently disagree. Ordinary quantities retain their measurement UI.
