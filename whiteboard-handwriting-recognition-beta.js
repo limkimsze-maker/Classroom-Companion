@@ -557,6 +557,23 @@ async function recognize(strokes,W,H,options={}){
  if(['auto','lowercase','uppercase','digits'].includes(options.mode||'auto')){const teacher=window.WhiteboardTeacherConfusables?.match?.(strokes,W,H,options.mode||'auto',.955,.08);if(teacher)return{text:teacher.text,tokens:[],uncertain:[],engine:teacher.engine,format:'letter'};}
  const trainedJ=window.WhiteboardTrainedJ?.detect?.(strokes,W,H);
  if(trainedJ)return{...trainedJ,tokens:[],uncertain:[]};
+ // Unit-first: isolate a raised final 2/3 before interpreting the numeric prefix.
+ // Prefer the isolated exponent's own trained label over similar whole-unit patterns.
+ if(options.mode==='auto'&&window.WhiteboardTeacherUnits&&strokes.length>=3&&strokes.length<=12){
+  const items=strokes.map(raw=>{const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};return{raw,scaled,box:bounds([scaled])}}).sort((a,b)=>a.box.cx-b.box.cx);
+  const top=items.at(-1),rest=items.slice(0,-1),last=rest.at(-1),maxH=Math.max(...rest.map(p=>p.box.h));
+  if(top.box.h>=8&&top.box.h<maxH*.78&&top.box.cy<last.box.cy-maxH*.12&&top.box.cx>last.box.cx){
+   const exponent=window.WhiteboardTeacherUnits.rank([top.raw],W,H,{only:['²','³']});
+   const best=exponent[0],next=exponent[1];
+   if(best&&best.score>=.85&&(!next||best.score-next.score>=.025)){
+    const primary=window.WhiteboardPrimaryMathGrammar?.create({segment,predictDigit,rasterDigit,bounds,loopedStandaloneL});
+    const baseline=primary?await primary.recognize(rest.map(p=>p.raw),W,H,options):null;
+    if(baseline&&/^\d+ (?:cm|mm|km|m)$/.test(baseline.text)){
+     return{...baseline,text:baseline.text+best.label,engine:'teacher-unit-first-exponent',uncertain:[]};
+    }
+   }
+  }
+ }
  const teacher=options.mode==='auto'&&window.WhiteboardTeacherUnits;
  if(teacher){
   // Strong whole-selection matches override historical unit/operator exemplars.
