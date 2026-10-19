@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - .github/workflows/beta-handwriting-benchmark.yml
+      - whiteboard-handwriting-recognition-beta.js
   workflow_dispatch:
 jobs:
   benchmark:
