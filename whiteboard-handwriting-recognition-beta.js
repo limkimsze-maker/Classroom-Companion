@@ -766,6 +766,24 @@ async function recognizeCore(strokes,W,H,options={}){
 // Unified measurement route. Select a trained unit from a spatial suffix,
 // then recognize ONLY the left-hand number. Older whole-phrase/unit heuristic
 // paths are not allowed to override the trained unit when this route applies.
+// A complete single closed loop is a zero candidate in a digit-only
+// prefix. This avoids a digit CNN turning a clear handwritten 0 into 5.
+function closedZeroInk(stroke,W,H){
+ const pts=(stroke?.points||[]).map(p=>({x:p.x*W,y:p.y*H}));
+ if(pts.length<12)return false;
+ const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+ const lx=Math.min(...xs),rx=Math.max(...xs),ty=Math.min(...ys),by=Math.max(...ys),w=rx-lx,h=by-ty;
+ if(w<8||h<12||w/h<.33||w/h>1.6)return false;
+ if(Math.hypot(pts[0].x-pts.at(-1).x,pts[0].y-pts.at(-1).y)>Math.hypot(w,h)*.12)return false;
+ const cx=(lx+rx)/2,cy=(ty+by)/2;
+ let turns=0;
+ for(let i=1;i<pts.length;i++){
+  const a=Math.atan2(pts[i-1].y-cy,pts[i-1].x-cx),b=Math.atan2(pts[i].y-cy,pts[i].x-cx);
+  let diff=b-a;if(diff>Math.PI)diff-=2*Math.PI;if(diff< -Math.PI)diff+=2*Math.PI;
+  turns+=diff;
+ }
+ return Math.abs(turns)>=4.7&&Math.abs(turns)<=8.2;
+}
 async function recognizeUnitFirst(strokes,W,H,options){
  const teacher=window.WhiteboardTeacherUnits;
  if(!teacher||strokes.length<3||strokes.length>18)return null;
@@ -794,10 +812,16 @@ async function recognizeUnitFirst(strokes,W,H,options){
   const candidates=teacher.rank(suffix.map(p=>p.raw),W,H,{only:area});
   const best=candidates[0],runner=candidates[1];
   const contourThree=raisedThreeContour(final.raw,W,H);
+  const trainedPower=window.WhiteboardUnitExponent?.match?.(final.raw,W,H);
   let unit=best&&best.score>=.90&&(!runner||best.score-runner.score>=.04)?best.label:null;
+  // Prefer the actual single-stroke exponent trained from m²/m³ samples.
+  // This is independent of the older two-stroke ²/³ training.
+  if(trainedPower&&best&&best.score>=.74&&/[²³]$/.test(best.label)){
+   unit=best.label.replace(/[²³]$/,trainedPower.label);
+  }
   // Trained unit labels establish the base unit; corroborated contour may
   // distinguish a raised 3 from a 2 when prototypes are close.
-  if(contourThree&&best&&best.score>=.80){
+  if(!trainedPower&&contourThree&&best&&best.score>=.80){
    const cubic=best.label.endsWith('³')?best:
      candidates.find(x=>x.label===best.label.replace('²','³'));
    if(cubic&&cubic.score>=best.score-.13)unit=cubic.label;
@@ -813,13 +837,28 @@ async function recognizeUnitFirst(strokes,W,H,options){
   let numeric=null;
   try{
    const read=await recognizeCore(numberInk,W,H,{...options,mode:'digits'});
-   if(/^\d+(?:\.\d+)?$/.test(read?.text||''))numeric=read.text;
+   if(/^\d+(?:\.\d+)?$/.test(read?.text||'')){
+    numeric=read.text;
+    // Align one-digit-per-stroke prefix and protect complete oval zeros.
+    if(prefix.length===numeric.length){
+     const digits=numeric.split('');
+     for(let i=0;i<prefix.length;i++){
+      if(closedZeroInk(prefix[i].raw,W,H))digits[i]='0';
+     }
+     numeric=digits.join('');
+    }
+   }
   }catch(_){}
   if(!numeric){
    try{
     const parsed=readMeasuredDigits(prefix.map(p=>({raw:p.raw,box:p.box})),W,H);
     if(parsed)numeric=parsed.value;
    }catch(_){}
+   if(numeric&&prefix.length===numeric.length){
+    const digits=numeric.split('');
+    prefix.forEach((p,i)=>{if(closedZeroInk(p.raw,W,H))digits[i]='0'});
+    numeric=digits.join('');
+   }
   }
   if(!numeric){
    // Trained unit is protected even when the number reader abstains.
