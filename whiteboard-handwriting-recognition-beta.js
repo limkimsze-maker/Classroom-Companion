@@ -795,15 +795,16 @@ async function recognizeUnitFirst(strokes,W,H,options){
  if(sorted.some(p=>!p))return null;
  sorted.sort((a,b)=>a.box.cx-b.box.cx);
  const area=['mm²','cm²','m²','km²','mm³','cm³','m³'];
+ const hypotheses=[];
  // Compound units can take more than one pen stroke; search plausible suffixes.
  // Prefer long trained units over raw character-by-character interpretations.
- for(let n=Math.min(5,sorted.length-1);n>=2;n--){
+ for(let n=Math.min(8,sorted.length-1);n>=2;n--){
   const suffix=sorted.slice(-n),prefix=sorted.slice(0,-n);
-  const final=suffix.at(-1),preceding=suffix.at(-2);
-  // A large digit immediately before m must stay in the numeric prefix;
-  // do not accidentally interpret the 0 in 10 as part of a longer unit.
-  const first=suffix[0],body=suffix.slice(1,-1);
-  if(body.length&&first.box.h>Math.max(...body.map(p=>p.box.h))*1.35)continue;
+  const final=suffix.at(-1);
+  // A dot or a finishing stroke can lie between the unit body and its power.
+  // Compare against the full-height body, rather than the adjacent pen stroke.
+  const preceding=suffix.slice(0,-1).reduce((a,b)=>a.box.h>b.box.h?a:b);
+  if(closedZeroInk(suffix[0].raw,W,H))continue;
   const tall=Math.max(...prefix.map(p=>p.box.h),preceding.box.h);
   const raised=final.box.h>=8&&final.box.h<tall*.78
     &&final.box.cx>preceding.box.cx
@@ -811,12 +812,22 @@ async function recognizeUnitFirst(strokes,W,H,options){
   if(!raised)continue;
   const candidates=teacher.rank(suffix.map(p=>p.raw),W,H,{only:area});
   const best=candidates[0],runner=candidates[1];
-  const contourThree=raisedThreeContour(final.raw,W,H);
-  const trainedPower=window.WhiteboardUnitExponent?.match?.(final.raw,W,H);
-  let unit=best&&best.score>=.90&&(!runner||best.score-runner.score>=.04)?best.label:null;
+  const base=best?.label.replace(/[²³]$/,'');
+  const otherBase=candidates.find(x=>x.label.replace(/[²³]$/,'')!==base);
+  const supportedBase=best&&runner&&base===runner.label.replace(/[²³]$/,'')&&
+    best.score>=.70&&best.score-(otherBase?.score??0)>=.10;
+  const raisedParts=suffix.filter(p=>p.box.h<tall*.78&&
+    p.box.cx>preceding.box.cx&&p.box.cy<preceding.box.cy-tall*.12);
+  const contourThree=raisedParts.length===1&&raisedThreeContour(final.raw,W,H);
+  // The exponent model was trained on single strokes. A two-stroke ² must
+  // retain the complete unit's label instead of classifying half of its ink.
+  const trainedPower=raisedParts.length===1?window.WhiteboardUnitExponent?.match?.(final.raw,W,H):null;
+  const margin=best?best.score-(runner?.score??0):0;
+  let unit=best&&((best.score>=.90&&margin>=.04)||
+    (best.score>=.86&&margin>=.09))?best.label:null;
   // Prefer the actual single-stroke exponent trained from m²/m³ samples.
   // This is independent of the older two-stroke ²/³ training.
-  if(trainedPower&&best&&best.score>=.74&&/[²³]$/.test(best.label)){
+  if(trainedPower&&best&&(best.score>=.74||supportedBase)&&best.score<.95&&/[²³]$/.test(best.label)){
    // A misleading raised 2 can resemble a 3. When the trained complete
    // unit strongly favours squared and contour evidence for 3 is absent,
    // do not silently turn a genuine square unit into a cube unit.
@@ -825,6 +836,7 @@ async function recognizeUnitFirst(strokes,W,H,options){
    const contradictsSquare=trainedPower.label==='³'&&best.label.endsWith('²')&&
      best.score>=.83&&best.score-(cubic?.score??0)>.16&&!contourThree;
    if(!contradictsSquare)unit=best.label.replace(/[²³]$/,trainedPower.label);
+   else if(best.score<.90)unit=null;
   }
   // Trained unit labels establish the base unit; corroborated contour may
   // distinguish a raised 3 from a 2 when prototypes are close.
@@ -839,6 +851,12 @@ async function recognizeUnitFirst(strokes,W,H,options){
    unit=best.label.replace(/[²³]$/,'')+'?';
   }
   if(!unit)continue;
+  hypotheses.push({prefix,unit,score:best.score});
+ }
+ // Compare all plausible spatial boundaries before consuming the numeric ink.
+ // A weak longer unit must not steal a digit from a better shorter match.
+ hypotheses.sort((a,b)=>b.score-a.score);
+ for(const {prefix,unit} of hypotheses){
   // Never run the old whole-measurement decoder on the quantity.
   const numberInk=prefix.map(p=>p.raw);
   let numeric=null;
@@ -897,5 +915,5 @@ async function recognize(strokes,W,H,options={}){
 }
 
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261019-powertrain45b';
+window.WhiteboardHandwritingMath.build='20261019-unitfirst-v2';
 })();

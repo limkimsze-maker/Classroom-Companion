@@ -1,5 +1,34 @@
 # Beta handwriting recognition
 
+## Unit-first repair — 19 October 2026
+
+The experimental `whiteboard-comer-beta.html` loads build
+`20261019-unitfirst-v2`. It compares complete trained area/volume unit suffixes
+before reading the numeric prefix. Competing suffix boundaries are ranked before
+any digits are consumed. Small finishing strokes belong to the unit body, and
+multi-stroke superscripts use the complete unit prediction rather than the
+single-stroke exponent classifier. Closed oval zero recovery remains active in
+the isolated numeric prefix.
+
+The seven area/volume labels use 56 quantized 16×16 centroids derived from 152
+of the existing 1,024 labelled teacher examples, grouped by actual stroke count.
+The other unit/operator scores retain their existing model. Rebuild these
+centroids with `node scripts/build-teacher-units.cjs /path/to/training.json`.
+Only compact features are bundled; the original teacher traces are not included.
+UJI Pen Characters V1 remains integrated; V2 has not been added.
+
+Validation: all four supplied diagnostic exports replay as `10 m³`, including
+the earlier `15 m?` result. All 152 area/volume training examples composed with
+the diagnostic numeric prefix produce the expected quantity and unit. These
+reuse training examples and are regression checks, not held-out accuracy.
+Synthetic controls cover small body finishing strokes, two-stroke powers,
+competing suffix boundaries, square/cube ambiguity and closed-zero recovery.
+All 872 non-area training examples retain their previous per-label scores.
+The broader synthetic suite remains 35/36 and the UJI composite suite remains
+76/132, with no before/after changed outcomes. The pre-existing slanted `97 ml`
+failure and other broad recognition limitations remain. Validation used the
+actual local JavaScript models; a browser interaction pass was not available.
+
 The Beautify action recognises separately written Latin letters, digits 0–9,
 decimal points, dollar signs, and + − × ÷ =. It always opens an editable confirmation before
 replacing ink. Cancel preserves the original writing; Undo restores the complete

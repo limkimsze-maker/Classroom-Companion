@@ -9,6 +9,5 @@ function dense(s){const out=[];for(let i=0;i<s.points.length-1;i++){const a=s.po
 assert(ctx.window.__three(dense(three),40,40));
 const two=dense(stroke([[.05,.1],[.4,0],[.9,.1],[1,.35],[.7,.58],[.1,.85],[0,.95],[.5,.95],[1,.95]]));
 assert(!ctx.window.__three(two,40,40));
-assert(src.includes('const trainedPower=window.WhiteboardUnitExponent?.match'));
 assert(src.includes('!trainedPower&&contourThree'));
 console.log('PASS geometric three fallback and trained-exponent precedence');

@@ -9,7 +9,7 @@ async function ensureReader(){
  if(window.WhiteboardHandwritingMath?.recognize)return window.WhiteboardHandwritingMath;
  if(!readerRecovery)readerRecovery=new Promise((resolve,reject)=>{
   const script=document.createElement('script');
-  script.src='whiteboard-handwriting-recognition-beta.js?v=20261018-mobile-recover2';
+  script.src='whiteboard-handwriting-recognition-beta.js?v=20261019-unitfirst-v2';
   script.async=true;
   script.onload=()=>window.WhiteboardHandwritingMath?.recognize
    ?resolve(window.WhiteboardHandwritingMath)
