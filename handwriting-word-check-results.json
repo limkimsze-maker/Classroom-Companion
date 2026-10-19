@@ -1,0 +1,5550 @@
+{
+  "build": "20261020-words1",
+  "method": "Fixed words composed from independent UJI V1 glyphs. Case-sensitive exact matching, correlated glyphs. Correct-or-offered includes the unchanged original and requires human selection. No real-world accuracy claim.",
+  "vocabulary": {
+    "version": "offline-english-word-check-v1",
+    "words": 40194,
+    "automaticRewriting": false
+  },
+  "summary": {
+    "total": 352,
+    "correct": 75,
+    "correctOrOffered": 242,
+    "changed": 0,
+    "withChoices": 235
+  },
+  "development": {
+    "total": 160,
+    "correct": 32,
+    "correctOrOffered": 113,
+    "changed": 0,
+    "withChoices": 112
+  },
+  "verification": {
+    "total": 192,
+    "correct": 43,
+    "correctOrOffered": 129,
+    "changed": 0,
+    "withChoices": 123
+  },
+  "records": [
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "cat",
+      "before": "eaj",
+      "after": "eaj",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "eaj",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "cat",
+      "before": "CUr",
+      "after": "CUr",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "CUr",
+        "cat",
+        "Cat",
+        "cut"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "caj",
+      "after": "caj",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "caj",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "CUr",
+      "after": "CUr",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "CUr",
+        "cat",
+        "Cat",
+        "cut"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "562 mm",
+      "after": "562 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "562 mm",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "865 mm",
+      "after": "865 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "865 mm",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "862 mm",
+      "after": "862 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "862 mm",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "865 mm",
+      "after": "865 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "865 mm",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "dog",
+      "before": "day",
+      "after": "day",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "day",
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "dog",
+      "before": "dog",
+      "after": "dog",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "school",
+      "before": "sehaol",
+      "after": "sehaol",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "sehaol",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "school",
+      "before": "school",
+      "after": "school",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "hello",
+      "before": "hglla",
+      "after": "hglla",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "hglla",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "hello",
+      "before": "hello",
+      "after": "hello",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Hglla",
+      "after": "Hglla",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Hglla",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Hello",
+      "after": "Hello",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Hello",
+        "hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "math",
+      "before": "wajh",
+      "after": "wajh",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "wajh",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "math",
+      "before": "muth",
+      "after": "muth",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "muth",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "three",
+      "before": "56 mm",
+      "after": "56 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "56 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "three",
+      "before": "86 mm",
+      "after": "86 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "86 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "square",
+      "before": "596 mm",
+      "after": "596 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "596 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "square",
+      "before": "594 mm",
+      "after": "594 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "594 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "colour",
+      "before": "601 mm",
+      "after": "601 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "601 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "colour",
+      "before": "COLOUR",
+      "after": "COLOUR",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "COLOUR",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "c",
+      "before": "e",
+      "after": "e",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "dBc",
+      "after": "dBc",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "dBc",
+      "after": "dBc",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "rep": 0,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "wacl",
+      "after": "wacl",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "rep": 1,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "NUCL",
+      "after": "NUCL",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "cat",
+      "before": "ca +",
+      "after": "ca +",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "eat",
+      "after": "eat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "eat",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "ca +",
+      "after": "ca +",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "+ he ca +",
+      "after": "+ he ca +",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "ml he cat",
+      "after": "ml he cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "\u2212 l he ca +",
+      "after": "\u2212 l he ca +",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "dog",
+      "before": "2 mg",
+      "after": "2 mg",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "dog",
+      "before": "20 g",
+      "after": "20 g",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "school",
+      "before": "schooe",
+      "after": "schooe",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "schooe",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "school",
+      "before": "6560 ml",
+      "after": "6560 ml",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "hello",
+      "before": "heeeo",
+      "after": "heeeo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heeeo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "hello",
+      "before": "hecco",
+      "after": "hecco",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Heeeo",
+      "after": "Heeeo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Heeeo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Hecco",
+      "after": "Hecco",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "math",
+      "before": "math",
+      "after": "math",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "math",
+      "before": "ma + h",
+      "after": "ma + h",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "three",
+      "before": "three",
+      "after": "three",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "three",
+      "before": "4 mm",
+      "after": "4 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "4 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "square",
+      "before": "square",
+      "after": "square",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "square",
+      "before": "sguare",
+      "after": "sguare",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "sguare",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "colour",
+      "before": "508 mm",
+      "after": "508 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "508 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "colour",
+      "before": "508 mm",
+      "after": "508 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "C",
+      "before": "e",
+      "after": "e",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "Dbe",
+      "after": "Dbe",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "ABC",
+      "after": "ABC",
+      "correct": true,
+      "offered": false,
+      "available": true,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "rep": 0,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "Naee",
+      "after": "Naee",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "rep": 1,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "Nacc",
+      "after": "Nacc",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "cat",
+      "before": "eqt",
+      "after": "eqt",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "eqt",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "cat",
+      "before": "eat",
+      "after": "eat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "eat",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "cqt",
+      "after": "cqt",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cqt",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "Cat",
+      "after": "Cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Cat",
+        "cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "the eqt",
+      "after": "the eqt",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the eqt",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "the eqt",
+      "after": "the eqt",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the eqt",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "the eqt",
+      "after": "the eqt",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the eqt",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "the eqt",
+      "after": "the eqt",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the eqt",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "dog",
+      "before": "dag",
+      "after": "dag",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "dag",
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "dog",
+      "before": "sec",
+      "after": "sec",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "school",
+      "before": "55655L",
+      "after": "55655L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "school",
+      "before": "sehaax",
+      "after": "sehaax",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "sehaax",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "hello",
+      "before": "heqqa",
+      "after": "heqqa",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heqqa",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "hello",
+      "before": "22 mg",
+      "after": "22 mg",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Heqqa",
+      "after": "Heqqa",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Heqqa",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Hexxa",
+      "after": "Hexxa",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Hexxa",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "math",
+      "before": "mqth",
+      "after": "mqth",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "mqth",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "math",
+      "before": "Iath",
+      "after": "Iath",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Iath",
+        "math",
+        "Math",
+        "Lath"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "three",
+      "before": "thpee",
+      "after": "thpee",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "thpee",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "three",
+      "before": "62 mm",
+      "after": "62 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "62 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "square",
+      "before": "sqmqpe",
+      "after": "sqmqpe",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "sqmqpe",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "square",
+      "before": "582 mm",
+      "after": "582 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "colour",
+      "before": "558 mm",
+      "after": "558 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "colour",
+      "before": "eaxaup",
+      "after": "eaxaup",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "eaxaup",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "c",
+      "before": "e",
+      "after": "e",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "c",
+      "before": "e",
+      "after": "e",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "I \u00d7 BC",
+      "after": "I \u00d7 BC",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "1.BC",
+      "after": "1.BC",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 0,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "415L",
+      "after": "415L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "rep": 1,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "Nqcx",
+      "after": "Nqcx",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "\u2212 1he cat",
+      "after": "\u2212 1he cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "\u2212 l he cat",
+      "after": "\u2212 l he cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "dog",
+      "before": "208",
+      "after": "208",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "dog",
+      "before": "dO8",
+      "after": "dO8",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "dO8",
+        "dog",
+        "Dog",
+        "dos"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "school",
+      "before": "schooe",
+      "after": "schooe",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "schooe",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "school",
+      "before": "schdde",
+      "after": "schdde",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "schdde",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "hello",
+      "before": "heeeo",
+      "after": "heeeo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heeeo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "hello",
+      "before": "heeed",
+      "after": "heeed",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heeed",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "$eee0",
+      "after": "$eee0",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Heeed",
+      "after": "Heeed",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Heeed",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "math",
+      "before": "math",
+      "after": "math",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "math",
+      "before": "math",
+      "after": "math",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "three",
+      "before": "66 mm",
+      "after": "66 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "66 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "three",
+      "before": "66 mm",
+      "after": "66 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "66 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "square",
+      "before": "532 mm",
+      "after": "532 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "532 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "square",
+      "before": "sfuare",
+      "after": "sfuare",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "sfuare",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "colour",
+      "before": "coeour",
+      "after": "coeour",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "coeour",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "colour",
+      "before": "7 mm",
+      "after": "7 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "7 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "dBc",
+      "after": "dBc",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "DBC",
+      "after": "DBC",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "rep": 0,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "2 mm",
+      "after": "2 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "rep": 1,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "4 mm",
+      "after": "4 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "\u2212 1he cat",
+      "after": "\u2212 1he cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "The cat",
+      "before": "\u2212 l he cat",
+      "after": "\u2212 l he cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "dog",
+      "before": "208",
+      "after": "208",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "dog",
+      "before": "d08",
+      "after": "d08",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "d08",
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "school",
+      "before": "schoox",
+      "after": "schoox",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "schoox",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "school",
+      "before": "schooe",
+      "after": "schooe",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "schooe",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "hello",
+      "before": "hexxo",
+      "after": "hexxo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "hexxo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "hello",
+      "before": "heeeo",
+      "after": "heeeo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heeeo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Hexxo",
+      "after": "Hexxo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Hexxo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "Hello",
+      "before": "Heeeo",
+      "after": "Heeeo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Heeeo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "math",
+      "before": "math",
+      "after": "math",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "math",
+      "before": "math",
+      "after": "math",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "three",
+      "before": "4 mm",
+      "after": "4 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "4 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "three",
+      "before": "thyee",
+      "after": "thyee",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "thyee",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "square",
+      "before": "sguave",
+      "after": "sguave",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "sguave",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "square",
+      "before": "squaye",
+      "after": "squaye",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "squaye",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "colour",
+      "before": "COXOUV",
+      "after": "COXOUV",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "COXOUV",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "colour",
+      "before": "COEOUY",
+      "after": "COEOUY",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "COEOUY",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "D$C",
+      "after": "D$C",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "ABC",
+      "before": "D$C",
+      "after": "D$C",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "rep": 0,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "Nacx",
+      "after": "Nacx",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "rep": 1,
+      "partition": "development",
+      "expected": "NaCl",
+      "before": "4 mm",
+      "after": "4 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "cae",
+      "after": "cae",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cae",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cae",
+      "after": "cae",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cae",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "ehg cae",
+      "after": "ehg cae",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "ehg cae",
+        "the cat",
+        "The cat",
+        "ehg cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "Thg cae",
+      "after": "Thg cae",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Thg cae",
+        "the cat",
+        "The cat",
+        "Thg cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "\u2212 1he cat",
+      "after": "\u2212 1he cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "dog",
+      "after": "dog",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "25 g",
+      "after": "25 g",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "school",
+      "before": "55655 L",
+      "after": "55655 L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "school",
+      "before": "56 ml",
+      "after": "56 ml",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "hCLLO",
+      "after": "hCLLO",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "hCLLO",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "heddo",
+      "after": "heddo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heddo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "KCLLO",
+      "after": "KCLLO",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "KCLLO",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "ueddo",
+      "after": "ueddo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "ueddo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "math",
+      "before": "maeh",
+      "after": "maeh",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "maeh",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "math",
+      "before": "math",
+      "after": "math",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "three",
+      "before": "06 mm",
+      "after": "06 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "06 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "three",
+      "before": "three",
+      "after": "three",
+      "correct": true,
+      "offered": false,
+      "available": true,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "square",
+      "before": "592 mm",
+      "after": "592 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "592 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "square",
+      "before": "square",
+      "after": "square",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "558 mm",
+      "after": "558 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "558 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "658 mm",
+      "after": "658 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "658 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "ABC",
+      "after": "ABC",
+      "correct": true,
+      "offered": false,
+      "available": true,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "lbc",
+      "after": "lbc",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "6",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "Nacl",
+      "after": "Nacl",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "6",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "626L",
+      "after": "626L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "ca \u2212 1",
+      "after": "ca \u2212 1",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "tde cat",
+      "after": "tde cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "tde cat",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "\u2212 1de cat",
+      "after": "\u2212 1de cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "The cat",
+      "after": "The cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "The cat",
+        "the cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "6 kg",
+      "after": "6 kg",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "10 g",
+      "after": "10 g",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "school",
+      "before": "5160 ml",
+      "after": "5160 ml",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "school",
+      "before": "55 ml",
+      "after": "55 ml",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "55 ml",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "dello",
+      "after": "dello",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "dello",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "62110",
+      "after": "62110",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "t1eLL0",
+      "after": "t1eLL0",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "42110",
+      "after": "42110",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "math",
+      "before": "matd",
+      "after": "matd",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "matd",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "math",
+      "before": "aath",
+      "after": "aath",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "aath",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "three",
+      "before": "66 mm",
+      "after": "66 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "three",
+      "before": "66 mm",
+      "after": "66 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "66 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "square",
+      "before": "sqmare",
+      "after": "sqmare",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "sqmare",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "square",
+      "before": "sgmare",
+      "after": "sgmare",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "sgmare",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "101 mm",
+      "after": "101 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "101 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "501 mm",
+      "after": "501 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "501 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "A$C",
+      "after": "A$C",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "A$C",
+      "after": "A$C",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "7",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "425L",
+      "after": "425L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "7",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "Nacl",
+      "after": "Nacl",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "CatL",
+      "after": "CatL",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "ea \u2212 L",
+      "after": "ea \u2212 L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "Eat",
+      "after": "Eat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Eat",
+        "eat",
+        "Cat",
+        "cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "Cat",
+      "after": "Cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Cat",
+        "eat",
+        "Eat",
+        "cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "che eac",
+      "after": "che eac",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "che eac",
+        "the cat",
+        "The cat",
+        "che cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "r1he catl",
+      "after": "r1he catl",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "\u2212 l he ea \u2212 c",
+      "after": "\u2212 l he ea \u2212 c",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "28 g",
+      "after": "28 g",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "dgg",
+      "after": "dgg",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "dgg",
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "school",
+      "before": "55688L",
+      "after": "55688L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "school",
+      "before": "056 mm",
+      "after": "056 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "heqqq",
+      "after": "heqqq",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heqqq",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "heeeg",
+      "after": "heeeg",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heeeg",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "lteqqq",
+      "after": "lteqqq",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "lyeeeg",
+      "after": "lyeeeg",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "math",
+      "before": "math",
+      "after": "math",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "math",
+      "before": "mach",
+      "after": "mach",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "mach",
+        "math",
+        "Math",
+        "much"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "three",
+      "before": "661 mm",
+      "after": "661 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "three",
+      "before": "061 mm",
+      "after": "061 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "square",
+      "before": "sgua1re",
+      "after": "sgua1re",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "square",
+      "before": "D9rua1re",
+      "after": "D9rua1re",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "cqqqu1r",
+      "after": "cqqqu1r",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "egegu1r",
+      "after": "egegu1r",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "C",
+      "before": "E",
+      "after": "E",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": false,
+      "available": true,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "c",
+      "before": "e",
+      "after": "e",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "ABE",
+      "after": "ABE",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "AUC",
+      "after": "AUC",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "445L",
+      "after": "445L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "8",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "NaCL",
+      "after": "NaCL",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "tue cat",
+      "after": "tue cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "tue cat",
+        "the cat",
+        "The cat",
+        "tug cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "Tue cat",
+      "after": "Tue cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Tue cat",
+        "the cat",
+        "The cat",
+        "Tug cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "The cat",
+      "after": "The cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "The cat",
+        "the cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "dOg \u00d7",
+      "after": "dOg \u00d7",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "dog",
+      "after": "dog",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "school",
+      "before": "scuooe",
+      "after": "scuooe",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "scuooe",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "school",
+      "before": "556 mm",
+      "after": "556 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "556 mm",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "ueeeo",
+      "after": "ueeeo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "ueeeo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "60 mm",
+      "after": "60 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "60 mm",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "keeeo",
+      "after": "keeeo",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "keeeo",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "40 mm",
+      "after": "40 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "40 mm",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "math",
+      "before": "matu",
+      "after": "matu",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "matu",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "math",
+      "before": "wath",
+      "after": "wath",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "wath",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "three",
+      "before": "4 mm",
+      "after": "4 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "4 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "three",
+      "before": "66 mm",
+      "after": "66 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "66 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "square",
+      "before": "5 mm",
+      "after": "5 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "5 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "square",
+      "before": "594 mm",
+      "after": "594 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "594 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "508 mm",
+      "after": "508 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "508 mm",
+      "after": "508 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "508 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "DBC",
+      "after": "DBC",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "ABC",
+      "after": "ABC",
+      "correct": true,
+      "offered": false,
+      "available": true,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "9",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "4 mm",
+      "after": "4 mm",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "9",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "Nace",
+      "after": "Nace",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "ca \u00d7",
+      "after": "ca \u00d7",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "caf",
+      "after": "caf",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "caf",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "caf",
+      "after": "caf",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "caf",
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "\u00d7 he ca \u00d7",
+      "after": "\u00d7 he ca \u00d7",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "fhe caf",
+      "after": "fhe caf",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "fhe caf",
+        "the cat",
+        "The cat",
+        "fhe cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "the ca \u00d7",
+      "after": "the ca \u00d7",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "the caf",
+      "after": "the caf",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the caf",
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "dog",
+      "after": "dog",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "d01",
+      "after": "d01",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "d01",
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "school",
+      "before": "8565 ml",
+      "after": "8565 ml",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "school",
+      "before": "tchqqi",
+      "after": "tchqqi",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "tchqqi",
+        "school",
+        "School"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "heiio",
+      "after": "heiio",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heiio",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "heiiq",
+      "after": "heiiq",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "heiiq",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "$eLLO",
+      "after": "$eLLO",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "Heiiq",
+      "after": "Heiiq",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Heiiq",
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "math",
+      "before": "ma \u00d7 h",
+      "after": "ma \u00d7 h",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "math",
+      "before": "mafh",
+      "after": "mafh",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "mafh",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "three",
+      "before": "46 mm",
+      "after": "46 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "46 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "three",
+      "before": "46 mm",
+      "after": "46 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "46 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "square",
+      "before": "884 mm",
+      "after": "884 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "884 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "square",
+      "before": "684 mm",
+      "after": "684 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "684 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "COIOMR",
+      "after": "COIOMR",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "COIOMR",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "CQIQMV",
+      "after": "CQIQMV",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "CQIQMV",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "ABC",
+      "after": "ABC",
+      "correct": true,
+      "offered": false,
+      "available": true,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "ABC",
+      "after": "ABC",
+      "correct": true,
+      "offered": false,
+      "available": true,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "10",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "Naci",
+      "after": "Naci",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "10",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "Waci",
+      "after": "Waci",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Cat",
+      "before": "cat",
+      "after": "cat",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "cat",
+        "Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "the cat",
+      "before": "the cat",
+      "after": "the cat",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "the cat",
+        "The cat",
+        "the Cat"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "\u2212 1he cat",
+      "after": "\u2212 1he cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "The cat",
+      "before": "\u2212 1he cat",
+      "after": "\u2212 1he cat",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "109",
+      "after": "109",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "dog",
+      "before": "d09",
+      "after": "d09",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "d09",
+        "dog",
+        "Dog"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "school",
+      "before": "55600L",
+      "after": "55600L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "school",
+      "before": "5560 ml",
+      "after": "5560 ml",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "hello",
+      "after": "hello",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "hello",
+      "before": "hello",
+      "after": "hello",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "hello",
+        "Hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "Hello",
+      "after": "Hello",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Hello",
+        "hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "Hello",
+      "before": "Hello",
+      "after": "Hello",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "Hello",
+        "hello"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "math",
+      "before": "228 L",
+      "after": "228 L",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "228 L",
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "math",
+      "before": "math",
+      "after": "math",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "math",
+        "Math"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "three",
+      "before": "86 mm",
+      "after": "86 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "86 mm",
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "three",
+      "before": "three",
+      "after": "three",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "three",
+        "Three"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "square",
+      "before": "s9uare",
+      "after": "s9uare",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "s9uare",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "square",
+      "before": "592 mm",
+      "after": "592 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "592 mm",
+        "square",
+        "Square"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "501 mm",
+      "after": "501 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "501 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "colour",
+      "before": "508 mm",
+      "after": "508 mm",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "508 mm",
+        "colour",
+        "Colour"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "C",
+      "before": "C",
+      "after": "C",
+      "correct": true,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "c",
+      "before": "C",
+      "after": "C",
+      "correct": false,
+      "offered": true,
+      "available": true,
+      "choices": [
+        "C",
+        "c"
+      ],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "dBc",
+      "after": "dBc",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "ABC",
+      "before": "dBc",
+      "after": "dBc",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    },
+    {
+      "writer": "11",
+      "rep": 0,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "826L",
+      "after": "826L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": true
+    },
+    {
+      "writer": "11",
+      "rep": 1,
+      "partition": "verification",
+      "expected": "NaCl",
+      "before": "826L",
+      "after": "826L",
+      "correct": false,
+      "offered": false,
+      "available": false,
+      "choices": [],
+      "flagged": false
+    }
+  ],
+  "sourceSha256": {
+    "whiteboard-handwriting-recognition-beta.js": "ab2c6298af45fb910b0bb60dd484fb9ad25a66a595705cffcbce7c8f029b9692",
+    "whiteboard-handwriting-words-beta.js": "4bac768b174dc89da0fd4fe72983298a929f3c43496a4486411493b36ed039ca",
+    "whiteboard-handwriting-word-list-beta.js": "e4b8a874ca7e051d51b16e15d75b12e1a8cb54bf88536c1ca561ac45fcefcc2a",
+    "whiteboard-handwriting-beautify-beta.js": "34d01abad2f452cedf9e082ec263652c93242c9cb5d7d9bcf6932e848efef5f0",
+    "scripts/handwriting-uji-word-fixtures.json.gz": "63f75636eda9e41e0d9e01d1a4f1f2dba687e53c4fad78e4830590d0bf48006b"
+  },
+  "existing924": {
+    "correct": 767,
+    "total": 924,
+    "exactPercent": 83.008658008658,
+    "characterErrorPercent": 8.12788906009245,
+    "flagged": 254,
+    "unflaggedWrong": 92,
+    "p50ms": 78,
+    "p95ms": 269,
+    "unchangedReadings": 924,
+    "regressions": 0,
+    "additionalFlags": 19
+  },
+  "teacherCompatibility": {
+    "total": 1024,
+    "beforeCorrect": 492,
+    "afterCorrect": 492,
+    "regressions": [],
+    "gains": []
+  },
+  "measurementControls": {
+    "total": 152,
+    "correct": 152,
+    "failures": [],
+    "diagnostics": [
+      {
+        "file": "equals-handwriting-strokes (1).json",
+        "expected": "10 m\u00b3",
+        "actual": "10 m\u00b3",
+        "correct": true
+      },
+      {
+        "file": "equals-handwriting-strokes (2).json",
+        "expected": "10 m\u00b3",
+        "actual": "10 m\u00b3",
+        "correct": true
+      },
+      {
+        "file": "equals-handwriting-strokes (3).json",
+        "expected": "10 m\u00b3",
+        "actual": "10 m\u00b3",
+        "correct": true
+      },
+      {
+        "file": "equals-handwriting-strokes (4).json",
+        "expected": "6 \u2212 2 = 4 cm\u00b2",
+        "actual": "6 \u2212 2 = 4 cm\u00b2",
+        "correct": true
+      },
+      {
+        "file": "equals-handwriting-strokes(1).json",
+        "expected": "10 m\u00b3",
+        "actual": "10 m\u00b3",
+        "correct": true
+      }
+    ]
+  }
+}

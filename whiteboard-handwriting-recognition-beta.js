@@ -1309,6 +1309,12 @@ async function recognizeWithContext(strokes,W,H,options,reading){
 }
 async function recognize(strokes,W,H,options={}){
  const reading=await recognizeBeforeContext(strokes,W,H,options);
+ // Word checking is an optional review layer. A failure retains the existing
+ // reading and must not prevent the independent measurement context check.
+ let words=reading;
+ try{words=await window.WhiteboardHandwritingWords?.check(strokes,W,H,options,reading,{segment,rasterDigit})||reading}
+ catch(error){if(error?.name==='AbortError')throw error;}
+ if(words!==reading)return words;
  try{return await recognizeWithContext(strokes,W,H,options,reading)}
  catch(error){
   if(error?.name==='AbortError')throw error;
@@ -1317,5 +1323,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-context1';
+window.WhiteboardHandwritingMath.build='20261020-words1';
 })();

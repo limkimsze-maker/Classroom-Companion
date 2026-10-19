@@ -22,15 +22,15 @@ const body=new Element('body'),head=new Element('head'),tools=new Element('div')
 board.id='boardWrap';undo.id='undoBtn';pen.id='penBtn';tools.append(pen,undo);body.append(tools,board);
 document={body,head,activeElement:null,createElement:tag=>new Element(tag),querySelector:s=>s==='.tools'?tools:null,getElementById:id=>find(body,e=>e.id===id)||find(head,e=>e.id===id)};
 const raw={size:4,points:[{x:.2,y:.3},{x:.25,y:.4}]},alternateTokens=[{char:'3',parts:[{points:[{x:20,y:30},{x:25,y:40}]}]}];
-const recognition={text:'10 m²',tokens:[],uncertain:[{char:'?',score:0}],engine:'local-context-language-model',format:'unit',context:{applied:false,originalText:'10 m²',alternatives:[{text:'10 m²',tokens:[]},{text:'10 m³',tokens:alternateTokens}]}};
+let recognition={text:'10 m²',tokens:[],uncertain:[{char:'?',score:0}],engine:'local-context-language-model',format:'unit',context:{applied:false,originalText:'10 m²',alternatives:[{text:'10 m²',tokens:[]},{text:'10 m³',tokens:alternateTokens}]}};
 let confirmed=[],undone=[],cancelled=0;
 const ctx={document,console,Math,JSON,Number,Set,setTimeout,clearTimeout,encodeURIComponent,
  canvas:{releasePointerCapture(){}},strokes:[raw],cssW:800,cssH:600,tool:'select',redraw(){},syncUi(){},addEventListener(){},requestAnimationFrame:fn=>setTimeout(fn,0),
- WhiteboardHandwritingMath:{build:'20261020-context1',recognize:async()=>recognition,rasterDigit(){}},
+ WhiteboardHandwritingMath:{build:'20261020-words1',recognize:async()=>recognition,rasterDigit(){}},
  WhiteboardHandwritingLearning:{confirm(...args){confirmed.push(args);return{count:1,persistent:true}},undo:tx=>undone.push(tx)},
  WhiteboardEquationFormatter:{font:()=> 'Arial',createHandwriting:(text,b,colour)=>text?{type:'image',src:'preview:'+text,colour,...b}:null},
  WhiteboardCharacterReader:{cancel(){cancelled++}},WhiteboardMarqueeSelection:{get:()=>ctx.strokes,clear(){}}};
-for(const name of ['WhiteboardDigitModel','WhiteboardCharacterModels','WhiteboardCharacterInference','WhiteboardUjiWeights','WhiteboardUjiReader','WhiteboardPrimaryMathGrammar','WhiteboardEqualSign','WhiteboardTrained9GQEquals','WhiteboardTrainedJ','WhiteboardTrainedRemaining','WhiteboardTeacherUnits','WhiteboardTeacherConfusables','WhiteboardUnitExponent','WhiteboardHandwritingContextModel','WhiteboardHandwritingContext'])ctx[name]={};
+for(const name of ['WhiteboardDigitModel','WhiteboardCharacterModels','WhiteboardCharacterInference','WhiteboardUjiWeights','WhiteboardUjiReader','WhiteboardPrimaryMathGrammar','WhiteboardEqualSign','WhiteboardTrained9GQEquals','WhiteboardTrainedJ','WhiteboardTrainedRemaining','WhiteboardTeacherUnits','WhiteboardTeacherConfusables','WhiteboardUnitExponent','WhiteboardHandwritingContextModel','WhiteboardHandwritingContext','WhiteboardHandwritingWordList','WhiteboardHandwritingWords'])ctx[name]={};
 ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('whiteboard-handwriting-beautify-beta.js','utf8'),ctx);
 (async()=>{
  await document.getElementById('handwritingBeautifyBtn').click();
@@ -47,5 +47,18 @@ ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('whiteboard
  const next=document.getElementById('handwritingReadText');next.value='97 kg';await next.fire('input');
  assert.equal(document.getElementById('handwritingContextChoices').hidden,true,'manual edits hide stale alternatives');
  await find(body,e=>e.textContent==='Cancel').click();assert.equal(confirmed.length,1,'Cancel teaches nothing');
- assert(cancelled>0);console.log('PASS actual review controller: alternatives, preview, Apply token alignment, pen recovery, Undo, manual edits and Cancel');
+ recognition={text:'c',tokens:[],uncertain:[{char:'?',score:0}],context:{kind:'letter-case',alternatives:[{text:'c',tokens:[]},{text:'C',tokens:alternateTokens}]}};
+ await document.getElementById('handwritingBeautifyBtn').click();
+ const letterArea=document.getElementById('handwritingContextChoices');
+ assert(letterArea.children[0].textContent.includes('Lowercase or uppercase'));
+ await letterArea.children[1].children[1].click();assert.equal(document.getElementById('handwritingReadText').value,'C');
+ assert.equal(confirmed.length,1,'choosing capital C does not teach before Apply');
+ await find(body,e=>e.textContent==='Cancel').click();
+ recognition={text:'c?t',tokens:[],uncertain:[{char:'?',score:0}],context:{kind:'words',alternatives:[{text:'c?t',tokens:[]},{text:'cat',tokens:alternateTokens}]}};
+ await document.getElementById('handwritingBeautifyBtn').click();
+ const wordArea=document.getElementById('handwritingContextChoices');assert(wordArea.children[0].textContent.includes('Possible words'));
+ await wordArea.children[1].children[1].click();await find(body,e=>e.textContent==='✓ Apply beautify').click();
+ assert.equal(ctx.strokes[0].src,'preview:cat');assert.equal(confirmed[1][1],'cat');assert.equal(confirmed[1][0].tokens,alternateTokens);
+ await undo.click();assert.equal(JSON.stringify(ctx.strokes),JSON.stringify([raw]));
+ assert(cancelled>0);console.log('PASS actual review controller: unit/word/case alternatives, preview, Apply token alignment, pen recovery, Undo, manual edits and Cancel');
 })().catch(e=>{console.error(e);process.exitCode=1});

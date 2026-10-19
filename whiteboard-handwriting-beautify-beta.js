@@ -5,7 +5,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let readerRecovery=null;
-const readerBuild='20261020-context1';
+const readerBuild='20261020-words1';
 const requiredReaders=[
  ['whiteboard-handwriting-digit-model-beta.js',()=>window.WhiteboardDigitModel],
  ['whiteboard-handwriting-character-models-beta.js',()=>window.WhiteboardCharacterModels],
@@ -24,6 +24,8 @@ const requiredReaders=[
  ['whiteboard-unit-exponent-trained-beta.js',()=>window.WhiteboardUnitExponent],
  ['whiteboard-handwriting-context-model-beta.js',()=>window.WhiteboardHandwritingContextModel],
  ['whiteboard-handwriting-context-beta.js',()=>window.WhiteboardHandwritingContext],
+ ['whiteboard-handwriting-word-list-beta.js',()=>window.WhiteboardHandwritingWordList],
+ ['whiteboard-handwriting-words-beta.js',()=>window.WhiteboardHandwritingWords],
  ['whiteboard-handwriting-recognition-beta.js',()=>window.WhiteboardHandwritingMath?.recognize&&window.WhiteboardHandwritingMath.build===readerBuild]
 ];
 async function ensureReader(){
@@ -105,7 +107,7 @@ async function review(group){
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Beautify 2.0 feedback: correct the reading to update the preview instantly. Learn & Test Again saves a provisional example on this browser and re-reads the same ink. Draw again to test new handwriting. Cancel discards provisional learning; Apply keeps it and Undo reverses it.';
+ const help=document.createElement('p');help.textContent='Auto can offer word, letter-case, unit and superscript choices. Choose a reading or edit it to update the preview. Learn & Test Again saves a provisional example on this browser and re-reads the same ink. Draw again to test new handwriting. Cancel discards provisional learning; Apply keeps it and Undo reverses it.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=600;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised numbers, letters, units or mathematical notation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
@@ -147,7 +149,9 @@ async function review(group){
   contextArea.replaceChildren();contextArea.hidden=true;
   const choices=result?.context?.alternatives||[];
   if(choices.length<2)return;
-  const message=document.createElement('p');message.textContent='Possible readings — compare the unit or superscript with your ink.';
+  const message=document.createElement('p');message.textContent=result.context.kind==='words'?
+   'Possible words — check the spelling and capital letters against your ink.':result.context.kind==='letter-case'?
+   'Lowercase or uppercase? Choose the letter you intended.':'Possible readings — compare the unit or superscript with your ink.';
   const buttons=document.createElement('div');buttons.className='handwriting-context-options';
   for(const choice of choices){
    if(typeof choice.text!=='string'||choice.text.length>180)continue;
