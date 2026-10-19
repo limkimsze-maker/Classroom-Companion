@@ -988,11 +988,23 @@ async function recognizeUnitComponents(strokes,W,H,options){
     rb.y+rb.h>bb.y+bb.h*.70)continue;
   if(prefix.length&&bounds(prefix.map(p=>p.scaled)).cx>=bounds(baseline.map(p=>p.scaled)).cx)continue;
   const upperRaster=rasterDigit(raised.map(p=>p.scaled)),powerChoices=predictDigit(upperRaster);
+  // The exponent is an independent glyph. A clear 3 contour may rescue an
+  // image-classifier 2, but only for a single complete raised stroke; do not
+  // interpret one stroke of a multi-stroke exponent as a complete character.
+  const contour3=raised.length===1&&raisedThreeContour(raised[0].raw,W,H);
+  const contour2=raised.length===1&&raisedTwoShape(raised[0].raw,W,H);
   let power=powerChoices[0];
-  if(!['2','3'].includes(power?.char)||power.score<.97){
+  if(contour3&&!contour2&&power?.char==='2'&&power.score<.94){
+   power={char:'3',score:.90,evidence:.90};
+  }else if(contour2&&!contour3&&power?.char==='3'&&power.score<.94){
+   power={char:'2',score:.90,evidence:.90};
+  }
+  if(!['2','3'].includes(power?.char)||power.score<.90){
    const pen=window.WhiteboardUjiReader?.read(raised.map(p=>p.scaled.points)),best=pen?.[0];
    if(!best||!['2','3'].includes(best.label)||best.p<.985||best.p-(pen[1]?.p||0)<.95)continue;
-   power={char:best.label,score:Math.min(best.p,powerChoices.find(p=>p.char===best.label).score),evidence:best.p};
+   const support=powerChoices.find(p=>p.char===best.label)?.score||0;
+   if(support<.10)continue;
+   power={char:best.label,score:Math.min(best.p,support),evidence:best.p};
   }
   // Group only the unit's ink. A wide m written in two strokes must not be
   // split by the numeric segmenter's narrower glyph-width limit.
