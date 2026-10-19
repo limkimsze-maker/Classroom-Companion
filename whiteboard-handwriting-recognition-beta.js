@@ -556,6 +556,41 @@ async function recognize(strokes,W,H,options={}){
  if(equal)return equal;
  const trainedJ=window.WhiteboardTrainedJ?.detect?.(strokes,W,H);
  if(trainedJ)return{...trainedJ,tokens:[],uncertain:[]};
+ const teacher=options.mode==='auto'&&window.WhiteboardTeacherUnits;
+ if(teacher){
+  // Strong whole-selection matches override historical unit/operator exemplars.
+  // Weak or ambiguous results abstain and retain the existing decoder.
+  const direct=teacher.match(strokes,W,H,{minScore:.94,minMargin:.045});
+  if(direct)return direct;
+  // Check longer compound units first, before a grammar discards a superscript.
+  // A numeric prefix must remain a separately validated quantity.
+  const measured=['cm²','m²','km²','mm²','cm³','m³','mm³','cm','mm','km','kg','mg','g','m','ml','mL','L'];
+  if(strokes.length>=3&&strokes.length<=11){
+   const ordered=strokes.slice().sort((a,b)=>{
+    const x=s=>Math.min(...s.points.map(p=>p.x));
+    return x(a)-x(b);
+   });
+   outer: for(const count of [4,3,2,1]){
+    if(count>=ordered.length)continue;
+    const suffix=ordered.slice(-count),prefix=ordered.slice(0,-count);
+    const unit=teacher.match(suffix,W,H,{only:measured,minScore:.925,minMargin:.027});
+    if(!unit)continue;
+    const items=prefix.map(raw=>{
+     const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};
+     return{raw,box:bounds([scaled])};
+    });
+    const digits=readMeasuredDigits(items,W,H);
+    let value=digits?.value;
+    if(!value&&prefix.length<=3){
+     const scaled=prefix.map(raw=>({points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4}));
+     const candidate=predictDigit(rasterDigit(scaled))[0];
+     if(candidate&&candidate.score>.92)value=candidate.char;
+    }
+    if(!value)continue outer;
+    return{text:value+' '+unit.text,tokens:digits?.tokens||[],uncertain:[],engine:'teacher-unit-operator-quantity',format:'unit'};
+   }
+  }
+ }
  // Supervised compact template model; abstain on uncertain handwritten shapes.
  const trained=window.WhiteboardTrained9GQEquals?.recognize?.(strokes,W,H,options.mode||'auto');
  if(trained)return trained;

@@ -1,0 +1,18 @@
+name: Teacher units override
+on:
+  push:
+    branches: [feature/trained-units-override-20261019]
+  pull_request:
+    paths: [whiteboard-teacher-units-beta.js, whiteboard-handwriting-recognition-beta.js, scripts/test-teacher-units-override.cjs]
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/test-teacher-units-override.cjs
+      - run: node scripts/test-reader-syntax.cjs
+      - run: node scripts/test-raised-measurement-structural.cjs
+      - run: node scripts/test-raised-two-geometry.cjs
