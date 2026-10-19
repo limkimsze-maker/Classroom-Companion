@@ -5,6 +5,6 @@ new vm.Script(r);
 assert(r.includes('async function recognizeUnitFirst'));
 assert(r.includes("window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment}"));
 assert(h.indexOf('whiteboard-unit-exponent-trained-beta.js')<h.indexOf('whiteboard-handwriting-recognition-beta.js'));
-assert(h.includes('whiteboard-handwriting-recognition-beta.js?v=20261019-recognition-audit1'));
+assert(h.includes('whiteboard-handwriting-recognition-beta.js?v=20261019-equation-units1'));
 require('./test-unit-first-exponent-zero.cjs');
 console.log('PASS current unit-first trained exponent priority');

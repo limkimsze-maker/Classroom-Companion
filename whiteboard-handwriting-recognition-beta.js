@@ -787,6 +787,28 @@ function closedZeroInk(stroke,W,H){
  }
  return Math.abs(turns)>=4.7&&Math.abs(turns)<=8.2;
 }
+// The ink before a unit may be a whole arithmetic statement, not just one
+// quantity. Validate every operand/operator so a suffix cannot steal the final
+// digit and leave an incomplete prefix such as "6 − 2 =".
+function completeNumericExpression(text){
+ const number='[−-]?\\d+(?:\\.\\d+)?',sum=number+'(?:[+−×÷]'+number+')*';
+ return new RegExp('^'+sum+'(?:='+sum+')*$').test(String(text).replace(/\s+/g,''));
+}
+async function readUnitPrefix(prefix,W,H,options){
+ let read;
+ try{read=await recognizeCore(prefix.map(p=>p.raw),W,H,{...options,mode:'digits'})}catch(_){}
+ if(!read||!completeNumericExpression(read.text)){
+  const digits=readMeasuredDigits(prefix,W,H);
+  if(!digits)return null;
+  read={text:digits.value,tokens:digits.tokens,uncertain:[]};
+ }
+ let text=read.text,tokens=read.tokens||[];
+ if(/^\d+$/.test(text)&&prefix.length===text.length){
+  text=text.split('').map((digit,i)=>closedZeroInk(prefix[i].raw,W,H)?'0':digit).join('');
+  tokens=tokens.map((t,i)=>({...t,char:text[i]||t.char}));
+ }
+ return{text,tokens,uncertain:read.uncertain||[]};
+}
 // A new writing style may be distant from a complete-unit template. Keep the
 // raised ink separate and read the unit letters and exponent independently.
 // Never let ordinary text segmentation merge m and its power into a W.
@@ -832,24 +854,30 @@ async function recognizeUnitComponents(strokes,W,H,options){
   const alpha=await window.WhiteboardCharacterReader.predictBatch(tokens.map(t=>rasterDigit(t.parts)),'lowercase',options.onProgress);
   const word=alpha.map(r=>r[0]?.char).join('');
   if(!['m','mm','cm','km'].includes(word)||alpha.some(r=>!r[0]||r[0].score<.90||r[0].score-(r[1]?.score||0)<.30))continue;
-  let number='',numberTokens=[];
+  let number='',numberTokens=[],numberUncertain=[];
   if(prefix.length){
-   const read=await recognizeCore(prefix.map(p=>p.raw),W,H,{...options,mode:'digits'});
-   if(!/^\d+(?:\.\d+)?$/.test(read?.text||'')||read.uncertain?.length)continue;
+   const read=await readUnitPrefix(prefix,W,H,options);
+   if(!read)continue;
    number=read.text;
-   if(prefix.length===number.length)number=number.split('').map((digit,i)=>closedZeroInk(prefix[i].raw,W,H)?'0':digit).join('');
-   numberTokens=(read.tokens||[]).map((t,i)=>({...t,char:number[i]||t.char}));
+   numberTokens=read.tokens;
+   numberUncertain=read.uncertain;
   }
   const exponent=power.char==='2'?'²':'³';
-  proposals.push({text:(number?number+' ':'')+word+exponent,score:Math.min(power.score,...alpha.map(r=>r[0].score)),
+  proposals.push({word,raised:raised.map(p=>p.raw),uncertain:numberUncertain,text:(number?number+' ':'')+word+exponent,score:Math.min(power.score,...alpha.map(r=>r[0].score)),
    tokens:[...numberTokens,...tokens.map((t,i)=>({...t,char:word[i],score:alpha[i][0].score})),
     {char:exponent,score:power.score,parts:raised.map(p=>p.scaled)}]});
   }
  }
- proposals.sort((a,b)=>b.score-a.score);
- const best=proposals[0];
- if(!best||proposals.some(p=>p.text!==best.text&&best.score-p.score<.03))return null;
- return{text:best.text,tokens:best.tokens,uncertain:[],engine:'unit-first-components',format:'unit'};
+ // A confidently read cm/mm/km is one complete unit. Do not also count its
+ // first letter as a numeric digit (c -> 5) and manufacture ambiguity with m.
+ // Both candidates must use the identical complete superscript ink.
+ const complete=proposals.filter(p=>!proposals.some(q=>q.word.length>p.word.length&&
+  q.word.endsWith(p.word)&&q.score>=p.score-.03&&q.raised.length===p.raised.length&&
+  q.raised.every((raw,i)=>raw===p.raised[i])));
+ complete.sort((a,b)=>b.score-a.score);
+ const best=complete[0];
+ if(!best||complete.some(p=>p.text!==best.text&&best.score-p.score<.03))return null;
+ return{text:best.text,tokens:best.tokens,uncertain:best.uncertain,engine:'unit-first-components',format:'unit'};
 }
 async function recognizeUnitFirst(strokes,W,H,options){
  const teacher=window.WhiteboardTeacherUnits;
@@ -923,44 +951,20 @@ async function recognizeUnitFirst(strokes,W,H,options){
  // Compare all plausible spatial boundaries before consuming the numeric ink.
  // A weak longer unit must not steal a digit from a better shorter match.
  hypotheses.sort((a,b)=>b.score-a.score);
+ let uncertainPrefix=null;
  for(const {prefix,unit} of hypotheses){
-  // Never run the old whole-measurement decoder on the quantity.
-  const numberInk=prefix.map(p=>p.raw);
-  let numeric=null;
-  try{
-   const read=await recognizeCore(numberInk,W,H,{...options,mode:'digits'});
-   if(/^\d+(?:\.\d+)?$/.test(read?.text||'')){
-    numeric=read.text;
-    // Align one-digit-per-stroke prefix and protect complete oval zeros.
-    if(prefix.length===numeric.length){
-     const digits=numeric.split('');
-     for(let i=0;i<prefix.length;i++){
-      if(closedZeroInk(prefix[i].raw,W,H))digits[i]='0';
-     }
-     numeric=digits.join('');
-    }
-   }
-  }catch(_){}
-  if(!numeric){
-   try{
-    const parsed=readMeasuredDigits(prefix.map(p=>({raw:p.raw,box:p.box})),W,H);
-    if(parsed)numeric=parsed.value;
-   }catch(_){}
-   if(numeric&&prefix.length===numeric.length){
-    const digits=numeric.split('');
-    prefix.forEach((p,i)=>{if(closedZeroInk(p.raw,W,H))digits[i]='0'});
-    numeric=digits.join('');
-   }
-  }
-  if(!numeric){
-   // Trained unit is protected even when the number reader abstains.
-   return{text:'? '+unit,engine:'unit-first-number-uncertain',format:'unit',
+  const read=await readUnitPrefix(prefix,W,H,options);
+  if(!read){
+   // Keep searching: an over-wide unit candidate may have consumed a digit.
+   // This fallback must also give the independent component reader a turn.
+   uncertainPrefix??={text:'? '+unit,engine:'unit-first-number-uncertain',format:'unit',
      tokens:[],uncertain:[{char:'?',score:0,parts:[]}]};
+   continue;
   }
-  return{text:numeric+' '+unit,engine:'unit-first-trained-measurement',format:'unit',
-    tokens:[],uncertain:unit.endsWith('?')?[{char:'?',score:0,parts:[]}]:[]};
+  return{text:read.text+' '+unit,engine:'unit-first-trained-measurement',format:'unit',
+    tokens:read.tokens,uncertain:[...read.uncertain,...(unit.endsWith('?')?[{char:'?',score:0,parts:[]}]:[])]};
  }
- return null;
+ return uncertainPrefix;
 }
 async function recognize(strokes,W,H,options={}){
  options={...options,mode:options.mode||'auto'};
@@ -989,9 +993,10 @@ async function recognize(strokes,W,H,options={}){
  }
  if((options.mode||'auto')==='auto'){
   const measured=await recognizeUnitFirst(strokes,W,H,options);
-  if(measured)return reconcile(measured);
+  if(measured&&!measured.uncertain?.length)return reconcile(measured);
   const components=await recognizeUnitComponents(strokes,W,H,options);
   if(components)return reconcile(components);
+  if(measured)return reconcile(measured);
  }
  const original=await recognizeCore(strokes,W,H,options);
  // For a quantity with an explicitly raised final glyph, do not let older
@@ -1008,5 +1013,5 @@ async function recognize(strokes,W,H,options={}){
 }
 
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261019-recognition-audit1';
+window.WhiteboardHandwritingMath.build='20261019-equation-units1';
 })();

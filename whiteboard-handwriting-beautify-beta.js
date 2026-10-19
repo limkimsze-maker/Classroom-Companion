@@ -5,7 +5,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let readerRecovery=null;
-const readerBuild='20261019-recognition-audit1';
+const readerBuild='20261019-equation-units1';
 const requiredReaders=[
  ['whiteboard-handwriting-digit-model-beta.js',()=>window.WhiteboardDigitModel],
  ['whiteboard-handwriting-character-models-beta.js',()=>window.WhiteboardCharacterModels],

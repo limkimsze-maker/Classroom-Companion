@@ -1,5 +1,29 @@
 # Beta handwriting recognition
 
+## Arithmetic with unit suffixes — 19 October 2026
+
+Build `20261019-equation-units1` fixes the exact exported `6 − 2 = 4 cm²`
+failure. The previous unit-first route accepted only one numeric quantity,
+returned an uncertain unit before trying the component reader, and could
+interpret the first letter of `cm²` as an extra numeral before `m²`.
+
+Both unit routes now validate a complete numeric arithmetic prefix, retaining
+its original operators and numerals without evaluating or correcting the sum.
+Incomplete prefixes cannot consume a final digit into the unit. Failed suffix
+boundaries are compared before abstaining, and uncertain template readings
+allow the independent letter/exponent reader to run. When the same superscript
+supports a confidently read compound unit, the complete `cm`/`mm`/`km` takes
+precedence over an abbreviated `m` candidate that moved its first letter into
+the number. Weak numeric predictions retain their uncertainty and the correctly
+identified unit instead of discarding the whole composition.
+
+Validation covers the exact diagnostic, placement/scale/pen-order variations,
+all four arithmetic operators and a deliberately false equation (preserved as
+written). The stretched diagnostic keeps its weaker numeral flagged for review.
+Original raw teacher strokes are used locally for replay and are not bundled
+into the public repository. Existing unit, correction and mode regressions are
+also retained; these checks do not establish general handwriting accuracy.
+
 ## Recognition flow audit — 19 October 2026
 
 Build `20261019-recognition-audit1` puts confirmed local whole-ink corrections
