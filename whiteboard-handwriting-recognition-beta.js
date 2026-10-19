@@ -817,7 +817,14 @@ async function recognizeUnitFirst(strokes,W,H,options){
   // Prefer the actual single-stroke exponent trained from m²/m³ samples.
   // This is independent of the older two-stroke ²/³ training.
   if(trainedPower&&best&&best.score>=.74&&/[²³]$/.test(best.label)){
-   unit=best.label.replace(/[²³]$/,trainedPower.label);
+   // A misleading raised 2 can resemble a 3. When the trained complete
+   // unit strongly favours squared and contour evidence for 3 is absent,
+   // do not silently turn a genuine square unit into a cube unit.
+   const cubic=best.label.endsWith('³')?best:
+     candidates.find(x=>x.label===best.label.replace('²','³'));
+   const contradictsSquare=trainedPower.label==='³'&&best.label.endsWith('²')&&
+     best.score>=.83&&best.score-(cubic?.score??0)>.16&&!contourThree;
+   if(!contradictsSquare)unit=best.label.replace(/[²³]$/,trainedPower.label);
   }
   // Trained unit labels establish the base unit; corroborated contour may
   // distinguish a raised 3 from a 2 when prototypes are close.
