@@ -766,7 +766,7 @@ async function recognizeCore(strokes,W,H,options={}){
 async function recognize(strokes,W,H,options={}){
  const result=await recognizeCore(strokes,W,H,options);
  if((options.mode||'auto')!=='auto'||!result||strokes.length<3||strokes.length>12)return result;
- if(!/^\\d+(?:\\.\\d+)?\\s+(?:mm|cm|km|m)[²³]$/.test(result.text||''))return result;
+ if(!/^\d+(?:\.\d+)?\s+(?:mm|cm|km|m)[²³]$/.test(result.text||''))return result;
  const items=strokes.map(raw=>{
   if(!raw?.points?.length)return null;
   const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
