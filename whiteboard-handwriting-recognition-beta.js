@@ -782,6 +782,10 @@ async function recognizeUnitFirst(strokes,W,H,options){
  for(let n=Math.min(5,sorted.length-1);n>=2;n--){
   const suffix=sorted.slice(-n),prefix=sorted.slice(0,-n);
   const final=suffix.at(-1),preceding=suffix.at(-2);
+  // A large digit immediately before m must stay in the numeric prefix;
+  // do not accidentally interpret the 0 in 10 as part of a longer unit.
+  const first=suffix[0],body=suffix.slice(1,-1);
+  if(body.length&&first.box.h>Math.max(...body.map(p=>p.box.h))*1.35)continue;
   const tall=Math.max(...prefix.map(p=>p.box.h),preceding.box.h);
   const raised=final.box.h>=8&&final.box.h<tall*.78
     &&final.box.cx>preceding.box.cx
