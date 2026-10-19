@@ -763,27 +763,35 @@ async function recognizeCore(strokes,W,H,options={}){
 // Reconcile the final recognised measurement with an independently supported
 // superscript contour. This avoids re-decoding the numeric prefix after an
 // earlier grammar has already recognised it successfully.
+function resolveTrainedSquareCube(strokes,W,H,result){
+ if(!window.WhiteboardTeacherUnits||!result||!/^\d+(?:\.\d+)?\s+m[²³]$/.test(result.text||'')||strokes.length<3)return result;
+ const parts=strokes.map(raw=>{const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};return{raw,box:bounds([scaled])}}).sort((a,b)=>a.box.cx-b.box.cx);
+ const unitParts=parts.slice(-2),quantity=parts.slice(0,-2);
+ if(!quantity.length)return result;
+ const last=unitParts[1],base=unitParts[0];
+ const raised=last.box.h>=8&&last.box.h<base.box.h*.87&&last.box.cy<base.box.cy-base.box.h*.10&&last.box.cx>base.box.cx;
+ if(!raised)return result;
+ const ranked=window.WhiteboardTeacherUnits.rank(unitParts.map(p=>p.raw),W,H,{only:['m²','m³']});
+ const a=ranked[0],b=ranked[1];
+ const strong=a&&a.score>=.91&&(!b||a.score-b.score>=.045);
+ const three=raisedThreeContour(last.raw,W,H);
+ let chosen=strong?a.label:null;
+ // Strong independent evidence of a written 3 can disambiguate a near tie.
+ if(!chosen&&three&&a&&a.score>=.84)chosen='m³';
+ if(!chosen)return{...result,text:result.text.replace(/m[²³]$/,'m?'),engine:'teacher-m2-m3-uncertain',uncertain:[{char:'?',score:0,parts:[]}]};
+ return{...result,text:result.text.replace(/m[²³]$/,chosen),engine:'teacher-m2-m3-authoritative'};
+}
 async function recognize(strokes,W,H,options={}){
  const result=await recognizeCore(strokes,W,H,options);
- if((options.mode||'auto')!=='auto'||!result||strokes.length<3||strokes.length>12)return result;
- if(!/^\d+(?:\.\d+)?\s+(?:mm|cm|km|m)[²³]$/.test(result.text||''))return result;
- const items=strokes.map(raw=>{
-  if(!raw?.points?.length)return null;
-  const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
-  return{raw,box:bounds([scaled])};
- });
- if(items.some(p=>!p))return result;
- items.sort((a,b)=>a.box.cx-b.box.cx);
- const top=items.at(-1),rest=items.slice(0,-1),last=rest.at(-1);
- const tall=Math.max(...rest.map(p=>p.box.h));
- const isRaised=top.box.h>=8&&top.box.h<tall*.78&&
-   top.box.cx>last.box.cx&&top.box.cy<last.box.cy-tall*.12;
- if(isRaised&&raisedThreeContour(top.raw,W,H)&&result.text.endsWith('²')){
-  return{...result,text:result.text.slice(0,-1)+'³',
-   engine:'verified-raised-three-reconciliation'};
+ if((options.mode||'auto')!=='auto'||!result)return result;
+ // For m² and m³ the labelled whole-unit recognizer is authoritative.
+ // Never allow old raised-digit heuristics to silently choose between them.
+ if(/^\d+(?:\.\d+)?\s+m[²³]$/.test(result.text||'')){
+  return resolveTrainedSquareCube(strokes,W,H,result);
  }
  return result;
 }
+
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
 window.WhiteboardHandwritingMath.build='20261019-engine-trace4';
 })();
