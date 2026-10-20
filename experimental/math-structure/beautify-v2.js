@@ -154,9 +154,12 @@ async function review(group){
   return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),x:b.x,y:b.y,w:W/Math.max(1,cssW),h:H/Math.max(1,cssH),smartGenerated:true,smartType:'equation',smartId:'math-v2-'+Date.now().toString(36),smartOriginal:[],equationExpression:value,equationLatex:clean,equationLayout:'in-place-math',equationColour:ink};
  }
  function formatted(){
-  const b=groupBounds(group),value=displayReading(),math=window.WhiteboardMathRenderer,equation=window.WhiteboardEquationFormatter;
-  const isLeadingEquals=/^\s*[=＝]\s*\d+(?:\.\d+)?(?:\s*[+−\-×÷*/]\s*\d+(?:\.\d+)?)*\s*$/.test(value);
-  if(isLeadingEquals)return math?.create(value,b,colourSelect.value)||equation?.createHandwriting(value,b,colourSelect.value)||leadingEqualsFallback(value,b,colourSelect.value);
+  const b=groupBounds(group),value=displayReading(),raw=String(input.value||'').trim(),math=window.WhiteboardMathRenderer,equation=window.WhiteboardEquationFormatter;
+  const leading=/^\s*[=＝]\s*\d+(?:\.\d+)?(?:\s*[+−\-×÷*/]\s*\d+(?:\.\d+)?)*\s*$/;
+  // Incomplete leading '=' equations are valid teacher notation, not complete answers.
+  // Never let optional arithmetic correction block this notation.
+  if(leading.test(raw))return leadingEqualsFallback(raw,b,colourSelect.value);
+  if(leading.test(value))return leadingEqualsFallback(value,b,colourSelect.value);
   return modeSelect.value==='math'&&!math?.unitText(value)?math?.create(value,b,colourSelect.value):equation?.createHandwriting(value,b,colourSelect.value);
  }
  const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Reading handwriting on this device…';
