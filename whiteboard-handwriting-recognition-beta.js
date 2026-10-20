@@ -313,7 +313,7 @@ async function detectSquareRoot(strokes,W,H,options={}){
   if(!hook)return;
   const line=operatorStroke({points:roof}),b=line.b,h=hook.box.h,left={x:b.x,y:roof.reduce((best,p)=>p.x<best.x?p:best,roof[0]).y};
   if(!line.horizontal||b.w<Math.max(12,h*.45)||b.h>h*.32||
-     Math.abs(left.x-hook.end.x)>h*.22||Math.abs(left.y-hook.end.y)>h*.22)return;
+     left.x<hook.end.x-h*.13||left.x>hook.end.x+h*.30||Math.abs(left.y-hook.end.y)>h*.26)return;
   candidates.push({hook,roof:b,indices});
  };
  for(let i=0;i<parts.length;i++){
@@ -1799,5 +1799,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-square-root-long-expression1';
+window.WhiteboardHandwritingMath.build='20261020-square-root-gap1';
 })();
