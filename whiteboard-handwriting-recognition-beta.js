@@ -304,6 +304,45 @@ function radicalHook(points){
  if(length>direct*1.5)return null;
  return{box:b,end:z};
 }
+// Parenthesis strokes are structural boundaries, not letters or digits.
+function radicalParenthesis(stroke){
+ const p=stroke.points,b=bounds([stroke]);
+ if(p.length<5||b.h<18||b.w>b.h*.65||b.w<b.h*.07)return null;
+ const a=p[0],z=p.at(-1),mid=p[Math.floor(p.length/2)];
+ if(Math.abs(a.y-z.y)>b.h*.38||Math.abs(a.x-z.x)>b.w*.65)return null;
+ const ends=(a.x+z.x)/2,bulge=mid.x-ends;
+ if(Math.abs(bulge)<b.w*.35||Math.abs(mid.y-b.cy)>b.h*.32)return null;
+ return bulge<0?'(':')';
+}
+async function radicalExpression(inside,W,H,options){
+ const ordered=inside.slice().sort((a,b)=>a.box.cx-b.box.cx),brackets=[];
+ for(let i=0;i<ordered.length;i++){
+  const kind=radicalParenthesis(ordered[i].scaled);
+  if(kind)brackets.push({i,kind});
+ }
+ if(!brackets.length)return recognizeNumericContext(inside.map(p=>p.raw),W,H,options);
+ if(brackets.length%2)return null;
+ let depth=0;
+ for(const b of brackets){depth+=b.kind==='('?1:-1;if(depth<0)return null;}
+ if(depth!==0)return null;
+ const output=[],tokens=[],uncertain=[];let pending=[];
+ const flush=async()=>{
+  if(!pending.length)return true;
+  const result=await recognizeNumericContext(pending.map(p=>p.raw),W,H,options);
+  if(!result)return false;
+  output.push(result.text);tokens.push(...result.tokens);uncertain.push(...result.uncertain);pending=[];return true;
+ };
+ for(const part of ordered){
+  const kind=radicalParenthesis(part.scaled);
+  if(kind){if(!await flush())return null;output.push(kind);tokens.push({char:kind,score:.94,parts:[part.scaled],x:part.box.x});}
+  else pending.push(part);
+ }
+ if(!await flush())return null;
+ const expression=output.join('');
+ // Balanced grouping is not enough: only numeric and arithmetic grammar is allowed.
+ if(!/^[0-9+−×÷().\\s]+$/.test(expression))return null;
+ return{text:expression,tokens,uncertain,engine:'radical-bracket-grammar'};
+}
 async function detectSquareRoot(strokes,W,H,options={}){
  if(strokes.length<2||strokes.length>256)return null;
  const parts=strokes.map(raw=>{const scaled={source:raw,size:Number(raw.size)||4,
@@ -346,7 +385,7 @@ async function detectSquareRoot(strokes,W,H,options={}){
   if(invalid||!inside.length)continue;
   const enclosed=bounds(inside.map(p=>p.scaled));
   if(enclosed.h<h*.30||enclosed.h>h*1.05)continue;
-  let number=await recognizeNumericContext(inside.map(p=>p.raw),W,H,options);
+  let number=await radicalExpression(inside,W,H,options);
   // A radical establishes numeric context even when an open handwritten 4
   // resembles a dollar sign to the generic mixed-character recogniser.
   // Keep the geometry-backed radical, but flag fallback digits for review.
@@ -1819,5 +1858,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-square-root-radicand2';
+window.WhiteboardHandwritingMath.build='20261020-radical-brackets3';
 })();
