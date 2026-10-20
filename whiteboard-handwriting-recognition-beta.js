@@ -318,6 +318,10 @@ function radicalParenthesis(stroke){
  return bulge<0?'(':')';
 }
 async function radicalExpression(inside,W,H,options){
+ // Delegate a complete parenthesized radicand to the already verified
+ // structural bracket reader instead of reclassifying its strokes as letters.
+ const grouped=await detectParenthesizedNumber(inside.map(p=>p.raw),W,H,options);
+ if(grouped)return grouped;
  const ordered=inside.slice().sort((a,b)=>a.box.cx-b.box.cx),brackets=[];
  for(let i=0;i<ordered.length;i++){
   const kind=radicalParenthesis(ordered[i].scaled);
