@@ -285,6 +285,86 @@ function segment(strokes,W,H,mode='auto'){
  return [...tokens,...equalTokens,...jTokens].sort((a,b)=>a.x-b.x);
 }
 
+/* A radical encloses ink under a roof. Detect its two-leg hook and roof before
+   ordinary glyph grouping can combine the hook with the first digit. */
+function radicalHook(points){
+ if(points.length<3)return null;
+ const p=points[0].x<=points.at(-1).x?points:points.slice().reverse(),b=bounds([{points:p}]);
+ if(b.h<14||b.w<b.h*.12||b.w>b.h*.95)return null;
+ const a=p[0],z=p.at(-1),i=p.reduce((best,q,k)=>q.y>p[best].y?k:best,0),v=p[i];
+ if(i===0||i===p.length-1||a.y<b.y+b.h*.40||v.y-a.y<b.h*.15||
+    z.y>b.y+b.h*.18||v.x-a.x<b.h*.06||z.x<v.x-b.h*.10||z.x-a.x<b.h*.12)return null;
+ let length=0;
+ for(let k=0;k<p.length;k++){
+  if(k)length+=Math.hypot(p[k].x-p[k-1].x,p[k].y-p[k-1].y);
+  const u=k<=i?a:v,w=k<=i?v:z;
+  if(pointDistance(p[k].x,p[k].y,u,w)>b.h*.18)return null;
+ }
+ const direct=Math.hypot(v.x-a.x,v.y-a.y)+Math.hypot(z.x-v.x,z.y-v.y);
+ if(length>direct*1.5)return null;
+ return{box:b,end:z};
+}
+async function detectSquareRoot(strokes,W,H,options={}){
+ if(strokes.length<2||strokes.length>256)return null;
+ const parts=strokes.map(raw=>{const scaled={source:raw,size:Number(raw.size)||4,
+  points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};return{raw,scaled,box:bounds([scaled])}});
+ const candidates=[];
+ const add=(hook,roof,indices)=>{
+  if(!hook)return;
+  const line=operatorStroke({points:roof}),b=line.b,h=hook.box.h,left={x:b.x,y:roof.reduce((best,p)=>p.x<best.x?p:best,roof[0]).y};
+  if(!line.horizontal||b.w<Math.max(12,h*.45)||b.h>h*.32||
+     Math.abs(left.x-hook.end.x)>h*.22||Math.abs(left.y-hook.end.y)>h*.22)return;
+  candidates.push({hook,roof:b,indices});
+ };
+ for(let i=0;i<parts.length;i++){
+  const p=parts[i],hook=radicalHook(p.scaled.points);
+  if(hook)for(let j=0;j<parts.length;j++)if(i!==j)add(hook,parts[j].scaled.points,[i,j]);
+  // A continuous radical can be drawn in either direction. Test a bounded
+  // number of splits; the original full stroke is retained as one ink part.
+  for(const points of [p.scaled.points,p.scaled.points.slice().reverse()]){
+   const count=Math.min(60,points.length);
+   for(let k=2;k<count-1;k++){
+    const at=Math.round(k*(points.length-1)/(count-1));
+    add(radicalHook(points.slice(0,at+1)),points.slice(at),[i]);
+   }
+  }
+ }
+ for(const candidate of candidates){
+  checkCancelled(options);
+  const {hook,roof,indices}=candidate,h=hook.box.h,right=roof.x+roof.w,inside=[],tail=[];let invalid=false;
+  for(let i=0;i<parts.length;i++){
+   if(indices.includes(i))continue;
+   const p=parts[i],b=p.box;
+   if(b.x>=right+h*.03){
+    if(b.y<roof.y-h*.10||b.y+b.h>hook.box.y+h*1.20){invalid=true;break}
+    tail.push(p);continue;
+   }
+   if(b.x<hook.end.x-h*.08||b.x+b.w>right+h*.08||b.y<roof.y-h*.08||
+      b.cy<roof.cy+h*.15||b.y+b.h>hook.box.y+h*1.16){invalid=true;break}
+   inside.push(p);
+  }
+  if(invalid||!inside.length)continue;
+  const enclosed=bounds(inside.map(p=>p.scaled));
+  if(enclosed.h<h*.30||enclosed.h>h*1.05)continue;
+  const number=await recognizeNumericContext(inside.map(p=>p.raw),W,H,options);
+  if(!number||number.text.includes('='))continue;
+  let suffix='',tailTokens=[],uncertain=[...number.uncertain];
+  if(tail.length){
+   const tokens=segment(tail.map(p=>p.raw),W,H),equal=tokens[0];
+   if(equal?.char!=='=')continue;
+   const sources=new Set(equal.parts.map(p=>p.source)),remaining=tail.filter(p=>!sources.has(p.raw));
+   if(!remaining.length)continue;
+   const result=await recognizeNumericContext(remaining.map(p=>p.raw),W,H,options);
+   if(!result)continue;
+   suffix=' = '+result.text;tailTokens=[equal,...result.tokens];uncertain.push(...result.uncertain);
+  }
+  const latex=text=>text.replace(/×/g,'\\times ').replace(/÷/g,'\\div ').replace(/−/g,'-');
+  return{text:'\\sqrt{'+latex(number.text)+'}'+latex(suffix),format:'latex',engine:'local-square-root',
+   tokens:[...number.tokens,...tailTokens],uncertain,radicalParts:indices.map(i=>parts[i].raw)};
+ }
+ return null;
+}
+
 /* A stacked fraction is a spatial structure, not three inline characters.
    Read both numeric rows independently before consulting whole-ink templates. */
 async function detectStackedFraction(strokes,W,H,options={}){
@@ -812,6 +892,7 @@ async function recognizeCore(strokes,W,H,options={}){
  if(options.mode==='auto'){const measurement=await detectMeasuredQuantity(strokes,W,H,options);if(measurement)return measurement}
  if(options.mode==='auto'){const litre=await detectLitreUnit(strokes,W,H,options);if(litre)return litre}
  if(options.mode==='auto'||options.mode==='math'){const raised=await detectRaisedUnit(strokes,W,H,options);if(raised)return raised}
+ if(options.mode==='auto'||options.mode==='math'){const radical=await detectSquareRoot(strokes,W,H,options);if(radical)return radical}
  if(options.mode==='auto'||options.mode==='math'){const fraction=await detectStackedFraction(strokes,W,H,options);if(fraction)return fraction}
  if(options.mode==='math')return window.WhiteboardMathReader.recognize(strokes,W,H,options);
  if(options.mode==='auto'){
@@ -935,7 +1016,7 @@ function completeNumericExpression(text){
 async function recognizeNumericContext(strokes,W,H,options){
  if(!window.WhiteboardCharacterReader||!window.WhiteboardUjiReader)return null;
  let tokens=segment(strokes,W,H);
- if(!tokens.length||tokens.length>30||tokens.some(t=>!t.parts?.length))return null;
+ if(!tokens.length||tokens.length>256||tokens.some(t=>!t.parts?.length))return null;
  const operators=['+','−','×','÷','='];
  const uji=parts=>window.WhiteboardUjiReader.read(parts.map(p=>p.points));
  // A disconnected left leg and right stem can be one open 4. Require two
@@ -1440,6 +1521,8 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
   return reconcile(await mathRecognizer(strokes,W,H,options));
  }
  if((options.mode||'auto')==='auto'){
+  const radical=await detectSquareRoot(strokes,W,H,options);
+  if(radical)return reconcile(radical);
   // A complete stacked layout outranks whole-symbol silhouettes such as ¼.
   // Personal ink/context corrections still have their normal precedence.
   const fraction=await detectStackedFraction(strokes,W,H,options);
@@ -1716,5 +1799,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-stacked-fraction1';
+window.WhiteboardHandwritingMath.build='20261020-square-root-long-expression1';
 })();
