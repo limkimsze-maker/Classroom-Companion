@@ -2409,9 +2409,33 @@ function reviewIsolatedDisagreement(reading,options){
  const review={...token,score:Math.min(token.score,.5),engine:'isolated-model-review'};
  return{...reading,tokens:[review],uncertain:[...(reading.uncertain||[]).filter(t=>t!==token),review]};
 }
+function restoreEmbeddedEquals(reading,strokes,W,H){
+ if(!reading||typeof reading.text!=='string'||!/[−-]/.test(reading.text)||!/^\s*\d/.test(reading.text))return reading;
+ const pairs=window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[];
+ if(!pairs.length)return reading;
+ const source=reading.text;
+ // Apply only when the count of detected equals exactly matches the minus
+ // glyphs; do not guess about genuinely mixed minus/equal expressions.
+ const positions=[...source.matchAll(/[−-]/g)].map(m=>m.index);
+ if(positions.length!==pairs.length||positions.length>4)return reading;
+ const ordered=strokes.map(stroke=>{
+  const xs=stroke.points.map(p=>p.x*W);
+  return{min:Math.min(...xs),max:Math.max(...xs)};
+ });
+ const xmin=Math.min(...ordered.map(p=>p.min)),xmax=Math.max(...ordered.map(p=>p.max));
+ if(!(xmax>xmin))return reading;
+ const centers=pairs.map(p=>p.center).sort((a,b)=>a-b);
+ const tokens=source.match(/\d+(?:\.\d+)?|[+−\-×÷*/=]/g)||[];
+ const minusPositions=tokens.map((t,i)=>/[−-]/.test(t)?i:-1).filter(i=>i>=0);
+ // Require both pair centers to fall between numeric neighbours in ink.
+ if(centers.some(c=>c<=xmin+(xmax-xmin)*.08||c>=xmax-(xmax-xmin)*.08))return reading;
+ if(minusPositions.some(i=>i===0||i===tokens.length-1||!/\d/.test(tokens[i-1])||!/\d/.test(tokens[i+1])))return reading;
+ let n=0;const text=source.replace(/[−-]/g,()=>n++<centers.length?'=':'-');
+ return {...reading,text,engine:(reading.engine||'local')+'-embedded-equals-review',uncertain:reading.uncertain||[]};
+}
 async function recognize(strokes,W,H,options={}){
  checkCancelled(options);
- const preliminary=reviewIsolatedDisagreement(await recognizeBeforeContext(strokes,W,H,options),options);
+ const preliminary=reviewIsolatedDisagreement(restoreEmbeddedEquals(await recognizeBeforeContext(strokes,W,H,options),strokes,W,H),options);
  let reading=preliminary;
  try{reading=await glyphV2.review(strokes,W,H,options,preliminary)}catch(error){if(error?.name==='AbortError')throw error;}
  checkCancelled(options);
