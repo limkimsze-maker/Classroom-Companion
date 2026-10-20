@@ -1,0 +1,21 @@
+name: Math structure regression
+on:
+  push:
+    paths:
+      - whiteboard-handwriting-recognition-beta.js
+      - scripts/test-math-structure-regression.cjs
+      - .github/workflows/math-structure-regression.yml
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check recognizer syntax
+        run: node --check whiteboard-handwriting-recognition-beta.js
+      - name: Run math structure regression
+        run: node scripts/test-math-structure-regression.cjs
