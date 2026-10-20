@@ -97,7 +97,7 @@ function drag(e){
    // Green corner handle: move right/down to enlarge, left/up to shrink.
    // Scale width and height together so mathematical glyphs never stretch.
    const startW=Math.max(1,startObject.pxW),startH=Math.max(1,startObject.pxH);
-   const deltaX=px-(x+startW),deltaY=py-(y+startH);
+   const deltaX=(p.x-startPoint.x)*cssW,deltaY=(p.y-startPoint.y)*cssH;
    const ratio=Math.max(.20,Math.min(6,1+(Math.abs(deltaX/startW)>Math.abs(deltaY/startH)?deltaX/startW:deltaY/startH)));
    const maxRatio=Math.min((cssW-x)/startW,(cssH-y)/startH);
    const scale=Math.max(.05,Math.min(ratio,maxRatio));
@@ -139,6 +139,14 @@ function addImageFile(file,at){if(!file||!file.type?.startsWith('image/'))return
 function addImageFiles(files,at){Array.from(files||[]).filter(f=>f.type?.startsWith('image/')).forEach((f,i)=>addImageFile(f,at?{x:Math.min(.9,at.x+i*.03),y:Math.min(.9,at.y+i*.03)}:null))}
 
 if(baseStart){canvas.removeEventListener('pointerdown',baseStart);canvas.removeEventListener('pointermove',baseMove);canvas.removeEventListener('pointerup',baseEnd);canvas.removeEventListener('pointercancel',baseEnd)}
+// Own the visible image handle before the generic classroom selection listener.
+// That listener clears its selection at the corner, reflows the mobile toolbar,
+// and moves the canvas while the resize pointer is still down.
+canvas.addEventListener('pointerdown',e=>{
+ if(tool!=='select'||editor||selected?.type!=='image'||(e.button!==undefined&&e.button!==0))return;
+ if(!hitHandle(point(e),selected))return;
+ down(e);e.stopImmediatePropagation();
+},true);
 canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',drag);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('dblclick',e=>{if(tool!=='select'||editor)return;const hit=hitObject(point(e));if(hit?.type==='text'){selected=hit;beginEditing(hit,false);e.preventDefault();e.stopPropagation()}});
 selectBtn.onclick=()=>switchTool('select');editBtn.onclick=()=>editSelected();imageBtn.onclick=()=>imageInput.click();imageInput.onchange=()=>{addImageFiles(imageInput.files);imageInput.value=''};penBtn.onclick=()=>switchTool('pen');textBtn.onclick=()=>switchTool('text');eraserBtn.onclick=()=>switchTool('eraser');
 fontSel.onchange=()=>applyFormat('font',fontSel.value);fontSizeSel.onchange=()=>applyFontSize(fontSizeSel.value);boldBtn.onclick=()=>applyFormat('bold',!selected?.bold);italicBtn.onclick=()=>applyFormat('italic',!selected?.italic);underlineBtn.onclick=()=>applyFormat('underline',!selected?.underline);leftBtn.onclick=()=>applyFormat('align','left');centreBtn.onclick=()=>applyFormat('align','center');rightBtn.onclick=()=>applyFormat('align','right');
