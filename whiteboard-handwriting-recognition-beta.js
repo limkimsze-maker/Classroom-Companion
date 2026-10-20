@@ -111,6 +111,36 @@ function openFourGeometry(group){
  });
 }
 
+// A separately drawn crossbar may extend past a wide 7's ordinary glyph-width
+// limit. Join it only when the ink actually crosses the digit's middle and
+// both offline models agree on the complete 7. A nearby minus stays separate.
+function crossedSevenGroup(first,second){
+ if(first.length!==1||second.length!==1||!window.WhiteboardDigitModel||!window.WhiteboardUjiReader)return false;
+ const all=[first[0],second[0]],body=all.reduce((a,b)=>bounds([a]).h>bounds([b]).h?a:b);
+ const bar=all.find(s=>s!==body),b=bounds([body]),q=bounds([bar]),joined=bounds(all);
+ if(b.h<14||b.w<b.h*.35||b.w>b.h*1.45||!line(bar).horizontal||
+    q.h>b.h*.28||q.w<b.h*.25||q.w>b.h*1.15||
+    q.cy<b.y+b.h*.25||q.cy>b.y+b.h*.75||joined.w>b.h*1.6)return false;
+ const overlap=Math.min(b.x+b.w,q.x+q.w)-Math.max(b.x,q.x);
+ if(overlap<Math.min(b.w,q.w)*.25)return false;
+ const side=(a,z,p)=>(z.x-a.x)*(p.y-a.y)-(z.y-a.y)*(p.x-a.x);
+ const tolerance=Math.max(1.5,Math.min(b.h*.045,((body.size||4)+(bar.size||4))/2));
+ let crosses=false;
+ for(let i=1;i<body.points.length&&!crosses;i++)for(let j=1;j<bar.points.length;j++){
+  const a=body.points[i-1],z=body.points[i],p=bar.points[j-1],r=bar.points[j];
+  const intersects=side(a,z,p)*side(a,z,r)<=0&&side(p,r,a)*side(p,r,z)<=0&&
+    Math.max(Math.min(a.x,z.x),Math.min(p.x,r.x))<=Math.min(Math.max(a.x,z.x),Math.max(p.x,r.x))&&
+    Math.max(Math.min(a.y,z.y),Math.min(p.y,r.y))<=Math.min(Math.max(a.y,z.y),Math.max(p.y,r.y));
+  if(intersects||Math.min(pointDistance(a.x,a.y,p,r),pointDistance(z.x,z.y,p,r),
+      pointDistance(p.x,p.y,a,z),pointDistance(r.x,r.y,a,z))<=tolerance){crosses=true;break}
+ }
+ if(!crosses)return false;
+ const digit=predictDigit(rasterDigit([body,bar]))[0];
+ if(digit.char!=='7'||digit.score<.97)return false;
+ const pen=window.WhiteboardUjiReader.read([body.points,bar.points]);
+ return pen?.[0]?.label==='7'&&pen[0].p>=.985&&pen[0].p-(pen[1]?.p||0)>=.95;
+}
+
 function segment(strokes,W,H){
  const equalPairs=window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[];
  const consumed=new Set(equalPairs.flatMap(pair=>pair.indices));
@@ -143,7 +173,8 @@ function segment(strokes,W,H){
   let changed=true;
   while(changed){changed=false;for(let i=0;i<groups.length&&!changed;i++)for(let j=i+1;j<groups.length;j++){
    const a=bounds(groups[i]),b=bounds(groups[j]),overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x),joined=bounds([...groups[i],...groups[j]]);
-   if(overlap>=-Math.max(1,height*.035)&&joined.w<height*1.25){groups[i].push(...groups[j]);groups.splice(j,1);changed=true;break}
+   if((overlap>=-Math.max(1,height*.035)&&joined.w<height*1.25)||
+      crossedSevenGroup(groups[i],groups[j])){groups[i].push(...groups[j]);groups.splice(j,1);changed=true;break}
   }}
   const rowTokens=[];
   for(const group of groups){
@@ -1428,5 +1459,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-components-first1';
+window.WhiteboardHandwritingMath.build='20261020-crossed-seven1';
 })();
