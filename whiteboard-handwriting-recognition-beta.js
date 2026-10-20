@@ -307,11 +307,14 @@ function radicalHook(points){
 // Parenthesis strokes are structural boundaries, not letters or digits.
 function radicalParenthesis(stroke){
  const p=stroke.points,b=bounds([stroke]);
- if(p.length<5||b.h<18||b.w>b.h*.65||b.w<b.h*.07)return null;
- const a=p[0],z=p.at(-1),mid=p[Math.floor(p.length/2)];
- if(Math.abs(a.y-z.y)>b.h*.38||Math.abs(a.x-z.x)>b.w*.65)return null;
- const ends=(a.x+z.x)/2,bulge=mid.x-ends;
- if(Math.abs(bulge)<b.w*.35||Math.abs(mid.y-b.cy)>b.h*.32)return null;
+ if(p.length<5||b.h<18||b.w>b.h*.75||b.w<b.h*.055)return null;
+ const first=p[0],last=p.at(-1);
+ // Parentheses travel from top to bottom (or vice versa), not back to
+ // the same height. Their endpoints have similar x, and middle bows out.
+ if(Math.abs(first.y-last.y)<b.h*.65||Math.abs(first.x-last.x)>b.w*.8)return null;
+ const middle=p.reduce((best,q)=>Math.abs(q.y-b.cy)<Math.abs(best.y-b.cy)?q:best,p[0]);
+ const bulge=middle.x-(first.x+last.x)/2;
+ if(Math.abs(bulge)<b.w*.32)return null;
  return bulge<0?'(':')';
 }
 async function radicalExpression(inside,W,H,options){
@@ -399,7 +402,7 @@ async function detectSquareRoot(strokes,W,H,options={}){
   // A radical establishes numeric context even when an open handwritten 4
   // resembles a dollar sign to the generic mixed-character recogniser.
   // Keep the geometry-backed radical, but flag fallback digits for review.
-  if(!number){
+  if(!number&&!inside.some(p=>radicalParenthesis(p.scaled))){
    const tokens=segment(inside.map(p=>p.raw),W,H);
    if(tokens.length&&tokens.length<=256){
     const operators=new Set(['+','−','×','÷']);
@@ -1868,5 +1871,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-radical-brackets3';
+window.WhiteboardHandwritingMath.build='20261020-radical-brackets4';
 })();
