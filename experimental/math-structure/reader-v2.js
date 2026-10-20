@@ -1508,7 +1508,10 @@ async function recognizeNumericContext(strokes,W,H,options){
   if(token.personal){if(!/^\d$/.test(token.char))return null;continue}
   // The dollar geometry can also describe an open 4. Repair it only when
   // the two independent readers explicitly agree on 4; preserve money signs.
-  if(token.char==='$'&&!(top?.char==='4'&&top.score>=.8&&best?.label==='4'&&best.p>=.85))return null;
+  const imageFour=token.char==='$'&&options.measurementPrefix&&top?.char==='4'&&top.score>=.97&&(()=>{
+   const digit=predictDigit(rasterDigit(token.parts))[0];return digit?.char==='4'&&digit.score>=.97;
+  })();
+  if(token.char==='$'&&!(top?.char==='4'&&top.score>=.8&&best?.label==='4'&&best.p>=.85)&&!imageFour)return null;
   // Clear alphabet evidence with a matching pen-reader letter is not a number.
   if(!hasOperator&&/^[A-Za-z]$/.test(top?.char||'')&&top.score>=.90&&
     !'BIOQSZiloqsz'.includes(top.char)&&best?.label.toLowerCase()===top.char.toLowerCase())return null;
@@ -1547,7 +1550,10 @@ async function recognizeNumericContext(strokes,W,H,options){
   // A newly recovered sign establishes an operator, not the identity of every
   // remaining glyph. Preserve unsupported letters/units for normal review.
   if(newOperator&&support<.05&&!penAgrees)return null;
-  Object.assign(token,{char,score,engine:'numeric-model-consensus'});
+  // Two image readers can agree on an open 4 while the pen reader prefers
+  // q/A. Measurement context permits the digit, but keeps the dispute visible.
+  if(imageFour)score=Math.min(score,.74);
+  Object.assign(token,{char,score,engine:imageFour?'numeric-four-image-consensus':'numeric-model-consensus'});
  }
  const text=tokens.map(t=>operators.includes(t.char)?' '+t.char+' ':t.char).join('').replace(/\s+/g,' ').trim();
  if(!completeNumericExpression(text))return null;
@@ -1779,7 +1785,7 @@ async function recognizeBaseUnitComponents(strokes,W,H,options){
 async function recognizeUnitComponents(strokes,W,H,options){
  if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>18)return null;
  const items=strokes.map(raw=>{
-  const scaled={size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  const scaled={source:raw,size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
   return{raw,scaled,box:bounds([scaled])};
  }).sort((a,b)=>a.box.cx-b.box.cx);
  const proposals=[];
@@ -2300,5 +2306,5 @@ async function recognize(strokes,W,H,options={}){
 }
 const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStroke,operatorCrossing,radicalHook,radicalDescendingHook,radicalParenthesis,recognizeNumericContext,segment,predictDigit,rasterDigit,closedZeroInk,completeNumericExpression,checkCancelled});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261020-v2-structural-beam1';
+window.WhiteboardHandwritingMath.build='20261020-v2-measurement-consensus2';
 })();

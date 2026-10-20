@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright'),{cases,ink}=require('./layout-fixtures.cjs');
+const measurement=require('./fixtures/teacher-open-four-area.json');
 const root=path.resolve(__dirname,'../..'),output=process.argv[2]||'/tmp/v2-browser';
 const mime={'.js':'application/javascript','.css':'text/css','.wasm':'application/wasm','.json':'application/json','.html':'text/html','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
@@ -19,7 +20,7 @@ const server=http.createServer((req,res)=>{
    await context.addInitScript(()=>{if(localStorage.getItem('__v2_storage_probe')===null)localStorage.setItem('__v2_storage_probe','protected');});
    page.on('pageerror',e=>errors.push(e.message));
    await page.goto(address+'/whiteboard-v2-trial.html',{waitUntil:'load'});
-   await page.waitForFunction(()=>window.WhiteboardHandwritingMath?.build==='20261020-v2-structural-beam1');
+   await page.waitForFunction(()=>window.WhiteboardHandwritingMath?.build==='20261020-v2-measurement-consensus2');
    await page.locator('#handwritingBeautifyBtn').waitFor({state:'visible'});
    assert.equal(await page.evaluate(()=>localStorage.getItem('__v2_storage_probe')),'protected');
    await page.evaluate(()=>localStorage.setItem('__v2_storage_probe','trial'));
@@ -42,6 +43,20 @@ const server=http.createServer((req,res)=>{
    await apply.click();
    assert.equal(await page.locator('.handwriting-review-backdrop').count(),0,'Apply completes');
    assert.equal(await page.locator('#penBtn').getAttribute('class').then(c=>c.includes('active')),true,'Returns to pen');
+   // Replay the actual teacher's measurement through the same visible flow.
+   await page.evaluate(sample=>{
+    strokes=sample.strokes.map(s=>({...s,colour:'#17324d',points:s.points.map(p=>({x:p.x*sample.width/cssW,y:p.y*sample.height/cssH}))}));
+    redraw();syncUi();
+   },measurement);
+   await page.locator('#handwritingBeautifyBtn').click();
+   await page.mouse.move(board.x+55,board.y+85);await page.mouse.down();
+   await page.mouse.move(board.x+315,board.y+225,{steps:10});await page.mouse.up();
+   await page.waitForFunction(()=>document.getElementById('handwritingReadText')?.value==='45 cm²',{},{timeout:20000});
+   await page.waitForFunction(()=>!document.querySelector('.handwriting-apply')?.disabled,{},{timeout:20000});
+   await page.screenshot({path:path.join(output,`measurement-${viewport.width}.png`)});
+   await page.locator('.handwriting-apply').click();
+   assert.equal(await page.locator('.handwriting-review-backdrop').count(),0,'Measurement Apply completes');
+   assert.equal(await page.locator('#penBtn').getAttribute('class').then(c=>c.includes('active')),true,'Measurement returns to pen');
    assert.deepEqual(errors,[],'No browser script errors');
    console.log('PASS browser preview, matched loader, nested recognition, Apply, pen return and isolated storage:',viewport.width);
    await context.close();
