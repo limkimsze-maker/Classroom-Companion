@@ -2489,5 +2489,5 @@ const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStro
 const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});
 const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261021-v2-equals-pairs1';
+window.WhiteboardHandwritingMath.build='20261021-v2-compact-equals2';
 })();
