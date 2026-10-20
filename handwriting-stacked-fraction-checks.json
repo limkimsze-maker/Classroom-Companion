@@ -1,0 +1,63 @@
+{
+  "build": "20261020-stacked-fraction1",
+  "readerSha256": "ce8d7dbd1d77b73c0714cd45581b05b5f02c9a01e1d451315d9548bcbb85770e",
+  "stage": "development-replay",
+  "independentValidation": false,
+  "originalFrozenBaseline": {
+    "correct": 17,
+    "total": 24,
+    "attempted": 24,
+    "skipped": 0,
+    "flagged": 9,
+    "unflaggedWrong": 2,
+    "exactPercent": 70.83333333333333,
+    "characterErrorPercent": 23.357664233576642
+  },
+  "previousOperatorReplay": {
+    "correct": 22,
+    "total": 24
+  },
+  "currentReplay": {
+    "correct": 24,
+    "total": 24,
+    "attempted": 24,
+    "skipped": 0,
+    "flagged": 6,
+    "unflaggedWrong": 0,
+    "exactPercent": 100,
+    "characterErrorPercent": 0
+  },
+  "fractionResults": [
+    {
+      "expected": "\\frac{3}{4}",
+      "actual": "\\frac{3}{4}",
+      "correct": true,
+      "flagged": false,
+      "engine": "local-stacked-fraction"
+    },
+    {
+      "expected": "\\frac{12}{5}",
+      "actual": "\\frac{12}{5}",
+      "correct": true,
+      "flagged": false,
+      "engine": "local-stacked-fraction"
+    }
+  ],
+  "fullComposedUjiV1": {
+    "correct": 840,
+    "total": 924,
+    "exactPercent": 90.9090909090909,
+    "characterErrorPercent": 3.505392912172573,
+    "flagged": 241,
+    "unflaggedWrong": 55,
+    "p50ms": 73,
+    "p95ms": 205
+  },
+  "benchmarkTextChanges": 0,
+  "previouslyCorrectRegressions": 0,
+  "nodeChecksPassed": 40,
+  "browserReplay24Matches": true,
+  "bothWhiteboardAutoFractionApplyUndo": true,
+  "frozenNaturalBrowserWorkflowPassed": true,
+  "privateInkIncluded": false
+}

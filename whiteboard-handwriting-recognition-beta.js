@@ -286,12 +286,12 @@ function segment(strokes,W,H,mode='auto'){
 }
 
 /* A stacked fraction is a spatial structure, not three inline characters.
-   Prefer the local digit model for simple fractions before the generic reader. */
-function detectStackedFraction(strokes,W,H){
+   Read both numeric rows independently before consulting whole-ink templates. */
+async function detectStackedFraction(strokes,W,H,options={}){
  if(strokes.length<3||strokes.length>18)return null;
  const parts=strokes.filter(s=>Array.isArray(s.points)&&s.points.length&&s.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))).map(raw=>{
   const scaled={points:raw.points.map(p=>({x:p.x*W,y:p.y*H})),size:Number(raw.size)||4};
-  return{raw,box:bounds([scaled]),line:line(scaled)};
+  return{raw,box:bounds([scaled]),line:operatorStroke(scaled)};
  });
  if(parts.length!==strokes.length)return null;
  const candidates=parts.filter(p=>p.line.horizontal&&p.box.w>=14&&p.box.w>=p.box.h*2.5).sort((a,b)=>b.box.w-a.box.w);
@@ -314,11 +314,14 @@ function detectStackedFraction(strokes,W,H){
   if(top.y+top.h>b.cy+tolerance||bottom.y<b.cy-tolerance||top.cy>=bottom.cy)continue;
   if(b.w<Math.max(top.w,bottom.w)*.75)continue;
   // A valid numerator and denominator should each be legible as numbers.
-  const topTokens=segment(above.map(p=>p.raw),W,H),bottomTokens=segment(below.map(p=>p.raw),W,H);
-  const numerator=topTokens.map(t=>t.char).join(''),denominator=bottomTokens.map(t=>t.char).join('');
+  const topRead=await recognizeNumericContext(above.map(p=>p.raw),W,H,options);
+  const bottomRead=await recognizeNumericContext(below.map(p=>p.raw),W,H,options);
+  if(!topRead||!bottomRead)continue;
+  const numerator=topRead.text,denominator=bottomRead.text;
+  const topTokens=topRead.tokens,bottomTokens=bottomRead.tokens;
   if(!/^\d{1,6}$/.test(numerator)||!/^\d{1,6}$/.test(denominator))continue;
   const tokens=[...topTokens,...bottomTokens],text='\\frac{'+numerator+'}{'+denominator+'}';
-  return{text,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-stacked-fraction',format:'latex',fractionTokenCounts:[topTokens.length,bottomTokens.length]};
+  return{text,tokens,uncertain:[...topRead.uncertain,...bottomRead.uncertain],engine:'local-stacked-fraction',format:'latex',fractionTokenCounts:[topTokens.length,bottomTokens.length],fractionBarParts:[bar.raw]};
  }
  return null;
 }
@@ -809,7 +812,7 @@ async function recognizeCore(strokes,W,H,options={}){
  if(options.mode==='auto'){const measurement=await detectMeasuredQuantity(strokes,W,H,options);if(measurement)return measurement}
  if(options.mode==='auto'){const litre=await detectLitreUnit(strokes,W,H,options);if(litre)return litre}
  if(options.mode==='auto'||options.mode==='math'){const raised=await detectRaisedUnit(strokes,W,H,options);if(raised)return raised}
- if(options.mode==='auto'||options.mode==='math'){const fraction=detectStackedFraction(strokes,W,H);if(fraction)return fraction}
+ if(options.mode==='auto'||options.mode==='math'){const fraction=await detectStackedFraction(strokes,W,H,options);if(fraction)return fraction}
  if(options.mode==='math')return window.WhiteboardMathReader.recognize(strokes,W,H,options);
  if(options.mode==='auto'){
   const raw=segment(strokes,W,H),op=['+','−','×','÷','='];
@@ -1437,6 +1440,10 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
   return reconcile(await mathRecognizer(strokes,W,H,options));
  }
  if((options.mode||'auto')==='auto'){
+  // A complete stacked layout outranks whole-symbol silhouettes such as ¼.
+  // Personal ink/context corrections still have their normal precedence.
+  const fraction=await detectStackedFraction(strokes,W,H,options);
+  if(fraction)return reconcile(fraction);
   // Imported confusable corrections and the trained dotted j retain their
   // existing priority over generic isolated-character inference.
   const confusable=window.WhiteboardTeacherConfusables?.match?.(strokes,W,H,'auto',.955,.08);
@@ -1709,5 +1716,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-operator-geometry1';
+window.WhiteboardHandwritingMath.build='20261020-stacked-fraction1';
 })();
