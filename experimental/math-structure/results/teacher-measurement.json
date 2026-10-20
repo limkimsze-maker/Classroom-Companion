@@ -1,0 +1,65 @@
+{
+  "method": "One actual teacher failure, correlated transform controls and changed-value compositions; development checks, not general accuracy.",
+  "records": [
+    {
+      "name": "actual uploaded ink",
+      "before": "? m?",
+      "after": "45 cm²",
+      "flagged": true,
+      "engine": "unit-first-components"
+    },
+    {
+      "name": "moved and smaller",
+      "before": "? m?",
+      "after": "45 cm²",
+      "flagged": true,
+      "engine": "unit-first-components"
+    },
+    {
+      "name": "larger",
+      "before": "? m?",
+      "after": "45 cm²",
+      "flagged": true,
+      "engine": "unit-first-components"
+    },
+    {
+      "name": "reversed stroke order",
+      "before": "? m?",
+      "after": "45 cm²",
+      "flagged": true,
+      "engine": "unit-first-components"
+    },
+    {
+      "name": "reversed pen direction",
+      "before": "? m?",
+      "after": "45 cm²",
+      "flagged": true,
+      "engine": "unit-first-components"
+    },
+    {
+      "name": "changed quantity 46",
+      "after": "46 cm²",
+      "flagged": true
+    },
+    {
+      "name": "changed quantity 47",
+      "after": "47 cm²",
+      "flagged": true
+    },
+    {
+      "name": "changed quantity 48",
+      "after": "48 cm²",
+      "flagged": true
+    },
+    {
+      "name": "changed quantity 49",
+      "after": "49 cm²",
+      "flagged": true
+    },
+    {
+      "name": "changed quantity 410",
+      "after": "410 cm²",
+      "flagged": true
+    }
+  ]
+}
