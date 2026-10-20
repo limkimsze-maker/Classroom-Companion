@@ -58,39 +58,7 @@ function createStructuralParser(hooks){
    note:'Direct symbol-layout edges; inherited relations require normalization before official LgEval scoring.',
    nodes:[...nodes.values()].sort((a,b)=>a.id-b.id),edges};
  }
- function reviewDigitGlyphsInArithmetic(reading,strokes,W,H){
- if(!reading||typeof reading.text!=='string'||!Array.isArray(strokes)||strokes.length<5)return reading;
- const text=reading.text;
- // Only consider ambiguous digit-shaped glyphs inside complete arithmetic,
- // never monetary text, words, units or isolated symbols.
- if(!/[=＝]/.test(text)||!/[+×÷−-]/.test(text)||!/[0-9]/.test(text)||!/[b$]/.test(text))return reading;
- const boxes=strokes.map((stroke,i)=>{
-  const pts=stroke?.points||[];if(pts.length<2)return null;
-  const xs=pts.map(p=>p.x*W),ys=pts.map(p=>p.y*H);
-  return{i,x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),pts};
- }).filter(Boolean);
- if(boxes.length<5)return reading;
- const height=Math.max(...boxes.map(b=>b.y1))-Math.min(...boxes.map(b=>b.y0));
- if(!(height>0))return reading;
- const glyphGroups=[];
- const xs=boxes.slice().sort((a,b)=>a.x0-b.x0);
- // A 4 consists of an angled upper-and-crossbar stroke and a separate long
- // descending vertical stroke in the same horizontal glyph region.
- for(const a of boxes)for(const b of boxes){
-  if(a.i===b.i)continue;
-  const aw=a.x1-a.x0,bw=b.x1-b.x0,bh=b.y1-b.y0;
-  if(aw<height*.08||aw>height*.42||bh<height*.13||bw>height*.10)continue;
-  const cx=(a.x0+a.x1)/2;
-  if(b.x0<cx-height*.10||b.x0>cx+height*.12)continue;
-  if(Math.abs(a.y0-b.y0)>height*.13)continue;
-  glyphGroups.push({x:(a.x0+a.x1+b.x0+b.x1)/4,ids:[a.i,b.i]});
- }
- const eq=text.replace(/＝/g,'=').replace(/\s/g,'').replace(/−/g,'-');
- const match=eq.match(/^([$4])([×*])(\d+)=(\d+)([b6])$/);
- if(!match||!glyphGroups.length)return reading;
- const left=Number(match[3]),middle=Number(match[4]);
- if(!Number.isSafeInteger(left)||!Number.isSafeInteger(middle))return reading;
- const firstIsFour=match[1]==='
+ async function recognize(strokes,W,H,options={}){
   if((options.mode||'auto')!=='auto'||options.disableStructuralV2||strokes.length<3||strokes.length>96)return null;
   checkCancelled(options);
   const parts=strokes.map((raw,id)=>{const scaled={source:raw,size:Number(raw.size)||4,
@@ -2527,7 +2495,7 @@ function reviewThreeStrokeDivision(reading,strokes,W,H){
 }
 async function recognize(strokes,W,H,options={}){
  checkCancelled(options);
- const preliminary=reviewIsolatedDisagreement(reviewDigitGlyphsInArithmetic(reviewThreeStrokeDivision(restoreEmbeddedEquals(await recognizeBeforeContext(strokes,W,H,options),strokes,W,H),strokes,W,H),strokes,W,H),options);
+ const preliminary=reviewIsolatedDisagreement(reviewThreeStrokeDivision(restoreEmbeddedEquals(await recognizeBeforeContext(strokes,W,H,options),strokes,W,H),strokes,W,H),options);
  let reading=preliminary;
  try{reading=await glyphV2.review(strokes,W,H,options,preliminary)}catch(error){if(error?.name==='AbortError')throw error;}
  checkCancelled(options);
