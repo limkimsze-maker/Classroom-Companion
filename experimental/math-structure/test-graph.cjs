@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {graph,roofCandidates}=require('./graph.cjs');
+const src=fs.readFileSync('scripts/test-math-structure-regression.cjs','utf8');
+const match=src.match(/const teacherRows="([^"]+)"/);
+assert(match,'Missing actual nine-stroke teacher fixture');
+const ink=match[1].split('|').map(row=>({points:row.split(';').map(pair=>{const [x,y]=pair.split(',').map(Number);return{x:x/10000,y:y/10000}})}));
+assert.equal(ink.length,9);
+const g=graph(ink),roots=roofCandidates(ink);
+console.log('EXPERIMENTAL_SPATIAL_DIAGNOSTIC',JSON.stringify({strokes:ink.length,nodes:g.nodes.length,edges:g.edges.length,roots}));
+assert.equal(g.nodes.length,9);
+assert.equal(g.edges.length,72);
+assert(roots.some(r=>r.roof===0&&r.hook===1),'Real roof-first handwritten radical must produce a structural candidate');
+console.log('PASS experimental radical geometry detection; expression recognition not yet validated');
