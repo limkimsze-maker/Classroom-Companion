@@ -21,3 +21,5 @@ jobs:
         run: node experimental/math-structure/test-graph.cjs
       - name: Existing teacher root control
         run: node scripts/test-square-root-real-teacher-ink.cjs
+      - name: Existing complete-expression structural regressions
+        run: node scripts/test-math-structure-regression.cjs
