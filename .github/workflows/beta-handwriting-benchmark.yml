@@ -9,6 +9,7 @@ on:
       - scripts/test-crossed-seven-grouping.cjs
       - scripts/test-detached-four-grouping.cjs
       - scripts/test-measurement-consensus.cjs
+      - scripts/diagnose-remaining-measurements.cjs
       - scripts/test-recognition-learning-priority.cjs
   workflow_dispatch:
 jobs:
@@ -20,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Diagnose five remaining measurement cases
+        run: node scripts/diagnose-remaining-measurements.cjs
       - name: Verify measurement consensus, digit grouping and personal corrections
         run: |
           node scripts/test-measurement-consensus.cjs
