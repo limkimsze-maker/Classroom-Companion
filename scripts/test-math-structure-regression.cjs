@@ -18,7 +18,7 @@ const bracket=[S([[70,95],[61,106],[55,127],[55,150],[61,173],[70,185]]),
 const radical=[S([[46,85],[52,111],[59,128],[68,120],[77,55]]),
  S([[77,55],[125,55],[170,55],[225,55],[270,55]])];
 (async()=>{
- const nested=bracket.map(stroke=>({...stroke,points:stroke.points.map(p=>({x:p.x+0.19,y:p.y-0.12}))}));
+ const nested=bracket.map(stroke=>({...stroke,points:stroke.points.map(p=>({x:p.x+0.19,y:((p.y*300-95)*0.55+62)/300}))}));
  const cases=[['standalone parentheses',bracket],['radical with parentheses',[...radical,...nested]]];
  let failures=0;
  for(const [label,ink] of cases){
