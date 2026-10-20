@@ -1,0 +1,1 @@
+Trigger isolated experimental math-structure V2 GitHub Actions checks on 2026-10-20. No production changes.

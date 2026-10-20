@@ -1,0 +1,34 @@
+[
+  {
+    "before": "function radicalParenthesis(stroke){\n const p=stroke.points,b=bounds([stroke]);\n if(p.length<5||b.h<18||b.w>b.h*.75||b.w<b.h*.055)return null;\n const first=p[0],last=p.at(-1);\n",
+    "after": "function radicalParenthesis(stroke){\n const p=stroke.points,b=bounds([stroke]);\n if(operatorStroke(stroke).straight)return null;\n if(p.length<5||b.h<18||b.w>b.h*.75||b.w<b.h*.055)return null;\n const first=p[0],last=p.at(-1);\n"
+  },
+  {
+    "before": "  pending=[];return true;\n };\n for(const part of ordered){\n  const kind=radicalParenthesis(part.scaled);\n  if(kind){if(!await flush())return null;output.push(kind);tokens.push({char:kind,score:.94,parts:[part.scaled],x:part.box.x});}\n  else pending.push(part);\n }\n",
+    "after": "  pending=[];return true;\n };\n for(let i=0;i<ordered.length;i++){\n  const part=ordered[i],kind=radicalParenthesis(part.scaled);\n  if(kind==='('){\n   if(!await flush())return null;\n   let depth=1,j=i+1;\n   for(;j<ordered.length;j++){\n    const k=radicalParenthesis(ordered[j].scaled);\n    if(k==='(')depth++;else if(k===')')depth--;\n    if(depth===0)break;\n   }\n   if(depth||j===i+1)return null;\n   const span=ordered.slice(i,j+1);\n   let group=await detectParenthesizedNumber(span.map(p=>p.raw),W,H,options);\n   if(!group){\n    const inner=await radicalExpression(span.slice(1,-1),W,H,options);\n    if(!inner)return null;\n    group={...inner,text:'('+inner.text+')',tokens:[\n     {char:'(',score:.94,parts:[part.scaled]},...inner.tokens,\n     {char:')',score:.94,parts:[ordered[j].scaled]}]};\n   }\n   output.push(group.text);tokens.push(...group.tokens);uncertain.push(...group.uncertain);\n   i=j;\n  }else if(kind===')')return null;\n  else pending.push(part);\n }\n"
+  },
+  {
+    "before": "  if(!hook)return;\n  const line=operatorStroke({points:roof}),b=line.b,h=hook.box.h,left={x:b.x,y:roof.reduce((best,p)=>p.x<best.x?p:best,roof[0]).y};\n  if(!line.horizontal||b.w<Math.max(12,h*.45)||b.h>h*.32||\n     left.x<hook.end.x-h*(hook.descending?.20:.13)||left.x>hook.end.x+h*(hook.descending?.45:.30)||Math.abs(left.y-hook.end.y)>h*(hook.descending?.55:.26))return;\n  candidates.push({hook,roof:b,indices});\n",
+    "after": "  if(!hook)return;\n  const line=operatorStroke({points:roof}),b=line.b,h=hook.box.h,left={x:b.x,y:roof.reduce((best,p)=>p.x<best.x?p:best,roof[0]).y};\n  if(!line.horizontal||b.w<Math.max(12,h*.45)||b.h>Math.max(h*.32,b.w*.12)||\n     left.x<hook.end.x-h*(hook.descending?.20:.13)||left.x>hook.end.x+h*(hook.descending?.45:.30)||Math.abs(left.y-hook.end.y)>h*(hook.descending?.55:.26))return;\n  candidates.push({hook,roof:b,indices});\n"
+  },
+  {
+    "before": "      const first=await recognizeNumericContext(prefix.map(p=>p.raw),W,H,{...options,measurementPrefix:true});\n      const digits=await recognizeNumericContext(middle.map(p=>p.raw),W,H,{...options,measurementPrefix:true});\n      if(first&&digits&&/^\\\\d+$/.test(first.text)&&/^\\\\d+$/.test(digits.text)){\n       number={text:first.text+'+('+digits.text+')',tokens:[...first.tokens,...digits.tokens],\n        uncertain:[...(first.uncertain||[]),...(digits.uncertain||[])],engine:'radical-geometric-plus-brackets'};\n",
+    "after": "      const first=await recognizeNumericContext(prefix.map(p=>p.raw),W,H,{...options,measurementPrefix:true});\n      const digits=await recognizeNumericContext(middle.map(p=>p.raw),W,H,{...options,measurementPrefix:true});\n      if(first&&digits&&/^\\d+$/.test(first.text)&&/^\\d+$/.test(digits.text)){\n       number={text:first.text+'+('+digits.text+')',tokens:[...first.tokens,...digits.tokens],\n        uncertain:[...(first.uncertain||[]),...(digits.uncertain||[])],engine:'radical-geometric-plus-brackets'};\n"
+  },
+  {
+    "before": "// A complete single closed loop is a zero candidate in a digit-only\n// prefix. This avoids a digit CNN turning a clear handwritten 0 into 5.\nfunction closedZeroInk(stroke,W,H){\n const pts=(stroke?.points||[]).map(p=>({x:p.x*W,y:p.y*H}));\n if(pts.length<12)return false;\n",
+    "after": "// A complete single closed loop is a zero candidate in a digit-only\n// prefix. This avoids a digit CNN turning a clear handwritten 0 into 5.\nfunction closedZeroInk(stroke,W,H,closure=.12){\n const pts=(stroke?.points||[]).map(p=>({x:p.x*W,y:p.y*H}));\n if(pts.length<12)return false;\n"
+  },
+  {
+    "before": " const lx=Math.min(...xs),rx=Math.max(...xs),ty=Math.min(...ys),by=Math.max(...ys),w=rx-lx,h=by-ty;\n if(w<8||h<12||w/h<.33||w/h>1.6)return false;\n if(Math.hypot(pts[0].x-pts.at(-1).x,pts[0].y-pts.at(-1).y)>Math.hypot(w,h)*.12)return false;\n const cx=(lx+rx)/2,cy=(ty+by)/2;\n let turns=0;\n",
+    "after": " const lx=Math.min(...xs),rx=Math.max(...xs),ty=Math.min(...ys),by=Math.max(...ys),w=rx-lx,h=by-ty;\n if(w<8||h<12||w/h<.33||w/h>1.6)return false;\n if(Math.hypot(pts[0].x-pts.at(-1).x,pts[0].y-pts.at(-1).y)>Math.hypot(w,h)*closure)return false;\n const cx=(lx+rx)/2,cy=(ty+by)/2;\n let turns=0;\n"
+  },
+  {
+    "before": "  for(const part of middle){\n   const guesses=predictDigit(rasterDigit([part.scaled]));\n   const guess=guesses?.[0];\n   if(!guess||!/^[0-9]$/.test(guess.char)||guess.score<.48)return null;\n   recovered.push({char:guess.char,score:Math.min(.74,guess.score),parts:[part.scaled],engine:'parenthesis-digit-fallback'});\n",
+    "after": "  for(const part of middle){\n   const guesses=predictDigit(rasterDigit([part.scaled]));\n   let guess=guesses?.[0];\n   // Numeric brackets plus closed-loop geometry and a pen-model zero/O\n   // family vote can recover an image-model abstention. Keep it uncertain.\n   const pen=window.WhiteboardUjiReader?.read([part.scaled.points])||[];\n   const zeroFamily=pen.reduce((sum,p)=>sum+('0Oo'.includes(p.label)?p.p:0),0);\n   if(closedZeroInk(part.raw,W,H,.18)&&pen[0]?.label==='0'&&pen[0].p>=.50&&zeroFamily>=.95)\n    guess={char:'0',score:Math.min(.74,pen[0].p)};\n   if(!guess||!/^[0-9]$/.test(guess.char)||guess.score<.48)return null;\n   recovered.push({char:guess.char,score:Math.min(.74,guess.score),parts:[part.scaled],engine:'parenthesis-digit-fallback'});\n"
+  },
+  {
+    "before": "}\nwindow.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};\nwindow.WhiteboardHandwritingMath.build='20261020-structural-parser8';\n})();\n",
+    "after": "}\nwindow.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};\nwindow.WhiteboardHandwritingMath.build='20261020-v2-isolated-parser1';\n})();\n"
+  }
+]

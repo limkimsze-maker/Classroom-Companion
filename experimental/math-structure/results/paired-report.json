@@ -1,0 +1,158 @@
+{
+  "schema": "classroom-isolated-v2-paired-simulations-v1",
+  "method": "Identical frozen UJI V1 glyph compositions, fresh isolated model/storage contexts. No training or model changes.",
+  "limitation": "Simulation scores and existing teacher development controls do not estimate unfamiliar-writer whole-expression accuracy.",
+  "protectedV1Sha256": "8f65225b10916834a4740353eb652b5bedf56f26144d523fdb384aa26718713f",
+  "candidateSha256": "cd50e3fa685254756736be3776f9370f8b4f21c980092c83f9198f54db0bb882",
+  "fixtureSha256": "fe5b965215eba037bc5e87dafbdc1bcd387120606af0eddad245fbca07a040d3",
+  "before": {
+    "correct": 840,
+    "total": 924,
+    "exactPercent": 90.9090909090909,
+    "characterErrorPercent": 3.505392912172573,
+    "flagged": 241,
+    "unflaggedWrong": 55,
+    "p50ms": 101,
+    "p95ms": 282
+  },
+  "after": {
+    "correct": 840,
+    "total": 924,
+    "exactPercent": 90.9090909090909,
+    "characterErrorPercent": 3.505392912172573,
+    "flagged": 241,
+    "unflaggedWrong": 55,
+    "p50ms": 113,
+    "p95ms": 308
+  },
+  "beforeByCategory": {
+    "numbers": {
+      "correct": 438,
+      "total": 440,
+      "exactPercent": 99.54545454545455,
+      "characterErrorPercent": 0.2457002457002457,
+      "flagged": 65,
+      "unflaggedWrong": 0,
+      "p50ms": 94,
+      "p95ms": 211
+    },
+    "units": {
+      "correct": 131,
+      "total": 132,
+      "exactPercent": 99.24242424242425,
+      "characterErrorPercent": 0.45454545454545453,
+      "flagged": 62,
+      "unflaggedWrong": 0,
+      "p50ms": 217,
+      "p95ms": 608
+    },
+    "powers": {
+      "correct": 88,
+      "total": 88,
+      "exactPercent": 100,
+      "characterErrorPercent": 0,
+      "flagged": 25,
+      "unflaggedWrong": 0,
+      "p50ms": 128,
+      "p95ms": 216
+    },
+    "arithmetic": {
+      "correct": 88,
+      "total": 88,
+      "exactPercent": 100,
+      "characterErrorPercent": 0,
+      "flagged": 27,
+      "unflaggedWrong": 0,
+      "p50ms": 73,
+      "p95ms": 183
+    },
+    "measuredArithmetic": {
+      "correct": 44,
+      "total": 44,
+      "exactPercent": 100,
+      "characterErrorPercent": 0,
+      "flagged": 18,
+      "unflaggedWrong": 0,
+      "p50ms": 241,
+      "p95ms": 360
+    },
+    "letters": {
+      "correct": 51,
+      "total": 132,
+      "exactPercent": 38.63636363636363,
+      "characterErrorPercent": 65.9090909090909,
+      "flagged": 44,
+      "unflaggedWrong": 55,
+      "p50ms": 32,
+      "p95ms": 166
+    }
+  },
+  "afterByCategory": {
+    "numbers": {
+      "correct": 438,
+      "total": 440,
+      "exactPercent": 99.54545454545455,
+      "characterErrorPercent": 0.2457002457002457,
+      "flagged": 65,
+      "unflaggedWrong": 0,
+      "p50ms": 102,
+      "p95ms": 198
+    },
+    "units": {
+      "correct": 131,
+      "total": 132,
+      "exactPercent": 99.24242424242425,
+      "characterErrorPercent": 0.45454545454545453,
+      "flagged": 62,
+      "unflaggedWrong": 0,
+      "p50ms": 228,
+      "p95ms": 580
+    },
+    "powers": {
+      "correct": 88,
+      "total": 88,
+      "exactPercent": 100,
+      "characterErrorPercent": 0,
+      "flagged": 25,
+      "unflaggedWrong": 0,
+      "p50ms": 148,
+      "p95ms": 241
+    },
+    "arithmetic": {
+      "correct": 88,
+      "total": 88,
+      "exactPercent": 100,
+      "characterErrorPercent": 0,
+      "flagged": 27,
+      "unflaggedWrong": 0,
+      "p50ms": 119,
+      "p95ms": 266
+    },
+    "measuredArithmetic": {
+      "correct": 44,
+      "total": 44,
+      "exactPercent": 100,
+      "characterErrorPercent": 0,
+      "flagged": 18,
+      "unflaggedWrong": 0,
+      "p50ms": 266,
+      "p95ms": 451
+    },
+    "letters": {
+      "correct": 51,
+      "total": 132,
+      "exactPercent": 38.63636363636363,
+      "characterErrorPercent": 65.9090909090909,
+      "flagged": 44,
+      "unflaggedWrong": 55,
+      "p50ms": 37,
+      "p95ms": 161
+    }
+  },
+  "gains": [],
+  "regressions": [],
+  "newUnflaggedErrors": [],
+  "changed": [],
+  "regressionGatePassed": true,
+  "productionIntegrated": false
+}

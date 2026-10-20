@@ -1,0 +1,200 @@
+{
+  "candidate": "cd50e3fa685254756736be3776f9370f8b4f21c980092c83f9198f54db0bb882",
+  "protectedV1Sha256": "8f65225b10916834a4740353eb652b5bedf56f26144d523fdb384aa26718713f",
+  "total": 26,
+  "passed": 25,
+  "inheritedFailures": 1,
+  "newFailures": 0,
+  "integrationBlocked": true,
+  "records": [
+    {
+      "test": "test-math-structure-regression",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "{\"label\":\"standalone parentheses\",\"output\":\"(10)\",\"engine\":\"local-parenthesized-number\",\"pass\":true}\n{\"label\":\"radical with parentheses\",\"output\":\"\\\\sqrt{(10)}\",\"engine\":\"local-square-root\",\"pass\":true}\n{\"label\":\"roof-first radical with parentheses\",\"output\":\"\\\\sqrt{(10)}\",\"engine\":\"local-structural-v2\",\"pass\":true}\nActual teacher bracketed radical: {\"text\":\"\\\\sqrt{8+(10)}\",\"engine\":\"local-structural-v2\"}\nPASS math structure regression\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-square-root-real-teacher-ink",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "Real teacher square-root sample: {\"text\":\"\\\\sqrt{49}\",\"engine\":\"local-square-root\",\"uncertain\":[]}\nPASS actual five-stroke teacher square root\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-natural-operator-geometry",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS natural operator geometry: curved +/−/×, tap retained with crossing, original stroke coverage, scale/placement/order, different false equations, powered units, separate dots, explicit letter mode and digit/division controls\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-stacked-fraction-structure",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS stacked fractions: independent digits, curved bars, different values, scale/order, all ink retained, uncertainty, inline controls, personal correction/Undo and explicit modes\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-priority5-audit",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS Priority 5: ten fixes, changed quantities, unchanged false equations, isolated ambiguity review and explicit letter modes\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-unit-components",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS actual CNNs: independent unit letters/power fallback, retained tokens, no invented power, explicit Numbers and uppercase modes\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-unit-first-exponent",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS current unit-first trained exponent priority\nPASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-unit-first-exponent-zero",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-authoritative-m2m3",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS teacher-trained square/cube unit-first authority and ambiguity handling\nPASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15\nPASS: unit finishing strokes, two-stroke powers and competing numeric boundaries\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-raised-three-reconcile",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS superscript recovery within unified unit-first recognition\nPASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-equation-units",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS actual CNNs: arithmetic/unit composition, all four operations, complete cm², unchanged false equations, optional exact diagnostic replay\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-handwriting-context-review",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS actual review controller: unit/word/case alternatives, preview, Apply token alignment, pen recovery, Undo, manual edits and Cancel\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-handwriting-reader-recovery",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS actual stalled-read recovery: typed correction, late-result protection, timeout, retry, model-download timeout, Stop, optional vocabulary, Apply and Undo\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-handwriting-words",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS offline word checking: supported spelling alternatives, British/US vocabulary, case modes, full token coverage, personal priority, identifiers, numeric/unit/Math protection\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-priority4-consensus",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS Priority 4: five corrected readings, unresolved-prefix review, new quantities, explicit letter mode, 22 non-unit controls, weak-prototype rejection and personal corrections\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-measurement-consensus",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS twelve measurement/power regressions; weak-evidence review flags; disconnected k; zero/8 distinction; new quantities; separate cm; non-unit controls; pen disagreement; personal corrections\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-detached-four-grouping",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS five detached-4 regressions; 308 adjacent-digit boundary controls; transforms, genuine operators, false equation, large gap, model disagreement and personal corrections\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-crossed-seven-grouping",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS crossed 7s, full-number/equation readings, scale/placement/pen order, genuine operators, disjoint bars and model disagreement\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-powered-component-priority",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS all eight component-priority regressions with actual offline models\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-recognition-learning-priority",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS actual models: confirmed unit/Math corrections precede heuristics, survive reload, and Undo restores prior behavior\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-recognition-engine-trace",
+      "pass": false,
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: loader must accept the current reader\n    at Object.<anonymous> (scripts/test-recognition-engine-trace.cjs:8:9)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: '20261020-stacked-fraction1',\n  expected: '20261020-structural-parser8',\n  operator: '==',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n",
+      "baseline": {
+        "pass": false,
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: loader must accept the current reader\n    at Object.<anonymous> (scripts/test-recognition-engine-trace.cjs:8:9)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: '20261020-stacked-fraction1',\n  expected: '20261020-structural-parser8',\n  operator: '==',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+      },
+      "inheritedFailure": true
+    },
+    {
+      "test": "test-teacher-confusables",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS confusable trained labels, fallback boundaries, priority and reader syntax\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-teacher-units-override",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS 1024-source prototype shape, trained label precedence and no equals regression\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-raised-measurement-structural",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS structural superscript 2 from 5-stroke measurement; base unit unchanged\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-raised-two-geometry",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS superscript 2 geometry and non-two rejection\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-raised-three-contour",
+      "pass": true,
+      "exitCode": 0,
+      "stdout": "PASS geometric three fallback and trained-exponent precedence\n",
+      "stderr": ""
+    }
+  ]
+}

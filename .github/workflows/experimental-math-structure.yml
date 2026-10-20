@@ -1,0 +1,50 @@
+name: Experimental math structure V2
+on:
+  push:
+    branches:
+      - experimental/math-structure-v2
+    paths:
+      - experimental/math-structure/**
+      - .github/workflows/experimental-math-structure.yml
+      - whiteboard-v2-trial.html
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-structure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify protected V1 and production files are unchanged
+        run: node experimental/math-structure/check-preservation.cjs
+      - name: Verify generated preview and matched reader/controller versions
+        run: node experimental/math-structure/build-preview.cjs --check
+      - name: Experimental spatial graph actual-ink test
+        run: node experimental/math-structure/test-graph.cjs
+      - name: Paired actual teacher expression and transform controls
+        run: |
+          mkdir -p v2-validation
+          node experimental/math-structure/test-candidate.cjs v2-validation/structure-paired.json
+      - name: Existing regression suites against isolated V2
+        run: node experimental/math-structure/regressions.cjs v2-validation/regressions.json
+      - name: Paired new nested-layout controls and graph/stroke accounting
+        run: node experimental/math-structure/test-structural-parser.cjs v2-validation/nested-layouts.json
+      - name: Install browser test runtime
+        run: |
+          npm install --prefix /tmp/classroom-v2-browser --no-save playwright@1.62.1
+          node /tmp/classroom-v2-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Verify desktop/mobile preview, Apply, pen return and separate storage
+        run: NODE_PATH=/tmp/classroom-v2-browser/node_modules node experimental/math-structure/test-preview-browser.cjs v2-validation/browser
+      - name: Compare V1 and V2 on the identical frozen 924-case benchmark
+        run: node experimental/math-structure/paired-benchmark.cjs v2-validation/paired-report.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: isolated-v2-validation
+          path: v2-validation/
