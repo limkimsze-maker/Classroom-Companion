@@ -324,7 +324,7 @@ function radicalDescendingHook(points){
  }
  const direct=Math.hypot(v.x-a.x,v.y-a.y)+Math.hypot(z.x-v.x,z.y-v.y);
  if(length>direct*1.55)return null;
- return{box:b,end:a};
+ return{box:b,end:a,descending:true};
 }
 // Parenthesis strokes are structural boundaries, not letters or digits.
 function radicalParenthesis(stroke){
@@ -408,7 +408,7 @@ async function detectSquareRoot(strokes,W,H,options={}){
   if(!hook)return;
   const line=operatorStroke({points:roof}),b=line.b,h=hook.box.h,left={x:b.x,y:roof.reduce((best,p)=>p.x<best.x?p:best,roof[0]).y};
   if(!line.horizontal||b.w<Math.max(12,h*.45)||b.h>h*.32||
-     left.x<hook.end.x-h*.13||left.x>hook.end.x+h*.30||Math.abs(left.y-hook.end.y)>h*.26)return;
+     left.x<hook.end.x-h*.13||left.x>hook.end.x+h*.30||Math.abs(left.y-hook.end.y)>h*(hook.descending?.55:.26))return;
   candidates.push({hook,roof:b,indices});
  };
  for(let i=0;i<parts.length;i++){
