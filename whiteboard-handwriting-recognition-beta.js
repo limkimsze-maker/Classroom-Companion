@@ -328,9 +328,19 @@ async function radicalExpression(inside,W,H,options){
  const output=[],tokens=[],uncertain=[];let pending=[];
  const flush=async()=>{
   if(!pending.length)return true;
-  const result=await recognizeNumericContext(pending.map(p=>p.raw),W,H,options);
+  let result=await recognizeNumericContext(pending.map(p=>p.raw),W,H,options);
+  let trailing=null;
+  if(!result&&pending.length>=2){
+   const last=pending.at(-1),candidate=segment([last.raw],W,H)[0];
+   if(candidate&&['+','−','×','÷'].includes(candidate.char)){
+    trailing=candidate;
+    result=await recognizeNumericContext(pending.slice(0,-1).map(p=>p.raw),W,H,options);
+   }
+  }
   if(!result)return false;
-  output.push(result.text);tokens.push(...result.tokens);uncertain.push(...result.uncertain);pending=[];return true;
+  output.push(result.text);tokens.push(...result.tokens);uncertain.push(...result.uncertain);
+  if(trailing){output.push(trailing.char);tokens.push(trailing);}
+  pending=[];return true;
  };
  for(const part of ordered){
   const kind=radicalParenthesis(part.scaled);
