@@ -11,7 +11,13 @@ function build(){
   if(!before||source.split(before).length!==2)throw Error('Experimental parser edit is missing or ambiguous');
   source=source.replace(before,()=>after);
  }
- return source;
+ const trigger="if((options.mode||'auto')==='auto'){\n  const radical=await detectSquareRoot(strokes,W,H,options);";
+ if(source.split(trigger).length!==2)throw Error('Missing unique structural dispatch boundary');
+ source=source.replace(trigger,"if((options.mode||'auto')==='auto'){\n  let structured;\n  try{structured=await structuralV2.recognize(strokes,W,H,options)}catch(error){if(error?.name==='AbortError')throw error}\n  if(structured)return reconcile(structured);\n  const radical=await detectSquareRoot(strokes,W,H,options);");
+ const end="window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};";
+ source=source.replace(end,"const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStroke,operatorCrossing,radicalHook,radicalDescendingHook,radicalParenthesis,recognizeNumericContext,segment,predictDigit,rasterDigit,closedZeroInk,completeNumericExpression,checkCancelled});\nwindow.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};");
+ source=source.replace("'20261020-v2-isolated-parser1'","'20261020-v2-structural-beam1'");
+ return fs.readFileSync(path.join(__dirname,'structural-parser.js'),'utf8')+'\n'+source;
 }
 module.exports={build,protectedSha256};
 if(require.main===module){
