@@ -11,6 +11,8 @@ on:
       - scripts/test-measurement-consensus.cjs
       - scripts/test-priority4-consensus.cjs
       - scripts/test-priority5-audit.cjs
+      - scripts/test-natural-operator-geometry.cjs
+      - scripts/replay-natural-ink-current.cjs
       - scripts/test-unit-components.cjs
       - scripts/test-unit-first-exponent-zero.cjs
       - scripts/test-equation-units.cjs
@@ -20,6 +22,7 @@ on:
       - scripts/verify-handwriting-baseline.cjs
       - scripts/fixtures/handwriting-priority4-baseline.json
       - scripts/fixtures/handwriting-priority5-baseline.json
+      - scripts/fixtures/handwriting-operator-baseline.json
       - scripts/diagnose-remaining-measurements.cjs
       - scripts/test-recognition-learning-priority.cjs
   workflow_dispatch:
@@ -36,6 +39,7 @@ jobs:
         run: node scripts/diagnose-remaining-measurements.cjs
       - name: Verify measurement consensus, digit grouping and personal corrections
         run: |
+          node scripts/test-natural-operator-geometry.cjs
           node scripts/test-priority5-audit.cjs
           node scripts/test-unit-components.cjs
           node scripts/test-unit-first-exponent.cjs
@@ -55,8 +59,8 @@ jobs:
           node scripts/test-recognition-engine-trace.cjs
       - name: Run original 924-case UJI V1 benchmark on current Beta reader
         run: node scripts/benchmark-handwriting-simulations.cjs --split all --out beta-handwriting-current-results.json
-      - name: Reject any regression against the frozen 830-correct baseline
-        run: node scripts/verify-handwriting-baseline.cjs scripts/fixtures/handwriting-priority5-baseline.json beta-handwriting-current-results.json
+      - name: Reject any regression against the frozen 840-correct baseline
+        run: node scripts/verify-handwriting-baseline.cjs scripts/fixtures/handwriting-operator-baseline.json beta-handwriting-current-results.json
       - name: Print category breakdown and historical comparison
         run: |
           node - <<'NODE'

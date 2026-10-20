@@ -160,7 +160,65 @@ function detachedFourGroup(first,second){
  return pen?.[0]?.label==='4'&&pen[0].p>=.985&&pen[0].p-(pen[1]?.p||0)>=.95;
 }
 
-function segment(strokes,W,H){
+// Pen input can wobble or briefly retrace a nearly straight operator stroke.
+// Measure its ink corridor as well as its travelled length; keep the stricter
+// legacy line classifier for digits, unit strokes and standalone characters.
+function operatorStroke(stroke){
+ const b=bounds([stroke]),p=stroke.points,a=p[0],z=p.at(-1),d=Math.hypot(z.x-a.x,z.y-a.y),span=Math.hypot(b.w,b.h);
+ let length=0,deviation=0;
+ for(let i=0;i<p.length;i++){
+  if(i)length+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y);
+  deviation=Math.max(deviation,pointDistance(p[i].x,p[i].y,a,z));
+ }
+ const straight=span>=4&&d>=span*.82&&length/d<=1.50&&deviation<=Math.max(.8,span*.16);
+ return{b,a,z,straight,horizontal:straight&&b.h<=b.w*.38&&Math.abs(z.y-a.y)<=Math.abs(z.x-a.x)*.42,
+  vertical:straight&&b.w<=b.h*.30};
+}
+function operatorCrossing(a,b){
+ const u={x:a.z.x-a.a.x,y:a.z.y-a.a.y},v={x:b.z.x-b.a.x,y:b.z.y-b.a.y},den=u.x*v.y-u.y*v.x;
+ if(Math.abs(den)<.001)return false;
+ const q={x:b.a.x-a.a.x,y:b.a.y-a.a.y},t=(q.x*v.y-q.y*v.x)/den,s=(q.x*u.y-q.y*u.x)/den;
+ return t>=.18&&t<=.82&&s>=.18&&s<=.82;
+}
+function relaxedOperator(parts,height){
+ const lines=parts.map(operatorStroke),b=bounds(parts);
+ if(parts.length===1&&lines[0].horizontal&&b.w>height*.22&&b.h<height*.25)return'−';
+ if(parts.length!==2||!lines.every(l=>l.straight)||!operatorCrossing(lines[0],lines[1]))return null;
+ if(lines.some(l=>l.horizontal)&&lines.some(l=>l.vertical))return'+';
+ const slopes=lines.map(l=>(l.z.y-l.a.y)/(l.z.x-l.a.x||.001));
+ if(lines.every(l=>!l.horizontal&&l.b.w>height*.20&&l.b.h>height*.35)&&slopes[0]*slopes[1]<0)return'×';
+ return null;
+}
+// Relaxed geometry is enabled by independently supported adjacent numerals,
+// not by a particular expression, its expected answer, or a teacher's identity.
+function numericOperatorNeighbours(group,groups,height){
+ if(!window.WhiteboardCharacterInference||!window.WhiteboardUjiReader)return false;
+ const b=bounds(group),others=groups.filter(g=>g!==group).map(parts=>({parts,b:bounds(parts)}));
+ const left=others.filter(p=>p.b.cx<b.x).sort((a,z)=>z.b.cx-a.b.cx)[0];
+ const right=others.filter(p=>p.b.cx>b.x+b.w).sort((a,z)=>a.b.cx-z.b.cx)[0];
+ const numeric=item=>{
+  if(!item||item.b.h<height*.4||Math.abs(item.b.cy-b.cy)>height*.65||
+   Math.max(item.b.x-b.x-b.w,b.x-item.b.x-item.b.w)>height*2)return false;
+  const pixels=rasterDigit(item.parts),image=window.WhiteboardCharacterInference.predict(pixels,'auto'),pen=window.WhiteboardUjiReader.read(item.parts.map(p=>p.points)),best=pen?.[0],top=image?.[0];
+  if(/^\d$/.test(top?.char||'')&&top.score>=.90&&best?.label===top.char&&best.p>=.70)return true;
+  const digits=predictDigit(pixels),digit=digits[0];
+  if(/^\d$/.test(top?.char||'')&&top.score>=.80&&digit.char===top.char&&digit.score>=.98&&
+    !(/^[A-Za-z]$/.test(best?.label||'')&&best.p>=.985))return true;
+  const aliases={O:'0',o:'0',I:'1',l:'1',Z:'2',z:'2',S:'5',s:'5',B:'8',g:'9',q:'9'};
+  const support=image.reduce((sum,p)=>sum+((p.char===best?.label||aliases[p.char]===best?.label)?p.score:0),0);
+  if(/^\d$/.test(best?.label||'')&&best.p>=.70&&digit.char===best.label&&digit.score>=.98&&support>=.95)return true;
+  if(!best||!/^\d$/.test(best.label)||best.p<.985||best.p-(pen[1]?.p||0)<.95)return false;
+  return (image.find(p=>p.char===best.label)?.score||0)>=.10||digit.char===best.label&&digit.score>=.90;
+ };
+ return numeric(left)||numeric(right);
+}
+function operatorAccent(dot,group,height){
+ const b=bounds(group),d=bounds([dot]),tolerance=Math.max(1,Math.min(height*.05,(dot.size||3)*.75));
+ if(d.cx<b.x-tolerance||d.cx>b.x+b.w+tolerance||d.cy<b.y-tolerance||d.cy>b.y+b.h+tolerance)return false;
+ return group.some(s=>s.points.some((p,i)=>i&&pointDistance(d.cx,d.cy,s.points[i-1],p)<=tolerance));
+}
+
+function segment(strokes,W,H,mode='auto'){
  const equalPairs=window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[];
  const consumed=new Set(equalPairs.flatMap(pair=>pair.indices));
  const jPairs=window.WhiteboardTrainedJ?.embeddedPairs?.(strokes,W,H,[...consumed])||[];
@@ -201,7 +259,14 @@ function segment(strokes,W,H){
    // Keep the dot with a narrow stem for separately written i/j, rather than making another token.
    const stem=bounds(group),accent=dots.find(s=>{const d=bounds([s]);return stem.h>height*.4&&stem.w<height*.55&&Math.abs(d.cx-stem.cx)<Math.max(4,height*.2)&&d.cy<stem.y-height*.06&&d.cy>stem.y-height*.45});
    if(accent){group.push(accent);dots=dots.filter(s=>s!==accent)}
-   const b=bounds(group),op=symbol(group,height);
+   const b=bounds(group),legacy=symbol(group,height);
+   const candidate=!legacy&&mode==='auto'?relaxedOperator(group,height):null;
+   const relaxed=candidate&&numericOperatorNeighbours(group,groups,height)?candidate:null;
+   const op=legacy||relaxed;
+   if(['+','×'].includes(op)){
+    const accents=dots.filter(dot=>operatorAccent(dot,group,height));
+    group.push(...accents);dots=dots.filter(dot=>!accents.includes(dot));
+   }
    if(op==='−'){
     const candidates=dots.filter(s=>{const d=bounds([s]);return Math.abs(d.cx-b.cx)<Math.max(5,b.w*.3)&&Math.abs(d.cy-b.cy)<height*.55}),above=candidates.find(s=>bounds([s]).cy<b.cy-height*.10),below=candidates.find(s=>bounds([s]).cy>b.cy+height*.10);
     if(above&&below){dots=dots.filter(s=>s!==above&&s!==below);rowTokens.push({char:'÷',score:1,x:b.x,parts:[...group,above,below]});continue}
@@ -210,7 +275,7 @@ function segment(strokes,W,H){
    if(openFourGeometry(group)){rowTokens.push({char:'4',score:.96,x:b.x,parts:group,engine:'open-four-geometry'});continue}
    const pixels=rasterDigit(group),personal=window.WhiteboardHandwritingLearning?.match(pixels);
    if(personal){rowTokens.push({...personal,x:b.x,parts:group});continue}
-   if(op){rowTokens.push({char:op,score:1,x:b.x,parts:group});continue}
+   if(op){rowTokens.push({char:op,score:relaxed ? .96 : 1,x:b.x,parts:group,...(relaxed?{engine:'local-operator-stroke-geometry'}:{})});continue}
    const choices=predictDigit(pixels);
    rowTokens.push({...choices[0],choices:choices.slice(0,3),x:b.x,parts:group});
   }
@@ -763,7 +828,7 @@ async function recognizeCore(strokes,W,H,options={}){
   }
  }
 
- const tokens=segment(strokes,W,H),mode=['auto','lowercase','uppercase','digits'].includes(options.mode)?options.mode:'auto';let text='';
+ const mode=['auto','lowercase','uppercase','digits'].includes(options.mode)?options.mode:'auto',tokens=segment(strokes,W,H,mode);let text='';
  if(window.WhiteboardTeacherConfusables){for(const t of tokens){if(!t.parts?.length||['+','−','×','÷','=','.','$'].includes(t.char))continue;const raw=t.parts.map(p=>p.source).filter(Boolean);if(!raw.length)continue;const fresh=window.WhiteboardTeacherConfusables.match(raw,W,H,mode,.955,.08);if(fresh)Object.assign(t,fresh);}}
  // Recognize only high-confidence trained symbols after existing grouping.
  if(window.WhiteboardTrainedRemaining&&['auto','lowercase','uppercase','digits'].includes(mode)){
@@ -887,6 +952,7 @@ async function recognizeNumericContext(strokes,W,H,options){
  if(!glyphs.length)return null;
  const mixed=await readCharacters(glyphs.map(t=>rasterDigit(t.parts)),'auto',options);
  const hasOperator=tokens.some(t=>operators.includes(t.char));
+ const newOperator=tokens.some(t=>t.engine==='local-operator-stroke-geometry');
  // An operator or a separately corroborated numeral establishes a numeric
  // neighbourhood; an isolated ambiguous letter has no such evidence.
  const numericNeighbour=hasOperator||options.measurementPrefix||glyphs.length>1&&glyphs.some((t,i)=>{
@@ -940,6 +1006,9 @@ async function recognizeNumericContext(strokes,W,H,options){
   if(strongLetter&&!penAgrees)return null;
   if(score<.55&&!penAgrees)return null;
   if(!hasOperator&&support<.10&&!penAgrees)return null;
+  // A newly recovered sign establishes an operator, not the identity of every
+  // remaining glyph. Preserve unsupported letters/units for normal review.
+  if(newOperator&&support<.05&&!penAgrees)return null;
   Object.assign(token,{char,score,engine:'numeric-model-consensus'});
  }
  const text=tokens.map(t=>operators.includes(t.char)?' '+t.char+' ':t.char).join('').replace(/\s+/g,' ').trim();
@@ -1640,5 +1709,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-priority5-audit1';
+window.WhiteboardHandwritingMath.build='20261020-operator-geometry1';
 })();
