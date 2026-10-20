@@ -442,6 +442,38 @@ async function detectSquareRoot(strokes,W,H,options={}){
   const enclosed=bounds(inside.map(p=>p.scaled));
   if(enclosed.h<h*.30||enclosed.h>h*1.35)continue;
   let number=await radicalExpression(inside,W,H,options);
+  // In a radical, independently detect a two-stroke arithmetic operator
+  // before reading digits. The generic segmenter can split a plus into
+  // '1' and '−', preventing otherwise valid bracket grammar from parsing.
+  if(!number&&inside.length>=5){
+   const ordered=inside.slice().sort((a,b)=>a.box.cx-b.box.cx);
+   const opens=ordered.filter(p=>radicalParenthesis(p.scaled)==='(');
+   const closes=ordered.filter(p=>radicalParenthesis(p.scaled)===')');
+   if(opens.length===1&&closes.length===1&&opens[0].box.cx<closes[0].box.cx){
+    const left=ordered.filter(p=>p.box.cx<opens[0].box.cx);
+    const middle=ordered.filter(p=>p.box.cx>opens[0].box.cx&&p.box.cx<closes[0].box.cx);
+    const end=ordered.filter(p=>p.box.cx>closes[0].box.cx);
+    if(left.length>=3&&middle.length&&end.length===0){
+     const pairs=[];
+     for(let a=0;a<left.length;a++)for(let b=a+1;b<left.length;b++){
+      const u=operatorStroke(left[a].scaled),v=operatorStroke(left[b].scaled);
+      if(u.straight&&v.straight&&operatorCrossing(u,v)&&
+        ((u.horizontal&&v.vertical)||(u.vertical&&v.horizontal)))pairs.push([a,b]);
+     }
+     for(const [a,b] of pairs){
+      const prefix=left.filter((_,i)=>i!==a&&i!==b);
+      if(!prefix.length)continue;
+      const first=await recognizeNumericContext(prefix.map(p=>p.raw),W,H,{...options,measurementPrefix:true});
+      const digits=await recognizeNumericContext(middle.map(p=>p.raw),W,H,{...options,measurementPrefix:true});
+      if(first&&digits&&/^\\d+$/.test(first.text)&&/^\\d+$/.test(digits.text)){
+       number={text:first.text+'+('+digits.text+')',tokens:[...first.tokens,...digits.tokens],
+        uncertain:[...(first.uncertain||[]),...(digits.uncertain||[])],engine:'radical-geometric-plus-brackets'};
+       break;
+      }
+     }
+    }
+   }
+  }
   // A radical establishes numeric context even when an open handwritten 4
   // resembles a dollar sign to the generic mixed-character recogniser.
   // Keep the geometry-backed radical, but flag fallback digits for review.
