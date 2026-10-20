@@ -440,7 +440,7 @@ async function detectSquareRoot(strokes,W,H,options={}){
   }
   if(invalid||!inside.length)continue;
   const enclosed=bounds(inside.map(p=>p.scaled));
-  if(enclosed.h<h*.30||enclosed.h>h*1.05)continue;
+  if(enclosed.h<h*.30||enclosed.h>h*1.35)continue;
   let number=await radicalExpression(inside,W,H,options);
   // A radical establishes numeric context even when an open handwritten 4
   // resembles a dollar sign to the generic mixed-character recogniser.
