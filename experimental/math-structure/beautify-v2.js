@@ -132,8 +132,8 @@ async function review(group){
  for(const [value,text]of [['auto','Auto'],['math','Math formulas'],['lowercase','Letters a–z'],['uppercase','Letters A–Z'],['digits','Numbers']]){const option=document.createElement('option');option.value=value;option.textContent=text;modeSelect.appendChild(option)}modeSelect.value='auto';appearance.append(modeLabel,modeSelect);
  const colourLabel=document.createElement('label');colourLabel.htmlFor='handwritingColour';colourLabel.textContent='Colour';
  const colourSelect=document.createElement('select');colourSelect.id='handwritingColour';colourSelect.setAttribute('aria-label','Beautified writing colour');
- const palette=[['#17324d','Navy'],['#000000','Black'],['#2563eb','Blue'],['#dc2626','Red'],['#15803d','Green'],['#7c3aed','Purple']];
- const initialColour=(group.find(s=>/^#[0-9a-f]{6}$/i.test(s.colour||''))?.colour||'#17324d').toLowerCase();
+ const palette=[['#1d4ed8','Royal blue'],['#17324d','Navy'],['#000000','Black'],['#2563eb','Blue'],['#dc2626','Red'],['#15803d','Green'],['#7c3aed','Purple']];
+ const initialColour='#1d4ed8';
  if(!palette.some(([hex])=>hex===initialColour))palette.push([initialColour,'Original ink']);
  for(const [hex,name]of palette){const option=document.createElement('option');option.value=hex;option.textContent=name;colourSelect.appendChild(option)}colourSelect.value=initialColour;appearance.append(colourLabel,colourSelect);
  const correctionLabel=document.createElement('label');correctionLabel.style.cssText='display:inline-flex;align-items:center;gap:6px;white-space:normal;font-size:12px';
