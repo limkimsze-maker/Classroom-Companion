@@ -1,0 +1,14 @@
+[
+  {
+    "before": "  if(token.char==='$'&&!(top?.char==='4'&&top.score>=.8&&best?.label==='4'&&best.p>=.85))return null;",
+    "after": "  const imageFour=token.char==='$'&&options.measurementPrefix&&top?.char==='4'&&top.score>=.97&&(()=>{\n   const digit=predictDigit(rasterDigit(token.parts))[0];return digit?.char==='4'&&digit.score>=.97;\n  })();\n  if(token.char==='$'&&!(top?.char==='4'&&top.score>=.8&&best?.label==='4'&&best.p>=.85)&&!imageFour)return null;"
+  },
+  {
+    "before": "  Object.assign(token,{char,score,engine:'numeric-model-consensus'});",
+    "after": "  // Two image readers can agree on an open 4 while the pen reader prefers\n  // q/A. Measurement context permits the digit, but keeps the dispute visible.\n  if(imageFour)score=Math.min(score,.74);\n  Object.assign(token,{char,score,engine:imageFour?'numeric-four-image-consensus':'numeric-model-consensus'});"
+  },
+  {
+    "before": "async function recognizeUnitComponents(strokes,W,H,options){\n if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>18)return null;\n const items=strokes.map(raw=>{\n  const scaled={size:Number(raw.size)||4,points:",
+    "after": "async function recognizeUnitComponents(strokes,W,H,options){\n if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>18)return null;\n const items=strokes.map(raw=>{\n  const scaled={source:raw,size:Number(raw.size)||4,points:"
+  }
+]

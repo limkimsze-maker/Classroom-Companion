@@ -22,6 +22,20 @@ Public sources, adaptations and boundaries: [RESEARCH.md](RESEARCH.md).
 No proprietary MyScript engine, paid API, new dataset or new training is included.
 This is not a complete MyScript-equivalent recogniser.
 
+### Measurement consensus repair
+
+`measurement-patches.json` permits a dollar-shaped open 4 in an explicitly numeric
+measurement prefix only when both existing image classifiers strongly agree on 4.
+The pen-reader disagreement remains flagged. This lets independently recognised
+unit letters and a raised exponent combine with the full number instead of falling
+back to a coarse uncertain whole-unit template. Original stroke references remain
+attached to the measurement tokens. No exact quantity or unit label is memorised.
+
+`test-measurement-consensus.cjs` replays the teacher's 45 cm² failure, four geometric
+variants, five changed quantities, non-measurement ambiguity, explicit modes and
+personal correction/Undo. Browser tests additionally replay this measurement through
+Beautify and Apply at desktop and mobile sizes.
+
 ## Verification
 
 | Check | Protected V1 | Structural V2 |

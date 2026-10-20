@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - experimental/math-structure-v2
+      - fix/v2-measurement-*
     paths:
       - experimental/math-structure/**
       - .github/workflows/experimental-math-structure.yml
@@ -35,6 +36,8 @@ jobs:
         run: node experimental/math-structure/regressions.cjs v2-validation/regressions.json
       - name: Paired new nested-layout controls and graph/stroke accounting
         run: node experimental/math-structure/test-structural-parser.cjs v2-validation/nested-layouts.json
+      - name: Actual teacher measurement and changed-value consensus controls
+        run: node experimental/math-structure/test-measurement-consensus.cjs v2-validation/teacher-measurement.json
       - name: Install browser test runtime
         run: |
           npm install --prefix /tmp/classroom-v2-browser --no-save playwright@1.62.1

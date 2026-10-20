@@ -5,7 +5,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let activeReviewAbort=null;
-const readerBuild='20261020-v2-structural-beam1';
+const readerBuild='20261020-v2-measurement-consensus2';
 function abortError(){return Object.assign(new Error('Reading cancelled'),{name:'AbortError'})}
 function stopReaders(){window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.()}
 function boundedRead(task,signal,milliseconds){
