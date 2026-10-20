@@ -1,0 +1,6504 @@
+{
+  "method": "520 isolated glyph controls from existing UJI V1 writers 1–5. Development preservation audit, not independent real-world accuracy. Overlaps some original benchmark letters.",
+  "protectedV1Sha256": "8f65225b10916834a4740353eb652b5bedf56f26144d523fdb384aa26718713f",
+  "candidateSha256": "3d60506576d6fb7d06eb25ea4dd710d6330bfec1b03f0a9e771f06353cbcca3a",
+  "fixtureSha256": "63f75636eda9e41e0d9e01d1a4f1f2dba687e53c4fad78e4830590d0bf48006b",
+  "total": 520,
+  "beforeCorrect": 306,
+  "afterCorrect": 351,
+  "gains": 45,
+  "regressions": [],
+  "records": [
+    {
+      "writer": "1",
+      "expected": "A",
+      "rep": 0,
+      "before": "A",
+      "after": "A",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "A",
+      "rep": 1,
+      "before": "A",
+      "after": "A",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "B",
+      "rep": 0,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "B",
+      "rep": 1,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "C",
+      "rep": 0,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "C",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "D",
+      "rep": 0,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "D",
+      "rep": 1,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "E",
+      "rep": 0,
+      "before": "E",
+      "after": "E",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "E",
+      "rep": 1,
+      "before": "E",
+      "after": "E",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "F",
+      "rep": 0,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "F",
+      "rep": 1,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "F",
+        "f",
+        "e"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "G",
+      "rep": 0,
+      "before": "6",
+      "after": "G",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "G",
+        "6",
+        "g"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "G",
+      "rep": 1,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "G",
+        "6",
+        "g"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "H",
+      "rep": 0,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "H",
+      "rep": 1,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "I",
+      "rep": 0,
+      "before": "1",
+      "after": "1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "1",
+        "I",
+        "l",
+        "i",
+        "L"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "I",
+      "rep": 1,
+      "before": "1",
+      "after": "1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "1",
+        "I",
+        "l",
+        "i",
+        "L"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "J",
+      "rep": 0,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "J",
+      "rep": 1,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "J",
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "K",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "K",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "L",
+      "rep": 0,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "L",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "M",
+      "rep": 0,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "M",
+      "rep": 1,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "N",
+      "rep": 0,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "W",
+        "N",
+        "w"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "N",
+      "rep": 1,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "O",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "O",
+      "rep": 1,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "P",
+      "rep": 0,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "P",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "Q",
+      "rep": 0,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "Q",
+      "rep": 1,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "R",
+      "rep": 0,
+      "before": "R",
+      "after": "R",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "R",
+      "rep": 1,
+      "before": "R",
+      "after": "R",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "S",
+      "rep": 0,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "S",
+      "rep": 1,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "T",
+      "rep": 0,
+      "before": "V",
+      "after": "T",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "T",
+        "V",
+        "j",
+        "t",
+        "r"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "T",
+      "rep": 1,
+      "before": "r",
+      "after": "T",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "T",
+        "r",
+        "V",
+        "f",
+        "t"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "U",
+      "rep": 0,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "U",
+      "rep": 1,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "V",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "u",
+        "U"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "V",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "u",
+        "U"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "W",
+      "rep": 0,
+      "before": "VV",
+      "after": "VV",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "W",
+      "rep": 1,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "X",
+      "rep": 0,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "X",
+      "rep": 1,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "Y",
+      "rep": 0,
+      "before": "V",
+      "after": "Y",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "V",
+        "y"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "Y",
+      "rep": 1,
+      "before": "V",
+      "after": "Y",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "V",
+        "y"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "Z",
+      "rep": 0,
+      "before": "Z",
+      "after": "Z",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "z"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "Z",
+      "rep": 1,
+      "before": "Z",
+      "after": "Z",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "z"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "a",
+      "rep": 0,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "a",
+      "rep": 1,
+      "before": "1",
+      "after": "a",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "a",
+        "1",
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "b",
+      "rep": 0,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "b",
+        "6"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "b",
+      "rep": 1,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "c",
+      "rep": 0,
+      "before": "e",
+      "after": "c",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "c",
+        "C",
+        "e"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "c",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "d",
+      "rep": 0,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "d",
+      "rep": 1,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "e",
+      "rep": 0,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "e",
+      "rep": 1,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "f",
+      "rep": 0,
+      "before": "f",
+      "after": "f",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "f",
+        "F",
+        "J"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "f",
+      "rep": 1,
+      "before": "f",
+      "after": "f",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "f",
+        "t",
+        "1",
+        "I",
+        "L"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "g",
+      "rep": 0,
+      "before": "g",
+      "after": "g",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "g",
+      "rep": 1,
+      "before": "g",
+      "after": "g",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "h",
+      "rep": 0,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "h",
+      "rep": 1,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "i",
+      "rep": 0,
+      "before": "1",
+      "after": "1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "i",
+      "rep": 1,
+      "before": "(",
+      "after": "i",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "i",
+        "(",
+        "l",
+        "L",
+        "1"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "j",
+      "rep": 0,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "j",
+      "rep": 1,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "J",
+        "j"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "k",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "k",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "l",
+      "rep": 0,
+      "before": "1",
+      "after": "1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "1",
+        "l",
+        "L",
+        "I",
+        "i"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "l",
+      "rep": 1,
+      "before": "1",
+      "after": "1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "1",
+        "l",
+        "L",
+        "I",
+        "i"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "m",
+      "rep": 0,
+      "before": "m",
+      "after": "m",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "m",
+        "w",
+        "W",
+        "U",
+        "M"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "m",
+      "rep": 1,
+      "before": "M",
+      "after": "m",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "m",
+        "M"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "n",
+      "rep": 0,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "n",
+      "rep": 1,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "o",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "o",
+      "rep": 1,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "p",
+      "rep": 0,
+      "before": "p",
+      "after": "p",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "p",
+        "P"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "p",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "q",
+      "rep": 0,
+      "before": "9",
+      "after": "9",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "9",
+        "q",
+        "Y",
+        "y",
+        "g"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "q",
+      "rep": 1,
+      "before": "9",
+      "after": "9",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "9",
+        "q",
+        "Y",
+        "g"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "r",
+      "rep": 0,
+      "before": "r",
+      "after": "r",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "1",
+      "expected": "r",
+      "rep": 1,
+      "before": "r",
+      "after": "r",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "r",
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "s",
+      "rep": 0,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "s",
+      "rep": 1,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "t",
+      "rep": 0,
+      "before": "V",
+      "after": "t",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "t",
+        "V",
+        "j",
+        "T",
+        "J"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "t",
+      "rep": 1,
+      "before": "r",
+      "after": "t",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "t",
+        "r",
+        "V",
+        "d"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "u",
+      "rep": 0,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u",
+        "V"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "u",
+      "rep": 1,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u",
+        "V"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "v",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "u",
+        "U",
+        "v"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "v",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "u"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "w",
+      "rep": 0,
+      "before": "VU",
+      "after": "VU",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "w",
+      "rep": 1,
+      "before": "VV",
+      "after": "VV",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "1",
+      "expected": "x",
+      "rep": 0,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "x",
+      "rep": 1,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "y",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "Y",
+        "y"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "y",
+      "rep": 1,
+      "before": "Y",
+      "after": "Y",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "y",
+        "V"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "z",
+      "rep": 0,
+      "before": "3",
+      "after": "z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "z",
+        "3",
+        "Z"
+      ]
+    },
+    {
+      "writer": "1",
+      "expected": "z",
+      "rep": 1,
+      "before": "3",
+      "after": "z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "z",
+        "3",
+        "Z"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "A",
+      "rep": 0,
+      "before": "A",
+      "after": "A",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "expected": "A",
+      "rep": 1,
+      "before": "A",
+      "after": "A",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "B",
+      "rep": 0,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "B",
+      "rep": 1,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "C",
+      "rep": 0,
+      "before": "e",
+      "after": "c",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "c",
+        "C",
+        "e"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "C",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "D",
+      "rep": 0,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "D",
+      "rep": 1,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "E",
+      "rep": 0,
+      "before": "E",
+      "after": "E",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "E",
+      "rep": 1,
+      "before": "E",
+      "after": "E",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "F",
+      "rep": 0,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "F",
+        "f"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "F",
+      "rep": 1,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "G",
+      "rep": 0,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "G",
+      "rep": 1,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "H",
+      "rep": 0,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "H",
+        "h",
+        "M"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "H",
+      "rep": 1,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "I",
+      "rep": 0,
+      "before": "1",
+      "after": "1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "I",
+      "rep": 1,
+      "before": "(",
+      "after": "(",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "(",
+        "l",
+        "1",
+        "I",
+        "L"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "J",
+      "rep": 0,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "J",
+      "rep": 1,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "K",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "K",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "L",
+      "rep": 0,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "L",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "M",
+      "rep": 0,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "M",
+        "m",
+        "n"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "M",
+      "rep": 1,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "N",
+      "rep": 0,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "N",
+      "rep": 1,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "O",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "O",
+      "rep": 1,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "P",
+      "rep": 0,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "P",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "Q",
+      "rep": 0,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "Q",
+      "rep": 1,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "R",
+      "rep": 0,
+      "before": "R",
+      "after": "R",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "R",
+      "rep": 1,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "e",
+        "R",
+        "r"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "S",
+      "rep": 0,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "S",
+      "rep": 1,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "T",
+      "rep": 0,
+      "before": "T",
+      "after": "T",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "T",
+      "rep": 1,
+      "before": "T",
+      "after": "T",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "U",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "u",
+        "o",
+        "U",
+        "O"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "U",
+      "rep": 1,
+      "before": "0",
+      "after": "U",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "0",
+        "u",
+        "O"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "V",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "V",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "W",
+      "rep": 0,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "W",
+      "rep": 1,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "X",
+      "rep": 0,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "X",
+      "rep": 1,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "Y",
+      "rep": 0,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "Y",
+      "rep": 1,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "Z",
+      "rep": 0,
+      "before": "2",
+      "after": "Z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "2",
+        "z"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "Z",
+      "rep": 1,
+      "before": "Z",
+      "after": "Z",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "z"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "a",
+      "rep": 0,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "a",
+      "rep": 1,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "b",
+      "rep": 0,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "b",
+      "rep": 1,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "c",
+      "rep": 0,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "c",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "d",
+      "rep": 0,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "d",
+        "J"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "d",
+      "rep": 1,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "e",
+      "rep": 0,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "e",
+      "rep": 1,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "f",
+      "rep": 0,
+      "before": "t",
+      "after": "t",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "t",
+        "f"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "f",
+      "rep": 1,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "d",
+        "t",
+        "f"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "g",
+      "rep": 0,
+      "before": "g",
+      "after": "g",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "g",
+        "9"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "g",
+      "rep": 1,
+      "before": "g",
+      "after": "g",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "h",
+      "rep": 0,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "h",
+      "rep": 1,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "i",
+      "rep": 0,
+      "before": "L ×",
+      "after": "L ×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "expected": "i",
+      "rep": 1,
+      "before": "L ×",
+      "after": "L ×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "j",
+      "rep": 0,
+      "before": "j",
+      "after": "j",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "j",
+      "rep": 1,
+      "before": "j",
+      "after": "j",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "k",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "k",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "l",
+      "rep": 0,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "e",
+        "l"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "l",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "C",
+        "e",
+        "c"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "m",
+      "rep": 0,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "M",
+        "m",
+        "w"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "m",
+      "rep": 1,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "M",
+        "m",
+        "w"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "n",
+      "rep": 0,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "n",
+      "rep": 1,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "expected": "o",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "o",
+      "rep": 1,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "p",
+      "rep": 0,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "p",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "q",
+      "rep": 0,
+      "before": "q",
+      "after": "q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "q",
+      "rep": 1,
+      "before": "q",
+      "after": "q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "2",
+      "expected": "r",
+      "rep": 0,
+      "before": "r",
+      "after": "r",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "r",
+      "rep": 1,
+      "before": "r",
+      "after": "r",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "s",
+      "rep": 0,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "s",
+      "rep": 1,
+      "before": "S",
+      "after": "S",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "t",
+      "rep": 0,
+      "before": "t",
+      "after": "t",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "t",
+      "rep": 1,
+      "before": "+",
+      "after": "+",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "u",
+      "rep": 0,
+      "before": "u",
+      "after": "u",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "u",
+        "U"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "u",
+      "rep": 1,
+      "before": "u",
+      "after": "u",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "u",
+        "U"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "v",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "r"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "v",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "r"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "w",
+      "rep": 0,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "w",
+      "rep": 1,
+      "before": "w",
+      "after": "w",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "w",
+        "W"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "x",
+      "rep": 0,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "x",
+      "rep": 1,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "y",
+      "rep": 0,
+      "before": "9",
+      "after": "y",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "y",
+        "Y",
+        "9"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "y",
+      "rep": 1,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "2",
+      "expected": "z",
+      "rep": 0,
+      "before": "Z",
+      "after": "Z",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "z",
+        "2"
+      ]
+    },
+    {
+      "writer": "2",
+      "expected": "z",
+      "rep": 1,
+      "before": "2",
+      "after": "z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "z",
+        "2",
+        "Z"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "A",
+      "rep": 0,
+      "before": "A",
+      "after": "A",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "A",
+      "rep": 1,
+      "before": "A",
+      "after": "A",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "B",
+      "rep": 0,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "B",
+      "rep": 1,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "C",
+      "rep": 0,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "C",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "D",
+      "rep": 0,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "D",
+      "rep": 1,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "E",
+      "rep": 0,
+      "before": "E",
+      "after": "E",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "E",
+      "rep": 1,
+      "before": "E",
+      "after": "E",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "F",
+      "rep": 0,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "F",
+      "rep": 1,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "G",
+      "rep": 0,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "G",
+      "rep": 1,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "G",
+        "g",
+        "6"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "H",
+      "rep": 0,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "H",
+      "rep": 1,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "I",
+      "rep": 0,
+      "before": "I",
+      "after": "I",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "I",
+      "rep": 1,
+      "before": "I",
+      "after": "I",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "J",
+      "rep": 0,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "J",
+      "rep": 1,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "K",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "K",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "L",
+      "rep": 0,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "L",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "expected": "M",
+      "rep": 0,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "M",
+      "rep": 1,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "M",
+        "m",
+        "N"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "N",
+      "rep": 0,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "N",
+      "rep": 1,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "O",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "O",
+      "rep": 1,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "P",
+      "rep": 0,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "P",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "Q",
+      "rep": 0,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "Q",
+      "rep": 1,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "R",
+      "rep": 0,
+      "before": "R",
+      "after": "R",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "R",
+      "rep": 1,
+      "before": "R",
+      "after": "R",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "S",
+      "rep": 0,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "S",
+      "rep": 1,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "T",
+      "rep": 0,
+      "before": "T",
+      "after": "T",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "T",
+      "rep": 1,
+      "before": "T",
+      "after": "T",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "U",
+      "rep": 0,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "U",
+      "rep": 1,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "V",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "V",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "W",
+      "rep": 0,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "W",
+      "rep": 1,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "X",
+      "rep": 0,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "X",
+      "rep": 1,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "Y",
+      "rep": 0,
+      "before": "g",
+      "after": "Y",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "g",
+        "y"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "Y",
+      "rep": 1,
+      "before": "g",
+      "after": "Y",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "g",
+        "y"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "Z",
+      "rep": 0,
+      "before": "2",
+      "after": "z",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "z",
+        "Z",
+        "2"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "Z",
+      "rep": 1,
+      "before": "Z",
+      "after": "Z",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "z"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "a",
+      "rep": 0,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "expected": "a",
+      "rep": 1,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "a",
+        "q",
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "b",
+      "rep": 0,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "b",
+      "rep": 1,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "c",
+      "rep": 0,
+      "before": "e",
+      "after": "c",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "c",
+        "C",
+        "e"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "c",
+      "rep": 1,
+      "before": "e",
+      "after": "c",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "c",
+        "C",
+        "e"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "d",
+      "rep": 0,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "d",
+      "rep": 1,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "e",
+      "rep": 0,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "e",
+      "rep": 1,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "f",
+      "rep": 0,
+      "before": "l",
+      "after": "l",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "f",
+      "rep": 1,
+      "before": "l",
+      "after": "l",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "g",
+      "rep": 0,
+      "before": "g",
+      "after": "g",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "expected": "g",
+      "rep": 1,
+      "before": "g",
+      "after": "g",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "g",
+        "9"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "h",
+      "rep": 0,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "h",
+      "rep": 1,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "i",
+      "rep": 0,
+      "before": "1 ×",
+      "after": "1 ×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "expected": "i",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "j",
+      "rep": 0,
+      "before": "U ×",
+      "after": "U ×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "expected": "j",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "k",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "k",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "l",
+      "rep": 0,
+      "before": "L",
+      "after": "l",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "l",
+        "L",
+        "q",
+        "I"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "l",
+      "rep": 1,
+      "before": "L",
+      "after": "l",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "l",
+        "L",
+        "X"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "m",
+      "rep": 0,
+      "before": "m",
+      "after": "m",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "m",
+        "M"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "m",
+      "rep": 1,
+      "before": "m",
+      "after": "m",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "m",
+        "I",
+        "i",
+        "L",
+        "l"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "n",
+      "rep": 0,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "n",
+      "rep": 1,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "o",
+      "rep": 0,
+      "before": "o",
+      "after": "o",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "o",
+        "g",
+        "0",
+        "O"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "o",
+      "rep": 1,
+      "before": "o",
+      "after": "o",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "o",
+        "O",
+        "g",
+        "0"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "p",
+      "rep": 0,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "p",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "q",
+      "rep": 0,
+      "before": "q",
+      "after": "q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "expected": "q",
+      "rep": 1,
+      "before": "9",
+      "after": "q",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "q",
+        "9",
+        "g"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "r",
+      "rep": 0,
+      "before": "e",
+      "after": "r",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "r",
+        "e",
+        "p",
+        "P"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "r",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "r",
+        "p"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "s",
+      "rep": 0,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "s",
+      "rep": 1,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "t",
+      "rep": 0,
+      "before": "t",
+      "after": "t",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "3",
+      "expected": "t",
+      "rep": 1,
+      "before": "t",
+      "after": "t",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "3",
+      "expected": "u",
+      "rep": 0,
+      "before": "u",
+      "after": "u",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "u",
+        "M",
+        "m"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "u",
+      "rep": 1,
+      "before": "u",
+      "after": "u",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "u",
+        "U"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "v",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "v",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "w",
+      "rep": 0,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "w",
+      "rep": 1,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "x",
+      "rep": 0,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "x",
+      "rep": 1,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "y",
+      "rep": 0,
+      "before": "g",
+      "after": "Y",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "g",
+        "y"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "y",
+      "rep": 1,
+      "before": "Y",
+      "after": "Y",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "y"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "z",
+      "rep": 0,
+      "before": "2",
+      "after": "z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "z",
+        "Z",
+        "2"
+      ]
+    },
+    {
+      "writer": "3",
+      "expected": "z",
+      "rep": 1,
+      "before": "Z",
+      "after": "Z",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "z"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "A",
+      "rep": 0,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "d",
+        "A",
+        "D"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "A",
+      "rep": 1,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "D",
+        "A",
+        "d"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "B",
+      "rep": 0,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "B",
+      "rep": 1,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "C",
+      "rep": 0,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "C",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "D",
+      "rep": 0,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "D",
+      "rep": 1,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "expected": "E",
+      "rep": 0,
+      "before": "E",
+      "after": "E",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "E",
+      "rep": 1,
+      "before": "tE",
+      "after": "tE",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "expected": "F",
+      "rep": 0,
+      "before": "= 1",
+      "after": "= 1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "F",
+      "rep": 1,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "G",
+      "rep": 0,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "G",
+      "rep": 1,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "H",
+      "rep": 0,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "H",
+      "rep": 1,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "I",
+      "rep": 0,
+      "before": "I",
+      "after": "I",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "I",
+      "rep": 1,
+      "before": "I",
+      "after": "I",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "J",
+      "rep": 0,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "J",
+      "rep": 1,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "K",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "K",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "expected": "L",
+      "rep": 0,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "L",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "M",
+      "rep": 0,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "M",
+      "rep": 1,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "N",
+      "rep": 0,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "N",
+      "rep": 1,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "expected": "O",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "O",
+        "o",
+        "d"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "O",
+      "rep": 1,
+      "before": "O",
+      "after": "O",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "O",
+        "o",
+        "0"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "P",
+      "rep": 0,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "P",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "Q",
+      "rep": 0,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "Q",
+      "rep": 1,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "R",
+      "rep": 0,
+      "before": "R",
+      "after": "R",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "R",
+      "rep": 1,
+      "before": "R",
+      "after": "R",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "S",
+      "rep": 0,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "S",
+      "rep": 1,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "T",
+      "rep": 0,
+      "before": "T",
+      "after": "T",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "T",
+      "rep": 1,
+      "before": "− 1",
+      "after": "− 1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "U",
+      "rep": 0,
+      "before": "o",
+      "after": "U",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "o",
+        "u"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "U",
+      "rep": 1,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "V",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "U"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "V",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "U"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "W",
+      "rep": 0,
+      "before": "w",
+      "after": "w",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "w",
+        "W"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "W",
+      "rep": 1,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "X",
+      "rep": 0,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "X",
+      "rep": 1,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "Y",
+      "rep": 0,
+      "before": "Y",
+      "after": "Y",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "y"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "Y",
+      "rep": 1,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "Z",
+      "rep": 0,
+      "before": "2",
+      "after": "2",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "2",
+        "z",
+        "Z"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "Z",
+      "rep": 1,
+      "before": "2",
+      "after": "Z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "2",
+        "z"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "a",
+      "rep": 0,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "a",
+      "rep": 1,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "b",
+      "rep": 0,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "b",
+      "rep": 1,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "c",
+      "rep": 0,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "c",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "d",
+      "rep": 0,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "d",
+      "rep": 1,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "e",
+      "rep": 0,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "e",
+      "rep": 1,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "f",
+      "rep": 0,
+      "before": "f",
+      "after": "f",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "f",
+        "d",
+        "j"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "f",
+      "rep": 1,
+      "before": "l",
+      "after": "l",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "g",
+      "rep": 0,
+      "before": "8",
+      "after": "g",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "g",
+        "8",
+        "f"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "g",
+      "rep": 1,
+      "before": "8",
+      "after": "8",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "8",
+        "g",
+        "f",
+        "s"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "h",
+      "rep": 0,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "h",
+      "rep": 1,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "i",
+      "rep": 0,
+      "before": "L ×",
+      "after": "L ×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "expected": "i",
+      "rep": 1,
+      "before": "I",
+      "after": "I",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "j",
+      "rep": 0,
+      "before": "0 ×",
+      "after": "0 ×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "expected": "j",
+      "rep": 1,
+      "before": "°",
+      "after": "°",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "k",
+      "rep": 0,
+      "before": "k",
+      "after": "k",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "k",
+        "K"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "k",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "l",
+      "rep": 0,
+      "before": "l",
+      "after": "l",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "l",
+        "e",
+        "P"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "l",
+      "rep": 1,
+      "before": "l",
+      "after": "l",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "l",
+        "e",
+        "L"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "m",
+      "rep": 0,
+      "before": "M",
+      "after": "m",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "m",
+        "M",
+        "w"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "m",
+      "rep": 1,
+      "before": "M",
+      "after": "m",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "m",
+        "M"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "n",
+      "rep": 0,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "expected": "n",
+      "rep": 1,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "o",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "o",
+      "rep": 1,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "p",
+      "rep": 0,
+      "before": "$",
+      "after": "p",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "p",
+        "P"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "p",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "q",
+      "rep": 0,
+      "before": "q",
+      "after": "q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "q",
+        "g",
+        "f"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "q",
+      "rep": 1,
+      "before": "f",
+      "after": "q",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "q",
+        "f",
+        "F"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "r",
+      "rep": 0,
+      "before": "r",
+      "after": "r",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "r",
+      "rep": 1,
+      "before": "r",
+      "after": "r",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "4",
+      "expected": "s",
+      "rep": 0,
+      "before": "5",
+      "after": "5",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "s",
+      "rep": 1,
+      "before": "S",
+      "after": "S",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "t",
+      "rep": 0,
+      "before": "t",
+      "after": "t",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "t",
+      "rep": 1,
+      "before": "t",
+      "after": "t",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "u",
+      "rep": 0,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "u",
+      "rep": 1,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u",
+        "4"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "v",
+      "rep": 0,
+      "before": "v",
+      "after": "v",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "v",
+        "V",
+        "u",
+        "U"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "v",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "u",
+        "U"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "w",
+      "rep": 0,
+      "before": "w",
+      "after": "w",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "w",
+        "W"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "w",
+      "rep": 1,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "x",
+      "rep": 0,
+      "before": "LL",
+      "after": "X",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "x",
+      "rep": 1,
+      "before": "11",
+      "after": "x",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "x",
+        "X"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "y",
+      "rep": 0,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "y",
+      "rep": 1,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "4",
+      "expected": "z",
+      "rep": 0,
+      "before": "2",
+      "after": "z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "z",
+        "2",
+        "Z"
+      ]
+    },
+    {
+      "writer": "4",
+      "expected": "z",
+      "rep": 1,
+      "before": "2",
+      "after": "z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "z",
+        "2",
+        "Z"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "A",
+      "rep": 0,
+      "before": "D",
+      "after": "A",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "A",
+        "D",
+        "b",
+        "d"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "A",
+      "rep": 1,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "D",
+        "A",
+        "d"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "B",
+      "rep": 0,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "B",
+      "rep": 1,
+      "before": "B",
+      "after": "B",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "C",
+      "rep": 0,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "C",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "D",
+      "rep": 0,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "D",
+      "rep": 1,
+      "before": "D",
+      "after": "D",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "E",
+      "rep": 0,
+      "before": "E",
+      "after": "E",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "E",
+      "rep": 1,
+      "before": "= −",
+      "after": "= −",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "F",
+      "rep": 0,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "F",
+      "rep": 1,
+      "before": "F",
+      "after": "F",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "G",
+      "rep": 0,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "G",
+      "rep": 1,
+      "before": "G",
+      "after": "G",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "G",
+        "g",
+        "q"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "H",
+      "rep": 0,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "H",
+      "rep": 1,
+      "before": "H",
+      "after": "H",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "I",
+      "rep": 0,
+      "before": "1",
+      "after": "1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "1",
+        "l",
+        "L",
+        "I"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "I",
+      "rep": 1,
+      "before": "1",
+      "after": "1",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "1",
+        "I",
+        "l",
+        "L",
+        "i"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "J",
+      "rep": 0,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "J",
+      "rep": 1,
+      "before": "J",
+      "after": "J",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "K",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "K",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "L",
+      "rep": 0,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "L",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "M",
+      "rep": 0,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "M",
+      "rep": 1,
+      "before": "M",
+      "after": "M",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "N",
+      "rep": 0,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "N",
+      "rep": 1,
+      "before": "N",
+      "after": "N",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "O",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "O",
+      "rep": 1,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "P",
+      "rep": 0,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "P",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "Q",
+      "rep": 0,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "Q",
+      "rep": 1,
+      "before": "Q",
+      "after": "Q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "R",
+      "rep": 0,
+      "before": "12",
+      "after": "12",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "R",
+      "rep": 1,
+      "before": "12",
+      "after": "12",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "expected": "S",
+      "rep": 0,
+      "before": "S",
+      "after": "S",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "S",
+      "rep": 1,
+      "before": "S",
+      "after": "S",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "T",
+      "rep": 0,
+      "before": "T",
+      "after": "T",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "T",
+        "t"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "T",
+      "rep": 1,
+      "before": "T",
+      "after": "T",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "expected": "U",
+      "rep": 0,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "U",
+      "rep": 1,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u",
+        "V"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "V",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "V",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "W",
+      "rep": 0,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "W",
+      "rep": 1,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "X",
+      "rep": 0,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "X",
+      "rep": 1,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "Y",
+      "rep": 0,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "Y",
+      "rep": 1,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "Z",
+      "rep": 0,
+      "before": "2",
+      "after": "Z",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "2",
+        "z"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "Z",
+      "rep": 1,
+      "before": "2",
+      "after": "z",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "z",
+        "2",
+        "Z"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "a",
+      "rep": 0,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "a",
+      "rep": 1,
+      "before": "a",
+      "after": "a",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "expected": "b",
+      "rep": 0,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "b",
+        "6"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "b",
+      "rep": 1,
+      "before": "b",
+      "after": "b",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "b",
+        "6"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "c",
+      "rep": 0,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "c",
+      "rep": 1,
+      "before": "C",
+      "after": "C",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "C",
+        "c"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "d",
+      "rep": 0,
+      "before": "d",
+      "after": "d",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "d",
+      "rep": 1,
+      "before": "L",
+      "after": "d",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "d",
+        "L"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "e",
+      "rep": 0,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "e",
+      "rep": 1,
+      "before": "e",
+      "after": "e",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "f",
+      "rep": 0,
+      "before": "f",
+      "after": "f",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "f",
+      "rep": 1,
+      "before": "$",
+      "after": "f",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "f",
+        "F"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "g",
+      "rep": 0,
+      "before": "g",
+      "after": "g",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "g",
+        "8",
+        "q"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "g",
+      "rep": 1,
+      "before": "8",
+      "after": "g",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "g",
+        "8"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "h",
+      "rep": 0,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "h",
+        "n"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "h",
+      "rep": 1,
+      "before": "h",
+      "after": "h",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "i",
+      "rep": 0,
+      "before": "5 ×",
+      "after": "5 ×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "expected": "i",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "j",
+      "rep": 0,
+      "before": "1 ×",
+      "after": "1 ×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "j",
+      "rep": 1,
+      "before": "L",
+      "after": "L",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "k",
+      "rep": 0,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "k",
+      "rep": 1,
+      "before": "K",
+      "after": "K",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "K",
+        "k"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "l",
+      "rep": 0,
+      "before": "l",
+      "after": "l",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "l",
+        "X"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "l",
+      "rep": 1,
+      "before": "l",
+      "after": "l",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "l",
+        "L",
+        "e"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "m",
+      "rep": 0,
+      "before": "M",
+      "after": "m",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "m",
+        "M"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "m",
+      "rep": 1,
+      "before": "M",
+      "after": "m",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "m",
+        "M"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "n",
+      "rep": 0,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "expected": "n",
+      "rep": 1,
+      "before": "n",
+      "after": "n",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "expected": "o",
+      "rep": 0,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "o",
+      "rep": 1,
+      "before": "0",
+      "after": "0",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "0",
+        "o",
+        "O"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "p",
+      "rep": 0,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "p",
+      "rep": 1,
+      "before": "P",
+      "after": "P",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "P",
+        "p"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "q",
+      "rep": 0,
+      "before": "g",
+      "after": "q",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "q",
+        "g"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "q",
+      "rep": 1,
+      "before": "q",
+      "after": "q",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true
+    },
+    {
+      "writer": "5",
+      "expected": "r",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "r",
+        "v"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "r",
+      "rep": 1,
+      "before": "Y",
+      "after": "Y",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "Y",
+        "r",
+        "y"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "s",
+      "rep": 0,
+      "before": "S",
+      "after": "S",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "s",
+      "rep": 1,
+      "before": "S",
+      "after": "S",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "S",
+        "s"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "t",
+      "rep": 0,
+      "before": "t",
+      "after": "t",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "t",
+      "rep": 1,
+      "before": "t",
+      "after": "t",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "u",
+      "rep": 0,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "u",
+      "rep": 1,
+      "before": "U",
+      "after": "U",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "U",
+        "u"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "v",
+      "rep": 0,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "u",
+        "U"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "v",
+      "rep": 1,
+      "before": "V",
+      "after": "V",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "V",
+        "v",
+        "U"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "w",
+      "rep": 0,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "w",
+      "rep": 1,
+      "before": "W",
+      "after": "W",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "W",
+        "w"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "x",
+      "rep": 0,
+      "before": "X",
+      "after": "X",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "X",
+        "x"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "x",
+      "rep": 1,
+      "before": "×",
+      "after": "×",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": false
+    },
+    {
+      "writer": "5",
+      "expected": "y",
+      "rep": 0,
+      "before": "y",
+      "after": "y",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "y",
+        "Y"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "y",
+      "rep": 1,
+      "before": "9",
+      "after": "y",
+      "beforeCorrect": false,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "y",
+        "9",
+        "Y",
+        "4"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "z",
+      "rep": 0,
+      "before": "z",
+      "after": "z",
+      "beforeCorrect": true,
+      "afterCorrect": true,
+      "flagged": true,
+      "choices": [
+        "z",
+        "t"
+      ]
+    },
+    {
+      "writer": "5",
+      "expected": "z",
+      "rep": 1,
+      "before": "Z",
+      "after": "Z",
+      "beforeCorrect": false,
+      "afterCorrect": false,
+      "flagged": true,
+      "choices": [
+        "Z",
+        "z"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "testedCommit": "8b6cdf3ffe73949923ce65fffe4a04850b8a1544",
+  "workflowRun": 39445380183,
+  "workflowUrl": "https://github.com/limkimsze-maker/Classroom-Companion/actions/runs/39445380183",
+  "artifact": 12276266509,
+  "readerSha256": "3d60506576d6fb7d06eb25ea4dd710d6330bfec1b03f0a9e771f06353cbcca3a",
+  "browserViewports": [
+    {
+      "width": 1365,
+      "height": 900
+    },
+    {
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "browserChecks": [
+    "nested layout recognition",
+    "actual teacher 45 cm\u00b2",
+    "select c/C alternative",
+    "Apply completes",
+    "returns to Pen",
+    "V1/V2 storage separation",
+    "no script errors"
+  ],
+  "note": "Report-only follow-up does not change executable code. Existing inherited loader/version failure remains recorded; it is not counted as a pass."
+}

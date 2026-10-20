@@ -74,7 +74,10 @@ personal correction/Undo, cancellation and outside-ink rejection.
 Of the original 84 failed whole readings, 41 now read exactly correctly. The 43
 remaining failures are all letters: 34 are case differences and 9 are other shape
 confusions. All 43 are flagged; a warning or a selectable alternative is not counted
-as a correct recognition. The mathematical categories total 792/792 in this fixed
+as a correct recognition. Replaying the remaining failures offers the expected
+reading among the selectable alternatives for 42/43; one needs a typed correction.
+Warnings increase from 241 to 339/924 as a deliberate conservative tradeoff; Apply
+remains available after review. The mathematical categories total 792/792 in this fixed
 simulation suite; this is not a universal mathematical handwriting accuracy claim.
 
 These are correlated development simulations, not naturally written expressions from
@@ -112,6 +115,11 @@ benchmark checks source hashes, case identity and every correctness/uncertainty 
 GitHub Actions additionally runs desktop/mobile browser checks for the trial loader,
 Beautify recognition, Apply, return to pen and storage separation. Complete benchmark
 records, regression logs and browser captures are uploaded as workflow artifacts.
+The glyph-consensus build was verified by [GitHub run 39445380183](https://github.com/limkimsze-maker/Classroom-Companion/actions/runs/39445380183),
+including desktop/mobile recognition and character-choice Apply flows. Tested reader
+SHA-256: `3d60506576d6fb7d06eb25ea4dd710d6330bfec1b03f0a9e771f06353cbcca3a`.
+Results are retained under `results/`; `verification-glyph-consensus.json` links the
+exact tested commit and artifact.
 
 ## Use and remaining work
 
