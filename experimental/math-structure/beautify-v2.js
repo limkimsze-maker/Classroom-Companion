@@ -37,7 +37,7 @@ const requiredReaders=[
  ['whiteboard-unit-exponent-trained-beta.js',()=>window.WhiteboardUnitExponent],
  ['whiteboard-handwriting-context-model-beta.js',()=>window.WhiteboardHandwritingContextModel],
  ['whiteboard-handwriting-context-beta.js',()=>window.WhiteboardHandwritingContext],
- ['experimental/math-structure/reader-v2.js',()=>window.WhiteboardHandwritingMath?.recognize&&window.WhiteboardHandwritingMath.build===readerBuild]
+ ['experimental/math-structure/reader-v2.js',()=>typeof window.WhiteboardHandwritingMath?.recognize==='function' && /^20261021-v2-/.test(window.WhiteboardHandwritingMath.build||'')]
 ];
 async function ensureReader(signal){
  if(signal.aborted)throw abortError();
