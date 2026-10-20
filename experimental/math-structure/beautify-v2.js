@@ -150,7 +150,7 @@ async function review(group){
   if(!/^=\s*\d+(?:\.\d+)?(?:\s*[+−\-×÷*/]\s*\d+(?:\.\d+)?)*$/.test(clean))return null;
   const ink=/^#[0-9a-f]{6}$/i.test(colour||'')?colour:'#17324d';
   const W=Math.max(8,b.w*Math.max(1,cssW)),H=Math.max(8,b.h*Math.max(1,cssH));
-  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><text x="1" y="'+(H*.76)+'" textLength="'+Math.max(4,W-2)+'" lengthAdjust="spacingAndGlyphs" fill="'+ink+'" font-family="'Comic Sans MS','Segoe Print','Trebuchet MS','Arial Rounded MT Bold',sans-serif" font-size="'+Math.max(12,H*.72)+'" font-weight="700">'+clean+'</text></svg>';
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><text x="1" y="'+(H*.76)+'" textLength="'+Math.max(4,W-2)+'" lengthAdjust="spacingAndGlyphs" fill="'+ink+'" font-family="Trebuchet MS,Arial,sans-serif" font-size="'+Math.max(12,H*.72)+'" font-weight="700">'+clean+'</text></svg>';
   return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),x:b.x,y:b.y,w:W/Math.max(1,cssW),h:H/Math.max(1,cssH),smartGenerated:true,smartType:'equation',smartId:'math-v2-'+Date.now().toString(36),smartOriginal:[],equationExpression:value,equationLatex:clean,equationLayout:'in-place-math',equationColour:ink};
  }
  function formatted(){
@@ -192,7 +192,7 @@ async function review(group){
    const safe=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
    const ink=/^#[0-9a-f]{6}$/i.test(colourSelect.value)?colourSelect.value:'#17324d';
    const W=Math.max(8,b.w*Math.max(1,cssW)),H=Math.max(8,b.h*Math.max(1,cssH));
-   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><text x="1" y="'+(H*.76)+'" textLength="'+Math.max(4,W-2)+'" lengthAdjust="spacingAndGlyphs" fill="'+ink+'" font-family="'Comic Sans MS','Segoe Print','Trebuchet MS','Arial Rounded MT Bold',sans-serif" font-size="'+Math.max(12,H*.72)+'">'+safe+'</text></svg>';
+   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><text x="1" y="'+(H*.76)+'" textLength="'+Math.max(4,W-2)+'" lengthAdjust="spacingAndGlyphs" fill="'+ink+'" font-family="Trebuchet MS,Arial,sans-serif" font-size="'+Math.max(12,H*.72)+'">'+safe+'</text></svg>';
    return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),x:b.x,y:b.y,w:W/Math.max(1,cssW),h:H/Math.max(1,cssH),smartGenerated:true,smartType:'equation',smartId:'v2-direct-'+Date.now().toString(36),smartOriginal:[],equationExpression:raw,equationLayout:'in-place-math',equationColour:ink};
   }
   if(leading.test(raw))return leadingEqualsFallback(raw,b,colourSelect.value);
