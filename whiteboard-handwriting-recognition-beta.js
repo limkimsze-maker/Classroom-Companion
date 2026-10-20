@@ -305,7 +305,7 @@ function radicalHook(points){
  return{box:b,end:z};
 }
 async function detectSquareRoot(strokes,W,H,options={}){
- if(strokes.length<2||strokes.length>40)return null;
+ if(strokes.length<2||strokes.length>256)return null;
  const parts=strokes.map(raw=>{const scaled={source:raw,size:Number(raw.size)||4,
   points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};return{raw,scaled,box:bounds([scaled])}});
  const candidates=[];
@@ -347,7 +347,7 @@ async function detectSquareRoot(strokes,W,H,options={}){
   const enclosed=bounds(inside.map(p=>p.scaled));
   if(enclosed.h<h*.30||enclosed.h>h*1.05)continue;
   const number=await recognizeNumericContext(inside.map(p=>p.raw),W,H,options);
-  if(!number||number.text.includes('=')||number.text.length>40)continue;
+  if(!number||number.text.includes('='))continue;
   let suffix='',tailTokens=[],uncertain=[...number.uncertain];
   if(tail.length){
    const tokens=segment(tail.map(p=>p.raw),W,H),equal=tokens[0];
@@ -1016,7 +1016,7 @@ function completeNumericExpression(text){
 async function recognizeNumericContext(strokes,W,H,options){
  if(!window.WhiteboardCharacterReader||!window.WhiteboardUjiReader)return null;
  let tokens=segment(strokes,W,H);
- if(!tokens.length||tokens.length>30||tokens.some(t=>!t.parts?.length))return null;
+ if(!tokens.length||tokens.length>256||tokens.some(t=>!t.parts?.length))return null;
  const operators=['+','−','×','÷','='];
  const uji=parts=>window.WhiteboardUjiReader.read(parts.map(p=>p.points));
  // A disconnected left leg and right stem can be one open 4. Require two
@@ -1799,5 +1799,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-square-root1';
+window.WhiteboardHandwritingMath.build='20261020-square-root-long-expression1';
 })();
