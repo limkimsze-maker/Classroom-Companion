@@ -27,6 +27,16 @@ jobs:
           console.log('HISTORICAL',JSON.stringify(base));
           console.log('CURRENT',JSON.stringify(now.summary));
           console.log('CATEGORIES',JSON.stringify(now.by,null,2));
+          const previous=new Map(records.map(x=>[x.id,x]));
+          const changes=now.records.filter(x=>previous.has(x.id));
+          const fixed=changes.filter(x=>!previous.get(x.id).afterCorrect&&x.correct);
+          const regressed=changes.filter(x=>previous.get(x.id).afterCorrect&&!x.correct);
+          const wrong=changes.filter(x=>!x.correct);
+          const counts={};
+          for(const x of wrong){const k=x.category+' '+x.expected+' => '+x.actual;counts[k]=(counts[k]||0)+1;}
+          console.log('FIXED_CASES',JSON.stringify(fixed.map(x=>x.id)));
+          console.log('REGRESSED_CASES',JSON.stringify(regressed.map(x=>x.id)));
+          console.log('TOP_FAILURES',JSON.stringify(Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,20)));
           console.log('BUILD',now.build,'READER_SHA256',now.readerSha256);
           NODE
       - uses: actions/upload-artifact@v4
