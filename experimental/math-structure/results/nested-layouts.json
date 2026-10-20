@@ -1,0 +1,779 @@
+{
+  "method": "New invented layouts composed from existing UJI V1 glyphs; development tests, not natural whole-expression or held-out-writer accuracy.",
+  "correct": 24,
+  "v1Correct": 0,
+  "regressions": 0,
+  "total": 24,
+  "records": [
+    {
+      "name": "root of fraction",
+      "variant": "original",
+      "expected": "\\sqrt{\\frac{3}{4}}",
+      "actual": "\\sqrt{\\frac{3}{4}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 1835,
+      "v1": "1 = 43",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\frac{3}{4}}",
+          "score": 0.9782908285435209,
+          "type": "root"
+        },
+        {
+          "text": "1=43",
+          "score": 0.9566101311604261,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "root of fraction",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\sqrt{\\frac{3}{4}}",
+      "actual": "\\sqrt{\\frac{3}{4}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 265,
+      "v1": "1 = 43",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\frac{3}{4}}",
+          "score": 0.9782908285435209,
+          "type": "root"
+        },
+        {
+          "text": "1=43",
+          "score": 0.9566101311604261,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "root in denominator",
+      "variant": "original",
+      "expected": "\\frac{1}{\\sqrt{9}}",
+      "actual": "\\frac{1}{\\sqrt{9}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 1675,
+      "v1": "= ln9",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{1}{\\sqrt{9}}",
+          "score": 0.8670898320442568,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{7}{\\sqrt{9}}",
+          "score": 0.7704905386338787,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{1}{9}",
+          "score": 0.6158840714503049,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{7}{9}",
+          "score": 0.5158860650832723,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "root in denominator",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\frac{1}{\\sqrt{9}}",
+      "actual": "\\frac{1}{\\sqrt{9}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 240,
+      "v1": "= ln9",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{1}{\\sqrt{9}}",
+          "score": 0.8670898320442568,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{7}{\\sqrt{9}}",
+          "score": 0.7704905386338787,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{1}{9}",
+          "score": 0.6158840714503049,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{7}{9}",
+          "score": 0.5158860650832723,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "fraction in numerator",
+      "variant": "original",
+      "expected": "\\frac{\\frac{1}{2}}{3}",
+      "actual": "\\frac{\\frac{1}{2}}{3}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 710,
+      "v1": "− − 2n3",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{\\frac{1}{2}}{3}",
+          "score": 0.8848410099345154,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{\\frac{7}{2}}{3}",
+          "score": 0.7996437944520476,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 5,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "fraction in numerator",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\frac{\\frac{1}{2}}{3}",
+      "actual": "\\frac{\\frac{1}{2}}{3}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 373,
+      "v1": "− − 2n3",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{\\frac{1}{2}}{3}",
+          "score": 0.8848410099345154,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{\\frac{7}{2}}{3}",
+          "score": 0.7996437944520476,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 5,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "fraction in denominator",
+      "variant": "original",
+      "expected": "\\frac{1}{\\frac{2}{3}}",
+      "actual": "\\frac{1}{\\frac{2}{3}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 390,
+      "v1": "− − 2n3",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{1}{\\frac{2}{3}}",
+          "score": 0.8848410099345154,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{7}{\\frac{2}{3}}",
+          "score": 0.7996437944520476,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 5,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "fraction in denominator",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\frac{1}{\\frac{2}{3}}",
+      "actual": "\\frac{1}{\\frac{2}{3}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 276,
+      "v1": "− − 2n3",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{1}{\\frac{2}{3}}",
+          "score": 0.8848410099345154,
+          "type": "fraction"
+        },
+        {
+          "text": "\\frac{7}{\\frac{2}{3}}",
+          "score": 0.7996437944520476,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 5,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "root of grouped sum",
+      "variant": "original",
+      "expected": "\\sqrt{(3+4)}",
+      "actual": "\\sqrt{(3+4)}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 1453,
+      "v1": "1 − 63 + 41",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{(3+4)}",
+          "score": 0.9783218839074291,
+          "type": "root"
+        },
+        {
+          "text": "\\sqrt{63+41}",
+          "score": 0.9410597935048295,
+          "type": "root"
+        },
+        {
+          "text": "\\sqrt{13+41}",
+          "score": 0.91397956848594,
+          "type": "root"
+        },
+        {
+          "text": "1-63+41",
+          "score": 0.8905301713937919,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 7,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "root of grouped sum",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\sqrt{(3+4)}",
+      "actual": "\\sqrt{(3+4)}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 445,
+      "v1": "1 − 63 + 41",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{(3+4)}",
+          "score": 0.9783218839074291,
+          "type": "root"
+        },
+        {
+          "text": "\\sqrt{63+41}",
+          "score": 0.9410597935048295,
+          "type": "root"
+        },
+        {
+          "text": "\\sqrt{13+41}",
+          "score": 0.9139789817755567,
+          "type": "root"
+        },
+        {
+          "text": "1-63+41",
+          "score": 0.8905301713937919,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 7,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "nested roots",
+      "variant": "original",
+      "expected": "\\sqrt{\\sqrt{9}}",
+      "actual": "\\sqrt{\\sqrt{9}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 410,
+      "v1": "\\sqrt{9}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\sqrt{9}}",
+          "score": 0.9756839367344289,
+          "type": "root"
+        },
+        {
+          "text": "1=19",
+          "score": 0.7820731095339398,
+          "type": "leaf"
+        },
+        {
+          "text": "\\sqrt{9}",
+          "score": 0.6689377434956367,
+          "type": "root"
+        }
+      ],
+      "search": {
+        "regions": 3,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "nested roots",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\sqrt{\\sqrt{9}}",
+      "actual": "\\sqrt{\\sqrt{9}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 103,
+      "v1": "\\sqrt{9}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\sqrt{9}}",
+          "score": 0.9756839367344289,
+          "type": "root"
+        },
+        {
+          "text": "1=19",
+          "score": 0.7820731095339398,
+          "type": "leaf"
+        },
+        {
+          "text": "\\sqrt{9}",
+          "score": 0.6689377436841992,
+          "type": "root"
+        }
+      ],
+      "search": {
+        "regions": 3,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "power in numerator",
+      "variant": "original",
+      "expected": "\\frac{2^{3}}{4}",
+      "actual": "\\frac{2^{3}}{4}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 232,
+      "v1": "\\frac{23}{4}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{2^{3}}{4}",
+          "score": 0.9664976340617112,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 5,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "power in numerator",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\frac{2^{3}}{4}",
+      "actual": "\\frac{2^{3}}{4}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 260,
+      "v1": "\\frac{23}{4}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{2^{3}}{4}",
+          "score": 0.9664976340617112,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 5,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "inline fraction sum",
+      "variant": "original",
+      "expected": "\\frac{1}{2}+3",
+      "actual": "\\frac{1}{2}+3",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 346,
+      "v1": "− 21 + 3",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{1}{2}+3",
+          "score": 0.8874377763144335,
+          "type": "inline"
+        },
+        {
+          "text": "\\frac{7}{2}+3",
+          "score": 0.8019905303040589,
+          "type": "inline"
+        }
+      ],
+      "search": {
+        "regions": 5,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "inline fraction sum",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\frac{1}{2}+3",
+      "actual": "\\frac{1}{2}+3",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 216,
+      "v1": "− 21 + 3",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{1}{2}+3",
+          "score": 0.8874377763144335,
+          "type": "inline"
+        },
+        {
+          "text": "\\frac{7}{2}+3",
+          "score": 0.8019905303040589,
+          "type": "inline"
+        }
+      ],
+      "search": {
+        "regions": 5,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "fraction with sum numerator",
+      "variant": "original",
+      "expected": "\\frac{3+4}{2}",
+      "actual": "\\frac{3+4}{2}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 499,
+      "v1": "32 + 4",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{3+4}{2}",
+          "score": 0.9879445429728307,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 8,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "fraction with sum numerator",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\frac{3+4}{2}",
+      "actual": "\\frac{3+4}{2}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 504,
+      "v1": "32 + 4",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\frac{3+4}{2}",
+          "score": 0.9879445429728307,
+          "type": "fraction"
+        }
+      ],
+      "search": {
+        "regions": 8,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "changed digits",
+      "variant": "original",
+      "expected": "\\sqrt{\\frac{7}{8}}",
+      "actual": "\\sqrt{\\frac{7}{8}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 736,
+      "v1": "\\sqrt{- 78}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\frac{7}{8}}",
+          "score": 0.9782061197015933,
+          "type": "root"
+        },
+        {
+          "text": "1--78",
+          "score": 0.9556858691219479,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "changed digits",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\sqrt{\\frac{7}{8}}",
+      "actual": "\\sqrt{\\frac{7}{8}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 160,
+      "v1": "\\sqrt{- 78}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\frac{7}{8}}",
+          "score": 0.9782061197015933,
+          "type": "root"
+        },
+        {
+          "text": "1--78",
+          "score": 0.9556858691219479,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "unreduced fraction",
+      "variant": "original",
+      "expected": "\\sqrt{\\frac{10}{20}}",
+      "actual": "\\sqrt{\\frac{10}{20}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 707,
+      "v1": "\\sqrt{- 2100}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\frac{10}{20}}",
+          "score": 0.8983648962445299,
+          "type": "root"
+        },
+        {
+          "text": "1=2100",
+          "score": 0.8500026624527766,
+          "type": "leaf"
+        },
+        {
+          "text": "\\sqrt{\\frac{70}{20}}",
+          "score": 0.8222051371190905,
+          "type": "root"
+        },
+        {
+          "text": "1=2700",
+          "score": 0.7553069878462642,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "unreduced fraction",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\sqrt{\\frac{10}{20}}",
+      "actual": "\\sqrt{\\frac{10}{20}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 233,
+      "v1": "\\sqrt{- 2100}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\frac{10}{20}}",
+          "score": 0.8983648962445299,
+          "type": "root"
+        },
+        {
+          "text": "1=2100",
+          "score": 0.8500026624527766,
+          "type": "leaf"
+        },
+        {
+          "text": "\\sqrt{\\frac{70}{20}}",
+          "score": 0.8222051371190905,
+          "type": "root"
+        },
+        {
+          "text": "1=2700",
+          "score": 0.7553069878462642,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "zero denominator",
+      "variant": "original",
+      "expected": "\\sqrt{\\frac{9}{0}}",
+      "actual": "\\sqrt{\\frac{9}{0}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 135,
+      "v1": "\\sqrt{- 09}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\frac{9}{0}}",
+          "score": 0.9795318093890125,
+          "type": "root"
+        },
+        {
+          "text": "1--09",
+          "score": 0.9664107509627069,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    },
+    {
+      "name": "zero denominator",
+      "variant": "moved/scaled/reordered",
+      "expected": "\\sqrt{\\frac{9}{0}}",
+      "actual": "\\sqrt{\\frac{9}{0}}",
+      "correct": true,
+      "engine": "local-structural-v2",
+      "ms": 129,
+      "v1": "\\sqrt{- 09}",
+      "v1Correct": false,
+      "candidates": [
+        {
+          "text": "\\sqrt{\\frac{9}{0}}",
+          "score": 0.9795318093890125,
+          "type": "root"
+        },
+        {
+          "text": "1--09",
+          "score": 0.9664107509627069,
+          "type": "leaf"
+        }
+      ],
+      "search": {
+        "regions": 4,
+        "maxRegions": 180,
+        "beamWidth": 4,
+        "maxDepth": 8,
+        "exhausted": false
+      }
+    }
+  ]
+}

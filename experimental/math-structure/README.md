@@ -1,57 +1,55 @@
-# Isolated V2 parser validation — 20 October 2026
+# Structural V2 — isolated optional trial
 
-Protected V1 and production remain at `531b6659a07694161d30f4be57903936905301fb`.
-No production reader, page, controller, trained model, sample, or existing test is changed here.
-V2 means the experimental engine revision. No UJI Pen Characters V2 dataset is introduced.
+Protected V1 source snapshot: `531b6659a07694161d30f4be57903936905301fb`.
+Existing readers, whiteboard pages, controllers, models, samples and recognition rules
+remain unchanged. `whiteboard-v2-trial.html` is a separate optional entry point.
+V2 refers to this engine revision. No UJI Pen Characters V2 dataset is introduced.
 
-## What failed before this change
+## Implemented
 
-GitHub Actions run `39431027541` passed the spatial-graph check and the real `√49`
-control but failed complete recognition of the existing nine-stroke teacher expression.
-V1 produced `V − 8 + 11J` instead of `\sqrt{8+(10)}`. The successful geometry-only
-test was not a successful expression-recognition test.
+- Original recursive spatial parser for composed numeric fractions, roots, bracketed
+  expressions, inline arithmetic and scripts, including structures inside structures.
+- Bounded hypothesis search: retain four candidates per region and combine existing
+  digit/image/pen alternatives with numeric syntax and geometric layout evidence.
+- Exact stroke accounting: no selected stroke dropped or used twice. Symbols and
+  R/A/B/I/Sup/Sub relations can be exported in direct CROHME label-graph syntax.
+- Preserve personal ink, component corrections, Undo, explicit modes, units, existing
+  recognisers and cancellation/failure fallback.
+- Checksum-guarded candidate build and trial reader/controller with matching cache
+  versions. Trial corrections use separate storage, initially reading existing samples.
 
-## Candidate changes
+Public sources, adaptations and boundaries: [RESEARCH.md](RESEARCH.md).
+No proprietary MyScript engine, paid API, new dataset or new training is included.
+This is not a complete MyScript-equivalent recogniser.
 
-`candidate.cjs` builds a separate reader in memory from the exact protected V1 source.
-It refuses a different V1 checksum, missing edit, ambiguous edit, or an attempt to
-write over the production reader. `parser-patches.json` records every source edit.
+## Verification
 
-- Reject nearly straight strokes as parenthesis candidates, preserving a narrow `1`.
-- Parse balanced bracket spans as groups and retain digit and bracket tokens.
-- Allow a gently sloped radical roof using both roof width and hook height.
-- In numeric brackets only, combine near-closed-loop geometry with existing pen-model
-  `0/O/o` evidence when the digit-image reader abstains. Keep these predictions flagged.
-  The stricter existing zero-closure threshold remains the default elsewhere.
-- Correct the escaped digit checks in the geometric-plus fallback.
-
-The spatial graph remains a diagnostic. The candidate repair uses the existing local
-models and structural parser; it is not a newly trained model or a replacement engine.
-
-## Verified local results
-
-| Check | V1 | Isolated V2 |
+| Check | Protected V1 | Structural V2 |
 | --- | --- | --- |
 | Frozen 924-case UJI V1 composition benchmark | 840/924 (90.9%) | 840/924 (90.9%) |
-| Previously correct benchmark cases lost | — | 0 |
+| Previously correct frozen cases lost | — | 0 |
 | Newly hidden incorrect-reading uncertainty | — | 0 |
-| Existing nine-stroke expression and five geometric/order variants | 0/6 | 6/6 |
-| Existing `√49` and complete-expression structural suite | `√49` passes; nine-stroke expression fails | Both suites pass |
-| Additional regression suites, including the two structural suites above | Loader/version mismatch independently reproduced | 25 pass; 1 inherited failure |
+| Twelve new composed layouts and one transformed variant each | 0/24 | 24/24 |
+| Existing teacher root expression and five variants | 0/6 | 6/6 |
+| Existing regression suites | Loader/version failure reproduced | 25 pass, 1 inherited failure, 0 new failures |
 
-All six variants are correlated controls derived from one existing teacher expression.
-They are development checks, not six independent writers or a real-world accuracy estimate.
-The 924 expressions reuse labelled glyphs and generated operators, not naturally written
-whole expressions. No broad accuracy increase is claimed.
+The new layouts compose existing labelled UJI V1 glyphs into invented layouts. They
+cover roots of fractions, roots in denominators, nested fractions and roots, bracketed
+sums, powers in fractions, inline fraction sums, numerator arithmetic, changed digits,
+unreduced fractions and zero denominators. Tests also verify stroke/graph coverage,
+personal correction/Undo, cancellation and outside-ink rejection.
 
-The inherited `test-recognition-engine-trace` failure is a real integration blocker:
-the controllers expect `20261020-stacked-fraction1`, while the protected reader declares
-`20261020-structural-parser8`. It fails identically without the V2 preload. The isolated
-workflow reports inherited failures with both logs and rejects any newly failing suite.
-An isolated CI success does not mean that production is ready to integrate.
+These are correlated development simulations, not naturally written expressions from
+unfamiliar teachers. No real-world accuracy percentage or official CROHME score is
+claimed. Candidate scores are ranking heuristics, not calibrated probabilities.
+Search is bounded to 96 strokes, depth 8 and 180 regions. Incomplete search or optional
+parser failure falls back to the existing reader.
 
-Results are in `results/paired-report.json`, `results/structure-paired.json`, and
-`results/regressions.json`. GitHub CI also uploads the complete 924-case per-reader records.
+The inherited `test-recognition-engine-trace` failure concerns the existing CoMER
+controller expecting `20261020-stacked-fraction1` while the protected reader declares
+`20261020-structural-parser8`. Both logs are retained; the failure is not counted as a
+pass. The new trial uses its own matching controller. The standard CoMER page remains
+unchanged.
 
 ## Reproduce
 
@@ -59,20 +57,28 @@ From the repository root:
 
 ```sh
 node experimental/math-structure/check-preservation.cjs
-node experimental/math-structure/test-graph.cjs
+node experimental/math-structure/build-preview.cjs --check
 mkdir -p /tmp/classroom-v2-validation
-node experimental/math-structure/test-candidate.cjs /tmp/classroom-v2-validation/structure-paired.json
+node experimental/math-structure/test-candidate.cjs /tmp/classroom-v2-validation/teacher.json
+node experimental/math-structure/test-structural-parser.cjs /tmp/classroom-v2-validation/nested.json
 node experimental/math-structure/regressions.cjs /tmp/classroom-v2-validation/regressions.json
-node experimental/math-structure/paired-benchmark.cjs /tmp/classroom-v2-validation/paired-report.json
+node experimental/math-structure/paired-benchmark.cjs /tmp/classroom-v2-validation/paired.json
 ```
 
-`preload.cjs` runs existing tests unchanged against fresh candidate contexts and storage.
-The paired benchmark uses separate V1/V2 contexts, checks source hashes and exact case
-identity, and rejects every loss of a previously correct reading even if other gains offset it.
+`build-preview.cjs` regenerates the trial HTML, reader and controller. `preload.cjs`
+runs existing tests unchanged against fresh candidate contexts and storage. The paired
+benchmark checks source hashes, case identity and every correctness/uncertainty loss.
 
-## Integration status
+GitHub Actions additionally runs desktop/mobile browser checks for the trial loader,
+Beautify recognition, Apply, return to pen and storage separation. Complete benchmark
+records, regression logs and browser captures are uploaded as workflow artifacts.
 
-Experimental only. Resolve and verify the loader/version issue in a separate integration
-candidate, then test additional unfamiliar natural whole-expression ink. Keep V1 available
-for rollback. No merge, production activation, or claim of general accuracy improvement
-is included in this change.
+## Use and remaining work
+
+Open `whiteboard-v2-trial.html` to opt into V2. The usual whiteboard link remains available.
+This adds a trial entry point; it does not switch the existing whiteboard to V2.
+
+Remaining work: broader natural-expression evaluation, matrices, arbitrary integral
+and summation layouts, general algebraic leaves, trained relation classifiers, graph
+normalization and actual official CROHME evaluation. Direct graph exports need
+inherited-edge normalization before official LgEval scoring.

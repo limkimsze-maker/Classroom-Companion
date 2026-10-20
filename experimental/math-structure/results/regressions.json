@@ -1,13 +1,17 @@
 {
-  "candidate": "8e18c61ebc30f9d32cdf9d7fc1218187ee1334c638c7eab6d9242f367cb89f82",
+  "candidate": "cd50e3fa685254756736be3776f9370f8b4f21c980092c83f9198f54db0bb882",
+  "protectedV1Sha256": "8f65225b10916834a4740353eb652b5bedf56f26144d523fdb384aa26718713f",
   "total": 26,
   "passed": 25,
+  "inheritedFailures": 1,
+  "newFailures": 0,
+  "integrationBlocked": true,
   "records": [
     {
       "test": "test-math-structure-regression",
       "pass": true,
       "exitCode": 0,
-      "stdout": "{\"label\":\"standalone parentheses\",\"output\":\"(10)\",\"engine\":\"local-parenthesized-number\",\"pass\":true}\n{\"label\":\"radical with parentheses\",\"output\":\"\\\\sqrt{(10)}\",\"engine\":\"local-square-root\",\"pass\":true}\n{\"label\":\"roof-first radical with parentheses\",\"output\":\"\\\\sqrt{(10)}\",\"engine\":\"local-square-root\",\"pass\":true}\nActual teacher bracketed radical: {\"text\":\"\\\\sqrt{8+(10)}\",\"engine\":\"local-square-root\"}\nPASS math structure regression\n",
+      "stdout": "{\"label\":\"standalone parentheses\",\"output\":\"(10)\",\"engine\":\"local-parenthesized-number\",\"pass\":true}\n{\"label\":\"radical with parentheses\",\"output\":\"\\\\sqrt{(10)}\",\"engine\":\"local-square-root\",\"pass\":true}\n{\"label\":\"roof-first radical with parentheses\",\"output\":\"\\\\sqrt{(10)}\",\"engine\":\"local-structural-v2\",\"pass\":true}\nActual teacher bracketed radical: {\"text\":\"\\\\sqrt{8+(10)}\",\"engine\":\"local-structural-v2\"}\nPASS math structure regression\n",
       "stderr": ""
     },
     {
@@ -192,9 +196,5 @@
       "stdout": "PASS geometric three fallback and trained-exponent precedence\n",
       "stderr": ""
     }
-  ],
-  "inheritedFailures": 1,
-  "newFailures": 0,
-  "integrationBlocked": true,
-  "protectedV1Sha256": "8f65225b10916834a4740353eb652b5bedf56f26144d523fdb384aa26718713f"
+  ]
 }
