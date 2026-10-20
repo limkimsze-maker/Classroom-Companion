@@ -1,3 +1,4 @@
+require('./test-square-root-real-teacher-ink.cjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const createContext=require('./helpers/handwriting-context.cjs'),ctx=createContext(),{make,W,H,S}=require('./helpers/square-root-fixtures.cjs')(ctx),reader=ctx.WhiteboardHandwritingMath;
 const transform=ink=>ink.map(s=>({...s,points:s.points.map(p=>({x:p.x*.7+.04,y:p.y*.7+.05})).reverse()})).reverse();
