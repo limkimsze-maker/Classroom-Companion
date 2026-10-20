@@ -2552,4 +2552,4 @@ const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDig
 const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
 window.WhiteboardHandwritingMath.build='20261021-v2-digit-geometry1';
-})()
+})();
