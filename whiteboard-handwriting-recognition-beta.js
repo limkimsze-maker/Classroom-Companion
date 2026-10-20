@@ -304,6 +304,28 @@ function radicalHook(points){
  if(length>direct*1.5)return null;
  return{box:b,end:z};
 }
+// A teacher may draw the roof first, then pull the radical stem down and
+// finish with a short leftward tick. Recognise that reverse pen order by
+// geometry, without classifying the radical as a V or minus sign.
+function radicalDescendingHook(points){
+ if(points.length<5)return null;
+ const p=points[0].y<=points.at(-1).y?points:points.slice().reverse();
+ const b=bounds([{points:p}]),a=p[0],z=p.at(-1);
+ if(b.h<18||b.w>b.h*1.5||b.w<b.h*.20)return null;
+ const i=p.reduce((best,q,k)=>q.y>p[best].y?k:best,0),v=p[i];
+ if(i<2||i>=p.length-2||a.y>b.y+b.h*.20||
+    v.y-a.y<b.h*.70||z.y>b.y+b.h*.68||
+    z.x>v.x-b.h*.10||Math.abs(a.x-v.x)>b.h*.50)return null;
+ let length=0;
+ for(let k=0;k<p.length;k++){
+  if(k)length+=Math.hypot(p[k].x-p[k-1].x,p[k].y-p[k-1].y);
+  const u=k<=i?a:v,w=k<=i?v:z;
+  if(pointDistance(p[k].x,p[k].y,u,w)>b.h*.24)return null;
+ }
+ const direct=Math.hypot(v.x-a.x,v.y-a.y)+Math.hypot(z.x-v.x,z.y-v.y);
+ if(length>direct*1.55)return null;
+ return{box:b,end:a};
+}
 // Parenthesis strokes are structural boundaries, not letters or digits.
 function radicalParenthesis(stroke){
  const p=stroke.points,b=bounds([stroke]);
@@ -390,8 +412,8 @@ async function detectSquareRoot(strokes,W,H,options={}){
   candidates.push({hook,roof:b,indices});
  };
  for(let i=0;i<parts.length;i++){
-  const p=parts[i],hook=radicalHook(p.scaled.points);
-  if(hook)for(let j=0;j<parts.length;j++)if(i!==j)add(hook,parts[j].scaled.points,[i,j]);
+  const p=parts[i],hooks=[radicalHook(p.scaled.points),radicalDescendingHook(p.scaled.points)].filter(Boolean);
+  for(const hook of hooks)for(let j=0;j<parts.length;j++)if(i!==j)add(hook,parts[j].scaled.points,[i,j]);
   // A continuous radical can be drawn in either direction. Test a bounded
   // number of splits; the original full stroke is retained as one ink part.
   for(const points of [p.scaled.points,p.scaled.points.slice().reverse()]){
