@@ -219,7 +219,7 @@ async function detectRaisedUnit(strokes,W,H,options={}){
  });
  if(parts.some(p=>!p))return null;
  const byHeight=parts.slice().sort((a,b)=>a.box.cy-b.box.cy);
- const knownUnits=['cm','mm','km','kg','mg','ml','min','m','g','l','s','h'];
+ const knownUnits=['cm','km','kg','mg','ml','min','m','g','l','s','h'];
  for(let upperCount=1;upperCount<=Math.min(2,parts.length-1);upperCount++){
   const raised=byHeight.slice(0,upperCount),baseline=byHeight.slice(upperCount).sort((a,b)=>a.box.cx-b.box.cx);
   if(!baseline.length||baseline.length>6)continue;
@@ -435,7 +435,7 @@ async function detectPrimaryMeasurement(strokes,W,H,options={}){
  if(items.some(p=>!p))return null;
  items.sort((a,b)=>a.box.cx-b.box.cx);
  // Two-letter SI/common primary units. "ml" remains lowercase by request.
- const units=['kg','mg','cm','mm','km','ml'];
+ const units=['kg','mg','cm','km','ml'];
  for(const suffixCount of [2,3,4]){
   if(items.length<=suffixCount)continue;
   const prefix=items.slice(0,-suffixCount),tail=items.slice(-suffixCount);
@@ -616,7 +616,7 @@ async function recognizeCore(strokes,W,H,options={}){
   if(direct)return direct;
   // Check longer compound units first, before a grammar discards a superscript.
   // A numeric prefix must remain a separately validated quantity.
-  const measured=['cm²','m²','km²','mm²','cm³','m³','mm³','cm','mm','km','kg','mg','g','m','ml','mL','L'];
+  const measured=['cm²','m²','km²','cm³','m³','cm','km','kg','mg','g','m','ml','mL','L'];
   if(strokes.length>=3&&strokes.length<=11){
    const ordered=strokes.slice().sort((a,b)=>{
     const x=s=>Math.min(...s.points.map(p=>p.x));
@@ -949,7 +949,7 @@ async function recognizeBaseUnitComponents(strokes,W,H,options){
   const letters=await readUnitLetters(groups,options);
   let word=letters.map(r=>r?.char).join('');
   if(word==='l'&&letters[0].penLabel==='L')word='L';
-  if(!['m','mm','cm','km','kg','mg','ml','g','L'].includes(word)||
+  if(!['m','cm','km','kg','mg','ml','g','L'].includes(word)||
     letters.some((r,i)=>!r||!r.trusted&&!(word==='ml'&&i===1&&r.narrowL)))continue;
   const read=await readUnitPrefix(prefix,W,H,options,true);if(!read)continue;
   // A standalone g needs the visible descender that separates it from 6/9.
@@ -1012,7 +1012,7 @@ async function recognizeUnitComponents(strokes,W,H,options){
   const tokens=groups.map(parts=>({parts}));
   if(!tokens.length||tokens.length>2)continue;
   const letters=await readUnitLetters(groups,options),word=letters.map(r=>r?.char).join('');
-  if(!['m','mm','cm','km'].includes(word)||letters.some(r=>!r?.trusted))continue;
+  if(!['m','cm','km'].includes(word)||letters.some(r=>!r?.trusted))continue;
   let number='',numberTokens=[],numberUncertain=[];
   if(prefix.length){
    const read=await readUnitPrefix(prefix,W,H,options);
@@ -1045,7 +1045,7 @@ async function recognizeUnitFirst(strokes,W,H,options){
  });
  if(sorted.some(p=>!p))return null;
  sorted.sort((a,b)=>a.box.cx-b.box.cx);
- const area=['mm²','cm²','m²','km²','mm³','cm³','m³'];
+ const area=['cm²','m²','km²','cm³','m³'];
  const hypotheses=[];
  // Compound units can take more than one pen stroke; search plausible suffixes.
  // Prefer long trained units over raw character-by-character interpretations.
