@@ -22,13 +22,7 @@ const radical=[S([[46,85],[52,111],[59,128],[68,92],[77,55]]),
  const cases=[['standalone parentheses',bracket],['radical with parentheses',[...radical,...nested]]];
  let failures=0;
  for(const [label,ink] of cases){
-  if(label==='radical with parentheses'){
-  const probe=ink.map(raw=>({raw,scaled:{points:raw.points.map(p=>({x:p.x*400,y:p.y*300}))}}));
-  const dbg=vm.runInContext('({radicalHook,radicalParenthesis,operatorStroke,bounds,detectSquareRoot,radicalExpression})',ctx);
-  console.log('RADICAL DEBUG',JSON.stringify({hook:dbg.radicalHook(probe[0].scaled.points),roof:dbg.operatorStroke(probe[1].scaled),brackets:probe.slice(2).map(p=>dbg.radicalParenthesis(p.scaled)),bounds:probe.map(p=>dbg.bounds([p.scaled]))}));
-  const raw=await dbg.detectSquareRoot(ink,400,300,{mode:'auto'});console.log('RADICAL DETECTOR',JSON.stringify(raw&&{text:raw.text,engine:raw.engine}));
- }
- const r=await ctx.WhiteboardHandwritingMath.recognize(ink,400,300,{mode:'auto'});
+  const r=await ctx.WhiteboardHandwritingMath.recognize(ink,400,300,{mode:'auto'});
   const ok=label==='standalone parentheses'?r.text.startsWith('(')&&r.text.endsWith(')'):r.text.startsWith('\\sqrt{')&&r.text.endsWith('}');
   console.log(JSON.stringify({label,output:r.text,engine:r.engine,pass:ok}));
   if(!ok)failures++;
