@@ -24,4 +24,5 @@ jobs:
       - name: Run math structure regression
         run: node scripts/test-math-structure-regression.cjs
       - name: Verify actual teacher square-root strokes
+        if: ${{ !cancelled() }}
         run: node scripts/test-square-root-real-teacher-ink.cjs
