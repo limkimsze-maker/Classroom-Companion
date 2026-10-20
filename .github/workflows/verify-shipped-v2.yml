@@ -22,6 +22,8 @@ jobs:
           mkdir -p v2-shipped-validation
           node --check experimental/math-structure/reader-v2.js
           node --check experimental/math-structure/beautify-v2.js
+          node --check experimental/math-structure/symbol-learning-v2.js
+          node --check experimental/math-structure/learning-controls-v2.js
           node --check experimental/math-structure/whiteboard-text-drag-resizable-v2.js
           node - <<'JS'
           const fs=require('fs'),vm=require('vm'),crypto=require('crypto'),assert=require('assert/strict');
@@ -34,12 +36,16 @@ jobs:
           JS
       - name: Verify division and compact equals controls
         run: node experimental/math-structure/test-signs-v2.cjs
+      - name: Verify reusable symbols and portable learning with real models
+        run: node experimental/math-structure/test-symbol-learning-v2.cjs
       - name: Install browser runtime
         run: |
           npm install --prefix /tmp/classroom-v2-browser --no-save playwright@1.62.1
           node /tmp/classroom-v2-browser/node_modules/playwright/cli.js install --with-deps chromium
       - name: Test actual shipped desktop and mobile recognition and resize flows
         run: NODE_PATH=/tmp/classroom-v2-browser/node_modules node experimental/math-structure/test-shipped-browser.cjs v2-shipped-validation/browser
+      - name: Test learning, export and import on desktop and mobile
+        run: NODE_PATH=/tmp/classroom-v2-browser/node_modules node experimental/math-structure/test-learning-browser-v2.cjs v2-shipped-validation/learning-browser
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -70,9 +76,10 @@ jobs:
         if: always()
         run: NODE_OPTIONS=--require=/tmp/use-shipped-v2.cjs node experimental/math-structure/paired-benchmark.cjs v2-shipped-validation/paired-report.json
       - name: Preserve the previously published V2 correct readings
+        if: always()
         run: |
-          git fetch --no-tags --depth=1 origin b8db481f5bd937df047b2f94c639c0fbd476aebb
-          git show b8db481f5bd937df047b2f94c639c0fbd476aebb:experimental/math-structure/reader-v2.js > /tmp/previous-v2-reader.js
+          git fetch --no-tags --depth=1 origin fde629487572753ce51471613997927633050ffd
+          git show fde629487572753ce51471613997927633050ffd:experimental/math-structure/reader-v2.js > /tmp/previous-v2-reader.js
           node experimental/math-structure/test-v2-signs-preservation.cjs /tmp/previous-v2-reader.js v2-shipped-validation/v2-simulations.json v2-shipped-validation/previous-v2-paired.json
       - uses: actions/upload-artifact@v4
         if: always()
