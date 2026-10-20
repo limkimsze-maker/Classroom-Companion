@@ -1119,7 +1119,16 @@ async function recognizeUnitFirst(strokes,W,H,options){
      candidates.find(x=>x.label===best.label.replace('²','³'));
    const contradictsSquare=trainedPower.label==='³'&&best.label.endsWith('²')&&
      best.score>=.83&&best.score-(cubic?.score??0)>.16&&!contourThree;
-   if(!contradictsSquare)unit=best.label.replace(/[²³]$/,trainedPower.label);
+   // When the full unit reads squared but the isolated exponent votes cubed,
+   // require independent three-lobe contour evidence before changing ² to ³.
+   // A disagreement without that evidence is not a reliable cubic reading.
+   const unsupportedCube=trainedPower.label==='³'&&best.label.endsWith('²')&&!contourThree;
+   if(unsupportedCube){
+    const square=candidates.find(x=>x.label===best.label.replace('³','²'));
+    const cubicScore=cubic?.score||0;
+    if(best.score>=.83&&best.score-cubicScore>=.08)unit=best.label;
+    else unit=null;
+   }else if(!contradictsSquare)unit=best.label.replace(/[²³]$/,trainedPower.label);
    else if(best.score<.90)unit=null;
   }
   // Trained unit labels establish the base unit; corroborated contour may
