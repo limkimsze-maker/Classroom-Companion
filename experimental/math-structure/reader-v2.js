@@ -2463,9 +2463,39 @@ function restoreEmbeddedEquals(reading,strokes,W,H){
  for(const t of selected.sort((a,b)=>b.start-a.start))out=out.slice(0,t.start)+'='+out.slice(t.start+t.value.length);
  return out===source?reading:{...reading,text:out,engine:(reading.engine||'local')+'-compact-equals-review'};
 }
+function reviewThreeStrokeDivision(reading,strokes,W,H){
+ if(!reading||typeof reading.text!=='string'||!Array.isArray(strokes)||strokes.length<5)return reading;
+ const boxes=strokes.map((s,i)=>{
+  const p=s?.points||[];if(!p.length)return null;
+  const xs=p.map(q=>q.x*W),ys=p.map(q=>q.y*H);
+  const x=Math.min(...xs),y=Math.min(...ys),w=Math.max(...xs)-x,h=Math.max(...ys)-y;
+  return{i,x,y,w,h,cx:x+w/2,cy:y+h/2,n:p.length};
+ }).filter(Boolean);
+ const totalH=Math.max(...boxes.map(b=>b.y+b.h))-Math.min(...boxes.map(b=>b.y));
+ if(!(totalH>0))return reading;
+ const candidates=[];
+ for(const bar of boxes){
+  if(bar.w<totalH*.30||bar.h>totalH*.18)continue;
+  const dots=boxes.filter(b=>b!==bar&&b.w<totalH*.13&&b.h<totalH*.13&&b.n<=6&&
+   b.cx>bar.x-bar.w*.15&&b.cx<bar.x+bar.w*1.15);
+  for(const top of dots)for(const bottom of dots){
+   if(top===bottom||top.cy>=bar.cy-totalH*.07||bottom.cy<=bar.cy+totalH*.07)continue;
+   if(Math.abs(top.cx-bottom.cx)>bar.w*.5)continue;
+   if(Math.max(bar.cy-top.cy,bottom.cy-bar.cy)>totalH*.42)continue;
+   candidates.push({bar,top,bottom});
+  }
+ }
+ if(candidates.length!==1)return reading;
+ const raw=reading.text;
+ // Recognizer can split the 3-stroke division sign into minus, times and dot.
+ // Only repair this signature when its three independent ink strokes agree.
+ const repaired=raw.replace(/([0-9])\s*[−-]\s*[×x*]\s*\.\s*([0-9])/,'$1 ÷ $2');
+ if(repaired===raw)return reading;
+ return {...reading,text:repaired,engine:(reading.engine||'local')+'-three-stroke-division-review'};
+}
 async function recognize(strokes,W,H,options={}){
  checkCancelled(options);
- const preliminary=reviewIsolatedDisagreement(restoreEmbeddedEquals(await recognizeBeforeContext(strokes,W,H,options),strokes,W,H),options);
+ const preliminary=reviewIsolatedDisagreement(reviewThreeStrokeDivision(restoreEmbeddedEquals(await recognizeBeforeContext(strokes,W,H,options),strokes,W,H),strokes,W,H),options);
  let reading=preliminary;
  try{reading=await glyphV2.review(strokes,W,H,options,preliminary)}catch(error){if(error?.name==='AbortError')throw error;}
  checkCancelled(options);
@@ -2489,5 +2519,5 @@ const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStro
 const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});
 const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261021-v2-compact-equals2';
+window.WhiteboardHandwritingMath.build='20261021-v2-division-three-stroke1';
 })();
