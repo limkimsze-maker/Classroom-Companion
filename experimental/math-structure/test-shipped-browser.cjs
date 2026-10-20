@@ -53,6 +53,27 @@ const server=http.createServer((req,res)=>{
    assert.equal(await page.evaluate(()=>strokes.length),penCount+1,'Pen draws a new stroke after Beautify');
    assert(await page.evaluate(()=>strokes.at(-1).points?.length>=2),'Pen stroke contains ink');
 
+   // Read both signs together, keeping a written wrong answer when correction is off.
+   const signFixture=require('./sign-fixtures.cjs');
+   for(const answer of ['5','7']){
+    const signInk=signFixture.equation('10','2',answer,undefined,.7);
+    await page.evaluate(({ink,W,H})=>{
+     strokes=ink.map(s=>({...s,colour:'#17324d',points:s.points.map(p=>({x:p.x*W/cssW,y:p.y*H/cssH}))}));redraw();syncUi();
+    },{ink:signInk,W:signFixture.W,H:signFixture.H});
+    await page.locator('#handwritingBeautifyBtn').click();
+    const signBoard=await page.locator('#board').boundingBox();
+    await page.mouse.move(signBoard.x+5,signBoard.y+75);await page.mouse.down();
+    await page.mouse.move(signBoard.x+Math.min(signBoard.width-6,345),signBoard.y+160,{steps:8});await page.mouse.up();
+    await page.waitForFunction(expected=>document.getElementById('handwritingReadText')?.value.replace(/\s/g,'')===expected,'10÷2='+answer,{timeout:20000});
+    await page.locator('#handwritingCorrectArithmetic').uncheck();
+    assert.equal(await page.locator('#handwritingColour').inputValue(),'#1d4ed8','Answer colour is royal blue');
+    await page.waitForFunction(()=>!document.querySelector('.handwriting-apply')?.disabled);
+    await page.screenshot({path:path.join(output,`divide-equals-${answer}-${viewport.width}.png`)});
+    await page.locator('.handwriting-apply').click();
+    assert.equal(await page.evaluate(()=>strokes[0].equationExpression.replace(/\s/g,'')),'10÷2='+answer,'Applied equation preserves both signs and written answer');
+    assert.equal(await page.evaluate(()=>tool),'pen');
+   }
+   console.log('PASS division and compact equals recognition, royal-blue Apply and written wrong-answer preservation:',viewport.width);
    // Replay the actual teacher's measurement through the same visible flow.
    await page.evaluate(sample=>{
     strokes=sample.strokes.map(s=>({...s,colour:'#17324d',points:s.points.map(p=>({x:p.x*sample.width/cssW,y:p.y*sample.height/cssH}))}));

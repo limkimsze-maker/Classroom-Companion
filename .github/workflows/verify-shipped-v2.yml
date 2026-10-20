@@ -1,7 +1,7 @@
 name: Verify shipped V2 recovery
 on:
   push:
-    branches: [test/v2-live-recovery-20261021]
+    branches: [test/v2-live-recovery-20261021, 'fix/v2-signs-*']
     paths:
       - experimental/math-structure/**
       - .github/workflows/verify-shipped-v2.yml
@@ -32,6 +32,8 @@ jobs:
           const files=['experimental/math-structure/reader-v2.js','experimental/math-structure/beautify-v2.js','experimental/math-structure/whiteboard-text-drag-resizable-v2.js','whiteboard-v2-trial.html'];
           fs.writeFileSync('v2-shipped-validation/source-hashes.json',JSON.stringify(Object.fromEntries(files.map(p=>[p,crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex')])),null,2));
           JS
+      - name: Verify division and compact equals controls
+        run: node experimental/math-structure/test-signs-v2.cjs
       - name: Install browser runtime
         run: |
           npm install --prefix /tmp/classroom-v2-browser --no-save playwright@1.62.1

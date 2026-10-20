@@ -626,8 +626,46 @@ function operatorAccent(dot,group,height){
  return group.some(s=>s.points.some((p,i)=>i&&pointDistance(d.cx,d.cy,s.points[i-1],p)<=tolerance));
 }
 
+// Compact equals bars may be shorter than the pen width. Resolve the pair
+// from parallel pen travel and spacing, never from the arithmetic answer.
+function compactEqualsPairsV2(strokes,W,H){
+ if(!Array.isArray(strokes)||strokes.length<2||strokes.length>100||!(W>0&&H>0))return[];
+ const marks=strokes.map((source,index)=>{
+  const points=source?.points;if(!points?.length||points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return null;
+  const scaled={source,size:Number(source.size)||4,points:points.map(p=>({x:p.x*W,y:p.y*H}))},b=bounds([scaled]);
+  let travel=0;for(let i=1;i<scaled.points.length;i++)travel+=Math.hypot(scaled.points[i].x-scaled.points[i-1].x,scaled.points[i].y-scaled.points[i-1].y);
+  const a=scaled.points[0],z=scaled.points.at(-1),ink=Math.max(1,Math.min(12,scaled.size));
+  const bar=points.length>=2&&b.w>=Math.max(2.4,ink*.55)&&b.w<=ink*2.7&&
+   b.h<=b.w*.50&&Math.abs(z.x-a.x)>=b.w*.8&&travel<=b.w*1.8;
+  return{index,scaled,b,ink,bar,slope:(z.y-a.y)/(z.x-a.x||.001)};
+ }).filter(Boolean);
+ const candidates=[];
+ for(let i=0;i<marks.length;i++)for(let j=i+1;j<marks.length;j++){
+  const p=marks[i],q=marks[j];if(!p.bar||!q.bar)continue;
+  const a=p.b,b=q.b,ink=Math.max(p.ink,q.ink),short=Math.min(a.w,b.w),long=Math.max(a.w,b.w),avg=(a.w+b.w)/2;
+  const sep=Math.abs(a.cy-b.cy),overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+  if(long<ink*1.5||long/short>3.6||overlap<short*.4||Math.abs(p.slope-q.slope)>.40)continue;
+  if(Math.abs(a.cx-b.cx)>Math.max(ink*.85,avg*.65)||sep<ink*.9||sep>Math.max(ink*3.2,avg*2.6))continue;
+  const box=bounds([p.scaled,q.scaled]);
+  // Keep digit strokes, crossed signs and surrounding ink out of the pair.
+  if(marks.some(m=>m!==p&&m!==q&&Math.min(m.b.x+m.b.w,box.x+box.w)-Math.max(m.b.x,box.x)>short*.25&&
+   m.b.y<=box.y+box.h&&m.b.y+m.b.h>=box.y))continue;
+  const token={char:'=',score:.82,x:box.x,parts:[p.scaled,q.scaled],engine:'local-compact-equals-v2'};
+  candidates.push({indices:[p.index,q.index],center:box.cx,token});
+ }
+ const used=new Set();return candidates.sort((a,b)=>a.center-b.center).filter(p=>{
+  if(p.indices.some(i=>used.has(i)))return false;p.indices.forEach(i=>used.add(i));return true;
+ });
+}
+
 function segment(strokes,W,H,mode='auto'){
  const equalPairs=window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[];
+ if(mode==='auto'){
+  const taken=new Set(equalPairs.flatMap(p=>p.indices));
+  for(const pair of compactEqualsPairsV2(strokes,W,H))if(!pair.indices.some(i=>taken.has(i))){
+   equalPairs.push(pair);pair.indices.forEach(i=>taken.add(i));
+  }
+ }
  const consumed=new Set(equalPairs.flatMap(pair=>pair.indices));
  const jPairs=window.WhiteboardTrainedJ?.embeddedPairs?.(strokes,W,H,[...consumed])||[];
  for(const pair of jPairs)for(const index of pair.indices)consumed.add(index);
@@ -2140,6 +2178,10 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
  };
  const equal=window.WhiteboardEqualSign?.detect?.(strokes,W,H);
  if(equal)return reconcile(equal);
+ if(options.mode==='auto'&&strokes.length===2){
+  const pair=compactEqualsPairsV2(strokes,W,H)[0];
+  if(pair)return reconcile({text:'=',tokens:[pair.token],uncertain:[pair.token],engine:'local-compact-equals-v2',format:'symbol'});
+ }
  const mathRecognizer=options.mathRecognizer||window.WhiteboardInkOnOriginalDemo?.recognize;
  if(options.mode==='math'&&typeof mathRecognizer==='function'){
   return reconcile(await mathRecognizer(strokes,W,H,options));
@@ -2519,5 +2561,5 @@ const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStro
 const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});
 const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261021-v2-digit-geometry1';
+window.WhiteboardHandwritingMath.build='20261021-v2-compact-signs2';
 })();
