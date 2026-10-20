@@ -5,6 +5,8 @@ on:
       - .github/workflows/beta-handwriting-benchmark.yml
       - whiteboard-handwriting-recognition-beta.js
       - scripts/compare-handwriting-engines.cjs
+      - scripts/test-powered-component-priority.cjs
+      - scripts/test-recognition-learning-priority.cjs
   workflow_dispatch:
 jobs:
   benchmark:
@@ -15,6 +17,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify powered component priority and personal corrections
+        run: |
+          node scripts/test-powered-component-priority.cjs
+          node scripts/test-recognition-learning-priority.cjs
+          node scripts/test-recognition-engine-trace.cjs
       - name: Run original 924-case UJI V1 benchmark on current Beta reader
         run: node scripts/benchmark-handwriting-simulations.cjs --split all --out beta-handwriting-current-results.json
       - name: Print category breakdown and historical comparison

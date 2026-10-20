@@ -1205,9 +1205,14 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
   // its first letter must not be consumed as a numeric prefix.
   const notation=window.WhiteboardTeacherUnits?.match?.(strokes,W,H,{minScore:.94,minMargin:.045});
   if(notation&&/^(?:mm|cm|km|m)[²³]$/.test(notation.text))return reconcile(notation);
-  // A complete number plus a raised unit is a measurement, even when its
-  // full silhouette resembles a taught word such as min. Keep that verified
-  // spatial reading ahead of whole-selection notation matching.
+  // Read the prefix, unit letters and complete raised exponent independently
+  // before consulting whole-unit silhouettes. A confident whole-unit match
+  // can otherwise replace a correctly read m with cm, or a cube with a square.
+  // Standalone taught powers and personal corrections retain their priority.
+  const components=await recognizeUnitComponents(strokes,W,H,options);
+  if(components)return reconcile(components);
+  // Retain trained whole-unit recognition when the component reader abstains.
+  // A raised measurement still precedes a whole-selection word such as min.
   const measured=await recognizeUnitFirst(strokes,W,H,options);
   if(measured&&!measured.uncertain?.length)return reconcile(measured);
   // Preserve the existing whole-selection teaching priority over generic
@@ -1223,8 +1228,6 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
   }
   const letter=await recognizeIsolatedPenLetter(strokes,W,H,options);
   if(letter)return reconcile(letter);
-  const components=await recognizeUnitComponents(strokes,W,H,options);
-  if(components)return reconcile(components);
   // A raised exponent is stronger structural evidence than a plain baseline
   // unit. Do not let a partial unit reading silently drop the final power.
   // Preserve the original ink and surface an uncertain exponent for review.
@@ -1425,5 +1428,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-words2';
+window.WhiteboardHandwritingMath.build='20261020-components-first1';
 })();
