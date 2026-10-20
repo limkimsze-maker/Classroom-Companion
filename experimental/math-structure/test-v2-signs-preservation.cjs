@@ -6,7 +6,7 @@ const hash=source=>crypto.createHash('sha256').update(source).digest('hex');
  const [previousReader,latestRecords,output]=process.argv.slice(2);
  assert(previousReader&&latestRecords&&output,'Provide previous reader, current benchmark records and output');
  const beforeSource=fs.readFileSync(previousReader),currentSource=fs.readFileSync(path.join(__dirname,'reader-v2.js'));
- assert.equal(hash(beforeSource),'2926ba0b76208ec33bdd04562a7d0edc5389a492027bfb54a12fa3bfd9c43c5d','Use the exact previously published V2 reader');
+ assert.equal(hash(beforeSource),'9aba1a68779f36e36e20eacbbd833bd2ba7b8044917a5e18693a85d5d0e6f9d2','Use the exact previously published V2 reader');
  const before=await run({split:'all',readerPath:path.resolve(previousReader),progress:r=>console.log('Previous V2',r.done,r.correct)});
  const after=JSON.parse(fs.readFileSync(latestRecords));assert.equal(after.readerSha256,hash(currentSource));
  assert.equal(before.records.length,924);assert.equal(after.records.length,924);

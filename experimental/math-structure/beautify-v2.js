@@ -5,7 +5,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let activeReviewAbort=null;
-const readerBuild='20261021-v2-asymmetric-equals3';
+const readerBuild='20261021-v2-symbol-learning1';
 function abortError(){return Object.assign(new Error('Reading cancelled'),{name:'AbortError'})}
 function stopReaders(){window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.()}
 function boundedRead(task,signal,milliseconds){
@@ -25,6 +25,7 @@ const requiredReaders=[
  ['whiteboard-handwriting-character-inference-beta.js',()=>window.WhiteboardCharacterInference],
  ['whiteboard-handwriting-character-reader-beta.js',()=>window.WhiteboardCharacterReader],
  ['whiteboard-handwriting-learning-beta.js',()=>window.WhiteboardHandwritingLearning],
+ ['experimental/math-structure/symbol-learning-v2.js',()=>window.WhiteboardHandwritingLearning?.symbolLearningVersion===1],
  ['vendor/handwriting/uji/reader-weights-beta.js',()=>window.WhiteboardUjiWeights],
  ['vendor/handwriting/uji/reader-beta.js',()=>window.WhiteboardUjiReader],
  ['whiteboard-primary-grammar-beta.js',()=>window.WhiteboardPrimaryMathGrammar],
@@ -37,7 +38,7 @@ const requiredReaders=[
  ['whiteboard-unit-exponent-trained-beta.js',()=>window.WhiteboardUnitExponent],
  ['whiteboard-handwriting-context-model-beta.js',()=>window.WhiteboardHandwritingContextModel],
  ['whiteboard-handwriting-context-beta.js',()=>window.WhiteboardHandwritingContext],
- ['experimental/math-structure/reader-v2.js',()=>typeof window.WhiteboardHandwritingMath?.recognize==='function' && /^20261021-v2-/.test(window.WhiteboardHandwritingMath.build||'')]
+ ['experimental/math-structure/reader-v2.js',()=>typeof window.WhiteboardHandwritingMath?.recognize==='function' && window.WhiteboardHandwritingMath.build===readerBuild]
 ];
 async function ensureReader(signal){
  if(signal.aborted)throw abortError();
@@ -122,7 +123,7 @@ async function review(group){
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Auto can offer word, letter-case, unit and superscript choices. Type a correction at any time to stop reading and update the preview. Learn & Test Again saves a provisional example on this browser and re-reads the same ink. Draw again to test new handwriting. Cancel discards provisional learning; Apply keeps it and Undo reverses it.';
+ const help=document.createElement('p');help.textContent='Correct the reading, then Learn & Test Again re-reads the same ink. In Auto, a clearly aligned correction to =, +, −, × or ÷ also teaches that symbol for other equations. To teach a symbol directly, select only its strokes. Apply keeps learning; Cancel discards it; Undo reverses it. Use Learning in the toolbar to export or import saved examples.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=600;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised numbers, letters, units or mathematical notation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
@@ -313,7 +314,8 @@ async function review(group){
    const again=await boundedRead(()=>recogniser.recognize(group,cssW,cssH,{mode,signal:controller.signal}),controller.signal,mode==='math'?180000:25000);
    if(session!==id||dialog!==backdrop||ticket!==feedbackStamp)return;
    if(again.text===answer){
-    feedback.textContent=again.engine==='local-personal-ink'?
+    feedback.textContent=training.symbols?
+     'Saved a reusable '+training.symbols.char+' symbol example. Same ink reads correctly; Apply, then write a different equation to test it.':again.engine==='local-personal-ink'?
      'Same strokes now match your saved local example. Draw them again to test generalisation.':
      'Same strokes now read correctly. Draw them again to test generalisation.';
    }else feedback.textContent='Re-read result: '+again.text+'. Your correction is saved, but this recogniser still disagrees. Apply the correct preview or edit again.';
@@ -339,7 +341,7 @@ async function review(group){
   history.push({before,after:JSON.stringify(strokes),learning});if(history.length>30)history.shift();syncUi();
   // Use the existing Pen button handler too, so selection state and toolbar UI reset.
   document.getElementById('penBtn')?.click();
-  sayLocal(learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
+  sayLocal(learning?.symbols?'Handwriting beautified · Reusable '+learning.symbols.char+' example saved':learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
  actions.append(apply,stopRead,retryRead,cancel);const exportInk=document.createElement('button');
  exportInk.type='button';exportInk.textContent='Export selected pen strokes (JSON)';

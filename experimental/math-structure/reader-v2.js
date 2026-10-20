@@ -2218,6 +2218,31 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
  const learned=window.WhiteboardHandwritingLearning?.matchInk?.(strokes,W,H,options.mode,rasterDigit);
  if(learned)return{text:learned.text,tokens:[],uncertain:[],engine:'local-personal-ink',
   format:options.mode==='math'?'latex':'personal'};
+ if(options.mode==='auto'&&!options.disablePersonalSymbolsV2){
+  const symbols=window.WhiteboardHandwritingLearning?.proposeSymbols?.(strokes,W,H,'auto',rasterDigit)||[];
+  if(symbols.length){
+   const consumed=new Set(symbols.flatMap(s=>s.indices)),remaining=strokes.map((raw,i)=>({raw,i,b:bounds([{points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))}])})).filter(p=>!consumed.has(p.i));
+   // Reuse a taught sign only in a clear inline expression. Structured math
+   // retains its existing parser; a nearby digit cannot be swallowed as ink.
+   const slots=Array.from({length:symbols.length+1},()=>[]);let aligned=true;
+   for(const p of remaining){
+    if(symbols.some(s=>p.b.x<s.box.x+s.box.w&&p.b.x+p.b.w>s.box.x)){aligned=false;break}
+    const at=symbols.filter(s=>s.box.cx<p.b.cx).length;slots[at].push(p.raw);
+    const nearest=symbols.reduce((a,b)=>Math.abs(a.box.cx-p.b.cx)<Math.abs(b.box.cx-p.b.cx)?a:b);
+    if(Math.abs(p.b.cy-nearest.box.cy)>Math.max(12,p.b.h*.70,nearest.box.h))aligned=false;
+   }
+   const tokens=[],uncertain=[];let text='';
+   if(aligned)for(let i=0;i<slots.length;i++){
+    if(slots[i].length){
+     const number=await recognizeNumericContext(slots[i],W,H,{...options,disablePersonalSymbolsV2:true,measurementPrefix:true});
+     if(!number||!completeNumericExpression(number.text)){aligned=false;break}
+     text+=number.text;tokens.push(...number.tokens);uncertain.push(...(number.uncertain||[]));
+    }else if(remaining.length){aligned=false;break}
+    if(i<symbols.length){text+=' '+symbols[i].token.char+' ';tokens.push(symbols[i].token);if(symbols[i].token.score<.90)uncertain.push(symbols[i].token)}
+   }
+   if(aligned)return{text:text.trim(),tokens,uncertain,engine:'local-personal-symbols-v2',format:'math'};
+  }
+ }
  const reconcile=reading=>{
   const corrected=window.WhiteboardHandwritingLearning?.matchContext?.(
    strokes,W,H,options.mode,rasterDigit,reading?.text);
@@ -2609,5 +2634,5 @@ const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStro
 const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});
 const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261021-v2-asymmetric-equals3';
+window.WhiteboardHandwritingMath.build='20261021-v2-symbol-learning1';
 })();
