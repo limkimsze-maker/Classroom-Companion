@@ -153,11 +153,35 @@ async function review(group){
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><text x="1" y="'+(H*.76)+'" textLength="'+Math.max(4,W-2)+'" lengthAdjust="spacingAndGlyphs" fill="'+ink+'" font-family="Trebuchet MS,Arial,sans-serif" font-size="'+Math.max(12,H*.72)+'" font-weight="700">'+clean+'</text></svg>';
   return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),x:b.x,y:b.y,w:W/Math.max(1,cssW),h:H/Math.max(1,cssH),smartGenerated:true,smartType:'equation',smartId:'math-v2-'+Date.now().toString(36),smartOriginal:[],equationExpression:value,equationLatex:clean,equationLayout:'in-place-math',equationColour:ink};
  }
+ function fixedArithmeticObject(value,original,colour){
+  const expression=String(value||'').trim().replace(/＝/g,'=').replace(/\*/g,'×');
+  if(!expression||!/^[\d\s.=+−\-×÷]+$/.test(expression)||!/\d/.test(expression))return null;
+  const boardW=Math.max(1,cssW),boardH=Math.max(1,cssH);
+  const fontFamily=window.WhiteboardEquationFormatter?.font?.()||"'Trebuchet MS',Arial,sans-serif";
+  // Fixed visible glyph height across separate beautification operations.
+  const glyphHeight=64,fontSize=76;
+  let naturalWidth=Math.max(1,expression.length*fontSize*.62);
+  if(typeof ctx!=='undefined'&&typeof ctx.measureText==='function'){
+   ctx.save();
+   try{ctx.font='700 '+fontSize+'px '+fontFamily;naturalWidth=Math.ceil(ctx.measureText(expression).width)+4}
+   finally{ctx.restore()}
+  }
+  const width=naturalWidth+8,height=fontSize+10;
+  const x=Math.max(0,Math.min(boardW-width,original.x*boardW));
+  const baseline=Math.max(height-8,Math.min(boardH-8,(original.y+original.h)*boardH));
+  const y=Math.max(0,baseline-(height-8));
+  const ink=/^#[0-9a-f]{6}$/i.test(colour||'')?colour:'#17324d';
+  const safe=expression.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'" viewBox="0 0 '+width+' '+height+'"><text x="4" y="'+(height-8)+'" fill="'+ink+'" font-family="'+fontFamily.replace(/"/g,'&quot;')+'" font-size="'+fontSize+'" font-weight="700">'+safe+'</text></svg>';
+  return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),x:x/boardW,y:y/boardH,w:width/boardW,h:height/boardH,smartGenerated:true,smartType:'equation',smartId:'v2-fixed-font-'+Date.now().toString(36),smartOriginal:[],equationExpression:expression,equationLayout:'in-place-math',equationColour:ink};
+ }
  function formatted(){
   const original=groupBounds(group),value=displayReading(),raw=String(input.value||'').trim(),math=window.WhiteboardMathRenderer,equation=window.WhiteboardEquationFormatter;
   // Normalise simple inline arithmetic to one classroom-sized glyph height.
   // Scale uniformly (never stretch individual glyphs) and retain the ink baseline.
   // Fractions, roots, units and multi-line layouts retain their specialised sizing.
+  const fixed=fixedArithmeticObject(value,original,colourSelect.value);
+  if(fixed)return fixed;
   const simple=/^[\s\d.=＝+−\-×÷*/()]+$/;
   const isSimple=simple.test(raw)&&/\d/.test(raw)&&!/[\/()]/.test(raw);
   let b=original;
