@@ -883,7 +883,12 @@ function groupUnitInk(baseline){
   for(let i=0;i<groups.length&&!merged;i++)for(let j=i+1;j<groups.length;j++){
    const a=bounds(groups[i]),b=bounds(groups[j]),h=Math.max(a.h,b.h),both=bounds([...groups[i],...groups[j]]);
    const overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
-   if(overlap>=-Math.max(1,h*.035)&&both.w<h*2.1&&Math.abs(a.cy-b.cy)<h*.65){
+   // Join overlapping strokes of one letter, not merely adjacent letters.
+  // Two separate handwritten glyphs (especially c + m) must retain their
+  // own character evidence instead of becoming a synthetic wide m.
+  const substantialOverlap=overlap>Math.min(a.w,b.w)*.12;
+  const oneSmallStroke=Math.min(a.w,b.w)<h*.20&&overlap>=-Math.max(1,h*.02);
+  if((substantialOverlap||oneSmallStroke)&&both.w<h*2.1&&Math.abs(a.cy-b.cy)<h*.65){
     groups[i].push(...groups[j]);groups.splice(j,1);merged=true;break;
    }
   }
