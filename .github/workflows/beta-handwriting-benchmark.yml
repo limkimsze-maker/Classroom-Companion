@@ -8,6 +8,7 @@ on:
       - scripts/test-powered-component-priority.cjs
       - scripts/test-crossed-seven-grouping.cjs
       - scripts/test-detached-four-grouping.cjs
+      - scripts/test-measurement-consensus.cjs
       - scripts/test-recognition-learning-priority.cjs
   workflow_dispatch:
 jobs:
@@ -19,8 +20,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify detached fours, crossed sevens, powered units and personal corrections
+      - name: Verify measurement consensus, digit grouping and personal corrections
         run: |
+          node scripts/test-measurement-consensus.cjs
           node scripts/test-detached-four-grouping.cjs
           node scripts/test-crossed-seven-grouping.cjs
           node scripts/test-powered-component-priority.cjs

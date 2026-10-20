@@ -922,7 +922,18 @@ async function readUnitPrefix(prefix,W,H,options,typedOnly=false){
  }
  let text=read.text,tokens=read.tokens||[];
  if(/^\d+$/.test(text)&&prefix.length===text.length){
-  text=text.split('').map((digit,i)=>closedZeroInk(prefix[i].raw,W,H)?'0':digit).join('');
+  text=text.split('').map((digit,i)=>{
+   if(digit==='0'||!closedZeroInk(prefix[i].raw,W,H))return digit;
+   // An 8 can also close and turn through a full loop. Geometry must not
+   // erase a nonzero digit independently supported by both existing models.
+   const parts=[{size:Number(prefix[i].raw.size)||4,
+    points:prefix[i].raw.points.map(p=>({x:p.x*W,y:p.y*H}))}];
+   const pen=window.WhiteboardUjiReader?.read(parts.map(p=>p.points));
+   const image=window.WhiteboardCharacterInference?.predict(rasterDigit(parts),'auto')?.[0];
+   const supported=pen?.[0]?.label===digit&&pen[0].p>=.95&&
+    pen[0].p-(pen[1]?.p||0)>=.90&&image?.char===digit&&image.score>=.90;
+   return supported?digit:'0';
+  }).join('');
   tokens=tokens.map((t,i)=>({...t,char:text[i]||t.char}));
  }
  return{text,tokens,uncertain:read.uncertain||[]};
@@ -945,6 +956,36 @@ function groupUnitInk(baseline){
   }
  }
  return groups.sort((a,b)=>bounds(a).cx-bounds(b).cx);
+}
+// A pen lift can leave the diagonals of a k (or arches of an m) disconnected.
+// Test compact multi-stroke alternatives with both existing models. Ordinary
+// spaces between distinct unit letters are too large for this exception.
+function groupMeasurementInk(items){
+ const groups=groupUnitInk(items);
+ if(!window.WhiteboardCharacterInference||!window.WhiteboardUjiReader)return groups;
+ for(let count=Math.min(3,groups.length);count>=2;count--){
+  for(let i=0;i+count<=groups.length;i++){
+   const candidate=groups.slice(i,i+count),parts=candidate.flat(),box=bounds(parts);
+   if(parts.length>4||box.h<14||box.w>box.h*1.25)continue;
+   const boxes=candidate.map(bounds).sort((a,b)=>a.x-b.x);
+   let right=boxes[0].x+boxes[0].w,close=true;
+   for(const b of boxes.slice(1)){
+    if(b.x-right>box.h*.12){close=false;break}
+    right=Math.max(right,b.x+b.w);
+   }
+   if(!close)continue;
+   const image=window.WhiteboardCharacterInference.predict(rasterDigit(parts),'lowercase');
+   const best=image[0];
+   if(!['k','m'].includes(best?.char)||best.score<.98||best.score-(image[1]?.score||0)<.95)continue;
+   const pen=window.WhiteboardUjiReader.read(parts.map(p=>p.points));
+   if(pen?.[0]?.label.toLowerCase()!==best.char)continue;
+   const same=pen.reduce((sum,p)=>sum+(p.label.toLowerCase()===best.char?p.p:0),0);
+   const other=pen.find(p=>p.label.toLowerCase()!==best.char)?.p||0;
+   if(same<.97||same-other<.90)continue;
+   groups.splice(i,count,parts);i=Math.max(-1,i-1);
+  }
+ }
+ return groups;
 }
 function completeUnitProposal(proposals){
  const complete=proposals.filter(p=>!proposals.some(q=>q.word.length>p.word.length&&
@@ -976,21 +1017,30 @@ function completeUnitProposal(proposals){
  const runnerEvidence=runner?runner.score+Math.min(runner.support-1,2)*.005:-Infinity;
  return bestEvidence-runnerEvidence<.03?null:best;
 }
-async function readUnitLetters(groups,options){
+async function readUnitLetters(groups,options,measurement=false){
  const alpha=await readCharacters(groups.map(rasterDigit),'lowercase',options);
  return groups.map((parts,i)=>{
   const choices=alpha[i],top=choices[0];if(!top)return null;
-  let char=top.char,score=top.score,confidence=top.score,penLabel='';
+  let char=top.char,score=top.score,confidence=top.score,penLabel='',agreed=false,penOnly=false;
   const strong=top.score>=.95&&top.score-(choices[1]?.score||0)>=.50;
   if(window.WhiteboardUjiReader){
    const pen=window.WhiteboardUjiReader.read(parts.map(p=>p.points)),best=pen?.[0];
    penLabel=best?.label||'';
-   if(!strong&&/^[A-Za-z]$/.test(penLabel)&&best.p>=.985&&best.p-(pen[1]?.p||0)>=.95){
+   if(!strong&&/^[A-Za-z]$/.test(penLabel)){
     const wanted=penLabel.toLowerCase(),support=choices.find(p=>p.char===wanted)?.score||0;
-    if(support>=.10||best.p>.9995){char=wanted;score=best.p;confidence=Math.min(best.p,support);}
+    const margin=best.p-(pen[1]?.p||0);
+    const trustedPen=best.p>=.985&&margin>=.95;
+    // Within a complete measurement, pen evidence can resolve m/w and l/e.
+    // Keep the conflicting image score visible instead of inventing confidence.
+    const unitLetter=measurement&&['m','l'].includes(wanted);
+    agreed=measurement&&wanted===top.char&&support>=.45&&best.p>=.98&&margin>=.95;
+    if(trustedPen&&(support>=.10||best.p>.9995||unitLetter)||agreed){
+     char=wanted;score=best.p;confidence=Math.min(best.p,support);
+     penOnly=unitLetter&&support<.10;
+    }
    }
   }
-  return{char,score,confidence,penLabel,trusted:strong||score>=.985,
+  return{char,score,confidence,penLabel,penOnly,trusted:strong||score>=.985||agreed,
    // A narrow final l in ml shares its contour with 1/I. The m supplies the
    // letter context; its uncertainty remains visible to the teacher.
    narrowL:char==='l'&&top.char==='l'&&top.score>=.55&&top.score-(choices[1]?.score||0)>=.20};
@@ -1019,16 +1069,18 @@ async function recognizeBaseUnitComponents(strokes,W,H,options){
  for(let count=1;count<=Math.min(8,items.length-1);count++){
   const suffix=items.slice(-count),prefix=items.slice(0,-count);
   if(closedZeroInk(suffix[0].raw,W,H))continue;
-  const groups=groupUnitInk(suffix);
+  const groups=groupMeasurementInk(suffix);
   if(!groups.length||groups.length>2)continue;
   const boxes=groups.map(bounds),body=bounds(suffix.map(p=>p.scaled));
   if(body.h<10||prefix.at(-1).box.cx>=body.x+Math.min(3,body.w*.05))continue;
   if(boxes.some(b=>Math.abs(b.y+b.h-body.y-body.h)>body.h*.35))continue;
-  const letters=await readUnitLetters(groups,options);
+  const letters=await readUnitLetters(groups,options,true);
   let word=letters.map(r=>r?.char).join('');
   if(word==='l'&&letters[0].penLabel==='L')word='L';
   if(!['m','cm','km','kg','mg','ml','g','L'].includes(word)||
     letters.some((r,i)=>!r||!r.trusted&&!(word==='ml'&&i===1&&r.narrowL)))continue;
+  if(word==='ml'&&letters[1].penOnly&&
+    (boxes[1].h<boxes[0].h*1.15||boxes[1].w>boxes[1].h*.90))continue;
   const read=await readUnitPrefix(prefix,W,H,options,true);if(!read)continue;
   // A standalone g needs the visible descender that separates it from 6/9.
   if(word==='g'){
@@ -1092,10 +1144,10 @@ async function recognizeUnitComponents(strokes,W,H,options){
   }
   // Group only the unit's ink. A wide m written in two strokes must not be
   // split by the numeric segmenter's narrower glyph-width limit.
-  const groups=groupUnitInk(baseline);
+  const groups=groupMeasurementInk(baseline);
   const tokens=groups.map(parts=>({parts}));
   if(!tokens.length||tokens.length>2)continue;
-  const letters=await readUnitLetters(groups,options),word=letters.map(r=>r?.char).join('');
+  const letters=await readUnitLetters(groups,options,true),word=letters.map(r=>r?.char).join('');
   if(!['m','cm','km'].includes(word)||letters.some(r=>!r?.trusted))continue;
   let number='',numberTokens=[],numberUncertain=[];
   if(prefix.length){
@@ -1268,7 +1320,13 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
   if(measured&&!measured.uncertain?.length)return reconcile(measured);
   // Preserve the existing whole-selection teaching priority over generic
   // digit and letter inference for standalone taught units and symbols.
-  if(notation)return reconcile(notation);
+  if(notation){
+   // A complete numeric prefix plus independently read unit letters is
+   // stronger measurement structure than a whole-selection word silhouette.
+   const baseline=await recognizeBaseUnitComponents(strokes,W,H,options);
+   if(baseline)return reconcile(baseline);
+   return reconcile(notation);
+  }
   if(loopedStandaloneL(strokes,W,H)){
    const taught=window.WhiteboardTeacherUnits?.rank?.(strokes,W,H,{only:['L']})?.[0];
    if(taught?.label==='L'&&taught.score>=.85){
@@ -1479,5 +1537,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-detached-four1';
+window.WhiteboardHandwritingMath.build='20261020-measurement-consensus1';
 })();
