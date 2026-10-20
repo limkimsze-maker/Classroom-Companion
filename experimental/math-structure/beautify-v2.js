@@ -158,6 +158,18 @@ async function review(group){
   const leading=/^\s*[=＝]\s*\d+(?:\.\d+)?(?:\s*[+−\-×÷*/]\s*\d+(?:\.\d+)?)*\s*$/;
   // Incomplete leading '=' equations are valid teacher notation, not complete answers.
   // Never let optional arithmetic correction block this notation.
+  if(!correctionToggle.checked&&raw&&raw.length<=180){
+   const direct=leadingEqualsFallback(raw,b,colourSelect.value);
+   if(direct)return direct;
+   const rendered=modeSelect.value==='math'&&!math?.unitText(raw)?math?.create(raw,b,colourSelect.value):equation?.createHandwriting(raw,b,colourSelect.value);
+   if(rendered)return rendered;
+   // Plain-text preview is allowed without arithmetic checking; escape SVG entities.
+   const safe=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+   const ink=/^#[0-9a-f]{6}$/i.test(colourSelect.value)?colourSelect.value:'#17324d';
+   const W=Math.max(8,b.w*Math.max(1,cssW)),H=Math.max(8,b.h*Math.max(1,cssH));
+   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><text x="1" y="'+(H*.76)+'" textLength="'+Math.max(4,W-2)+'" lengthAdjust="spacingAndGlyphs" fill="'+ink+'" font-family="Arial,sans-serif" font-size="'+Math.max(12,H*.72)+'">'+safe+'</text></svg>';
+   return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),x:b.x,y:b.y,w:W/Math.max(1,cssW),h:H/Math.max(1,cssH),smartGenerated:true,smartType:'equation',smartId:'v2-direct-'+Date.now().toString(36),smartOriginal:[],equationExpression:raw,equationLayout:'in-place-math',equationColour:ink};
+  }
   if(leading.test(raw))return leadingEqualsFallback(raw,b,colourSelect.value);
   if(leading.test(value))return leadingEqualsFallback(value,b,colourSelect.value);
   return modeSelect.value==='math'&&!math?.unitText(value)?math?.create(value,b,colourSelect.value):equation?.createHandwriting(value,b,colourSelect.value);
