@@ -27,7 +27,7 @@ function fixture({missingModel=false,read}={}){
   setTimeout(fn,ms){if(ms>=100){const id=++serial;timers.set(id,{fn,ms});return id}return setTimeout(fn,0)},
   clearTimeout(id){if(timers.has(id))timers.delete(id);else clearTimeout(id)},
   canvas:{releasePointerCapture(){}},strokes:[raw],cssW:800,cssH:600,tool:'select',redraw(){},syncUi(){},addEventListener(){},
-  WhiteboardHandwritingMath:{build:'20261020-words2',recognize:read||(()=>Promise.resolve(result)),rasterDigit(){}},
+  WhiteboardHandwritingMath:{build:fs.readFileSync('whiteboard-handwriting-recognition-beta.js','utf8').match(/WhiteboardHandwritingMath\.build='([^']+)'/)[1],recognize:read||(()=>Promise.resolve(result)),rasterDigit(){}},
   WhiteboardHandwritingLearning:{confirm(){confirmed++;return{count:1,persistent:true}},undo(){}},
   WhiteboardEquationFormatter:{font:()=> 'Arial',createHandwriting:(text,b,colour)=>text?{type:'image',src:'preview:'+text,colour,...b}:null},
   WhiteboardCharacterReader:{cancel(){cancellations++}},WhiteboardMarqueeSelection:{get:()=>ctx.strokes,clear(){}}};
@@ -42,6 +42,15 @@ function fixture({missingModel=false,read}={}){
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 async function until(test){for(let i=0;i<30;i++){if(test())return;await tick()}assert(test(),'asynchronous job started')}
 (async()=>{
+ // A cached old reader must reload the version required by the live page.
+ const stale=fixture();stale.ctx.WhiteboardHandwritingMath.build='old-cached-reader';
+ const loadingReader=stale.id('handwritingBeautifyBtn').click();
+ await until(()=>stale.head.children.some(e=>e.tagName==='SCRIPT'));
+ const request=stale.head.children.find(e=>e.tagName==='SCRIPT');
+ const currentBuild=fs.readFileSync('whiteboard-handwriting-recognition-beta.js','utf8').match(/WhiteboardHandwritingMath\.build='([^']+)'/)[1];
+ assert.equal(request.src,'whiteboard-handwriting-recognition-beta.js?v='+currentBuild);
+ stale.ctx.WhiteboardHandwritingMath.build=currentBuild;request.onload();await loadingReader;
+ assert.equal(stale.id('handwritingReadText').value,'cat');await stale.button('Cancel').click();
  // A never-resolving read used to keep Apply disabled even after manual input.
  let finish,signal;
  const typed=fixture({read:(_s,_w,_h,o)=>{signal=o.signal;return new Promise(resolve=>finish=resolve)}});

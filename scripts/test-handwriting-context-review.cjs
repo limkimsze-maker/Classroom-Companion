@@ -26,7 +26,7 @@ let recognition={text:'10 m²',tokens:[],uncertain:[{char:'?',score:0}],engine:'
 let confirmed=[],undone=[],cancelled=0;
 const ctx={document,console,Math,JSON,Number,Set,setTimeout,clearTimeout,encodeURIComponent,AbortController,
  canvas:{releasePointerCapture(){}},strokes:[raw],cssW:800,cssH:600,tool:'select',redraw(){},syncUi(){},addEventListener(){},requestAnimationFrame:fn=>setTimeout(fn,0),
- WhiteboardHandwritingMath:{build:'20261020-words2',recognize:async()=>recognition,rasterDigit(){}},
+ WhiteboardHandwritingMath:{build:fs.readFileSync('whiteboard-handwriting-recognition-beta.js','utf8').match(/WhiteboardHandwritingMath\.build='([^']+)'/)[1],recognize:async()=>recognition,rasterDigit(){}},
  WhiteboardHandwritingLearning:{confirm(...args){confirmed.push(args);return{count:1,persistent:true}},undo:tx=>undone.push(tx)},
  WhiteboardEquationFormatter:{font:()=> 'Arial',createHandwriting:(text,b,colour)=>text?{type:'image',src:'preview:'+text,colour,...b}:null},
  WhiteboardCharacterReader:{cancel(){cancelled++}},WhiteboardMarqueeSelection:{get:()=>ctx.strokes,clear(){}}};

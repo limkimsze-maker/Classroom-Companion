@@ -27,6 +27,8 @@ These are correlated compositions of UJI V1 glyphs with generated operators, reu
 - Join almost exactly shared endpoints of separately lifted unit strokes. Compare superscript height with the tallest baseline glyph while retaining its vertical lift, rightward position and baseline clearance checks. The six-stroke m plus three-stroke ² fixture now reads 1 m².
 - Flag isolated letter/digit disagreements in Auto rather than returning a confident Y when the pen model strongly favours 4. Explicit letter modes and personal corrections retain priority.
 
+The page audit also found the UI loaders still required build `20261020-words2`. Both page/controller pairs now request and accept the current reader build. A regression checks the HTML/controller/reader version agreement; the stalled-read fixture exercises reloading a cached old reader and successfully starting recognition.
+
 No training samples, weights, paid services, writer-specific cases or fixed equations were added to the reader.
 
 ## Seven older failing checks
