@@ -13,6 +13,10 @@ on:
       - scripts/test-priority5-audit.cjs
       - scripts/test-natural-operator-geometry.cjs
       - scripts/test-stacked-fraction-structure.cjs
+      - scripts/test-square-root-structure.cjs
+      - scripts/helpers/square-root-fixtures.cjs
+      - whiteboard-handwriting-math-render-beta.js
+      - smart-math-equation-pretty-v1.js
       - scripts/replay-natural-ink-current.cjs
       - scripts/test-unit-components.cjs
       - scripts/test-unit-first-exponent-zero.cjs
@@ -42,6 +46,7 @@ jobs:
         run: |
           node scripts/test-natural-operator-geometry.cjs
           node scripts/test-stacked-fraction-structure.cjs
+          node scripts/test-square-root-structure.cjs
           node scripts/test-priority5-audit.cjs
           node scripts/test-unit-components.cjs
           node scripts/test-unit-first-exponent.cjs

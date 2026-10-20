@@ -1,0 +1,65 @@
+{
+  "build": "20261020-square-root1",
+  "readerSha256": "ff7dc2759cb8c0b40899e52a2a38297cd6f7ddd50c17518a52d74096fdb07f3a",
+  "scope": "Numeric square roots with a roof and optional complete numeric equality; one or two radical strokes.",
+  "generatedSquareRootCases": {
+    "correct": 56,
+    "total": 56,
+    "reviewed": 16,
+    "independentNaturalAccuracy": false
+  },
+  "browserUi": {
+    "pages": [
+      "whiteboard-smart-beta.html",
+      "whiteboard-comer-beta.html"
+    ],
+    "viewports": [
+      "desktop",
+      "mobile"
+    ],
+    "checks": [
+      "Auto recognition",
+      "production worker/Node parity",
+      "MathJax msqrt",
+      "Unicode full-number radicand",
+      "Apply",
+      "Undo",
+      "return to pen",
+      "standalone root symbol",
+      "no outside requests"
+    ],
+    "passed": true
+  },
+  "existingNaturalBatch": {
+    "stage": "development-replay",
+    "summary": {
+      "correct": 24,
+      "total": 24,
+      "attempted": 24,
+      "skipped": 0,
+      "flagged": 6,
+      "unflaggedWrong": 0,
+      "exactPercent": 100,
+      "characterErrorPercent": 0
+    },
+    "independentValidation": false,
+    "containsSquareRoots": false
+  },
+  "frozenComposedUjiV1": {
+    "correct": 840,
+    "total": 924,
+    "exactPercent": 90.9090909090909,
+    "characterErrorPercent": 3.505392912172573,
+    "flagged": 241,
+    "unflaggedWrong": 55,
+    "p50ms": 86,
+    "p95ms": 235
+  },
+  "changedBenchmarkTexts": 0,
+  "previouslyCorrectRegressions": 0,
+  "nodeChecksPassed": 41,
+  "frozenNaturalBrowserWorkflowPassed": true,
+  "previousFractionUiPassed": true,
+  "rawTeacherInkIncluded": false,
+  "exactScreenshotPenReplayAvailable": false
+}

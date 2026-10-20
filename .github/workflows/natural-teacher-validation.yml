@@ -3,6 +3,14 @@ on:
   push:
     paths:
       - handwriting-teacher-validation.html
+      - whiteboard-smart-beta.html
+      - whiteboard-comer-beta.html
+      - scripts/test-square-root-browser.cjs
+      - scripts/helpers/square-root-fixtures.cjs
+      - whiteboard-handwriting-recognition-beta.js
+      - whiteboard-handwriting-math-render-beta.js
+      - smart-math-equation-pretty-v1.js
+      - whiteboard-handwriting-beautify*beta.js
       - validation/priority6/**
       - scripts/benchmark-natural-teacher-ink.cjs
       - scripts/test-natural-teacher-validation*.cjs
@@ -27,3 +35,7 @@ jobs:
         env:
           NODE_PATH: /tmp/natural-ink-check/node_modules
         run: node scripts/test-natural-teacher-validation-browser.cjs
+      - name: Verify square roots in both whiteboards on desktop and mobile
+        env:
+          NODE_PATH: /tmp/natural-ink-check/node_modules
+        run: node scripts/test-square-root-browser.cjs
