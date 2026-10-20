@@ -331,9 +331,26 @@ async function radicalExpression(inside,W,H,options){
  const output=[],tokens=[],uncertain=[];let pending=[];
  const flush=async()=>{
   if(!pending.length)return true;
-  let result=await recognizeNumericContext(pending.map(p=>p.raw),W,H,options);
-  let trailing=null;
-  if(!result&&pending.length>=2){
+  // Before a bracket, a two-stroke plus must be extracted as a single
+  // operator. Otherwise the vertical stroke can become a spurious '1'
+  // and the horizontal stroke a minus sign (e.g. 8+(10) -> 81-(10)).
+  let trailing=null, numericParts=pending;
+  if(pending.length>=3){
+   const last=pending.slice(-2),a=last[0].box,b=last[1].box;
+   const horizontal=a.w>a.h*2.5?last[0]:b.w>b.h*2.5?last[1]:null;
+   const vertical=a.h>a.w*2.5?last[0]:b.h>b.w*2.5?last[1]:null;
+   if(horizontal&&vertical){
+    const h=horizontal.box,v=vertical.box;
+    const crossX=v.cx>=h.x+h.w*.12&&v.cx<=h.x+h.w*.88;
+    const crossY=h.cy>=v.y+v.h*.12&&h.cy<=v.y+v.h*.88;
+    if(crossX&&crossY){
+     trailing={char:'+',score:.98,parts:[horizontal.scaled,vertical.scaled],engine:'radical-crossed-plus'};
+     numericParts=pending.slice(0,-2);
+    }
+   }
+  }
+  let result=await recognizeNumericContext(numericParts.map(p=>p.raw),W,H,options);
+  if(!result&&!trailing&&pending.length>=2){
    const last=pending.at(-1),candidate=segment([last.raw],W,H)[0];
    if(candidate&&['+','−','×','÷'].includes(candidate.char)){
     trailing=candidate;
@@ -1908,5 +1925,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-bracket-number6';
+window.WhiteboardHandwritingMath.build='20261020-radical-plus7';
 })();
