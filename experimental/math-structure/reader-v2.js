@@ -628,6 +628,52 @@ function operatorAccent(dot,group,height){
 
 // Compact equals bars may be shorter than the pen width. Resolve the pair
 // from parallel pen travel and spacing, never from the arithmetic answer.
+// A dot-like short bar is ambiguous in isolation. Only propose an equals
+// pair when independent digit evidence anchors BOTH sides of its ink slot.
+function asymmetricEqualsPairV2(p,q,marks){
+ const long=p.b.w>=q.b.w?p:q,short=long===p?q:p,ink=Math.max(p.ink,q.ink),a=long.b,b=short.b;
+ if(a.w<ink*2.2||a.w<Math.max(1,b.w)*3.2||b.w>ink*1.6||b.h>ink*.9)return null;
+ const line=operatorStroke(long.scaled);if(!line.horizontal)return null;
+ if(b.cx<a.x-ink*.2||b.cx>a.x+a.w+ink*.2)return null;
+ const sep=Math.abs(a.cy-b.cy);if(sep<ink*.8||sep>a.w*.95+ink)return null;
+ const box=bounds([p.scaled,q.scaled]);
+ const tall=marks.filter(m=>m!==p&&m!==q&&m.b.h>=ink*3);
+ const left=tall.filter(m=>m.b.x+m.b.w<box.x-ink*.25).sort((a,b)=>b.b.x+b.b.w-a.b.x-a.b.w)[0];
+ const right=tall.filter(m=>m.b.x>box.x+box.w+ink*.25).sort((a,b)=>a.b.x-b.b.x)[0];
+ if(!left||!right)return null;
+ const height=Math.min(left.b.h,right.b.h);
+ if(a.w>height*1.25||sep>height*.65||Math.abs(left.b.cy-box.cy)>height*.55||Math.abs(right.b.cy-box.cy)>height*.55)return null;
+ if(box.x-left.b.x-left.b.w>height*1.6||right.b.x-box.x-box.w>height*1.6)return null;
+ // A third dot or mark in this operator column belongs to a division sign
+// or another symbol; never consume only two strokes of a three-stroke ÷.
+ if(marks.some(m=>m!==p&&m!==q&&m.b.cx>=a.x-ink&&m.b.cx<=a.x+a.w+ink&&
+  Math.abs(m.b.cy-a.cy)<=height*.65))return null;
+ const numeric=m=>{
+  const pixels=rasterDigit([m.scaled]),digit=predictDigit(pixels)[0];
+  if(!/^\d$/.test(digit?.char||'')||digit.score<.70)return false;
+  const pen=window.WhiteboardUjiReader?.read([m.scaled.points])||[],mixed=window.WhiteboardCharacterInference?.predict(pixels,'auto')||[];
+  const aliases={O:'0',o:'0',I:'1',l:'1',Z:'2',z:'2',S:'5',s:'5',B:'8',g:'9',q:'9'};
+  const same=char=>char===digit.char||aliases[char]===digit.char;
+  const penSupport=pen.reduce((sum,c)=>sum+(same(c.label)?c.p:0),0);
+  const imageSupport=mixed.reduce((sum,c)=>sum+(same(c.char)?c.score:0),0);
+  return penSupport>=.70&&imageSupport>=.90;
+ };
+ if(!numeric(left)||!numeric(right))return null;
+ return{indices:[p.index,q.index],center:box.cx,token:{char:'=',score:.72,x:box.x,parts:[p.scaled,q.scaled],engine:'local-asymmetric-equals-v2'}};
+}
+function reviewAsymmetricEqualsV2(reading,options){
+ if((options.mode||'auto')!=='auto'||!reading?.tokens?.some(t=>t.engine==='local-asymmetric-equals-v2'))return reading;
+ if(!/^[\d\s.+−\-×÷=]+$/.test(reading.text))return reading;
+ const equals=reading.tokens.filter(t=>t.char==='='),offsets=[...reading.text.matchAll(/=/g)].map(m=>m.index);
+ if(equals.length!==offsets.length)return reading;
+ const choices=[{text:reading.text,tokens:reading.tokens,original:true}];
+ for(let i=0;i<equals.length&&choices.length<3;i++)if(equals[i].engine==='local-asymmetric-equals-v2'){
+  const at=offsets[i],text=reading.text.slice(0,at)+'÷'+reading.text.slice(at+1);
+  choices.push({text,tokens:reading.tokens.map(t=>t===equals[i]?{...t,char:'÷',score:.5}:t),original:false});
+ }
+ return{...reading,context:{model:'local-asymmetric-equals-v2',kind:'operator',needsReview:true,alternatives:choices}};
+}
+
 function compactEqualsPairsV2(strokes,W,H){
  if(!Array.isArray(strokes)||strokes.length<2||strokes.length>100||!(W>0&&H>0))return[];
  const marks=strokes.map((source,index)=>{
@@ -641,7 +687,9 @@ function compactEqualsPairsV2(strokes,W,H){
  }).filter(Boolean);
  const candidates=[];
  for(let i=0;i<marks.length;i++)for(let j=i+1;j<marks.length;j++){
-  const p=marks[i],q=marks[j];if(!p.bar||!q.bar)continue;
+  const p=marks[i],q=marks[j],asymmetric=asymmetricEqualsPairV2(p,q,marks);
+  if(asymmetric){candidates.push(asymmetric);continue}
+  if(!p.bar||!q.bar)continue;
   const a=p.b,b=q.b,ink=Math.max(p.ink,q.ink),short=Math.min(a.w,b.w),long=Math.max(a.w,b.w),avg=(a.w+b.w)/2;
   const sep=Math.abs(a.cy-b.cy),overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
   if(long<ink*1.5||long/short>3.6||overlap<short*.4||Math.abs(p.slope-q.slope)>.40)continue;
@@ -2537,7 +2585,7 @@ function reviewThreeStrokeDivision(reading,strokes,W,H){
 }
 async function recognize(strokes,W,H,options={}){
  checkCancelled(options);
- const preliminary=reviewIsolatedDisagreement(reviewThreeStrokeDivision(restoreEmbeddedEquals(await recognizeBeforeContext(strokes,W,H,options),strokes,W,H),strokes,W,H),options);
+ const preliminary=reviewAsymmetricEqualsV2(reviewIsolatedDisagreement(reviewThreeStrokeDivision(restoreEmbeddedEquals(await recognizeBeforeContext(strokes,W,H,options),strokes,W,H),strokes,W,H),options),options);
  let reading=preliminary;
  try{reading=await glyphV2.review(strokes,W,H,options,preliminary)}catch(error){if(error?.name==='AbortError')throw error;}
  checkCancelled(options);
@@ -2561,5 +2609,5 @@ const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStro
 const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});
 const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261021-v2-compact-signs2';
+window.WhiteboardHandwritingMath.build='20261021-v2-asymmetric-equals3';
 })();

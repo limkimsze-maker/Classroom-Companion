@@ -2,7 +2,7 @@
 // Generated signs and existing UJI V1 digits; no private handwriting is stored.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const createContext=require('../../scripts/helpers/handwriting-context.cjs');
-const {eq,divide,equation,W,H}=require('./sign-fixtures.cjs');
+const {eq,divide,asymmetric,equation,W,H}=require('./sign-fixtures.cjs');
 const ctx=createContext(),baseline=createContext();
 vm.runInContext(fs.readFileSync('experimental/math-structure/reader-v2.js','utf8'),ctx);
 const reader=ctx.WhiteboardHandwritingMath;
@@ -23,6 +23,21 @@ function coverage(result,ink){const sources=result.tokens.flatMap(t=>t.parts.map
    const r=await reader.recognize(strokes,W,H,{mode:'auto'});assert.equal(r.text.replace(/\s/g,''),a+'÷'+b+'='+c,variant+' preserves the written answer');coverage(r,strokes);controls++;
   }
  }
+ // Screenshot-derived class: one dot-like short stroke and one longer bar.
+ // Generated strokes only; the new screenshot supplied no original pen JSON.
+ for(const answer of ['5','7'])for(const [variant,strokes]of variants(equation('10','2',answer,divide,1,asymmetric))){
+  const r=await reader.recognize(strokes,W,H,{mode:'auto'});assert.equal(r.text.replace(/\s/g,''),'10÷2='+answer,variant+' uneven equals');coverage(r,strokes);
+  assert(r.uncertain.length,'Dot-like bar remains uncertain');
+  assert(r.context?.alternatives.some(c=>c.text.replace(/\s/g,'')==='10÷2='+answer),'Equals alternative visible');
+  assert(r.context?.alternatives.some(c=>c.text.replace(/\s/g,'')==='10÷2÷'+answer),'Incomplete-division alternative visible');controls++;
+ }
+ const smallDash=[S([[9,0],[11,1]]),asymmetric[1]];
+ for(const [variant,strokes]of variants(equation('18','3','6',divide,1,smallDash))){
+  const r=await reader.recognize(strokes,W,H,{mode:'auto'});assert.equal(r.text.replace(/\s/g,''),'18÷3=6',variant);controls++;
+ }
+ const dottedDivision=[...asymmetric,S([[13,25]])];
+ for(const strokes of [asymmetric,dottedDivision,equation('10','2','5',divide,1,dottedDivision)])
+  assert(!reader.segment(strokes,W,H).some(t=>t.engine==='local-asymmetric-equals-v2'),'No promotion without two numeric anchors or with a third division dot');
  // A true crossed multiplication sign is never globally replaced with equals.
  const times=[S([[0,-17],[24,17]]),S([[0,17],[24,-17]])];
  for(const [variant,strokes]of variants(equation('3','2','6',times))){
