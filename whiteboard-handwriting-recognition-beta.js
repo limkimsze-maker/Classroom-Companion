@@ -1124,9 +1124,13 @@ async function recognizeUnitFirst(strokes,W,H,options){
    // A disagreement without that evidence is not a reliable cubic reading.
    const unsupportedCube=trainedPower.label==='³'&&best.label.endsWith('²')&&!contourThree;
    if(unsupportedCube){
-    const square=candidates.find(x=>x.label===best.label.replace('³','²'));
     const cubicScore=cubic?.score||0;
-    if(best.score>=.83&&best.score-cubicScore>=.08)unit=best.label;
+    // Do not turn an independently trained ³ into ² merely because the
+    // whole-unit prototype narrowly prefers squared. Preserve the cubic
+    // reading when the complete-unit candidates themselves nearly tie.
+    const closePowerVote=cubic&&cubicScore>=.80&&best.score-cubicScore<.08;
+    if(closePowerVote)unit=cubic.label;
+    else if(best.score>=.83&&best.score-cubicScore>=.08)unit=best.label;
     else unit=null;
    }else if(!contradictsSquare)unit=best.label.replace(/[²³]$/,trainedPower.label);
    else if(best.score<.90)unit=null;
