@@ -1,0 +1,59 @@
+{
+  "note": "One existing teacher expression with correlated geometric variants; development controls, not independent writer accuracy.",
+  "records": [
+    {
+      "name": "original",
+      "expected": "\\sqrt{8+(10)}",
+      "v1": "V − 8 + 11J",
+      "v2": "\\sqrt{8+(10)}",
+      "v1Correct": false,
+      "v2Correct": true,
+      "flagged": true
+    },
+    {
+      "name": "translated",
+      "expected": "\\sqrt{8+(10)}",
+      "v1": "V − 8 + 11J",
+      "v2": "\\sqrt{8+(10)}",
+      "v1Correct": false,
+      "v2Correct": true,
+      "flagged": true
+    },
+    {
+      "name": "smaller",
+      "expected": "\\sqrt{8+(10)}",
+      "v1": "V − 8 + 11J",
+      "v2": "\\sqrt{8+(10)}",
+      "v1Correct": false,
+      "v2Correct": true,
+      "flagged": true
+    },
+    {
+      "name": "larger",
+      "expected": "\\sqrt{8+(10)}",
+      "v1": "V − 8 + 11J",
+      "v2": "\\sqrt{8+(10)}",
+      "v1Correct": false,
+      "v2Correct": true,
+      "flagged": true
+    },
+    {
+      "name": "reordered strokes",
+      "expected": "\\sqrt{8+(10)}",
+      "v1": "V − 8 + 11J",
+      "v2": "\\sqrt{8+(10)}",
+      "v1Correct": false,
+      "v2Correct": true,
+      "flagged": true
+    },
+    {
+      "name": "reversed pen direction",
+      "expected": "\\sqrt{8+(10)}",
+      "v1": "V − 8 + 11J",
+      "v2": "\\sqrt{8+(10)}",
+      "v1Correct": false,
+      "v2Correct": true,
+      "flagged": true
+    }
+  ]
+}

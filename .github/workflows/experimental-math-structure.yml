@@ -12,14 +12,28 @@ permissions:
 jobs:
   isolated-structure:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify protected V1 and production files are unchanged
+        run: node experimental/math-structure/check-preservation.cjs
       - name: Experimental spatial graph actual-ink test
         run: node experimental/math-structure/test-graph.cjs
-      - name: Existing teacher root control
-        run: node scripts/test-square-root-real-teacher-ink.cjs
-      - name: Existing complete-expression structural regressions
-        run: node scripts/test-math-structure-regression.cjs
+      - name: Paired actual teacher expression and transform controls
+        run: |
+          mkdir -p v2-validation
+          node experimental/math-structure/test-candidate.cjs v2-validation/structure-paired.json
+      - name: Existing regression suites against isolated V2
+        run: node experimental/math-structure/regressions.cjs v2-validation/regressions.json
+      - name: Compare V1 and V2 on the identical frozen 924-case benchmark
+        run: node experimental/math-structure/paired-benchmark.cjs v2-validation/paired-report.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: isolated-v2-validation
+          path: v2-validation/
