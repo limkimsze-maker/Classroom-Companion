@@ -12,7 +12,7 @@
       "actual": "\\sqrt{\\frac{3}{4}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 1835,
+      "ms": 1155,
       "v1": "1 = 43",
       "v1Correct": false,
       "candidates": [
@@ -42,7 +42,7 @@
       "actual": "\\sqrt{\\frac{3}{4}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 265,
+      "ms": 200,
       "v1": "1 = 43",
       "v1Correct": false,
       "candidates": [
@@ -72,7 +72,7 @@
       "actual": "\\frac{1}{\\sqrt{9}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 1675,
+      "ms": 1089,
       "v1": "= ln9",
       "v1Correct": false,
       "candidates": [
@@ -112,7 +112,7 @@
       "actual": "\\frac{1}{\\sqrt{9}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 240,
+      "ms": 152,
       "v1": "= ln9",
       "v1Correct": false,
       "candidates": [
@@ -152,7 +152,7 @@
       "actual": "\\frac{\\frac{1}{2}}{3}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 710,
+      "ms": 440,
       "v1": "− − 2n3",
       "v1Correct": false,
       "candidates": [
@@ -182,7 +182,7 @@
       "actual": "\\frac{\\frac{1}{2}}{3}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 373,
+      "ms": 228,
       "v1": "− − 2n3",
       "v1Correct": false,
       "candidates": [
@@ -212,7 +212,7 @@
       "actual": "\\frac{1}{\\frac{2}{3}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 390,
+      "ms": 243,
       "v1": "− − 2n3",
       "v1Correct": false,
       "candidates": [
@@ -242,7 +242,7 @@
       "actual": "\\frac{1}{\\frac{2}{3}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 276,
+      "ms": 173,
       "v1": "− − 2n3",
       "v1Correct": false,
       "candidates": [
@@ -272,7 +272,7 @@
       "actual": "\\sqrt{(3+4)}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 1453,
+      "ms": 957,
       "v1": "1 − 63 + 41",
       "v1Correct": false,
       "candidates": [
@@ -312,7 +312,7 @@
       "actual": "\\sqrt{(3+4)}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 445,
+      "ms": 284,
       "v1": "1 − 63 + 41",
       "v1Correct": false,
       "candidates": [
@@ -352,7 +352,7 @@
       "actual": "\\sqrt{\\sqrt{9}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 410,
+      "ms": 272,
       "v1": "\\sqrt{9}",
       "v1Correct": false,
       "candidates": [
@@ -387,7 +387,7 @@
       "actual": "\\sqrt{\\sqrt{9}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 103,
+      "ms": 69,
       "v1": "\\sqrt{9}",
       "v1Correct": false,
       "candidates": [
@@ -422,7 +422,7 @@
       "actual": "\\frac{2^{3}}{4}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 232,
+      "ms": 158,
       "v1": "\\frac{23}{4}",
       "v1Correct": false,
       "candidates": [
@@ -447,7 +447,7 @@
       "actual": "\\frac{2^{3}}{4}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 260,
+      "ms": 167,
       "v1": "\\frac{23}{4}",
       "v1Correct": false,
       "candidates": [
@@ -472,7 +472,7 @@
       "actual": "\\frac{1}{2}+3",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 346,
+      "ms": 221,
       "v1": "− 21 + 3",
       "v1Correct": false,
       "candidates": [
@@ -502,7 +502,7 @@
       "actual": "\\frac{1}{2}+3",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 216,
+      "ms": 120,
       "v1": "− 21 + 3",
       "v1Correct": false,
       "candidates": [
@@ -532,7 +532,7 @@
       "actual": "\\frac{3+4}{2}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 499,
+      "ms": 235,
       "v1": "32 + 4",
       "v1Correct": false,
       "candidates": [
@@ -557,7 +557,7 @@
       "actual": "\\frac{3+4}{2}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 504,
+      "ms": 251,
       "v1": "32 + 4",
       "v1Correct": false,
       "candidates": [
@@ -582,7 +582,7 @@
       "actual": "\\sqrt{\\frac{7}{8}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 736,
+      "ms": 416,
       "v1": "\\sqrt{- 78}",
       "v1Correct": false,
       "candidates": [
@@ -612,7 +612,7 @@
       "actual": "\\sqrt{\\frac{7}{8}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 160,
+      "ms": 74,
       "v1": "\\sqrt{- 78}",
       "v1Correct": false,
       "candidates": [
@@ -642,7 +642,7 @@
       "actual": "\\sqrt{\\frac{10}{20}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 707,
+      "ms": 347,
       "v1": "\\sqrt{- 2100}",
       "v1Correct": false,
       "candidates": [
@@ -682,7 +682,7 @@
       "actual": "\\sqrt{\\frac{10}{20}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 233,
+      "ms": 116,
       "v1": "\\sqrt{- 2100}",
       "v1Correct": false,
       "candidates": [
@@ -722,7 +722,7 @@
       "actual": "\\sqrt{\\frac{9}{0}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 135,
+      "ms": 77,
       "v1": "\\sqrt{- 09}",
       "v1Correct": false,
       "candidates": [
@@ -752,7 +752,7 @@
       "actual": "\\sqrt{\\frac{9}{0}}",
       "correct": true,
       "engine": "local-structural-v2",
-      "ms": 129,
+      "ms": 64,
       "v1": "\\sqrt{- 09}",
       "v1Correct": false,
       "candidates": [

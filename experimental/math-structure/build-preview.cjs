@@ -5,7 +5,8 @@ const root=path.resolve(__dirname,'../..'),source=build();
 const version=source.match(/WhiteboardHandwritingMath\.build='([^']+)'/)[1];
 let controller=fs.readFileSync(path.join(root,'whiteboard-handwriting-beautify-beta.js'),'utf8');
 controller=controller.replace(/const readerBuild='[^']+'/,`const readerBuild='${version}'`)
- .replace("['whiteboard-handwriting-recognition-beta.js',","['experimental/math-structure/reader-v2.js',");
+ .replace("['whiteboard-handwriting-recognition-beta.js',","['experimental/math-structure/reader-v2.js',")
+ .replace("'Lowercase or uppercase? Choose the letter you intended.':'Possible readings", "'Lowercase or uppercase? Choose the letter you intended.':result.context.kind==='glyphs'?\n   'Possible characters — compare these choices with your handwriting.':'Possible readings");
 let html=fs.readFileSync(path.join(root,'whiteboard-smart-beta.html'),'utf8');
 html=html.replace('<head>','<head>\n<script src="experimental/math-structure/preview-bootstrap.js?v='+version+'"></script>')
  .replace(/whiteboard-handwriting-recognition-beta\.js\?v=[^"']+/g,'experimental/math-structure/reader-v2.js?v='+version)

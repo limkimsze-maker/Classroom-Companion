@@ -1,0 +1,203 @@
+{
+  "method": "Known development errors, correlated transformations and changed quantities. No training; no independent accuracy claim.",
+  "records": [
+    {
+      "writer": 9,
+      "expected": "4",
+      "variant": "original",
+      "actual": "4",
+      "flagged": true,
+      "choices": [
+        "4",
+        "Y",
+        "y"
+      ]
+    },
+    {
+      "writer": 9,
+      "expected": "4",
+      "variant": "smaller and moved",
+      "actual": "4",
+      "flagged": true,
+      "choices": [
+        "4",
+        "Y",
+        "y"
+      ]
+    },
+    {
+      "writer": 9,
+      "expected": "4",
+      "variant": "reversed strokes and direction",
+      "actual": "4",
+      "flagged": true,
+      "choices": [
+        "4",
+        "Y",
+        "y"
+      ]
+    },
+    {
+      "writer": 9,
+      "expected": "5",
+      "variant": "original",
+      "actual": "5",
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s",
+        "j"
+      ]
+    },
+    {
+      "writer": 9,
+      "expected": "5",
+      "variant": "smaller and moved",
+      "actual": "5",
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s",
+        "j"
+      ]
+    },
+    {
+      "writer": 9,
+      "expected": "5",
+      "variant": "reversed strokes and direction",
+      "actual": "5",
+      "flagged": true,
+      "choices": [
+        "5",
+        "S",
+        "s",
+        "j"
+      ]
+    },
+    {
+      "writer": 10,
+      "expected": "97kg",
+      "variant": "original",
+      "actual": "97 kg",
+      "flagged": true
+    },
+    {
+      "writer": 10,
+      "expected": "97kg",
+      "variant": "smaller and moved",
+      "actual": "97 kg",
+      "flagged": true
+    },
+    {
+      "writer": 10,
+      "expected": "97kg",
+      "variant": "reversed strokes and direction",
+      "actual": "97 kg",
+      "flagged": true
+    },
+    {
+      "writer": 1,
+      "expected": "m",
+      "variant": "original",
+      "actual": "m",
+      "flagged": true,
+      "choices": [
+        "m",
+        "M"
+      ]
+    },
+    {
+      "writer": 1,
+      "expected": "m",
+      "variant": "smaller and moved",
+      "actual": "m",
+      "flagged": true,
+      "choices": [
+        "m",
+        "M"
+      ]
+    },
+    {
+      "writer": 1,
+      "expected": "m",
+      "variant": "reversed strokes and direction",
+      "actual": "m",
+      "flagged": true,
+      "choices": [
+        "m",
+        "M"
+      ]
+    },
+    {
+      "writer": 8,
+      "expected": "k",
+      "variant": "original",
+      "actual": "k",
+      "flagged": true,
+      "choices": [
+        "k",
+        "K"
+      ]
+    },
+    {
+      "writer": 8,
+      "expected": "k",
+      "variant": "smaller and moved",
+      "actual": "k",
+      "flagged": true,
+      "choices": [
+        "k",
+        "K"
+      ]
+    },
+    {
+      "writer": 8,
+      "expected": "k",
+      "variant": "reversed strokes and direction",
+      "actual": "k",
+      "flagged": true,
+      "choices": [
+        "k",
+        "K"
+      ]
+    },
+    {
+      "writer": 7,
+      "expected": "L",
+      "variant": "original",
+      "actual": "L",
+      "flagged": true,
+      "choices": [
+        "L",
+        "[",
+        "l"
+      ]
+    },
+    {
+      "writer": 7,
+      "expected": "L",
+      "variant": "smaller and moved",
+      "actual": "L",
+      "flagged": true,
+      "choices": [
+        "L",
+        "[",
+        "l"
+      ]
+    },
+    {
+      "writer": 7,
+      "expected": "L",
+      "variant": "reversed strokes and direction",
+      "actual": "L",
+      "flagged": true,
+      "choices": [
+        "L",
+        "[",
+        "l"
+      ]
+    }
+  ]
+}

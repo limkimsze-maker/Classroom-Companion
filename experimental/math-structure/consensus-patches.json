@@ -1,0 +1,18 @@
+[
+  {
+    "before": " const reading=reviewIsolatedDisagreement(await recognizeBeforeContext(strokes,W,H,options),options);",
+    "after": " const preliminary=reviewIsolatedDisagreement(await recognizeBeforeContext(strokes,W,H,options),options);\n let reading=preliminary;\n try{reading=await glyphV2.review(strokes,W,H,options,preliminary)}catch(error){if(error?.name==='AbortError')throw error;}"
+  },
+  {
+    "before": "   if(!review)continue;\n   word=review.word;",
+    "after": "   if(!review)review=compoundV2(groups,letters,suffix,prefix);\n   if(!review)continue;\n   word=review.word;"
+  },
+  {
+    "before": " let words=reading;\n try{words=await window.WhiteboardHandwritingWords?.check",
+    "after": " // Do not let the word/case layer erase a completed whole-glyph review.\n if(reading.context?.model==='existing-local-glyph-consensus')return reading;\n let words=reading;\n try{words=await window.WhiteboardHandwritingWords?.check"
+  },
+  {
+    "before": "async function recognizeBaseUnitComponents(strokes,W,H,options){\n if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>32)return null;\n const items=strokes.map(raw=>{\n  const scaled={size:Number(raw.size)||4,points:",
+    "after": "async function recognizeBaseUnitComponents(strokes,W,H,options){\n if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>32)return null;\n const items=strokes.map(raw=>{\n  const scaled={source:raw,size:Number(raw.size)||4,points:"
+  }
+]

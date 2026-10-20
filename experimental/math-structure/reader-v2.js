@@ -284,6 +284,128 @@ function createStructuralParser(hooks){
 global.WhiteboardStructuralParserFactory=createStructuralParser;
 })(typeof window==='object'?window:globalThis);
 
+/* Bounded whole-glyph consensus using the existing, unchanged local models.
+ * No fixture IDs, expected labels or handwriting samples are used here.
+ * Scores are model evidence, not calibrated confidence probabilities.
+ */
+(function(root){
+'use strict';
+root.WhiteboardGlyphReviewFactory=function({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled}){
+ const family=c=>/^[A-Za-z]$/.test(c)?c.toLowerCase():c;
+ const mass=(xs,label,weight,char)=>xs.reduce((n,p)=>n+(family(p[label])===family(char)?p[weight]:0),0);
+ async function review(strokes,W,H,options,reading){
+  if((options.mode||'auto')!=='auto'||!reading||reading.format==='latex'||strokes.length>6||!strokes.length||
+    /personal|teacher-confusable|trained-j|local-operator/.test(reading.engine||'')||
+    !root.WhiteboardUjiReader||!root.WhiteboardCharacterInference)return reading;
+  checkCancelled(options);
+  const parts=strokes.map(source=>({source,size:Number(source.size)||4,
+   points:source.points.map(p=>({x:p.x*W,y:p.y*H}))})),box=bounds(parts);
+  const wideLetter=strokes.length===1&&/^[A-Za-z]$/.test(reading.text)&&box.w<=box.h*4.5;
+  if(box.h<10||box.w>box.h*1.7&&!wideLetter)return reading;
+  // A full compact glyph may have several pen lifts. Separated neighbouring
+  // characters must keep their own decoding, including adjacent numerals.
+  const groups=groupMeasurementInk(parts.map(scaled=>({raw:scaled.source,scaled,box:bounds([scaled])})));
+  if(groups.length!==1)return reading;
+  const pixels=rasterDigit(parts),mixed=root.WhiteboardCharacterInference.predict(pixels,'auto'),
+   alpha=root.WhiteboardCharacterInference.predict(pixels,'lowercase'),
+   alternate=root.WhiteboardUjiReader.read(parts.map(p=>p.points));
+  if(!alternate?.length)return reading;
+  const best=alternate[0],fold=family(best.label),isLetter=/^[A-Za-z]$/.test(best.label),
+   support=mass(mixed,'char','score',fold),alphabet=mass(alpha,'char','score',fold),
+   same=mass(alternate,'label','p',fold);
+  let selected=String(reading.text),changed=false;
+  if(isLetter&&((same>=.50&&support>=.95&&alphabet>=.95)||
+    (same>=.85&&alphabet>=.25)||(same>=.985&&same-(alternate.find(p=>family(p.label)!==fold)?.p||0)>=.95))){
+   selected=best.label;changed=selected!==reading.text;
+  }
+  // Normalization removes absolute letter size. These letter pairs can have
+  // the same contour in either case; a weak case vote is not a new identity.
+  const caseOnly=/^[A-Za-z]$/.test(reading.text)&&family(reading.text)===family(selected)&&selected!==reading.text;
+  if(caseOnly&&('ckopsuvwxyz'.includes(family(selected))||best.p<.98)){
+   selected=reading.text;changed=false;
+  }
+  // Do not replace a letter supported by the mixed reader with an unrelated
+  // letter on a unilateral alternate-model vote. Keep both for correction.
+  if(/^[A-Za-z]$/.test(reading.text)&&family(reading.text)!==family(selected)&&
+    family(mixed[0]?.char||'')===family(reading.text)&&mixed[0].score>=.90){
+   selected=reading.text;changed=false;
+  }
+  // An isolated O/0, I/l/1 or S/5 supplies no additional context that would
+  // justify replacing an already read numeral with its letter silhouette.
+  if(({O:'0',o:'0',I:'1',l:'1',S:'5',s:'5',B:'8'})[best.label]===reading.text){
+   selected=reading.text;changed=false;
+  }
+  // Digit proposals need explicit mixed-model support. A digit-only model's
+  // top answer alone is never evidence that an isolated letter is a number.
+  const digit=predictDigit(pixels),digitBest=alternate.find(p=>/^\d$/.test(p.label));
+  if(!isLetter&&digitBest===best&&best.p>=.50){
+   const image=mixed.find(p=>p.char===best.label)?.score||0,
+    numeric= digit.find(p=>p.char===best.label)?.score||0,
+    familyImage=mass(mixed,'char','score',({0:'O',1:'I',2:'Z',5:'S',8:'B',9:'g'})[best.label]||best.label)+image;
+   if(image>=.05&&(best.p>=.90||numeric>=.05&&familyImage>=.90)){
+    selected=best.label;changed=selected!==reading.text;
+   }
+  }
+  const candidates=new Map();
+  const add=(text,score)=>{if(!/^[A-Za-z0-9\[\]()]$/.test(text))return;
+   const prior=candidates.get(text);if(!prior||score>prior.score)candidates.set(text,{text,score});};
+  add(selected,1);add(String(reading.text),.99);
+  for(const p of alternate.slice(0,4))if(p.p>=.04)add(p.label,p.p);
+  for(const p of mixed.slice(0,3))if(p.score>=.10)add(p.char,p.score);
+  // A plain vertical stem has a real 1/I/l ambiguity even when the numeric
+  // geometry rule assigns 1 a perfect score. Surface the supported letter.
+  for(const p of alpha.slice(0,2))if(p.score>=.25)add(p.char,p.score*.8);
+  const disputed=changed||selected.length!==1||
+   /^\d$/.test(selected)&&alpha[0]?.score>=.50&&alternate.some(p=>/^[A-Za-z]$/.test(p.label)&&p.p>=.15)||
+   best.label!==selected&&best.p>=.15||
+   /^[A-Za-z]$/.test(selected)&&(
+    mixed[0]?.char!==selected||alternate.some(p=>p.label!==selected&&p.p>=.04));
+  if(!disputed)return reading;
+  const token={char:selected,score:Math.min(.74,best.p),parts,x:box.x,
+   engine:'v2-whole-glyph-review',choices:[...candidates.values()].map(p=>({char:p.text,score:p.score}))};
+  const choices=[...candidates.values()].sort((a,b)=>b.score-a.score).slice(0,5)
+   .map(p=>({...p,tokens:[{...token,char:p.text}]}));
+  if(choices.length<2&&!changed)return reading;
+  const result={...reading,text:selected,tokens:[token],uncertain:[token],
+   engine:changed?'v2-whole-glyph-consensus':reading.engine,
+   format:/^[A-Za-z]$/.test(selected)?'letter':/^\d$/.test(selected)?'number':reading.format,
+   context:{kind:'glyphs',model:'existing-local-glyph-consensus',originalText:reading.text,
+    applied:changed,needsReview:true,alternatives:choices}};
+  checkCancelled(options);return result;
+ }
+ return{review};
+};
+})(typeof window==='undefined'?self:window);
+
+/* A component hypothesis must explain a complete compound unit, with a
+ * separate valid numeric prefix. Disagreements remain visible for review. */
+(function(root){
+'use strict';
+root.WhiteboardCompoundReviewFactory=function({bounds,rasterDigit}){
+ return function(groups,letters,suffix,prefix){
+  if(groups.length!==2||!root.WhiteboardUjiReader||!root.WhiteboardCharacterInference)return null;
+  const choices=groups.map(parts=>{
+   const ranked=root.WhiteboardUjiReader.read(parts.map(p=>p.points)),best=ranked?.[0];
+   if(!best||!/[A-Za-z]/.test(best.label))return null;
+   const char=best.label.toLowerCase(),same=ranked.reduce((n,p)=>n+(p.label.toLowerCase()===char?p.p:0),0),
+    other=ranked.find(p=>p.label.toLowerCase()!==char)?.p||0,
+    image=root.WhiteboardCharacterInference.predict(rasterDigit(parts),'lowercase'),
+    support=image.find(p=>p.char===char)?.score||0;
+   if(same<.75||same-other<.50)return null;
+   return{char,same,support};
+  });
+  if(choices.some(p=>!p))return null;
+  const word=choices.map(p=>p.char).join('');
+  // ml/L uses a separate prototype-backed cursive-l rule. Do not bypass it.
+  if(!['cm','km','kg','mg'].includes(word)||!choices.some(p=>p.same>=.85&&p.support>=.85))return null;
+  const body=bounds(suffix.map(p=>p.scaled)),numeric=bounds(prefix.map(p=>p.scaled));
+  if(word.endsWith('g')&&body.y+body.h<numeric.y+numeric.h+Math.max(body.h,numeric.h)*.09)return null;
+  return{word,score:Math.min(...choices.map(p=>p.same)),
+   confidence:choices.map(p=>Math.min(.74,p.support,p.same)),evidence:'component-alternate-consensus'};
+ };
+};
+})(typeof window==='undefined'?self:window);
+
 /* Local-only math handwriting: stroke segmentation, symbol geometry and MNIST digits. */
 (function(){
 'use strict';
@@ -1740,7 +1862,7 @@ function reviewCompoundUnit(groups,letters,suffix,prefix,W,H){
 async function recognizeBaseUnitComponents(strokes,W,H,options){
  if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>32)return null;
  const items=strokes.map(raw=>{
-  const scaled={size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  const scaled={source:raw,size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))};
   return{raw,scaled,box:bounds([scaled])};
  }).sort((a,b)=>a.box.cx-b.box.cx),proposals=[];
  for(let count=1;count<=Math.min(8,items.length-1);count++){
@@ -1758,6 +1880,7 @@ async function recognizeBaseUnitComponents(strokes,W,H,options){
   if(!['m','cm','km','kg','mg','ml','g','L'].includes(word)||
     letters.some((r,i)=>!r||!r.trusted&&!(word==='ml'&&i===1&&r.narrowL))){
    review=reviewCompoundUnit(groups,letters,suffix,prefix,W,H);
+   if(!review)review=compoundV2(groups,letters,suffix,prefix);
    if(!review)continue;
    word=review.word;
   }
@@ -2288,10 +2411,14 @@ function reviewIsolatedDisagreement(reading,options){
 }
 async function recognize(strokes,W,H,options={}){
  checkCancelled(options);
- const reading=reviewIsolatedDisagreement(await recognizeBeforeContext(strokes,W,H,options),options);
+ const preliminary=reviewIsolatedDisagreement(await recognizeBeforeContext(strokes,W,H,options),options);
+ let reading=preliminary;
+ try{reading=await glyphV2.review(strokes,W,H,options,preliminary)}catch(error){if(error?.name==='AbortError')throw error;}
  checkCancelled(options);
  // Word checking is an optional review layer. A failure retains the existing
  // reading and must not prevent the independent measurement context check.
+ // Do not let the word/case layer erase a completed whole-glyph review.
+ if(reading.context?.model==='existing-local-glyph-consensus')return reading;
  let words=reading;
  try{words=await window.WhiteboardHandwritingWords?.check(strokes,W,H,options,reading,{segment,rasterDigit})||reading}
  catch(error){if(error?.name==='AbortError')throw error;}
@@ -2305,6 +2432,8 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStroke,operatorCrossing,radicalHook,radicalDescendingHook,radicalParenthesis,recognizeNumericContext,segment,predictDigit,rasterDigit,closedZeroInk,completeNumericExpression,checkCancelled});
+const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});
+const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261020-v2-measurement-consensus2';
+window.WhiteboardHandwritingMath.build='20261020-v2-glyph-consensus1';
 })();

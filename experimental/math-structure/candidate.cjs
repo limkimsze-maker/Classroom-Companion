@@ -7,7 +7,7 @@ function build(){
  let source=fs.readFileSync(path.join(root,'whiteboard-handwriting-recognition-beta.js'),'utf8');
  const actual=crypto.createHash('sha256').update(source).digest('hex');
  if(actual!==protectedSha256)throw Error('Protected V1 reader differs; review and rebaseline before building V2');
- for(const {before,after} of [...require('./parser-patches.json'),...require('./measurement-patches.json')]){
+ for(const {before,after} of [...require('./parser-patches.json'),...require('./measurement-patches.json'),...require('./consensus-patches.json')]){
   if(!before||source.split(before).length!==2)throw Error('Experimental parser edit is missing or ambiguous');
   source=source.replace(before,()=>after);
  }
@@ -15,9 +15,9 @@ function build(){
  if(source.split(trigger).length!==2)throw Error('Missing unique structural dispatch boundary');
  source=source.replace(trigger,"if((options.mode||'auto')==='auto'){\n  let structured;\n  try{structured=await structuralV2.recognize(strokes,W,H,options)}catch(error){if(error?.name==='AbortError')throw error}\n  if(structured)return reconcile(structured);\n  const radical=await detectSquareRoot(strokes,W,H,options);");
  const end="window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};";
- source=source.replace(end,"const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStroke,operatorCrossing,radicalHook,radicalDescendingHook,radicalParenthesis,recognizeNumericContext,segment,predictDigit,rasterDigit,closedZeroInk,completeNumericExpression,checkCancelled});\nwindow.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};");
- source=source.replace("'20261020-v2-isolated-parser1'","'20261020-v2-measurement-consensus2'");
- return fs.readFileSync(path.join(__dirname,'structural-parser.js'),'utf8')+'\n'+source;
+ source=source.replace(end,"const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStroke,operatorCrossing,radicalHook,radicalDescendingHook,radicalParenthesis,recognizeNumericContext,segment,predictDigit,rasterDigit,closedZeroInk,completeNumericExpression,checkCancelled});\nconst glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});\nconst compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});\nwindow.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};");
+ source=source.replace("'20261020-v2-isolated-parser1'","'20261020-v2-glyph-consensus1'");
+ return ['structural-parser.js','glyph-review.js','compound-review.js'].map(file=>fs.readFileSync(path.join(__dirname,file),'utf8')).join('\n')+'\n'+source;
 }
 module.exports={build,protectedSha256};
 if(require.main===module){

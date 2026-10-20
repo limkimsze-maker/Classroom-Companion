@@ -1,0 +1,545 @@
+{
+  "candidateSha256": "3d60506576d6fb7d06eb25ea4dd710d6330bfec1b03f0a9e771f06353cbcca3a",
+  "method": "Replay of the remaining known development failures. Selectable alternatives are not counted as exact recognition.",
+  "total": 43,
+  "allFlagged": true,
+  "expectedOffered": 42,
+  "records": [
+    {
+      "id": "uji-1-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-1-0-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-1-1-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-1-0-letters-l",
+      "expected": "l",
+      "actual": "1",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "1",
+        "l",
+        "L",
+        "I",
+        "i"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-1-1-letters-l",
+      "expected": "l",
+      "actual": "1",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "1",
+        "l",
+        "L",
+        "I",
+        "i"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-2-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-2-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-2-0-letters-m",
+      "expected": "m",
+      "actual": "M",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "M",
+        "m",
+        "w"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-2-1-letters-m",
+      "expected": "m",
+      "actual": "M",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "M",
+        "m",
+        "w"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-2-0-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-2-1-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-2-0-letters-l",
+      "expected": "l",
+      "actual": "e",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "e",
+        "l"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-2-1-letters-l",
+      "expected": "l",
+      "actual": "C",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "C",
+        "e",
+        "c"
+      ],
+      "expectedOffered": false
+    },
+    {
+      "id": "uji-3-0-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-3-1-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-4-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-4-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-4-1-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-4-1-letters-g",
+      "expected": "g",
+      "actual": "8",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "8",
+        "g",
+        "f",
+        "s"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-5-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-5-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-5-0-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-5-1-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-6-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-6-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-6-1-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-7-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-7-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-7-0-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-8-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-9-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-9-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-9-0-letters-l",
+      "expected": "l",
+      "actual": "e",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "e",
+        "l"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-9-1-letters-l",
+      "expected": "l",
+      "actual": "e",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "e",
+        "l"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-10-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-10-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-10-0-letters-k",
+      "expected": "k",
+      "actual": "U",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "U",
+        "k",
+        "u",
+        "y",
+        "K"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-10-1-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "k",
+        "u",
+        "U"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-11-0-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-11-1-letters-c",
+      "expected": "c",
+      "actual": "C",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "C",
+        "c"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-11-1-letters-m",
+      "expected": "m",
+      "actual": "M",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "M",
+        "m",
+        "n"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-11-0-letters-k",
+      "expected": "k",
+      "actual": "t",
+      "flagged": true,
+      "kind": "shape",
+      "choices": [
+        "t",
+        "K",
+        "L",
+        "k"
+      ],
+      "expectedOffered": true
+    },
+    {
+      "id": "uji-11-1-letters-k",
+      "expected": "k",
+      "actual": "K",
+      "flagged": true,
+      "kind": "case",
+      "choices": [
+        "K",
+        "t",
+        "k"
+      ],
+      "expectedOffered": true
+    }
+  ]
+}
