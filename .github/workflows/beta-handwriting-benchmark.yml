@@ -9,6 +9,9 @@ on:
       - scripts/test-crossed-seven-grouping.cjs
       - scripts/test-detached-four-grouping.cjs
       - scripts/test-measurement-consensus.cjs
+      - scripts/test-priority4-consensus.cjs
+      - scripts/verify-handwriting-baseline.cjs
+      - scripts/fixtures/handwriting-priority4-baseline.json
       - scripts/diagnose-remaining-measurements.cjs
       - scripts/test-recognition-learning-priority.cjs
   workflow_dispatch:
@@ -25,6 +28,7 @@ jobs:
         run: node scripts/diagnose-remaining-measurements.cjs
       - name: Verify measurement consensus, digit grouping and personal corrections
         run: |
+          node scripts/test-priority4-consensus.cjs
           node scripts/test-measurement-consensus.cjs
           node scripts/test-detached-four-grouping.cjs
           node scripts/test-crossed-seven-grouping.cjs
@@ -33,6 +37,8 @@ jobs:
           node scripts/test-recognition-engine-trace.cjs
       - name: Run original 924-case UJI V1 benchmark on current Beta reader
         run: node scripts/benchmark-handwriting-simulations.cjs --split all --out beta-handwriting-current-results.json
+      - name: Reject any regression against the frozen 825-correct baseline
+        run: node scripts/verify-handwriting-baseline.cjs scripts/fixtures/handwriting-priority4-baseline.json beta-handwriting-current-results.json
       - name: Print category breakdown and historical comparison
         run: |
           node - <<'NODE'

@@ -878,6 +878,11 @@ async function recognizeNumericContext(strokes,W,H,options){
  const mixed=await readCharacters(glyphs.map(t=>rasterDigit(t.parts)),'auto',options);
  const hasOperator=tokens.some(t=>operators.includes(t.char));
  const equivalents={O:'0',o:'0',I:'1',l:'1',Z:'2',z:'2',S:'5',s:'5',B:'8',g:'9',q:'9'};
+ const familyVotes=(choices,label,weight)=>{
+  const votes=Array.from({length:10},(_,i)=>({char:String(i),score:0}));
+  for(const p of choices){const c=/^\d$/.test(p[label])?p[label]:equivalents[p[label]];if(c)votes[Number(c)].score+=p[weight];}
+  return votes.sort((a,b)=>b.score-a.score);
+ };
  for(let i=0;i<glyphs.length;i++){
   const token=glyphs[i],alpha=mixed[i],top=alpha[0],pen=uji(token.parts),best=pen?.[0];
   if(token.personal){if(!/^\d$/.test(token.char))return null;continue}
@@ -899,6 +904,16 @@ async function recognizeNumericContext(strokes,W,H,options){
     (top.char===digit.char||best?.label===top.char&&best.p>=.70)){
    char=top.char;score=Math.min(top.score,Math.max(digits.find(p=>p.char===char).score,best?.label===char?best.p:0));
   }
+  // A validated measurement prefix is numeric. The mixed and pen models can
+  // agree on the 5/S, 0/O or 1/I family even when neither ranks the digit first.
+  // Keep this inference out of ordinary letter/word recognition.
+  if(options.measurementPrefix){
+   const imageFamily=familyVotes(alpha,'char','score'),penFamily=familyVotes(pen||[],'label','p');
+   if(imageFamily[0].char===penFamily[0].char&&imageFamily[0].score>=.95&&penFamily[0].score>=.95&&
+      imageFamily[0].score-imageFamily[1].score>=.90&&penFamily[0].score-penFamily[1].score>=.90){
+    char=imageFamily[0].char;score=Math.min(imageFamily[0].score,penFamily[0].score);
+   }
+  }
   const support=alpha.reduce((sum,p)=>sum+((p.char===char||equivalents[p.char]===char)?p.score:0),0);
   const penAgrees=best?.label===char&&best.p>=.85;
   const strongLetter=/^[A-Za-z]$/.test(top?.char||'')&&!equivalents[top.char]&&top.score>=.75;
@@ -912,7 +927,7 @@ async function recognizeNumericContext(strokes,W,H,options){
  return{text,tokens,uncertain:tokens.filter(t=>t.score<.85),engine:'local-numeric-ensemble',format:'number'};
 }
 async function readUnitPrefix(prefix,W,H,options,typedOnly=false){
- let read=await recognizeNumericContext(prefix.map(p=>p.raw),W,H,options);
+ let read=await recognizeNumericContext(prefix.map(p=>p.raw),W,H,{...options,measurementPrefix:true});
  if(typedOnly&&!read)return null;
  try{read??=await recognizeCore(prefix.map(p=>p.raw),W,H,{...options,mode:'digits'})}catch(_){}
  if(!read||!completeNumericExpression(read.text)){
@@ -1060,6 +1075,31 @@ async function recognizeIsolatedPenLetter(strokes,W,H,options){
 }
 // Baseline units use the same independent letters as powered units. A coarse
 // whole-unit template must not turn a clearly read c into a second m.
+function reviewCompoundUnit(groups,letters,suffix,prefix,W,H){
+ if(groups.length!==2||!window.WhiteboardTeacherUnits?.rank||!window.WhiteboardCharacterInference||!window.WhiteboardUjiReader)return null;
+ const ranked=window.WhiteboardTeacherUnits.rank(suffix.map(p=>p.raw),W,H,
+  {only:['mm','cm','km','m','mg','kg','g','ml','L','min','s','h']});
+ const best=ranked[0],runner=ranked[1];
+ if(!best||!['cm','km','kg','mg','ml'].includes(best.label)||best.score<.82||
+    best.score-(runner?.score||0)<.06)return null;
+ const word=best.label,boxes=groups.map(bounds),body=bounds(suffix.map(p=>p.scaled)),numeric=bounds(prefix.map(p=>p.scaled));
+ if(word.endsWith('g')&&body.y+body.h<numeric.y+numeric.h+Math.max(body.h,numeric.h)*.09)return null;
+ const scores=[],anchors=[];
+ for(let i=0;i<groups.length;i++){
+  const image=window.WhiteboardCharacterInference.predict(rasterDigit(groups[i]),'auto');
+  const pen=window.WhiteboardUjiReader.read(groups[i].map(p=>p.points));
+  const a=image.reduce((n,p)=>n+(p.char.toLowerCase()===word[i]?p.score:0),0);
+  const b=pen.reduce((n,p)=>n+(p.label.toLowerCase()===word[i]?p.p:0),0);
+  scores.push(Math.max(a,b));anchors.push(a>=.95||b>=.95);
+ }
+ // A short m followed by a taller narrow cursive l can look like Me/MC to
+ // the letter models. Require the existing full-unit prototype as additional
+ // evidence, and keep the disputed final letter explicitly marked for review.
+ const cursiveMl=word==='ml'&&best.score>=.85&&letters[0]?.char==='m'&&letters[0].trusted&&
+  boxes[1].h>=boxes[0].h*1.20&&boxes[1].w<=boxes[1].h*.55;
+ if(!anchors.some(Boolean)||scores.some((p,i)=>p<.45&&!(cursiveMl&&i===1)))return null;
+ return{word,score:best.score,confidence:scores};
+}
 async function recognizeBaseUnitComponents(strokes,W,H,options){
  if(!window.WhiteboardCharacterReader||strokes.length<2||strokes.length>32)return null;
  const items=strokes.map(raw=>{
@@ -1077,8 +1117,13 @@ async function recognizeBaseUnitComponents(strokes,W,H,options){
   const letters=await readUnitLetters(groups,options,true);
   let word=letters.map(r=>r?.char).join('');
   if(word==='l'&&letters[0].penLabel==='L')word='L';
+  let review=null;
   if(!['m','cm','km','kg','mg','ml','g','L'].includes(word)||
-    letters.some((r,i)=>!r||!r.trusted&&!(word==='ml'&&i===1&&r.narrowL)))continue;
+    letters.some((r,i)=>!r||!r.trusted&&!(word==='ml'&&i===1&&r.narrowL))){
+   review=reviewCompoundUnit(groups,letters,suffix,prefix,W,H);
+   if(!review)continue;
+   word=review.word;
+  }
   if(word==='ml'&&letters[1].penOnly&&
     (boxes[1].h<boxes[0].h*1.15||boxes[1].w>boxes[1].h*.90))continue;
   const read=await readUnitPrefix(prefix,W,H,options,true);if(!read)continue;
@@ -1087,12 +1132,15 @@ async function recognizeBaseUnitComponents(strokes,W,H,options){
    const numeric=bounds(prefix.map(p=>p.scaled));
    if(body.y+body.h<numeric.y+numeric.h+numeric.h*.10)continue;
   }
-  const unitTokens=groups.map((parts,i)=>({parts,char:word[i],score:letters[i].confidence}));
-  proposals.push({word,raised:[],text:read.text+' '+word,uncertain:[...read.uncertain,...unitTokens.filter(t=>t.score<.85)],
-   score:Math.min(...letters.map(r=>r.score)),tokens:[...read.tokens,...unitTokens]});
+  const unitTokens=groups.map((parts,i)=>({parts,char:word[i],score:review?review.confidence[i]:letters[i].confidence}));
+  proposals.push({word,review:!!review,raised:[],text:read.text+' '+word,
+   uncertain:[...read.uncertain,...unitTokens.filter(t=>t.score<.85),
+    ...(review?[{char:'?',score:0,parts:[],engine:'compound-unit-review'}]:[])],
+   score:review?review.score:Math.min(...letters.map(r=>r.score)),tokens:[...read.tokens,...unitTokens]});
  }
  const best=completeUnitProposal(proposals);
- return best?{text:best.text,tokens:best.tokens,uncertain:best.uncertain,engine:'unit-first-letter-components',format:'unit'}:null;
+ return best?{text:best.text,tokens:best.tokens,uncertain:best.uncertain,
+  engine:best.review?'unit-first-compound-review':'unit-first-letter-components',format:'unit'}:null;
 }
 // A new writing style may be distant from a complete-unit template. Keep the
 // raised ink separate and read the unit letters and exponent independently.
@@ -1518,6 +1566,25 @@ async function recognizeWithContext(strokes,W,H,options,reading){
   context:{model:'local-notation-trigram-v1',applied:canChange,originalText:reading.text,
    alternatives:choices.slice(0,3),needsReview:true}};
 }
+function reviewLegacyMeasurement(reading){
+ if(!/^local-(?:general-primary-grammar|primary-measurement|measurement-quantity)$/.test(reading?.engine||'')||
+    !window.WhiteboardUjiReader||!window.WhiteboardCharacterInference)return reading;
+ const aliases={O:'0',o:'0',I:'1',l:'1',Z:'2',z:'2',S:'5',s:'5',B:'8',g:'9',q:'9'};
+ let numeric=true;const disputed=[];
+ const tokens=(reading.tokens||[]).map(token=>{
+  if(/^[A-Za-z]$/.test(token.char))numeric=false;
+  if(!numeric||!/^\d$/.test(token.char)||!token.parts?.length||token.personal)return token;
+  const pen=window.WhiteboardUjiReader.read(token.parts.map(p=>p.points));
+  const best=pen?.[0],image=window.WhiteboardCharacterInference.predict(rasterDigit(token.parts),'auto')?.[0];
+  const contraryDigit=best&&/^\d$/.test(best.label)&&best.label!==token.char&&
+   best.p>=.985&&best.p-(pen[1]?.p||0)>=.95;
+  const contraryLetter=image&&/^[A-Za-z]$/.test(image.char)&&image.score>=.90&&aliases[image.char]!==token.char;
+  if(!contraryDigit&&!contraryLetter)return token;
+  const review={...token,score:Math.min(token.score,.5),engine:'measurement-prefix-review'};
+  disputed.push(review);return review;
+ });
+ return disputed.length?{...reading,tokens,uncertain:[...(reading.uncertain||[]),...disputed]}:reading;
+}
 async function recognize(strokes,W,H,options={}){
  checkCancelled(options);
  const reading=await recognizeBeforeContext(strokes,W,H,options);
@@ -1528,14 +1595,14 @@ async function recognize(strokes,W,H,options={}){
  try{words=await window.WhiteboardHandwritingWords?.check(strokes,W,H,options,reading,{segment,rasterDigit})||reading}
  catch(error){if(error?.name==='AbortError')throw error;}
  checkCancelled(options);
- if(words!==reading)return words;
- try{const result=await recognizeWithContext(strokes,W,H,options,reading);checkCancelled(options);return result}
+ if(words!==reading)return reviewLegacyMeasurement(words);
+ try{const result=await recognizeWithContext(strokes,W,H,options,reading);checkCancelled(options);return reviewLegacyMeasurement(result)}
  catch(error){
   if(error?.name==='AbortError')throw error;
   // An optional context failure must not discard a completed handwriting read.
-  return{...reading,context:{unavailable:true}};
+  return reviewLegacyMeasurement({...reading,context:{unavailable:true}});
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-measurement-consensus1';
+window.WhiteboardHandwritingMath.build='20261020-priority4-consensus1';
 })();
