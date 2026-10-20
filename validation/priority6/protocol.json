@@ -1,0 +1,218 @@
+{
+  "schema": "classroom-natural-ink-protocol-v1",
+  "id": "teacher-maths-24-priority6-v1",
+  "baselineCommit": "dc14aa448706f68e57d95a596f321e24bce0fe7b",
+  "build": "20261020-priority5-audit1",
+  "readerSha256": "a6d7ae440512ab2733fb073c896ea6753918ab6f973006ea4e20b2ebf7272ae4",
+  "bundle": "validation/priority6/reader-frozen.js",
+  "bundleSha256": "cb82ef1ba7ef38d726b377df6ac2777c64d1def24c64eedc22383cdb3d07b57d",
+  "mode": "auto",
+  "personalLearning": false,
+  "arithmeticCorrection": false,
+  "assets": [
+    {
+      "path": "whiteboard-handwriting-digit-model-beta.js",
+      "sha256": "4a982a9e2cee75a8a11dfd9f9fb1bb9871e42ce8c04f998429917b238ef25256"
+    },
+    {
+      "path": "whiteboard-handwriting-character-models-beta.js",
+      "sha256": "eccf3a1f8e282860c2c20f643d4676a6d7a25946bfb2dc7a3f491fff94d9b7c4"
+    },
+    {
+      "path": "whiteboard-handwriting-character-inference-beta.js",
+      "sha256": "c5e89c4d2278dde139484d979550ef0b97a6cafdd46fa4ea30c5790c053811ce"
+    },
+    {
+      "path": "whiteboard-handwriting-character-reader-beta.js",
+      "sha256": "fb24807833827b79538280e6159b8d797bfc37d53848c97cd9d54a7665f0df9d"
+    },
+    {
+      "path": "whiteboard-handwriting-learning-beta.js",
+      "sha256": "0b4f9b353450a74dd2d3514f722dc2ba826de64ea47f867ad268b75f734433d3"
+    },
+    {
+      "path": "vendor/handwriting/uji/reader-weights-beta.js",
+      "sha256": "e260b34bd3b7b3c0a22238613543b37e7d44269240803971847ab46985ba01d7"
+    },
+    {
+      "path": "vendor/handwriting/uji/reader-beta.js",
+      "sha256": "78cf2e1fb0895d33c1adcaf60a0f4299acdada25a3875eadfc07885b35ac8887"
+    },
+    {
+      "path": "whiteboard-primary-grammar-beta.js",
+      "sha256": "4115c377be07f85440c4798691688dd688ea2117bea091906d7bda56bfbda64b"
+    },
+    {
+      "path": "whiteboard-equal-sign-geometry-beta.js",
+      "sha256": "0ee0eade50396fd8bd490d7cfceb0fe21c9de117dd33464eeea4466ee7c8e8bf"
+    },
+    {
+      "path": "whiteboard-trained-9gq-equals-beta.js",
+      "sha256": "2c9c17a10fdc92774028ce33c45b095503e1f4c4a6a4d56da40c9b04425f953d"
+    },
+    {
+      "path": "whiteboard-trained-j-beta.js",
+      "sha256": "87a0a99161ce3d0538381bf86fef74b599c55e31f8880e9576f414a718666014"
+    },
+    {
+      "path": "whiteboard-trained-remaining-beta.js",
+      "sha256": "39f6c86f635435c48aeb8ffab98907b7bb79b4bf6647a8c58f9387866e43358e"
+    },
+    {
+      "path": "whiteboard-teacher-units-beta.js",
+      "sha256": "32cfe141801b3ae2cf64952025a7f012419d26d0746e5a05347fffbe8c286cb9"
+    },
+    {
+      "path": "whiteboard-teacher-confusables-beta.js",
+      "sha256": "d47bc416f669e698ae182c933a9325a00417ec9503d1c78639b9ff0abc413926"
+    },
+    {
+      "path": "whiteboard-unit-exponent-trained-beta.js",
+      "sha256": "4ac90772c22918b4c015becc6979ee563d0b05037ec78ab3115621369055778c"
+    },
+    {
+      "path": "whiteboard-handwriting-context-model-beta.js",
+      "sha256": "c6ad456f25fba821d673f3a2eb77ff49b7670c2d493af3fff70fdb35dceb395c"
+    },
+    {
+      "path": "whiteboard-handwriting-context-beta.js",
+      "sha256": "7817823dce1364bd83175af78d078b477d975065541d7fd6342ee78a06e4d895"
+    },
+    {
+      "path": "whiteboard-handwriting-word-list-beta.js",
+      "sha256": "e4b8a874ca7e051d51b16e15d75b12e1a8cb54bf88536c1ca561ac45fcefcc2a"
+    },
+    {
+      "path": "whiteboard-handwriting-words-beta.js",
+      "sha256": "211854071da3aa1653e7dd2f2e763414ab4334f4ddfe0081edab458fae1ae28b"
+    },
+    {
+      "path": "whiteboard-handwriting-recognition-beta.js",
+      "sha256": "a6d7ae440512ab2733fb073c896ea6753918ab6f973006ea4e20b2ebf7272ae4"
+    }
+  ],
+  "prompts": [
+    {
+      "id": "numbers-1",
+      "category": "numbers",
+      "expected": "572"
+    },
+    {
+      "id": "numbers-2",
+      "category": "numbers",
+      "expected": "1048"
+    },
+    {
+      "id": "numbers-3",
+      "category": "numbers",
+      "expected": "408"
+    },
+    {
+      "id": "numbers-4",
+      "category": "numbers",
+      "expected": "9367"
+    },
+    {
+      "id": "arithmetic-1",
+      "category": "arithmetic",
+      "expected": "24+38=62"
+    },
+    {
+      "id": "arithmetic-2",
+      "category": "arithmetic",
+      "expected": "83−47=36"
+    },
+    {
+      "id": "arithmetic-3",
+      "category": "arithmetic",
+      "expected": "16×4=64"
+    },
+    {
+      "id": "arithmetic-4",
+      "category": "arithmetic",
+      "expected": "96÷6=16"
+    },
+    {
+      "id": "arithmetic-5",
+      "category": "arithmetic",
+      "expected": "6−2=5"
+    },
+    {
+      "id": "arithmetic-6",
+      "category": "arithmetic",
+      "expected": "9+7=15"
+    },
+    {
+      "id": "measurements-1",
+      "category": "measurements",
+      "expected": "48cm"
+    },
+    {
+      "id": "measurements-2",
+      "category": "measurements",
+      "expected": "73kg"
+    },
+    {
+      "id": "measurements-3",
+      "category": "measurements",
+      "expected": "26ml"
+    },
+    {
+      "id": "measurements-4",
+      "category": "measurements",
+      "expected": "405s"
+    },
+    {
+      "id": "measurements-5",
+      "category": "measurements",
+      "expected": "12.5m"
+    },
+    {
+      "id": "measurements-6",
+      "category": "measurements",
+      "expected": "208L"
+    },
+    {
+      "id": "powers-1",
+      "category": "powers",
+      "expected": "14m²"
+    },
+    {
+      "id": "powers-2",
+      "category": "powers",
+      "expected": "27cm²"
+    },
+    {
+      "id": "powers-3",
+      "category": "powers",
+      "expected": "9m³"
+    },
+    {
+      "id": "powers-4",
+      "category": "powers",
+      "expected": "36cm³"
+    },
+    {
+      "id": "powers-5",
+      "category": "powers",
+      "expected": "8+6=14m²"
+    },
+    {
+      "id": "powers-6",
+      "category": "powers",
+      "expected": "5×3=15cm²"
+    },
+    {
+      "id": "fractions-1",
+      "category": "fractions",
+      "expected": "\\frac{3}{4}"
+    },
+    {
+      "id": "fractions-2",
+      "category": "fractions",
+      "expected": "\\frac{12}{5}"
+    }
+  ],
+  "workerDriver": "validation/priority6/worker-driver.js",
+  "workerDriverSha256": "9eaea25cb950193903b292239268ec5783450fc3ecd6dc710a17db06fead32cc"
+}
