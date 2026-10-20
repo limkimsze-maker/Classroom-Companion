@@ -10,7 +10,7 @@ V2 refers to this engine revision. No UJI Pen Characters V2 dataset is introduce
 - Original recursive spatial parser for composed numeric fractions, roots, bracketed
   expressions, inline arithmetic and scripts, including structures inside structures.
 - Bounded hypothesis search: retain four candidates per region and combine existing
-  digit/image/pen alternatives with numeric syntax and geometric layout evidence.
+  digit and alternate-image alternatives with numeric syntax and geometric layout evidence.
 - Exact stroke accounting: no selected stroke dropped or used twice. Symbols and
   R/A/B/I/Sup/Sub relations can be exported in direct CROHME label-graph syntax.
 - Preserve personal ink, component corrections, Undo, explicit modes, units, existing
@@ -26,7 +26,7 @@ This is not a complete MyScript-equivalent recogniser.
 
 `measurement-patches.json` permits a dollar-shaped open 4 in an explicitly numeric
 measurement prefix only when both existing image classifiers strongly agree on 4.
-The pen-reader disagreement remains flagged. This lets independently recognised
+The alternate-raster classifier disagreement remains flagged. This lets independently recognised
 unit letters and a raised exponent combine with the full number instead of falling
 back to a coarse uncertain whole-unit template. Original stroke references remain
 attached to the measurement tokens. No exact quantity or unit label is memorised.
@@ -36,13 +36,31 @@ variants, five changed quantities, non-measurement ambiguity, explicit modes and
 personal correction/Undo. Browser tests additionally replay this measurement through
 Beautify and Apply at desktop and mobile sizes.
 
+### Whole-glyph and compound-unit review
+
+`glyph-review.js` compares the existing mixed, alphabet and alternate-raster
+classifiers on a complete compact glyph before accepting a fragmented reading.
+It also reviews wide single-stroke letters. Candidate disagreements keep a visible
+warning and selectable character alternatives. Numeral/letter and case ambiguities
+are not converted into perfect confidence. Explicit reading modes and personal
+corrections remain authoritative. A completed glyph review is not overwritten by
+the later word-case layer.
+
+Case pairs that share a contour, such as c/C and k/K, retain the prior reading with
+choices. A stronger default lowercase bias improved the narrow benchmark but harmed
+uppercase controls, so it was rejected. `compound-review.js` provides a bounded
+component-based cm/km/kg/mg fallback, with a separate validated numeric prefix and
+visible disagreement; it does not bypass prototype-backed ml/L handling.
+
 ## Verification
 
 | Check | Protected V1 | Structural V2 |
 | --- | --- | --- |
-| Frozen 924-case UJI V1 composition benchmark | 840/924 (90.9%) | 840/924 (90.9%) |
+| Frozen 924-case UJI V1 composition benchmark | 840/924 (90.9%) | 881/924 (95.35%) |
 | Previously correct frozen cases lost | — | 0 |
 | Newly hidden incorrect-reading uncertainty | — | 0 |
+| Incorrect readings without a warning in the frozen benchmark | 55 | 0 |
+| Broader uppercase/lowercase development audit (520 glyphs; overlaps some cases) | 306/520 | 351/520; 0 previously correct readings lost |
 | Twelve new composed layouts and one transformed variant each | 0/24 | 24/24 |
 | Existing teacher root expression and five variants | 0/6 | 6/6 |
 | Existing regression suites | Loader/version failure reproduced | 25 pass, 1 inherited failure, 0 new failures |
@@ -52,6 +70,12 @@ cover roots of fractions, roots in denominators, nested fractions and roots, bra
 sums, powers in fractions, inline fraction sums, numerator arithmetic, changed digits,
 unreduced fractions and zero denominators. Tests also verify stroke/graph coverage,
 personal correction/Undo, cancellation and outside-ink rejection.
+
+Of the original 84 failed whole readings, 41 now read exactly correctly. The 43
+remaining failures are all letters: 34 are case differences and 9 are other shape
+confusions. All 43 are flagged; a warning or a selectable alternative is not counted
+as a correct recognition. The mathematical categories total 792/792 in this fixed
+simulation suite; this is not a universal mathematical handwriting accuracy claim.
 
 These are correlated development simulations, not naturally written expressions from
 unfamiliar teachers. No real-world accuracy percentage or official CROHME score is
@@ -75,6 +99,8 @@ node experimental/math-structure/build-preview.cjs --check
 mkdir -p /tmp/classroom-v2-validation
 node experimental/math-structure/test-candidate.cjs /tmp/classroom-v2-validation/teacher.json
 node experimental/math-structure/test-structural-parser.cjs /tmp/classroom-v2-validation/nested.json
+node experimental/math-structure/test-glyph-review.cjs /tmp/classroom-v2-validation/glyphs.json
+node experimental/math-structure/paired-alphabet.cjs /tmp/classroom-v2-validation/alphabet.json
 node experimental/math-structure/regressions.cjs /tmp/classroom-v2-validation/regressions.json
 node experimental/math-structure/paired-benchmark.cjs /tmp/classroom-v2-validation/paired.json
 ```

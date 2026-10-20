@@ -3,7 +3,7 @@
   "method": "Identical frozen UJI V1 glyph compositions, fresh isolated model/storage contexts. No training or model changes.",
   "limitation": "Simulation scores and existing teacher development controls do not estimate unfamiliar-writer whole-expression accuracy.",
   "protectedV1Sha256": "8f65225b10916834a4740353eb652b5bedf56f26144d523fdb384aa26718713f",
-  "candidateSha256": "d022ba920aebb7bb46418db0bcfe205f7de2ae216494019cd7db7dd8260446b1",
+  "candidateSha256": "3d60506576d6fb7d06eb25ea4dd710d6330bfec1b03f0a9e771f06353cbcca3a",
   "fixtureSha256": "fe5b965215eba037bc5e87dafbdc1bcd387120606af0eddad245fbca07a040d3",
   "before": {
     "correct": 840,
@@ -16,14 +16,14 @@
     "p95ms": 284
   },
   "after": {
-    "correct": 840,
+    "correct": 881,
     "total": 924,
-    "exactPercent": 90.9090909090909,
-    "characterErrorPercent": 3.505392912172573,
-    "flagged": 241,
-    "unflaggedWrong": 55,
-    "p50ms": 120,
-    "p95ms": 332
+    "exactPercent": 95.34632034632034,
+    "characterErrorPercent": 1.6563944530046224,
+    "flagged": 339,
+    "unflaggedWrong": 0,
+    "p50ms": 131,
+    "p95ms": 344
   },
   "beforeByCategory": {
     "numbers": {
@@ -89,24 +89,24 @@
   },
   "afterByCategory": {
     "numbers": {
-      "correct": 438,
+      "correct": 440,
       "total": 440,
-      "exactPercent": 99.54545454545455,
-      "characterErrorPercent": 0.2457002457002457,
-      "flagged": 65,
+      "exactPercent": 100,
+      "characterErrorPercent": 0,
+      "flagged": 95,
       "unflaggedWrong": 0,
-      "p50ms": 111,
-      "p95ms": 238
+      "p50ms": 115,
+      "p95ms": 284
     },
     "units": {
-      "correct": 131,
+      "correct": 132,
       "total": 132,
-      "exactPercent": 99.24242424242425,
-      "characterErrorPercent": 0.45454545454545453,
-      "flagged": 62,
+      "exactPercent": 100,
+      "characterErrorPercent": 0,
+      "flagged": 64,
       "unflaggedWrong": 0,
       "p50ms": 230,
-      "p95ms": 724
+      "p95ms": 502
     },
     "powers": {
       "correct": 88,
@@ -115,8 +115,8 @@
       "characterErrorPercent": 0,
       "flagged": 25,
       "unflaggedWrong": 0,
-      "p50ms": 158,
-      "p95ms": 270
+      "p50ms": 156,
+      "p95ms": 254
     },
     "arithmetic": {
       "correct": 88,
@@ -125,8 +125,8 @@
       "characterErrorPercent": 0,
       "flagged": 27,
       "unflaggedWrong": 0,
-      "p50ms": 148,
-      "p95ms": 297
+      "p50ms": 117,
+      "p95ms": 271
     },
     "measuredArithmetic": {
       "correct": 44,
@@ -135,24 +135,816 @@
       "characterErrorPercent": 0,
       "flagged": 18,
       "unflaggedWrong": 0,
-      "p50ms": 288,
-      "p95ms": 440
+      "p50ms": 269,
+      "p95ms": 518
     },
     "letters": {
-      "correct": 51,
+      "correct": 89,
       "total": 132,
-      "exactPercent": 38.63636363636363,
-      "characterErrorPercent": 65.9090909090909,
-      "flagged": 44,
-      "unflaggedWrong": 55,
-      "p50ms": 39,
-      "p95ms": 167
+      "exactPercent": 67.42424242424242,
+      "characterErrorPercent": 32.57575757575758,
+      "flagged": 110,
+      "unflaggedWrong": 0,
+      "p50ms": 60,
+      "p95ms": 219
     }
   },
-  "gains": [],
+  "gains": [
+    "uji-1-0-letters-c",
+    "uji-1-1-letters-m",
+    "uji-3-0-letters-c",
+    "uji-3-1-letters-c",
+    "uji-3-0-letters-l",
+    "uji-3-1-letters-l",
+    "uji-4-0-letters-m",
+    "uji-4-1-letters-m",
+    "uji-4-0-letters-g",
+    "uji-5-0-letters-m",
+    "uji-5-1-letters-m",
+    "uji-5-1-letters-g",
+    "uji-6-0-letters-l",
+    "uji-7-1-letters-k",
+    "uji-7-0-letters-g",
+    "uji-7-1-letters-g",
+    "uji-7-0-letters-l",
+    "uji-7-1-letters-L",
+    "uji-8-1-letters-c",
+    "uji-8-0-letters-m",
+    "uji-8-1-letters-m",
+    "uji-8-0-letters-k",
+    "uji-8-1-letters-k",
+    "uji-8-0-letters-L",
+    "uji-8-1-letters-L",
+    "uji-9-1-numbers-4",
+    "uji-9-1-numbers-5",
+    "uji-9-0-letters-m",
+    "uji-9-1-letters-m",
+    "uji-9-0-letters-k",
+    "uji-9-1-letters-k",
+    "uji-10-0-units-97kg",
+    "uji-10-0-letters-m",
+    "uji-10-1-letters-m",
+    "uji-10-1-letters-g",
+    "uji-10-0-letters-l",
+    "uji-10-1-letters-l",
+    "uji-11-0-letters-g",
+    "uji-11-1-letters-g",
+    "uji-11-0-letters-l",
+    "uji-11-1-letters-L"
+  ],
   "regressions": [],
   "newUnflaggedErrors": [],
-  "changed": [],
+  "changed": [
+    {
+      "id": "uji-1-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-1-numbers-2",
+      "before": "2",
+      "after": "2",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-0-numbers-5",
+      "before": "5",
+      "after": "5",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-1-numbers-5",
+      "before": "5",
+      "after": "5",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-0-letters-c",
+      "before": "e",
+      "after": "c",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-1-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-0-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-1-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-0-letters-l",
+      "before": "1",
+      "after": "1",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-1-1-letters-l",
+      "before": "1",
+      "after": "1",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-0-numbers-1",
+      "before": "1",
+      "after": "1",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-1-numbers-1",
+      "before": "1",
+      "after": "1",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-0-letters-m",
+      "before": "M",
+      "after": "M",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-1-letters-m",
+      "before": "M",
+      "after": "M",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-0-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-1-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-0-letters-g",
+      "before": "g",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-2-0-letters-l",
+      "before": "e",
+      "after": "e",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-0-letters-c",
+      "before": "e",
+      "after": "c",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-1-letters-c",
+      "before": "e",
+      "after": "c",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-0-letters-m",
+      "before": "m",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-0-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-1-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-1-letters-g",
+      "before": "g",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-0-letters-l",
+      "before": "L",
+      "after": "l",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-3-1-letters-l",
+      "before": "L",
+      "after": "l",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-4-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-4-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-4-0-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-4-1-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-4-0-letters-k",
+      "before": "k",
+      "after": "k",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-4-1-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-4-0-letters-g",
+      "before": "8",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-4-1-letters-g",
+      "before": "8",
+      "after": "8",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-0-numbers-1",
+      "before": "1",
+      "after": "1",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-1-numbers-1",
+      "before": "1",
+      "after": "1",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-0-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-1-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-0-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-1-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-5-1-letters-g",
+      "before": "8",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-6-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-6-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-6-0-numbers-1",
+      "before": "1",
+      "after": "1",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-6-0-letters-m",
+      "before": "m",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-6-1-letters-m",
+      "before": "m",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-6-0-letters-k",
+      "before": "k",
+      "after": "k",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-6-1-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-6-0-letters-l",
+      "before": "L",
+      "after": "l",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-0-units-97kg",
+      "before": "97 kg",
+      "after": "97 kg",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-1-units-97kg",
+      "before": "97 kg",
+      "after": "97 kg",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-0-letters-m",
+      "before": "m",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-1-letters-m",
+      "before": "m",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-0-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-1-letters-k",
+      "before": "L",
+      "after": "k",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-0-letters-g",
+      "before": "9",
+      "after": "g",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-1-letters-g",
+      "before": "9",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-0-letters-l",
+      "before": "L",
+      "after": "l",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-7-1-letters-L",
+      "before": "[",
+      "after": "L",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-1-letters-c",
+      "before": "e",
+      "after": "c",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-0-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-1-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-0-letters-k",
+      "before": "V1",
+      "after": "k",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-1-letters-k",
+      "before": "1rL",
+      "after": "k",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-0-letters-L",
+      "before": "[",
+      "after": "L",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-8-1-letters-L",
+      "before": "[",
+      "after": "L",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-1-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-1-numbers-4",
+      "before": "Y",
+      "after": "4",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-1-numbers-5",
+      "before": "S",
+      "after": "5",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-1-numbers-9",
+      "before": "9",
+      "after": "9",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-0-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-1-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-0-letters-k",
+      "before": "1 =",
+      "after": "k",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-1-letters-k",
+      "before": "1L1",
+      "after": "k",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-0-letters-l",
+      "before": "e",
+      "after": "e",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-9-1-letters-l",
+      "before": "e",
+      "after": "e",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-0-numbers-0",
+      "before": "0",
+      "after": "0",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-0-numbers-5",
+      "before": "5",
+      "after": "5",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-1-numbers-5",
+      "before": "5",
+      "after": "5",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-0-units-97kg",
+      "before": "924 g",
+      "after": "97 kg",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-0-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-1-letters-m",
+      "before": "M",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-0-letters-k",
+      "before": "U",
+      "after": "U",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-0-letters-g",
+      "before": "g",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-1-letters-g",
+      "before": "1",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-0-letters-l",
+      "before": "L",
+      "after": "l",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-10-1-letters-l",
+      "before": "L",
+      "after": "l",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-0-numbers-9",
+      "before": "9",
+      "after": "9",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-0-letters-m",
+      "before": "m",
+      "after": "m",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-1-letters-m",
+      "before": "M",
+      "after": "M",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-0-letters-k",
+      "before": "K",
+      "after": "t",
+      "beforeFlagged": true,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-1-letters-k",
+      "before": "K",
+      "after": "K",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-0-letters-g",
+      "before": "9",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-1-letters-g",
+      "before": "9",
+      "after": "g",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-0-letters-l",
+      "before": "L",
+      "after": "l",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    },
+    {
+      "id": "uji-11-1-letters-L",
+      "before": "(",
+      "after": "L",
+      "beforeFlagged": false,
+      "afterFlagged": true
+    }
+  ],
   "regressionGatePassed": true,
   "productionIntegrated": false
 }

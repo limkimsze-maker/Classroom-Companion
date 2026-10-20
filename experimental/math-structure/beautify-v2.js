@@ -5,7 +5,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let activeReviewAbort=null;
-const readerBuild='20261020-v2-measurement-consensus2';
+const readerBuild='20261020-v2-glyph-consensus1';
 function abortError(){return Object.assign(new Error('Reading cancelled'),{name:'AbortError'})}
 function stopReaders(){window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.()}
 function boundedRead(task,signal,milliseconds){
@@ -175,7 +175,8 @@ async function review(group){
   if(choices.length<2)return;
   const message=document.createElement('p');message.textContent=result.context.kind==='words'?
    'Possible words — check the spelling and capital letters against your ink.':result.context.kind==='letter-case'?
-   'Lowercase or uppercase? Choose the letter you intended.':'Possible readings — compare the unit or superscript with your ink.';
+   'Lowercase or uppercase? Choose the letter you intended.':result.context.kind==='glyphs'?
+   'Possible characters — compare these choices with your handwriting.':'Possible readings — compare the unit or superscript with your ink.';
   const buttons=document.createElement('div');buttons.className='handwriting-context-options';
   for(const choice of choices){
    if(typeof choice.text!=='string'||choice.text.length>180)continue;

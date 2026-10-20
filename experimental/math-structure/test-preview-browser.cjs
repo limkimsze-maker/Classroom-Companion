@@ -1,7 +1,8 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
-const {chromium}=require('playwright'),{cases,ink}=require('./layout-fixtures.cjs');
+const {chromium}=require('playwright'),{cases,ink,number}=require('./layout-fixtures.cjs');
 const measurement=require('./fixtures/teacher-open-four-area.json');
+const build=require('./candidate.cjs').build().match(/WhiteboardHandwritingMath\.build='([^']+)'/)[1];
 const root=path.resolve(__dirname,'../..'),output=process.argv[2]||'/tmp/v2-browser';
 const mime={'.js':'application/javascript','.css':'text/css','.wasm':'application/wasm','.json':'application/json','.html':'text/html','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
@@ -20,7 +21,7 @@ const server=http.createServer((req,res)=>{
    await context.addInitScript(()=>{if(localStorage.getItem('__v2_storage_probe')===null)localStorage.setItem('__v2_storage_probe','protected');});
    page.on('pageerror',e=>errors.push(e.message));
    await page.goto(address+'/whiteboard-v2-trial.html',{waitUntil:'load'});
-   await page.waitForFunction(()=>window.WhiteboardHandwritingMath?.build==='20261020-v2-measurement-consensus2');
+   await page.waitForFunction(build=>window.WhiteboardHandwritingMath?.build===build,build);
    await page.locator('#handwritingBeautifyBtn').waitFor({state:'visible'});
    assert.equal(await page.evaluate(()=>localStorage.getItem('__v2_storage_probe')),'protected');
    await page.evaluate(()=>localStorage.setItem('__v2_storage_probe','trial'));
@@ -57,6 +58,23 @@ const server=http.createServer((req,res)=>{
    await page.locator('.handwriting-apply').click();
    assert.equal(await page.locator('.handwriting-review-backdrop').count(),0,'Measurement Apply completes');
    assert.equal(await page.locator('#penBtn').getAttribute('class').then(c=>c.includes('active')),true,'Measurement returns to pen');
+   // The user can resolve an ambiguous character through a visible choice.
+   const glyph=number('c');
+   await page.evaluate(ink=>{
+    strokes=ink.map(s=>({...s,colour:'#17324d',points:s.points.map(p=>({x:p.x*1800/cssW,y:p.y*1200/cssH}))}));
+    redraw();syncUi();
+   },ink(glyph));
+   await page.locator('#handwritingBeautifyBtn').click();
+   const glyphBoard=await page.locator('#board').boundingBox();
+   await page.mouse.move(glyphBoard.x+75,glyphBoard.y+45);await page.mouse.down();
+   await page.mouse.move(glyphBoard.x+glyph.w+105,glyphBoard.y+glyph.h+75,{steps:10});await page.mouse.up();
+   const upper=page.getByRole('button',{name:'Use reading C',exact:true}),lower=page.getByRole('button',{name:'Use reading c',exact:true});
+   await upper.waitFor({state:'visible',timeout:20000});await lower.waitFor({state:'visible'});
+   await upper.click();assert.equal(await page.locator('#handwritingReadText').inputValue(),'C');
+   await page.screenshot({path:path.join(output,`glyph-choices-${viewport.width}.png`)});
+   await page.locator('.handwriting-apply').click();
+   assert.equal(await page.locator('.handwriting-review-backdrop').count(),0,'Chosen character Apply completes');
+   assert.equal(await page.locator('#penBtn').getAttribute('class').then(c=>c.includes('active')),true,'Chosen character returns to pen');
    assert.deepEqual(errors,[],'No browser script errors');
    console.log('PASS browser preview, matched loader, nested recognition, Apply, pen return and isolated storage:',viewport.width);
    await context.close();

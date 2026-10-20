@@ -4,6 +4,7 @@ on:
     branches:
       - experimental/math-structure-v2
       - fix/v2-measurement-*
+      - fix/v2-glyph-*
     paths:
       - experimental/math-structure/**
       - .github/workflows/experimental-math-structure.yml
@@ -14,7 +15,7 @@ permissions:
 jobs:
   isolated-structure:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,6 +39,10 @@ jobs:
         run: node experimental/math-structure/test-structural-parser.cjs v2-validation/nested-layouts.json
       - name: Actual teacher measurement and changed-value consensus controls
         run: node experimental/math-structure/test-measurement-consensus.cjs v2-validation/teacher-measurement.json
+      - name: Whole-glyph consensus, changed quantities, ambiguity and correction controls
+        run: node experimental/math-structure/test-glyph-review.cjs v2-validation/glyph-controls.json
+      - name: Preserve uppercase and lowercase on the broader 520-glyph development audit
+        run: node experimental/math-structure/paired-alphabet.cjs v2-validation/alphabet-paired.json
       - name: Install browser test runtime
         run: |
           npm install --prefix /tmp/classroom-v2-browser --no-save playwright@1.62.1
