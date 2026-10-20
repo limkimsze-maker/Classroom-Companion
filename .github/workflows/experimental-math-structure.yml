@@ -1,0 +1,23 @@
+name: Experimental math structure V2
+on:
+  push:
+    branches:
+      - experimental/math-structure-v2
+    paths:
+      - experimental/math-structure/**
+      - .github/workflows/experimental-math-structure.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Experimental spatial graph actual-ink test
+        run: node experimental/math-structure/test-graph.cjs
+      - name: Existing teacher root control
+        run: node scripts/test-square-root-real-teacher-ink.cjs
