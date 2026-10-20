@@ -8,6 +8,16 @@ button.onclick=()=>{
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','learningTitle');
  const heading=document.createElement('h2');heading.id='learningTitle';heading.textContent='Saved handwriting learning';
  const description=document.createElement('p');description.textContent='Corrections stay in this browser. Export a backup or share examples with another teacher. Import adds examples without replacing your existing corrections. A shared website update requires separate checking and publishing.';
+ const guide=document.createElement('section');guide.setAttribute('aria-label','How to improve recognition');
+ const guideTitle=document.createElement('h3');guideTitle.textContent='Help it learn your handwriting';guideTitle.style.cssText='font:700 14px Arial,sans-serif;margin:14px 0 7px';
+ const tips=document.createElement('ol');tips.style.cssText='padding-left:21px;margin:0;font:13px/1.5 Arial,sans-serif';
+ for(const text of [
+  'Label accurately: correct Recognised text to exactly what you wrote before saving. Avoid guessing or giving the same shape conflicting labels. Correct labels matter more than quantity.',
+  'Teach a sign: use Auto for =, +, −, × or ÷. If it is still misread inside an equation, select only that sign’s strokes and enter the correct symbol.',
+  'Keep useful examples: choose Learn & Test Again, then Apply. Add a few natural variations in slant, size or spacing. Repeating identical strokes adds little. Cancel discards provisional learning; Undo reverses the saved learning from that action.',
+  'Check fresh handwriting: write a different equation before training it. Test Again reuses the same ink, so its success alone does not prove new handwriting will be recognised. Improvement varies with how closely the new writing matches your examples.'
+ ]){const item=document.createElement('li');item.textContent=text;item.style.marginBottom='8px';tips.appendChild(item)}
+ guide.append(guideTitle,tips);
  const counts=document.createElement('p');counts.id='handwritingLearningCounts';
  const refresh=()=>{const p=learner.exportPack(),count=(n,label)=>n+' '+label+(n===1?'':'s');counts.textContent=count(p.symbols.length,'symbol example')+' · '+count(p.characters.length,'character example')+' · '+count(p.selections.length,'whole selection')};refresh();
  const status=document.createElement('p');status.id='handwritingLearningStatus';status.setAttribute('role','status');
@@ -29,6 +39,6 @@ button.onclick=()=>{
  const close=document.createElement('button');close.type='button';close.className='btn';close.textContent='Close';
  const dismiss=()=>{backdrop.remove();document.removeEventListener('keydown',key,true);button.focus()};
  const key=e=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();dismiss()}if(e.key==='Tab'){const list=[download,upload,close],at=list.indexOf(document.activeElement);if(e.shiftKey&&at<=0){e.preventDefault();close.focus()}else if(!e.shiftKey&&at===2){e.preventDefault();download.focus()}}};close.onclick=dismiss;document.addEventListener('keydown',key,true);
- actions.append(download,upload,close);panel.append(heading,description,counts,status,actions,file);backdrop.appendChild(panel);document.body.appendChild(backdrop);download.focus();
+ actions.append(download,upload,close);panel.append(heading,description,guide,counts,status,actions,file);backdrop.appendChild(panel);document.body.appendChild(backdrop);heading.tabIndex=-1;heading.focus();
 };
 })();
