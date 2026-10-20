@@ -4,6 +4,7 @@ on:
     paths:
       - .github/workflows/beta-handwriting-benchmark.yml
       - whiteboard-handwriting-recognition-beta.js
+      - scripts/compare-handwriting-engines.cjs
   workflow_dispatch:
 jobs:
   benchmark:
@@ -65,7 +66,11 @@ jobs:
 
           console.log('BUILD',now.build,'READER_SHA256',now.readerSha256);
           NODE
+      - name: Compare component and whole-unit engines on identical ink
+        run: node scripts/compare-handwriting-engines.cjs
       - uses: actions/upload-artifact@v4
         with:
           name: beta-handwriting-924-current
-          path: beta-handwriting-current-results.json
+          path: |
+            beta-handwriting-current-results.json
+            beta-handwriting-engine-comparison.json
