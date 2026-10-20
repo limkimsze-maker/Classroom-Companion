@@ -147,7 +147,7 @@ async function review(group){
   // Independent offline SVG fallback when both MathJax and the equation parser reject a leading '='.
   // Restricted arithmetic characters only; never inject arbitrary user text into SVG.
   const clean=String(value).trim().replace(/＝/g,'=');
-  if(!/^=\\s*\\d+(?:\\.\\d+)?(?:\\s*[+−\\-×÷*/]\\s*\\d+(?:\\.\\d+)?)*$/.test(clean))return null;
+  if(!/^=\s*\d+(?:\.\d+)?(?:\s*[+−\-×÷*/]\s*\d+(?:\.\d+)?)*$/.test(clean))return null;
   const ink=/^#[0-9a-f]{6}$/i.test(colour||'')?colour:'#17324d';
   const W=Math.max(8,b.w*Math.max(1,cssW)),H=Math.max(8,b.h*Math.max(1,cssH));
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><text x="1" y="'+(H*.76)+'" textLength="'+Math.max(4,W-2)+'" lengthAdjust="spacingAndGlyphs" fill="'+ink+'" font-family="Arial,sans-serif" font-size="'+Math.max(12,H*.72)+'" font-weight="600">'+clean+'</text></svg>';
@@ -155,7 +155,7 @@ async function review(group){
  }
  function formatted(){
   const b=groupBounds(group),value=displayReading(),math=window.WhiteboardMathRenderer,equation=window.WhiteboardEquationFormatter;
-  const isLeadingEquals=/^\\s*[=＝]\\s*\\d+(?:\\.\\d+)?(?:\\s*[+−\\-×÷*/]\\s*\\d+(?:\\.\\d+)?)*\\s*$/.test(value);
+  const isLeadingEquals=/^\s*[=＝]\s*\d+(?:\.\d+)?(?:\s*[+−\-×÷*/]\s*\d+(?:\.\d+)?)*\s*$/.test(value);
   if(isLeadingEquals)return math?.create(value,b,colourSelect.value)||equation?.createHandwriting(value,b,colourSelect.value)||leadingEqualsFallback(value,b,colourSelect.value);
   return modeSelect.value==='math'&&!math?.unitText(value)?math?.create(value,b,colourSelect.value):equation?.createHandwriting(value,b,colourSelect.value);
  }
