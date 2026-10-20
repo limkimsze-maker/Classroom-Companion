@@ -2410,28 +2410,58 @@ function reviewIsolatedDisagreement(reading,options){
  return{...reading,tokens:[review],uncertain:[...(reading.uncertain||[]).filter(t=>t!==token),review]};
 }
 function restoreEmbeddedEquals(reading,strokes,W,H){
- if(!reading||typeof reading.text!=='string'||!/[−-]/.test(reading.text)||!/^\s*\d/.test(reading.text))return reading;
- const pairs=window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[];
- if(!pairs.length)return reading;
+ if(!reading||typeof reading.text!=='string'||!Array.isArray(strokes)||strokes.length<5)return reading;
  const source=reading.text;
- // Apply only when the count of detected equals exactly matches the minus
- // glyphs; do not guess about genuinely mixed minus/equal expressions.
- const positions=[...source.matchAll(/[−-]/g)].map(m=>m.index);
- if(positions.length!==pairs.length||positions.length>4)return reading;
- const ordered=strokes.map(stroke=>{
-  const xs=stroke.points.map(p=>p.x*W);
-  return{min:Math.min(...xs),max:Math.max(...xs)};
- });
- const xmin=Math.min(...ordered.map(p=>p.min)),xmax=Math.max(...ordered.map(p=>p.max));
- if(!(xmax>xmin))return reading;
- const centers=pairs.map(p=>p.center).sort((a,b)=>a-b);
- const tokens=source.match(/\d+(?:\.\d+)?|[+−\-×÷*/=]/g)||[];
- const minusPositions=tokens.map((t,i)=>/[−-]/.test(t)?i:-1).filter(i=>i>=0);
- // Require both pair centers to fall between numeric neighbours in ink.
- if(centers.some(c=>c<=xmin+(xmax-xmin)*.08||c>=xmax-(xmax-xmin)*.08))return reading;
- if(minusPositions.some(i=>i===0||i===tokens.length-1||!/\d/.test(tokens[i-1])||!/\d/.test(tokens[i+1])))return reading;
- let n=0;const text=source.replace(/[−-]/g,()=>n++<centers.length?'=':'-');
- return {...reading,text,engine:(reading.engine||'local')+'-embedded-equals-review',uncertain:reading.uncertain||[]};
+ // Recognise compact equals signs drawn as two short, vertically separated
+ // pen marks. This is not a global multiplication-to-equals substitution.
+ const marks=strokes.map((stroke,index)=>{
+  const pts=stroke?.points||[];
+  if(!pts.length)return null;
+  const xs=pts.map(p=>p.x*W),ys=pts.map(p=>p.y*H);
+  const x=Math.min(...xs),y=Math.min(...ys),w=Math.max(...xs)-x,h=Math.max(...ys)-y;
+  return{index,x,y,w,h,cx:x+w/2,cy:y+h/2,pts:pts.length};
+ }).filter(Boolean);
+ const height=Math.max(...marks.map(m=>m.y+m.h))-Math.min(...marks.map(m=>m.y));
+ const width=Math.max(...marks.map(m=>m.x+m.w))-Math.min(...marks.map(m=>m.x));
+ if(height<=0||width<=0)return reading;
+ const tiny=marks.filter(m=>m.w<=height*.15&&m.h<=height*.15&&m.pts<=7);
+ const pairs=[];
+ for(let i=0;i<tiny.length;i++)for(let j=i+1;j<tiny.length;j++){
+  const p=tiny[i],q=tiny[j],dx=Math.abs(p.cx-q.cx),dy=Math.abs(p.cy-q.cy);
+  if(dx>height*.12||dy<height*.035||dy>height*.24)continue;
+  // The two marks must be isolated in the same horizontal operator slot.
+  const cx=(p.cx+q.cx)/2;
+  if(marks.some(m=>m.index!==p.index&&m.index!==q.index&&
+    Math.abs(m.cx-cx)<height*.11&&m.w>height*.18))continue;
+  pairs.push({cx,ids:[p.index,q.index]});
+ }
+ pairs.sort((p,q)=>p.cx-q.cx);
+ const distinct=[];
+ for(const p of pairs)if(!distinct.some(q=>p.ids.some(id=>q.ids.includes(id))))distinct.push(p);
+ if(!distinct.length||distinct.length>4)return reading;
+ const tokens=[...source.matchAll(/\d+(?:\.\d+)?|[+−\-×÷*/=]/g)].map(m=>({value:m[0],start:m.index}));
+ const suspects=tokens.filter(t=>/[×−\-]/.test(t.value));
+ if(suspects.length!==distinct.length)return reading;
+ if(suspects.some(t=>{const i=tokens.indexOf(t);return i===0||i===tokens.length-1||!/\d/.test(tokens[i-1].value)||!/\d/.test(tokens[i+1].value)}))return reading;
+ // Use horizontal order of operators, not a blanket string replacement.
+ const ops=tokens.filter(t=>/[+−\-×÷*/=]/.test(t.value));
+ if(ops.length<distinct.length)return reading;
+ const allCenters=marks.filter(m=>m.w>height*.15||m.h>height*.15).map(m=>m.cx).sort((a,b)=>a-b);
+ if(allCenters.length<3)return reading;
+ const minX=Math.min(...marks.map(m=>m.x)),maxX=Math.max(...marks.map(m=>m.x+m.w));
+ const operatorOrder=ops.map(t=>t.start);
+ const selected=[];
+ for(const p of distinct){
+  const ratio=(p.cx-minX)/(maxX-minX);
+  const slot=Math.round(ratio*(tokens.length-1));
+  const nearest=ops.reduce((best,o)=>Math.abs(tokens.indexOf(o)-slot)<Math.abs(tokens.indexOf(best)-slot)?o:best,ops[0]);
+  if(!/[×−\-]/.test(nearest.value)||selected.includes(nearest))return reading;
+  selected.push(nearest);
+ }
+ if(selected.length!==distinct.length)return reading;
+ let out=source;
+ for(const t of selected.sort((a,b)=>b.start-a.start))out=out.slice(0,t.start)+'='+out.slice(t.start+t.value.length);
+ return out===source?reading:{...reading,text:out,engine:(reading.engine||'local')+'-compact-equals-review'};
 }
 async function recognize(strokes,W,H,options={}){
  checkCancelled(options);
