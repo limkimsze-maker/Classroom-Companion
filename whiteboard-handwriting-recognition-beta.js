@@ -899,9 +899,31 @@ function completeUnitProposal(proposals){
  const complete=proposals.filter(p=>!proposals.some(q=>q.word.length>p.word.length&&
   q.word.endsWith(p.word)&&q.score>=p.score-.03&&q.raised.length===p.raised.length&&
   q.raised.every((raw,i)=>raw===p.raised[i])));
- complete.sort((a,b)=>b.score-a.score);
- const best=complete[0];
- return !best||complete.some(p=>p.text!==best.text&&best.score-p.score<.03)?null:best;
+ // Compare complete readings rather than accepting the first unit template.
+ // Repeated segmentations supporting the same reading contribute evidence,
+ // but never override a clearly stronger competing character prediction.
+ const candidates=new Map();
+ for(const p of complete){
+  const key=p.text.replace(/\\s+/g,' ').trim();
+  const prior=candidates.get(key);
+  if(!prior)candidates.set(key,{...p,support:1});
+  else{
+   prior.support++;
+   if(p.score>prior.score){
+    const count=prior.support;
+    candidates.set(key,{...p,support:count});
+   }
+  }
+ }
+ const ranked=[...candidates.values()].sort((a,b)=>
+  (b.score+Math.min(b.support-1,2)*.005)-(a.score+Math.min(a.support-1,2)*.005));
+ const best=ranked[0],runner=ranked[1];
+ if(!best)return null;
+ // Abstain on genuine unit/power disagreements; preserve the existing
+ // 0.03 margin and never silently force cm² into cm³ (or vice versa).
+ const bestEvidence=best.score+Math.min(best.support-1,2)*.005;
+ const runnerEvidence=runner?runner.score+Math.min(runner.support-1,2)*.005:-Infinity;
+ return bestEvidence-runnerEvidence<.03?null:best;
 }
 async function readUnitLetters(groups,options){
  const alpha=await readCharacters(groups.map(rasterDigit),'lowercase',options);
