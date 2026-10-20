@@ -143,7 +143,22 @@ async function review(group){
  for(const [value,text]of [['','Insert…'],['\\frac{1}{2}','Fraction ½'],['x^{2}','Power x²'],['\\sqrt{x}','Root √'],['\\int_{0}^{1} x\\,dx','Integral ∫'],['\\sum_{i=1}^{n} i','Sum ∑'],['\\alpha','Greek α'],['\\pi','Pi π'],['\\leq','Less or equal ≤'],['\\infty','Infinity ∞'],['\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}','Matrix'],['cm²','cm² · area'],['m²','m² · area'],['cm³','cm³ · volume'],['m³','m³ · volume'],['mm','mm · length'],['cm','cm · length'],['m','m · length'],['km','km · length'],['mg','mg · mass'],['g','g · mass'],['kg','kg · mass'],['mL','mL · capacity'],['L','L · capacity'],['s','s · time'],['min','min · time'],['h','h · time'],['°C','°C · temperature'],['m/s²','m/s² · acceleration'],['km/h','km/h · speed']]){const option=document.createElement('option');option.value=value;option.textContent=text;insert.appendChild(option)}appearance.appendChild(insert);
  function arithmeticResult(){return window.WhiteboardBetaArithmetic?.verify(input.value)}
  function displayReading(){const result=arithmeticResult();return correctionToggle.checked&&result?.supported&&!result.correct?result.corrected:input.value}
- function formatted(){const b=groupBounds(group),value=displayReading();const math=window.WhiteboardMathRenderer;const equation=window.WhiteboardEquationFormatter;const isLeadingEquals=/^\s*[=＝]\s*\d+(?:\.\d+)?(?:\s*[+−\-×÷*/]\s*\d+(?:\.\d+)?)*\s*$/.test(value);if(isLeadingEquals)return math?.create(value,b,colourSelect.value)||equation?.createHandwriting(value,b,colourSelect.value);return modeSelect.value==='math'&&!math?.unitText(value)?math?.create(value,b,colourSelect.value):equation?.createHandwriting(value,b,colourSelect.value)}
+ function leadingEqualsFallback(value,b,colour){
+  // Independent offline SVG fallback when both MathJax and the equation parser reject a leading '='.
+  // Restricted arithmetic characters only; never inject arbitrary user text into SVG.
+  const clean=String(value).trim().replace(/＝/g,'=');
+  if(!/^=\\s*\\d+(?:\\.\\d+)?(?:\\s*[+−\\-×÷*/]\\s*\\d+(?:\\.\\d+)?)*$/.test(clean))return null;
+  const ink=/^#[0-9a-f]{6}$/i.test(colour||'')?colour:'#17324d';
+  const W=Math.max(8,b.w*Math.max(1,cssW)),H=Math.max(8,b.h*Math.max(1,cssH));
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><text x="1" y="'+(H*.76)+'" textLength="'+Math.max(4,W-2)+'" lengthAdjust="spacingAndGlyphs" fill="'+ink+'" font-family="Arial,sans-serif" font-size="'+Math.max(12,H*.72)+'" font-weight="600">'+clean+'</text></svg>';
+  return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),x:b.x,y:b.y,w:W/Math.max(1,cssW),h:H/Math.max(1,cssH),smartGenerated:true,smartType:'equation',smartId:'math-v2-'+Date.now().toString(36),smartOriginal:[],equationExpression:value,equationLatex:clean,equationLayout:'in-place-math',equationColour:ink};
+ }
+ function formatted(){
+  const b=groupBounds(group),value=displayReading(),math=window.WhiteboardMathRenderer,equation=window.WhiteboardEquationFormatter;
+  const isLeadingEquals=/^\\s*[=＝]\\s*\\d+(?:\\.\\d+)?(?:\\s*[+−\\-×÷*/]\\s*\\d+(?:\\.\\d+)?)*\\s*$/.test(value);
+  if(isLeadingEquals)return math?.create(value,b,colourSelect.value)||equation?.createHandwriting(value,b,colourSelect.value)||leadingEqualsFallback(value,b,colourSelect.value);
+  return modeSelect.value==='math'&&!math?.unitText(value)?math?.create(value,b,colourSelect.value):equation?.createHandwriting(value,b,colourSelect.value);
+ }
  const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Reading handwriting on this device…';
  const contextArea=document.createElement('section');contextArea.className='handwriting-context';contextArea.id='handwritingContextChoices';contextArea.setAttribute('aria-label','Possible handwriting readings');contextArea.hidden=true;
  const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Beautified preview in the original writing area';preview.hidden=true;
