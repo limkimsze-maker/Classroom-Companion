@@ -157,6 +157,17 @@ const server=http.createServer((req,res)=>{
    assert.equal(await page.evaluate(()=>strokes.some(s=>s.text==='Keep')),false,'Eraser deletes selected text');
    await page.locator('#undoBtn').click();
    assert.equal(await page.evaluate(()=>strokes.some(s=>s.text==='Keep')),true,'Undo restores erased text');
+
+   // Point-based shapes use the classroom selection owner rather than text selection.
+   await page.evaluate(()=>{strokes.push({size:4,colour:'#17324d',points:[{x:.12,y:.55},{x:.30,y:.55}]});redraw();syncUi();});
+   await page.locator('#selectBtn').click();await page.waitForTimeout(120);
+   eraseBoard=await page.locator('#board').boundingBox();
+   const shapeCount=await page.evaluate(()=>strokes.length);
+   await page.mouse.click(eraseBoard.x+.21*eraseBoard.width,eraseBoard.y+.55*eraseBoard.height);
+   await page.locator('#eraserBtn').click();
+   assert.equal(await page.evaluate(()=>strokes.length),shapeCount-1,'Eraser deletes selected ink shape');
+   await page.locator('#undoBtn').click();
+   assert.equal(await page.evaluate(()=>strokes.length),shapeCount,'Undo restores erased ink shape');
    // With no selection Eraser remains the normal freehand eraser tool.
    await page.locator('#penBtn').click();
    await page.locator('#eraserBtn').click();
