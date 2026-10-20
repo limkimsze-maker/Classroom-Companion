@@ -37,6 +37,16 @@ jobs:
           console.log('FIXED_CASES',JSON.stringify(fixed.map(x=>x.id)));
           console.log('REGRESSED_CASES',JSON.stringify(regressed.map(x=>x.id)));
           console.log('TOP_FAILURES',JSON.stringify(Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,20)));
+          const targeted=now.records.filter(x=>!x.correct&&
+            (x.expected==='35cm²'||x.expected==='6−2=4cm²'));
+          console.log('SQUARE_TO_CUBE_DIAGNOSIS',JSON.stringify(targeted.map(x=>({
+            id:x.id,partition:x.partition,expected:x.expected,actual:x.actual,
+            engine:x.engine,flagged:x.flagged
+          }))));
+          const engines={};
+          for(const x of targeted){const k=x.engine||'unknown';engines[k]=(engines[k]||0)+1;}
+          console.log('SQUARE_TO_CUBE_ENGINES',JSON.stringify(engines));
+
           console.log('BUILD',now.build,'READER_SHA256',now.readerSha256);
           NODE
       - uses: actions/upload-artifact@v4
