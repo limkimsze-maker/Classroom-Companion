@@ -69,6 +69,11 @@ jobs:
       - name: Shipped identical frozen 924-case benchmark
         if: always()
         run: NODE_OPTIONS=--require=/tmp/use-shipped-v2.cjs node experimental/math-structure/paired-benchmark.cjs v2-shipped-validation/paired-report.json
+      - name: Preserve the previously published V2 correct readings
+        run: |
+          git fetch --no-tags --depth=1 origin b8db481f5bd937df047b2f94c639c0fbd476aebb
+          git show b8db481f5bd937df047b2f94c639c0fbd476aebb:experimental/math-structure/reader-v2.js > /tmp/previous-v2-reader.js
+          node experimental/math-structure/test-v2-signs-preservation.cjs /tmp/previous-v2-reader.js v2-shipped-validation/v2-simulations.json v2-shipped-validation/previous-v2-paired.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

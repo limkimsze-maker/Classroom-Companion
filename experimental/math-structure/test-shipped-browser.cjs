@@ -55,8 +55,8 @@ const server=http.createServer((req,res)=>{
 
    // Read both signs together, keeping a written wrong answer when correction is off.
    const signFixture=require('./sign-fixtures.cjs');
-   for(const answer of ['5','7']){
-    const signInk=signFixture.equation('10','2',answer,undefined,.7);
+   for(const [style,equals]of [['compact',signFixture.eq],['asymmetric',signFixture.asymmetric]])for(const answer of ['5','7']){
+    const signInk=signFixture.equation('10','2',answer,undefined,.7,equals);
     await page.evaluate(({ink,W,H})=>{
      strokes=ink.map(s=>({...s,colour:'#17324d',points:s.points.map(p=>({x:p.x*W/cssW,y:p.y*H/cssH}))}));redraw();syncUi();
     },{ink:signInk,W:signFixture.W,H:signFixture.H});
@@ -65,10 +65,14 @@ const server=http.createServer((req,res)=>{
     await page.mouse.move(signBoard.x+5,signBoard.y+75);await page.mouse.down();
     await page.mouse.move(signBoard.x+Math.min(signBoard.width-6,345),signBoard.y+160,{steps:8});await page.mouse.up();
     await page.waitForFunction(expected=>document.getElementById('handwritingReadText')?.value.replace(/\s/g,'')===expected,'10÷2='+answer,{timeout:20000});
+    if(style==='asymmetric'){
+     assert(await page.locator('#handwritingContextChoices').isVisible(),'Ambiguous dot/bar offers visible alternatives');
+     await page.getByRole('button',{name:'Use reading 10 ÷ 2 = '+answer,exact:true}).click();
+    }
     await page.locator('#handwritingCorrectArithmetic').uncheck();
     assert.equal(await page.locator('#handwritingColour').inputValue(),'#1d4ed8','Answer colour is royal blue');
     await page.waitForFunction(()=>!document.querySelector('.handwriting-apply')?.disabled);
-    await page.screenshot({path:path.join(output,`divide-equals-${answer}-${viewport.width}.png`)});
+    await page.screenshot({path:path.join(output,`divide-equals-${style}-${answer}-${viewport.width}.png`)});
     await page.locator('.handwriting-apply').click();
     assert.equal(await page.evaluate(()=>strokes[0].equationExpression.replace(/\s/g,'')),'10÷2='+answer,'Applied equation preserves both signs and written answer');
     assert.equal(await page.evaluate(()=>tool),'pen');
