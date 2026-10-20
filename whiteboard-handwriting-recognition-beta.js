@@ -370,7 +370,7 @@ async function radicalExpression(inside,W,H,options){
  if(!await flush())return null;
  const expression=output.join('');
  // Balanced grouping is not enough: only numeric and arithmetic grammar is allowed.
- if(!/^[0-9+−×÷().\\s]+$/.test(expression))return null;
+ if(!/^[0-9+−×÷().\s]+$/.test(expression))return null;
  return{text:expression,tokens,uncertain,engine:'radical-bracket-grammar'};
 }
 async function detectSquareRoot(strokes,W,H,options={}){
@@ -1925,5 +1925,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-radical-plus7';
+window.WhiteboardHandwritingMath.build='20261020-structural-parser8';
 })();
