@@ -163,14 +163,27 @@ async function review(group){
   let b=original;
   if(isSimple&&original.h>0&&original.w>0){
    const boardH=Math.max(1,cssH),boardW=Math.max(1,cssW);
-   const targetPx=52;
-   const originalPx=original.h*boardH;
-   const maxScale=Math.min((boardW*(1-original.x)-8)/Math.max(1,original.w*boardW),1.8);
-   const scale=Math.min(Math.max(1,targetPx/originalPx),Math.max(1,maxScale));
-   if(scale>1.02){
-    const h=original.h*scale,w=original.w*scale;
-    b={x:original.x,y:Math.max(0,Math.min(1-h,original.y+original.h-h)),w,h};
+   // Font height must be independent of the selected handwriting bounds.
+   // The old 1.8x cap left short handwriting permanently smaller.
+   const targetPx=Math.min(70,boardH*.12);
+   const display=String(value||raw).trim();
+   const family=equation?.font?.()||'Arial,sans-serif';
+   let widthPx=Math.max(1,display.length*targetPx*.72);
+   if(typeof ctx!=='undefined'&&typeof ctx.measureText==='function'){
+    ctx.save();
+    try{
+     ctx.font='700 100px '+family;
+     const m=ctx.measureText(display);
+     const glyphH=Math.max(1,(m.actualBoundingBoxAscent||78)+(m.actualBoundingBoxDescent||8));
+     widthPx=Math.max(1,m.width)*targetPx/glyphH;
+    }finally{ctx.restore()}
    }
+   const left=original.x*boardW,baseline=(original.y+original.h)*boardH;
+   const maxWidth=Math.max(1,boardW-left-8);
+   // Keep a single scale factor for height and width near the right edge.
+   const fit=Math.min(1,maxWidth/widthPx);
+   const h=targetPx*fit,w=widthPx*fit;
+   b={x:original.x,y:Math.max(0,Math.min(1-h/boardH,(baseline-h)/boardH)),w:w/boardW,h:h/boardH};
   }
   // All simple arithmetic uses the existing Equation tool's classroom font,
   // regardless of Auto / Math formulas / arithmetic-correction settings.
