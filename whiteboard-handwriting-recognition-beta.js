@@ -346,7 +346,27 @@ async function detectSquareRoot(strokes,W,H,options={}){
   if(invalid||!inside.length)continue;
   const enclosed=bounds(inside.map(p=>p.scaled));
   if(enclosed.h<h*.30||enclosed.h>h*1.05)continue;
-  const number=await recognizeNumericContext(inside.map(p=>p.raw),W,H,options);
+  let number=await recognizeNumericContext(inside.map(p=>p.raw),W,H,options);
+  // A radical establishes numeric context even when an open handwritten 4
+  // resembles a dollar sign to the generic mixed-character recogniser.
+  // Keep the geometry-backed radical, but flag fallback digits for review.
+  if(!number){
+   const tokens=segment(inside.map(p=>p.raw),W,H);
+   if(tokens.length&&tokens.length<=256){
+    const operators=new Set(['+','−','×','÷']);
+    const recovered=[];
+    for(const token of tokens){
+     if(operators.has(token.char)){recovered.push(token);continue;}
+     if(!token.parts?.length){recovered.length=0;break;}
+     const guess=predictDigit(rasterDigit(token.parts))[0];
+     if(!guess||!/^[0-9]$/.test(guess.char)||guess.score<.42){recovered.length=0;break;}
+     recovered.push({...token,char:guess.char,score:Math.min(guess.score,.74),engine:'radical-numeric-fallback'});
+    }
+    const text=recovered.map(t=>operators.has(t.char)?' '+t.char+' ':t.char).join('').replace(/\\s+/g,' ').trim();
+    if(recovered.length&&completeNumericExpression(text))
+     number={text,tokens:recovered,uncertain:recovered.filter(t=>t.score<.85),engine:'radical-numeric-fallback'};
+   }
+  }
   if(!number||number.text.includes('='))continue;
   let suffix='',tailTokens=[],uncertain=[...number.uncertain];
   if(tail.length){
@@ -1799,5 +1819,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-square-root-gap1';
+window.WhiteboardHandwritingMath.build='20261020-square-root-radicand2';
 })();
