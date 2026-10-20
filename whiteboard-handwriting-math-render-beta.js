@@ -19,6 +19,8 @@ function unitText(value){
 }
 function normalize(value){
  let s=String(value??'').trim();if(!s||s.length>600)return null;
+ // Unicode numeric roots need braces around the complete radicand.
+ s=s.replace(/√\s*(\d+(?:\.\d+)?)/g,(_,number)=>'\\sqrt{'+number+'}');
  s=s.replace(/[²³⁻−×÷≤≥≠≈±∞∫∑∏√παβθ°]/g,c=>aliases[c]);
  // Only literal measurement quantities are set upright; variables stay variables.
  s=s.replace(/(^|[\s+=({])([+-]?\d+(?:\.\d+)?)\s*(mm|cm|km|mg|kg|mL|ml|kL|mol|Hz|kHz|MHz|kPa|MPa|kJ|kW|mV|mA|rad|m|g|L|l|s|min|h|N|Pa|J|W|V|A|K)(?=\s*(?:[234^}/=+\-]|$))/g,(_,a,n,u)=>a+n+'\\,\\mathrm{'+u+'}');
