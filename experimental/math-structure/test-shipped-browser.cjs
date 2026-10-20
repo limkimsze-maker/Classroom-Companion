@@ -83,7 +83,7 @@ const server=http.createServer((req,res)=>{
     redraw();syncUi();
    },ink(number('1')));
    await page.locator('#handwritingBeautifyBtn').click();
-   const bb=await page.locator('#board').boundingBox();
+   let bb=await page.locator('#board').boundingBox();
    await page.mouse.move(bb.x+65,bb.y+35);await page.mouse.down();
    await page.mouse.move(bb.x+160,bb.y+145,{steps:8});await page.mouse.up();
    await page.waitForFunction(()=>document.getElementById('handwritingReadText')?.value?.trim(),null,{timeout:20000});
@@ -98,6 +98,8 @@ const server=http.createServer((req,res)=>{
    await page.locator('#selectBtn').click();
    await page.mouse.click(bb.x+(original.x+original.w/2)*bb.width,bb.y+(original.y+original.h/2)*bb.height);
    async function dragScale(factor,pointerType){
+    await page.waitForTimeout(120); // wait for responsive selection toolbar to settle
+    bb=await page.locator('#board').boundingBox();
     const before=await page.evaluate(()=>{const s=strokes.find(s=>s.type==='image');return{x:s.x,y:s.y,w:s.w,h:s.h};});
     const sx=bb.x+(before.x+before.w)*bb.width+7,sy=bb.y+(before.y+before.h)*bb.height+7;
     const ex=sx+before.w*bb.width*(factor-1),ey=sy+before.h*bb.height*(factor-1);
