@@ -20,7 +20,7 @@ class Element{
 const find=(root,predicate)=>predicate(root)?root:root.children.map(c=>find(c,predicate)).find(Boolean);
 const body=new Element('body'),head=new Element('head'),tools=new Element('div'),board=new Element('div'),undo=new Element('button'),pen=new Element('button');
 board.id='boardWrap';undo.id='undoBtn';pen.id='penBtn';tools.append(pen,undo);body.append(tools,board);
-document={body,head,activeElement:null,createElement:tag=>new Element(tag),querySelector:s=>s==='.tools'?tools:null,getElementById:id=>find(body,e=>e.id===id)||find(head,e=>e.id===id)};
+document={body,head,activeElement:null,createElement:tag=>new Element(tag),createTextNode:text=>Object.assign(new Element('#text'),{textContent:String(text)}),querySelector:s=>s==='.tools'?tools:null,getElementById:id=>find(body,e=>e.id===id)||find(head,e=>e.id===id)};
 const raw={size:4,points:[{x:.2,y:.3},{x:.25,y:.4}]},alternateTokens=[{char:'3',parts:[{points:[{x:20,y:30},{x:25,y:40}]}]}];
 let recognition={text:'10 m²',tokens:[],uncertain:[{char:'?',score:0}],engine:'local-context-language-model',format:'unit',context:{applied:false,originalText:'10 m²',alternatives:[{text:'10 m²',tokens:[]},{text:'10 m³',tokens:alternateTokens}]}};
 let confirmed=[],undone=[],cancelled=0;

@@ -20,7 +20,7 @@ function fixture({missingModel=false,read}={}){
  const find=(e,fn)=>fn(e)?e:e.children.map(c=>find(c,fn)).find(Boolean);
  const body=new Element('body'),head=new Element('head'),tools=new Element('div'),board=new Element('div'),undo=new Element('button');
  board.id='boardWrap';undo.id='undoBtn';tools.append(undo);body.append(tools,board);
- document={head,body,createElement:t=>new Element(t),getElementById:id=>find(body,e=>e.id===id),querySelector:s=>s==='.tools'?tools:null};
+ document={head,body,createElement:t=>new Element(t),createTextNode:text=>Object.assign(new Element('#text'),{textContent:String(text)}),getElementById:id=>find(body,e=>e.id===id),querySelector:s=>s==='.tools'?tools:null};
  const raw={size:4,points:[{x:.2,y:.3},{x:.25,y:.4}]},result={text:'cat',tokens:[],uncertain:[],engine:'local-emnist-cnn'};
  let cancellations=0,confirmed=0;
  const ctx={document,console,Math,JSON,Number,Set,encodeURIComponent,AbortController,

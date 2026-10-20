@@ -16,10 +16,14 @@ const operator=(kind,x)=>({
  '÷':[S([[x,223],[x+34,223]]),S([[x+17,204],[x+18,205]]),S([[x+17,242],[x+18,243]])],
  '=':[S([[x,218],[x+34,218]]),S([[x,230],[x+34,230]])]
 }[kind]);
-async function expect(ink,expected,width=W,height=H,certain=true){
+async function expect(ink,expected,width=W,height=H,certain=false){
  const result=await reader.recognize(ink,width,height,{mode:'auto'});
  assert.equal(result.text,expected,JSON.stringify({expected,actual:result.text,engine:result.engine}));
  if(certain)assert.equal(result.uncertain.length,0);
+ // Correct text can retain image/pen disagreement. Review flags must remain
+ // attached to weak tokens rather than being cleared to satisfy this fixture.
+ assert(result.uncertain.every(t=>t.score<.85));
+ assert(result.uncertain.every(t=>t.engine==='context-review'||result.tokens.includes(t)));
  return result;
 }
 (async()=>{

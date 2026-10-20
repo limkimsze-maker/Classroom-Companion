@@ -393,7 +393,17 @@ function loopedStandaloneL(strokes,W,H){
   }
   return false;
  });
- return upperHook;
+ if(!upperHook)return false;
+ // A loop silhouette also fits hooked numerals and S-shaped fives. Do not
+ // call those L when independent pen and image evidence share another family.
+ const parts=strokes.map(raw=>({size:Number(raw.size)||4,points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))}));
+ const pen=window.WhiteboardUjiReader?.read(parts.map(p=>p.points));
+ const image=window.WhiteboardCharacterInference?.predict(rasterDigit(parts),'auto');
+ const family=c=>({S:'5',s:'5',I:'1',i:'1',O:'0',o:'0'}[c]||c);
+ const votes=choices=>{const out={};for(const [c,p]of choices)out[family(c)]=(out[family(c)]||0)+p;return Object.entries(out).sort((a,b)=>b[1]-a[1]);};
+ const penVotes=votes((pen||[]).map(p=>[p.label,p.p])),imageVotes=votes((image||[]).map(p=>[p.char,p.score]));
+ if(penVotes[0]&&imageVotes[0]&&/^\d$/.test(penVotes[0][0])&&penVotes[0][0]===imageVotes[0][0]&&penVotes[0][1]>=.985&&imageVotes[0][1]>=.55)return false;
+ return true;
 }
 
 /* General measurement reading. First recognise the numeric prefix with the digit
@@ -877,6 +887,12 @@ async function recognizeNumericContext(strokes,W,H,options){
  if(!glyphs.length)return null;
  const mixed=await readCharacters(glyphs.map(t=>rasterDigit(t.parts)),'auto',options);
  const hasOperator=tokens.some(t=>operators.includes(t.char));
+ // An operator or a separately corroborated numeral establishes a numeric
+ // neighbourhood; an isolated ambiguous letter has no such evidence.
+ const numericNeighbour=hasOperator||options.measurementPrefix||glyphs.length>1&&glyphs.some((t,i)=>{
+  const a=mixed[i]?.[0],p=uji(t.parts)?.[0];
+  return /^\d$/.test(a?.char||'')&&a.score>=.90&&p?.label===a.char&&p.p>=.90;
+ });
  const equivalents={O:'0',o:'0',I:'1',l:'1',Z:'2',z:'2',S:'5',s:'5',B:'8',g:'9',q:'9'};
  const familyVotes=(choices,label,weight)=>{
   const votes=Array.from({length:10},(_,i)=>({char:String(i),score:0}));
@@ -904,15 +920,19 @@ async function recognizeNumericContext(strokes,W,H,options){
     (top.char===digit.char||best?.label===top.char&&best.p>=.70)){
    char=top.char;score=Math.min(top.score,Math.max(digits.find(p=>p.char===char).score,best?.label===char?best.p:0));
   }
-  // A validated measurement prefix is numeric. The mixed and pen models can
+  // In a structurally numeric neighbourhood, the mixed and pen models can
   // agree on the 5/S, 0/O or 1/I family even when neither ranks the digit first.
   // Keep this inference out of ordinary letter/word recognition.
-  if(options.measurementPrefix){
+  if(numericNeighbour){
    const imageFamily=familyVotes(alpha,'char','score'),penFamily=familyVotes(pen||[],'label','p');
    if(imageFamily[0].char===penFamily[0].char&&imageFamily[0].score>=.95&&penFamily[0].score>=.95&&
       imageFamily[0].score-imageFamily[1].score>=.90&&penFamily[0].score-penFamily[1].score>=.90){
     char=imageFamily[0].char;score=Math.min(imageFamily[0].score,penFamily[0].score);
    }
+  }
+  if(numericNeighbour&&best&&/^\d$/.test(best.label)&&best.p>=.90&&best.p-(pen[1]?.p||0)>=.85){
+   const support=alpha.find(p=>p.char===best.label)?.score||0;
+   if(support>=.05&&best.label!==char){char=best.label;score=Math.min(best.p,support);}
   }
   const support=alpha.reduce((sum,p)=>sum+((p.char===char||equivalents[p.char]===char)?p.score:0),0);
   const penAgrees=best?.label===char&&best.p>=.85;
@@ -965,7 +985,11 @@ function groupUnitInk(baseline){
   // own character evidence instead of becoming a synthetic wide m.
   const substantialOverlap=overlap>Math.min(a.w,b.w)*.12;
   const oneSmallStroke=Math.min(a.w,b.w)<h*.20&&overlap>=-Math.max(1,h*.02);
-  if((substantialOverlap||oneSmallStroke)&&both.w<h*2.1&&Math.abs(a.cy-b.cy)<h*.65){
+  // Contiguous pen lifts may leave six independent lines in one m. Shared
+  // endpoints establish connectivity even when the strokes do not overlap.
+  const connected=groups[i].some(s=>groups[j].some(t=>[s.points[0],s.points.at(-1)].some(p=>
+    [t.points[0],t.points.at(-1)].some(q=>Math.hypot(p.x-q.x,p.y-q.y)<=Math.max(.75,h*.008)))));
+  if((substantialOverlap||oneSmallStroke||connected&&both.w<h*1.6)&&both.w<h*2.1&&Math.abs(a.cy-b.cy)<h*.65){
     groups[i].push(...groups[j]);groups.splice(j,1);merged=true;break;
    }
   }
@@ -1160,10 +1184,11 @@ async function recognizeUnitComponents(strokes,W,H,options){
   const rb=bounds(raised.map(p=>p.scaled)),bb=bounds(baseline.map(p=>p.scaled));
   const tall=Math.max(bb.h,...prefix.map(p=>p.box.h));
   // A true superscript sits above the baseline's visual centre and occupies
-  // less vertical space. Reject ambiguous suffix splits before digit reading.
+  // less vertical space than the tallest baseline glyph. Short unit x-heights
+  // must not exclude a clearly raised power. Reject ambiguous suffix splits.
   const baselineBottom=bb.y+bb.h,raisedBottom=rb.y+rb.h;
   const verticalLift=(baselineBottom-raisedBottom)/Math.max(1,bb.h);
-  const raisedHeightRatio=rb.h/Math.max(1,bb.h);
+  const raisedHeightRatio=rb.h/Math.max(1,tall);
   if(verticalLift<.28||raisedHeightRatio>.72)continue;
   // Cut the complete right-hand exponent from the complete unit body. Small
   // finishing strokes or the top of a multi-stroke m are not separate powers.
@@ -1186,7 +1211,9 @@ async function recognizeUnitComponents(strokes,W,H,options){
   if(!['2','3'].includes(power?.char)||power.score<.90){
    const pen=window.WhiteboardUjiReader?.read(raised.map(p=>p.scaled.points)),best=pen?.[0];
    if(!best||!['2','3'].includes(best.label)||best.p<.985||best.p-(pen[1]?.p||0)<.95)continue;
-   const support=powerChoices.find(p=>p.char===best.label)?.score||0;
+   const image=window.WhiteboardCharacterInference?.predict(upperRaster,'auto');
+   const support=Math.max(powerChoices.find(p=>p.char===best.label)?.score||0,
+     image?.find(p=>p.char===best.label)?.score||0);
    if(support<.10)continue;
    power={char:best.label,score:Math.min(best.p,support),evidence:best.p};
   }
@@ -1585,9 +1612,18 @@ function reviewLegacyMeasurement(reading){
  });
  return disputed.length?{...reading,tokens,uncertain:[...(reading.uncertain||[]),...disputed]}:reading;
 }
+function reviewIsolatedDisagreement(reading,options){
+ if((options.mode||'auto')!=='auto'||reading?.engine!=='local-emnist-cnn'||reading.tokens?.length!==1)return reading;
+ const token=reading.tokens[0];
+ if(token.personal||!/^[A-Za-z]$/.test(token.char)||!token.parts?.length)return reading;
+ const pen=window.WhiteboardUjiReader?.read(token.parts.map(p=>p.points)),best=pen?.[0];
+ if(!best||!/^\d$/.test(best.label)||best.p<.90||best.p-(pen[1]?.p||0)<.85)return reading;
+ const review={...token,score:Math.min(token.score,.5),engine:'isolated-model-review'};
+ return{...reading,tokens:[review],uncertain:[...(reading.uncertain||[]).filter(t=>t!==token),review]};
+}
 async function recognize(strokes,W,H,options={}){
  checkCancelled(options);
- const reading=await recognizeBeforeContext(strokes,W,H,options);
+ const reading=reviewIsolatedDisagreement(await recognizeBeforeContext(strokes,W,H,options),options);
  checkCancelled(options);
  // Word checking is an optional review layer. A failure retains the existing
  // reading and must not prevent the independent measurement context check.
@@ -1604,5 +1640,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-priority4-consensus1';
+window.WhiteboardHandwritingMath.build='20261020-priority5-audit1';
 })();

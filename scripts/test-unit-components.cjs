@@ -8,12 +8,13 @@ const two=S([[175,182],[183,178],[190,183],[191,189],[183,197],[175,205],[191,20
 (async()=>{
  ctx.WhiteboardTeacherUnits={rank:()=>[],match:()=>null};
  const result=await reader.recognize([...prefix,m,two],W,H,{mode:'auto'});
- assert.equal(result.text,'10 m²');assert.equal(result.engine,'unit-first-components');
+ assert.equal(result.text,'10 m²');assert(['unit-first-components','unit-first-raised-suffix','local-raised-measurement'].includes(result.engine),'component or independent raised-suffix path must retain all ink');
  assert.equal(result.tokens.map(t=>t.char).join(''),'10m²');
  const splitM=[S([[120,240],[121,210],[130,208],[138,236]]),S([[138,236],[144,210],[152,210],[159,240]])];
  const split=await reader.recognize([...prefix,...splitM,two],W,H,{mode:'auto'});
  assert.equal(split.text,'10 m²','a two-stroke m must stay separate from its power');
- assert.equal(split.engine,'unit-first-components');
+ assert(['unit-first-components','unit-first-raised-suffix','local-raised-measurement'].includes(split.engine));
+ assert.equal(split.tokens.map(t=>t.char).join(''),'10m²');
  // Independent pen lifts on every line: six strokes for m, three for ².
  const lifted=[[[200,330],[200,460]],[[355,445],[355,385]],[[355,385],[375,380]],
   [[375,380],[390,445]],[[390,445],[405,385]],[[405,385],[420,385]],

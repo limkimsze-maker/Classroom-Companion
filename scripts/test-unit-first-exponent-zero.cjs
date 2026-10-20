@@ -23,12 +23,12 @@ async function run(exponent,stronglySquared=false){
    'async function legacyRecognizeCore(strokes,W,H,options={}){')
   .replace('async function recognizeUnitFirst(strokes,W,H,options){',
    'async function recognizeCore(strokes,W,H,options){return{text:options.mode===\'digits\'?\'15\':\'legacy wrong\',engine:\'stub\'};}\nasync function recognizeUnitFirst(strokes,W,H,options){');
- vm.runInContext(patch,context);
+ vm.runInContext(patch.replace('window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};','window.WhiteboardHandwritingMath={recognize:recognizeUnitFirst};'),context);
  return window.WhiteboardHandwritingMath.recognize(strokes,1402,522,{mode:'auto'});
 }
 (async()=>{
- assert.equal((await run('³')).text,'10 m³');
+ assert.equal((await run('³')).text,'10 m?','conflicting square/cube evidence without a three contour must abstain');
  assert.equal((await run('²')).text,'10 m²');
- assert.equal((await run('³',true)).text,'10 m?');
- console.log('PASS: 10 m³, 10 m² and closed 0 from a forced 15');
+ assert.equal((await run('³',true)).text,'10 m²','strong complete-square evidence survives an unsupported cube vote');
+ console.log('PASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15');
 })().catch(e=>{console.error(e);process.exitCode=1});

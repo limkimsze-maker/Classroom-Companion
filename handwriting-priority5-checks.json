@@ -1,0 +1,195 @@
+{
+  "checks": 37,
+  "passed": 37,
+  "excluded": [
+    "test-comer-browser.cjs (legacy browser alias)",
+    "test-inkon-original-beautify.cjs (separate Playwright integration)"
+  ],
+  "results": [
+    {
+      "test": "test-authoritative-m2m3.cjs",
+      "code": 0,
+      "output": "PASS teacher-trained square/cube unit-first authority and ambiguity handling\nPASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15\nPASS: unit finishing strokes, two-stroke powers and competing numeric boundaries\n"
+    },
+    {
+      "test": "test-character-9gq-local.cjs",
+      "code": 0,
+      "output": "PASS local private 9/g/q import, conservative matching, mode gating, unrelated ink and equation\n"
+    },
+    {
+      "test": "test-character-reader-reuse.cjs",
+      "code": 0,
+      "output": "PASS character worker reuse, explicit cancellation and clean restart\n"
+    },
+    {
+      "test": "test-crossed-seven-grouping.cjs",
+      "code": 0,
+      "output": "PASS crossed 7s, full-number/equation readings, scale/placement/pen order, genuine operators, disjoint bars and model disagreement\n"
+    },
+    {
+      "test": "test-detached-four-grouping.cjs",
+      "code": 0,
+      "output": "PASS five detached-4 regressions; 308 adjacent-digit boundary controls; transforms, genuine operators, false equation, large gap, model disagreement and personal corrections\n"
+    },
+    {
+      "test": "test-duplicate-multiply-auto.cjs",
+      "code": 0,
+      "output": "PASS actual reader multiplication deduplication and whitespace normalization\n"
+    },
+    {
+      "test": "test-equals-geometry.cjs",
+      "code": 0,
+      "output": "PASS: equals sign recognized in five pen variants and rejected in nine negative controls\nPASS: embedded equals pair extracted from multi-character expression\nPASS: small slightly slanted mobile equals signs within equations\nPASS: short vertically separated equals strokes from photographed handwriting\nPASS: diagnostic-derived retraced equals stroke and scribble negative control\nPASS: small and large labelled size classes, colon negative\nPASS: diagnostic-measured unequal equals bars and out-of-range negative\nPASS: small standalone equals controls and non-equals negatives\n"
+    },
+    {
+      "test": "test-equation-units.cjs",
+      "code": 0,
+      "output": "PASS actual CNNs: arithmetic/unit composition, all four operations, complete cm\u00b2, unchanged false equations, optional exact diagnostic replay\n"
+    },
+    {
+      "test": "test-handwriting-context-model.cjs",
+      "code": 0,
+      "output": "PASS learned notation context: real development ink, full coverage, review alternatives, personal priority, arithmetic preservation, failure fallback\n"
+    },
+    {
+      "test": "test-handwriting-context-review.cjs",
+      "code": 0,
+      "output": "PASS actual review controller: unit/word/case alternatives, preview, Apply token alignment, pen recovery, Undo, manual edits and Cancel\n"
+    },
+    {
+      "test": "test-handwriting-reader-recovery.cjs",
+      "code": 0,
+      "output": "PASS actual stalled-read recovery: typed correction, late-result protection, timeout, retry, model-download timeout, Stop, optional vocabulary, Apply and Undo\n"
+    },
+    {
+      "test": "test-handwriting-words.cjs",
+      "code": 0,
+      "output": "PASS offline word checking: supported spelling alternatives, British/US vocabulary, case modes, full token coverage, personal priority, identifiers, numeric/unit/Math protection\n"
+    },
+    {
+      "test": "test-inkon-first-fallback.cjs",
+      "code": 0,
+      "output": "PASS Auto preserves local reader, Math delegates through shared recognition, and cancellation reaches both readers\n"
+    },
+    {
+      "test": "test-measurement-consensus.cjs",
+      "code": 0,
+      "output": "PASS twelve measurement/power regressions; weak-evidence review flags; disconnected k; zero/8 distinction; new quantities; separate cm; non-unit controls; pen disagreement; personal corrections\n"
+    },
+    {
+      "test": "test-mobile-reader-recovery.cjs",
+      "code": 0,
+      "output": "PASS mobile reader recovery scripts parse\n"
+    },
+    {
+      "test": "test-numeric-model-consensus.cjs",
+      "code": 0,
+      "output": "PASS real labelled development glyphs: numeric consensus, open 4 review, no false 61/41/11/71 merges, cm preserved\n"
+    },
+    {
+      "test": "test-powered-component-priority.cjs",
+      "code": 0,
+      "output": "PASS all eight component-priority regressions with actual offline models\n"
+    },
+    {
+      "test": "test-priority4-consensus.cjs",
+      "code": 0,
+      "output": "PASS Priority 4: five corrected readings, unresolved-prefix review, new quantities, explicit letter mode, 22 non-unit controls, weak-prototype rejection and personal corrections\n"
+    },
+    {
+      "test": "test-priority5-audit.cjs",
+      "code": 0,
+      "output": "PASS Priority 5: ten fixes, changed quantities, unchanged false equations, isolated ambiguity review and explicit letter modes\n"
+    },
+    {
+      "test": "test-raised-measurement-priority.cjs",
+      "code": 0,
+      "output": "PASS reader syntax and raised unit priority\n"
+    },
+    {
+      "test": "test-raised-measurement-structural.cjs",
+      "code": 0,
+      "output": "PASS structural superscript 2 from 5-stroke measurement; base unit unchanged\n"
+    },
+    {
+      "test": "test-raised-three-contour.cjs",
+      "code": 0,
+      "output": "PASS geometric three fallback and trained-exponent precedence\n"
+    },
+    {
+      "test": "test-raised-three-reconcile.cjs",
+      "code": 0,
+      "output": "PASS superscript recovery within unified unit-first recognition\nPASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15\n"
+    },
+    {
+      "test": "test-raised-two-geometry.cjs",
+      "code": 0,
+      "output": "PASS superscript 2 geometry and non-two rejection\n"
+    },
+    {
+      "test": "test-reader-syntax.cjs",
+      "code": 0,
+      "output": "PASS reader parses, retains exported recognition entrypoint and trained character integration\n"
+    },
+    {
+      "test": "test-recognition-engine-trace.cjs",
+      "code": 0,
+      "output": "PASS runtime diagnostics and both script syntax checks\n"
+    },
+    {
+      "test": "test-recognition-learning-priority.cjs",
+      "code": 0,
+      "output": "PASS actual models: confirmed unit/Math corrections precede heuristics, survive reload, and Undo restores prior behavior\n"
+    },
+    {
+      "test": "test-teacher-confusables.cjs",
+      "code": 0,
+      "output": "PASS confusable trained labels, fallback boundaries, priority and reader syntax\n"
+    },
+    {
+      "test": "test-teacher-units-override.cjs",
+      "code": 0,
+      "output": "PASS 1024-source prototype shape, trained label precedence and no equals regression\n"
+    },
+    {
+      "test": "test-trained-97-handwriting.cjs",
+      "code": 0,
+      "output": "PASS 97 templates and abstention\n"
+    },
+    {
+      "test": "test-trained-j-beta.cjs",
+      "code": 0,
+      "output": "PASS: derived 21 j examples, grouping, reject other symbols\nPASS extended dot gaps for both j in equation\nPASS: 3 j groups in a longer handwritten expression\n"
+    },
+    {
+      "test": "test-trained-remaining-58.cjs",
+      "code": 0,
+      "output": "PASS: 58-class supervised model loads, conservative abstention works\n"
+    },
+    {
+      "test": "test-unified-unit-first.cjs",
+      "code": 0,
+      "output": "PASS unit-first prefix isolation, complete measurement precedes misleading whole notation, cubic/square contrast, uncertain exponent\n"
+    },
+    {
+      "test": "test-unit-components.cjs",
+      "code": 0,
+      "output": "PASS actual CNNs: independent unit letters/power fallback, retained tokens, no invented power, explicit Numbers and uppercase modes\n"
+    },
+    {
+      "test": "test-unit-first-exponent-zero.cjs",
+      "code": 0,
+      "output": "PASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15\n"
+    },
+    {
+      "test": "test-unit-first-exponent.cjs",
+      "code": 0,
+      "output": "PASS current unit-first trained exponent priority\nPASS: exponent conflict abstention, supported square retained and closed 0 from a forced 15\n"
+    },
+    {
+      "test": "test-unit-first-stroke-boundaries.cjs",
+      "code": 0,
+      "output": "PASS: unit finishing strokes, two-stroke powers and competing numeric boundaries\n"
+    }
+  ]
+}

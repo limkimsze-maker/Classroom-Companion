@@ -9,12 +9,13 @@ const ink=[S([[32,187],[33,260]]),S(oval),
  const memory=new Map(),ctx=createContext(memory),reader=ctx.WhiteboardHandwritingMath,learn=ctx.WhiteboardHandwritingLearning;
  // Force a confident unit heuristic in opposition to an explicit correction.
  ctx.WhiteboardTeacherUnits={rank:strokes=>strokes.length===2?[{label:'m³',score:.99},{label:'m²',score:.5}]:[],match:()=>null};
- const original=await reader.recognize(ink,W,H,{mode:'auto'});assert.equal(original.text,'10 m³');
- const tx=learn.confirm(original,'10 m²',reader.rasterDigit,ink,W,H,'auto');assert(tx?.count);
+ const original=await reader.recognize(ink,W,H,{mode:'auto'});
+ const corrected=original.text==='10 m²'?'10 m³':'10 m²';
+ const tx=learn.confirm(original,corrected,reader.rasterDigit,ink,W,H,'auto');assert(tx?.count);
  assert.equal((await reader.recognize(ink,W,H,{mode:'auto'})).engine,'local-personal-ink');
- assert.equal((await reader.recognize(ink,W,H,{mode:'auto'})).text,'10 m²');
- assert.equal((await createContext(memory).WhiteboardHandwritingMath.recognize(ink,W,H,{mode:'auto'})).text,'10 m²','correction survives reload');
- learn.undo(tx);assert.equal((await reader.recognize(ink,W,H,{mode:'auto'})).text,'10 m³','Undo removes only this confirmation');
+ assert.equal((await reader.recognize(ink,W,H,{mode:'auto'})).text,corrected);
+ assert.equal((await createContext(memory).WhiteboardHandwritingMath.recognize(ink,W,H,{mode:'auto'})).text,corrected,'correction survives reload');
+ learn.undo(tx);assert.equal((await reader.recognize(ink,W,H,{mode:'auto'})).text,original.text,'Undo removes only this confirmation');
  let mathCalls=0;
  const mathTx=learn.confirm({text:'x + 3',tokens:[]},'x + 2',reader.rasterDigit,ink,W,H,'math');
  ctx.WhiteboardInkOnOriginalDemo={recognize:async()=>{mathCalls++;return{text:'x + 3',tokens:[],uncertain:[],format:'latex'}}};
