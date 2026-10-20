@@ -1567,6 +1567,28 @@ async function recognizeUnitFirst(strokes,W,H,options){
  }
  return uncertainPrefix;
 }
+// Standalone parenthesised numbers must be read as a spatial expression,
+// before the generic digit-sequence model can turn (10) into 1101.
+async function detectParenthesizedNumber(strokes,W,H,options={}){
+ if(strokes.length<3||strokes.length>64)return null;
+ const parts=strokes.map(raw=>({raw,scaled:{source:raw,size:Number(raw.size)||4,
+  points:raw.points.map(p=>({x:p.x*W,y:p.y*H}))}}));
+ const ordered=parts.map(p=>({...p,box:bounds([p.scaled])})).sort((a,b)=>a.box.cx-b.box.cx);
+ const left=ordered[0],right=ordered.at(-1);
+ if(radicalParenthesis(left.scaled)!=='('||radicalParenthesis(right.scaled)!==')')return null;
+ const middle=ordered.slice(1,-1);
+ if(!middle.length)return null;
+ const interior=bounds(middle.map(p=>p.scaled));
+ const height=Math.min(left.box.h,right.box.h);
+ if(interior.x<=left.box.cx||interior.x+interior.w>=right.box.cx||
+    interior.h<height*.22||interior.h>height*1.1||
+    Math.abs(left.box.cy-right.box.cy)>height*.30)return null;
+ const number=await recognizeNumericContext(middle.map(p=>p.raw),W,H,options);
+ if(!number||!/^[0-9]+$/.test(number.text))return null;
+ return{text:'('+number.text+')',tokens:[{char:'(',score:.94,parts:[left.scaled]},
+  ...number.tokens,{char:')',score:.94,parts:[right.scaled]}],
+  uncertain:number.uncertain||[],engine:'local-parenthesized-number',format:'math'};
+}
 async function recognizeBeforeContext(strokes,W,H,options={}){
  options={...options,mode:options.mode||'auto'};
  if(!Array.isArray(strokes)||!Number.isFinite(W)||!Number.isFinite(H)||W<1||H<1||
@@ -1595,6 +1617,8 @@ async function recognizeBeforeContext(strokes,W,H,options={}){
  if((options.mode||'auto')==='auto'){
   const radical=await detectSquareRoot(strokes,W,H,options);
   if(radical)return reconcile(radical);
+  const parenthesized=await detectParenthesizedNumber(strokes,W,H,options);
+  if(parenthesized)return reconcile(parenthesized);
   // A complete stacked layout outranks whole-symbol silhouettes such as ¼.
   // Personal ink/context corrections still have their normal precedence.
   const fraction=await detectStackedFraction(strokes,W,H,options);
@@ -1871,5 +1895,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-radical-brackets4';
+window.WhiteboardHandwritingMath.build='20261020-bracket-number5';
 })();
