@@ -311,7 +311,7 @@ function radicalDescendingHook(points){
  if(points.length<5)return null;
  const p=points[0].y<=points.at(-1).y?points:points.slice().reverse();
  const b=bounds([{points:p}]),a=p[0],z=p.at(-1);
- if(b.h<18||b.w>b.h*1.5||b.w<b.h*.20)return null;
+ if(b.h<18||b.w>b.h*1.5||b.w<b.h*.10)return null;
  const i=p.reduce((best,q,k)=>q.y>p[best].y?k:best,0),v=p[i];
  if(i<2||i>=p.length-2||a.y>b.y+b.h*.20||
     v.y-a.y<b.h*.70||z.y>b.y+b.h*.68||
@@ -408,7 +408,7 @@ async function detectSquareRoot(strokes,W,H,options={}){
   if(!hook)return;
   const line=operatorStroke({points:roof}),b=line.b,h=hook.box.h,left={x:b.x,y:roof.reduce((best,p)=>p.x<best.x?p:best,roof[0]).y};
   if(!line.horizontal||b.w<Math.max(12,h*.45)||b.h>h*.32||
-     left.x<hook.end.x-h*.13||left.x>hook.end.x+h*.30||Math.abs(left.y-hook.end.y)>h*(hook.descending?.55:.26))return;
+     left.x<hook.end.x-h*(hook.descending?.20:.13)||left.x>hook.end.x+h*(hook.descending?.45:.30)||Math.abs(left.y-hook.end.y)>h*(hook.descending?.55:.26))return;
   candidates.push({hook,roof:b,indices});
  };
  for(let i=0;i<parts.length;i++){
