@@ -148,11 +148,24 @@ canvas.addEventListener('pointerdown',e=>{
  down(e);e.stopImmediatePropagation();
 },true);
 canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',drag);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('dblclick',e=>{if(tool!=='select'||editor)return;const hit=hitObject(point(e));if(hit?.type==='text'){selected=hit;beginEditing(hit,false);e.preventDefault();e.stopPropagation()}});
-selectBtn.onclick=()=>switchTool('select');editBtn.onclick=()=>editSelected();imageBtn.onclick=()=>imageInput.click();imageInput.onchange=()=>{addImageFiles(imageInput.files);imageInput.value=''};penBtn.onclick=()=>switchTool('pen');textBtn.onclick=()=>switchTool('text');eraserBtn.onclick=()=>switchTool('eraser');
+selectBtn.onclick=()=>switchTool('select');editBtn.onclick=()=>editSelected();imageBtn.onclick=()=>imageInput.click();imageInput.onchange=()=>{addImageFiles(imageInput.files);imageInput.value=''};penBtn.onclick=()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));window.WhiteboardMarqueeSelection?.clear();switchTool('pen');canvas.style.cursor='crosshair'};textBtn.onclick=()=>switchTool('text');eraserBtn.onclick=()=>switchTool('eraser');
 fontSel.onchange=()=>applyFormat('font',fontSel.value);fontSizeSel.onchange=()=>applyFontSize(fontSizeSel.value);boldBtn.onclick=()=>applyFormat('bold',!selected?.bold);italicBtn.onclick=()=>applyFormat('italic',!selected?.italic);underlineBtn.onclick=()=>applyFormat('underline',!selected?.underline);leftBtn.onclick=()=>applyFormat('align','left');centreBtn.onclick=()=>applyFormat('align','center');rightBtn.onclick=()=>applyFormat('align','right');
 document.querySelectorAll('.colour').forEach(b=>{b.onclick=()=>{const next=b.dataset.colour;if(tool==='select'&&selected?.type==='text'){applyFormat('colour',next);colour=next;return}colour=next;if(tool==='eraser')tool='pen';syncUi()}});
 size.oninput=()=>{if(tool==='select'&&selected?.type==='text'){applyFontSize(fontSize());return}syncUi()};
 undoBtn.onclick=()=>{if(editor)finishEditing(true);if(!history.length)return;restore(history.pop());say(L.undoDone)};clearBtn.onclick=()=>{if(!strokes.length)return;if(confirm(L.clearAsk)){finishEditing(false);remember();strokes=[];selected=null;current=null;redraw();syncUi();say(L.cleared)}};
+// Eraser deletes the current selection before it can switch tools.
+// Reuse each selection owner's Delete action, including shapes and marquees.
+document.addEventListener('click',e=>{
+ if(!e.target?.closest?.('#eraserBtn')||tool!=='select')return;
+ if(dragMode)up();if(editor)finishEditing(true);
+ const before=clone(strokes),depth=history.length;
+ document.dispatchEvent(new KeyboardEvent('keydown',{key:'Delete',code:'Delete',bubbles:true,cancelable:true}));
+ if(strokes.length>=before.length)return;
+ // Shape/marquee deletion has no text-controller history of its own.
+ if(history.length===depth)remember(before);
+ selected=null;current=null;drawing=false;window.WhiteboardMarqueeSelection?.clear();
+ e.preventDefault();e.stopImmediatePropagation();redraw();syncUi();say(X.deleted);
+},true);
 document.addEventListener('paste',e=>{if(editor)return;const items=Array.from(e.clipboardData?.items||[]),files=items.filter(i=>i.type?.startsWith('image/')).map(i=>i.getAsFile()).filter(Boolean);if(files.length){e.preventDefault();addImageFiles(files)}});
 wrap.addEventListener('dragover',e=>{if(Array.from(e.dataTransfer?.items||[]).some(i=>i.kind==='file'&&i.type?.startsWith('image/'))){e.preventDefault();e.dataTransfer.dropEffect='copy'}});wrap.addEventListener('drop',e=>{const files=Array.from(e.dataTransfer?.files||[]).filter(f=>f.type?.startsWith('image/'));if(!files.length)return;e.preventDefault();addImageFiles(files,point(e))});
 document.addEventListener('keydown',e=>{if(editor)return;if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName))return;const k=e.key.toLowerCase();if((e.ctrlKey||e.metaKey)&&k==='d'){if(selected){e.preventDefault();e.stopImmediatePropagation();duplicateSelected()}return}if((e.key==='Delete'||e.key==='Backspace')&&selected){e.preventDefault();e.stopImmediatePropagation();removeSelected();return}if(e.key==='Enter'&&selected?.type==='text'){e.preventDefault();editSelected();return}if(e.key==='Escape'){if(selected){e.preventDefault();selected=null;redraw();syncUi()}return}if(k==='v'&&!e.ctrlKey&&!e.metaKey){switchTool('select');return}if(k==='p'&&!e.ctrlKey&&!e.metaKey){switchTool('pen');return}if(k==='t'&&!e.ctrlKey&&!e.metaKey){switchTool('text');return}if(k==='e'&&!e.ctrlKey&&!e.metaKey){switchTool('eraser');return}},true);

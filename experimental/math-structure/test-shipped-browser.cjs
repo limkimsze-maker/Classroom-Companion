@@ -44,6 +44,15 @@ const server=http.createServer((req,res)=>{
    await apply.click();
    assert.equal(await page.locator('.handwriting-review-backdrop').count(),0,'Apply completes');
    assert.equal(await page.locator('#penBtn').getAttribute('class').then(c=>c.includes('active')),true,'Returns to pen');
+   // Returning to Pen must draw actual ink, not merely highlight the button.
+   const penBoard=await page.locator('#board').boundingBox(),penCount=await page.evaluate(()=>strokes.length);
+   assert.equal(await page.evaluate(()=>tool),'pen');
+   assert.equal(await page.locator('#board').evaluate(el=>el.style.cursor),'crosshair');
+   await page.mouse.move(penBoard.x+20,penBoard.y+penBoard.height-45);await page.mouse.down();
+   await page.mouse.move(penBoard.x+65,penBoard.y+penBoard.height-25,{steps:5});await page.mouse.up();
+   assert.equal(await page.evaluate(()=>strokes.length),penCount+1,'Pen draws a new stroke after Beautify');
+   assert(await page.evaluate(()=>strokes.at(-1).points?.length>=2),'Pen stroke contains ink');
+
    // Replay the actual teacher's measurement through the same visible flow.
    await page.evaluate(sample=>{
     strokes=sample.strokes.map(s=>({...s,colour:'#17324d',points:s.points.map(p=>({x:p.x*sample.width/cssW,y:p.y*sample.height/cssH}))}));
@@ -127,6 +136,43 @@ const server=http.createServer((req,res)=>{
    await page.screenshot({path:path.join(output,'resize-'+viewport.width+'.png')});
    console.log('PASS shipped reader recovery, unchecked arithmetic Apply, mouse enlarge, touch shrink, ratio, anchor and Undo:',viewport.width);
 
+
+   // Selected-object Eraser removes only that object and retains an undo snapshot.
+   await page.evaluate(()=>{strokes.push({type:'text',text:'Keep',x:.72,y:.75,w:.22,h:.12,size:22,font:'Arial',colour:'#17324d'});redraw();syncUi();});
+   await page.locator('#selectBtn').click();
+   await page.waitForTimeout(120);
+   let eraseBoard=await page.locator('#board').boundingBox();
+   let target=await page.evaluate(()=>{const s=strokes.find(s=>s.type==='image');return{x:s.x,y:s.y,w:s.w,h:s.h};});
+   await page.mouse.click(eraseBoard.x+(target.x+target.w/2)*eraseBoard.width,eraseBoard.y+(target.y+target.h/2)*eraseBoard.height);
+   await page.locator('#eraserBtn').click();
+   assert.equal(await page.evaluate(()=>strokes.filter(s=>s.type==='image').length),0,'Eraser deletes selected image');
+   assert.equal(await page.evaluate(()=>strokes.find(s=>s.text==='Keep')?.text),'Keep','Unselected object preserved');
+   await page.locator('#undoBtn').click();
+   assert.equal(await page.evaluate(()=>strokes.filter(s=>s.type==='image').length),1,'Undo restores erased image');
+   await page.locator('#selectBtn').click();await page.waitForTimeout(120);
+   eraseBoard=await page.locator('#board').boundingBox();
+   target=await page.evaluate(()=>{const s=strokes.find(s=>s.text==='Keep');return{x:s.x,y:s.y,w:s.w,h:s.h};});
+   await page.mouse.click(eraseBoard.x+(target.x+target.w/2)*eraseBoard.width,eraseBoard.y+(target.y+target.h/2)*eraseBoard.height);
+   await page.locator('#eraserBtn').click();
+   assert.equal(await page.evaluate(()=>strokes.some(s=>s.text==='Keep')),false,'Eraser deletes selected text');
+   await page.locator('#undoBtn').click();
+   assert.equal(await page.evaluate(()=>strokes.some(s=>s.text==='Keep')),true,'Undo restores erased text');
+
+   // Point-based shapes use the classroom selection owner rather than text selection.
+   await page.evaluate(()=>{strokes.push({size:4,colour:'#17324d',points:[{x:.12,y:.55},{x:.30,y:.55}]});redraw();syncUi();});
+   await page.locator('#selectBtn').click();await page.waitForTimeout(120);
+   eraseBoard=await page.locator('#board').boundingBox();
+   const shapeCount=await page.evaluate(()=>strokes.length);
+   await page.mouse.click(eraseBoard.x+.21*eraseBoard.width,eraseBoard.y+.55*eraseBoard.height);
+   await page.locator('#eraserBtn').click();
+   assert.equal(await page.evaluate(()=>strokes.length),shapeCount-1,'Eraser deletes selected ink shape');
+   await page.locator('#undoBtn').click();
+   assert.equal(await page.evaluate(()=>strokes.length),shapeCount,'Undo restores erased ink shape');
+   // With no selection Eraser remains the normal freehand eraser tool.
+   await page.locator('#penBtn').click();
+   await page.locator('#eraserBtn').click();
+   assert.equal(await page.evaluate(()=>tool),'eraser','No selection switches to normal eraser');
+   console.log('PASS actual pen drawing after Beautify, selected image/text Eraser, retained objects and delete Undo:',viewport.width);
    assert.deepEqual(errors,[],'No browser script errors');
    console.log('PASS browser preview, matched loader, nested recognition, Apply, pen return and isolated storage:',viewport.width);
    await context.close();
