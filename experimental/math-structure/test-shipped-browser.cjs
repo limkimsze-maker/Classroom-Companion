@@ -111,6 +111,7 @@ const server=http.createServer((req,res)=>{
      },{sx,sy,ex,ey});
     }
     const after=await page.evaluate(()=>{const s=strokes.find(s=>s.type==='image');return{x:s.x,y:s.y,w:s.w,h:s.h};});
+    console.log('RESIZE GEOMETRY',JSON.stringify({viewport:viewport.width,pointerType,before,after,bb,sx,sy,ex,ey,dimensions:await page.evaluate(()=>({cssW,cssH,rect:document.getElementById('board').getBoundingClientRect().toJSON(),tool}))}));
     assert(Math.abs(after.w/after.h-before.w/before.h)<.0001,'Preserve equation aspect ratio');
     assert.equal(after.x,before.x,'Keep left anchor');assert.equal(after.y,before.y,'Keep top anchor');
     assert(factor>1?after.w>before.w:after.w<before.w,pointerType+' resize changes size in intended direction');
