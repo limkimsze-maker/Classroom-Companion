@@ -190,7 +190,7 @@ function make(parsed){
 function handwritingObject(text,placement,colour){
  const unit=window.WhiteboardMathRenderer?.unitText(text);
  if(unit)return equationObject({expression:unit,simple:false},{layout:'inline',placement,colour,unitSuperscript:/[²³]$/.test(unit)});
- if(/[\\∫∑∏∞≤≥≠≈±²³_{}]/.test(String(text)))return window.WhiteboardMathRenderer?.create(text,placement,colour)||null;
+ if(/[\\∫∑∏∞≤≥≠≈±²³_{}]/.test(String(text))||/√\s*\S/.test(String(text)))return window.WhiteboardMathRenderer?.create(text,placement,colour)||null;
  const options={layout:'inline',placement,colour},parsed=parseEquation(text);
  if(parsed)return equationObject(parsed,options);
  const source=String(text??'').trim(),aliases={'-':'−','–':'−','—':'−','－':'−','*':'×','✕':'×','✖':'×','＊':'×','/':'÷','／':'÷','∕':'÷','＋':'+','＝':'='},expression=aliases[source]||source;
