@@ -154,7 +154,24 @@ async function review(group){
   return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),x:b.x,y:b.y,w:W/Math.max(1,cssW),h:H/Math.max(1,cssH),smartGenerated:true,smartType:'equation',smartId:'math-v2-'+Date.now().toString(36),smartOriginal:[],equationExpression:value,equationLatex:clean,equationLayout:'in-place-math',equationColour:ink};
  }
  function formatted(){
-  const b=groupBounds(group),value=displayReading(),raw=String(input.value||'').trim(),math=window.WhiteboardMathRenderer,equation=window.WhiteboardEquationFormatter;
+  const original=groupBounds(group),value=displayReading(),raw=String(input.value||'').trim(),math=window.WhiteboardMathRenderer,equation=window.WhiteboardEquationFormatter;
+  // Normalise simple inline arithmetic to one classroom-sized glyph height.
+  // Scale uniformly (never stretch individual glyphs) and retain the ink baseline.
+  // Fractions, roots, units and multi-line layouts retain their specialised sizing.
+  const simple=/^[\s\d.=＝+−\-×÷*/()]+$/;
+  const isSimple=simple.test(raw)&&/\d/.test(raw)&&!/[\/()]/.test(raw);
+  let b=original;
+  if(isSimple&&original.h>0&&original.w>0){
+   const boardH=Math.max(1,cssH),boardW=Math.max(1,cssW);
+   const targetPx=52;
+   const originalPx=original.h*boardH;
+   const maxScale=Math.min((boardW*(1-original.x)-8)/Math.max(1,original.w*boardW),1.8);
+   const scale=Math.min(Math.max(1,targetPx/originalPx),Math.max(1,maxScale));
+   if(scale>1.02){
+    const h=original.h*scale,w=original.w*scale;
+    b={x:original.x,y:Math.max(0,Math.min(1-h,original.y+original.h-h)),w,h};
+   }
+  }
   const leading=/^\s*[=＝]\s*\d+(?:\.\d+)?(?:\s*[+−\-×÷*/]\s*\d+(?:\.\d+)?)*\s*$/;
   // Incomplete leading '=' equations are valid teacher notation, not complete answers.
   // Never let optional arithmetic correction block this notation.
