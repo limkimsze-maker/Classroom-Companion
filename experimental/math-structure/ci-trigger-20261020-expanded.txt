@@ -1,0 +1,1 @@
+Trigger expanded experimental V2 CI including complete-expression structural regressions. Protected V1 and production must remain unchanged.
