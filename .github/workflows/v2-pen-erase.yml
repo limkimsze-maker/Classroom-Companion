@@ -1,0 +1,48 @@
+name: V2 pen and erase browser checks
+on:
+  push:
+    branches: [fix/v2-pen-erase-20261021, main]
+    paths:
+      - experimental/math-structure/whiteboard-text-drag-resizable-v2.js
+      - experimental/math-structure/beautify-v2.js
+      - experimental/math-structure/test-shipped-browser.cjs
+      - whiteboard-v2-trial.html
+      - .github/workflows/v2-pen-erase.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  shipped-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check exact shipped scripts and reader initialization
+        run: |
+          mkdir -p v2-shipped-validation
+          node --check experimental/math-structure/reader-v2.js
+          node --check experimental/math-structure/beautify-v2.js
+          node --check experimental/math-structure/whiteboard-text-drag-resizable-v2.js
+          node - <<'JS'
+          const fs=require('fs'),vm=require('vm'),crypto=require('crypto'),assert=require('assert/strict');
+          const source=fs.readFileSync('experimental/math-structure/reader-v2.js','utf8'),ctx={window:{}};
+          vm.runInNewContext(source,ctx);
+          assert.equal(typeof ctx.window.WhiteboardHandwritingMath.recognize,'function');
+          console.log('PASS shipped reader initializes:',ctx.window.WhiteboardHandwritingMath.build);
+          const files=['experimental/math-structure/reader-v2.js','experimental/math-structure/beautify-v2.js','experimental/math-structure/whiteboard-text-drag-resizable-v2.js','whiteboard-v2-trial.html'];
+          fs.writeFileSync('v2-shipped-validation/source-hashes.json',JSON.stringify(Object.fromEntries(files.map(p=>[p,crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex')])),null,2));
+          JS
+      - name: Install browser runtime
+        run: |
+          npm install --prefix /tmp/classroom-v2-browser --no-save playwright@1.62.1
+          node /tmp/classroom-v2-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Test actual shipped desktop and mobile recognition and resize flows
+        run: NODE_PATH=/tmp/classroom-v2-browser/node_modules node experimental/math-structure/test-shipped-browser.cjs v2-shipped-validation/browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shipped-v2-browser-evidence
+          path: v2-shipped-validation/
