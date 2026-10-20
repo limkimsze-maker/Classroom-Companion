@@ -46,6 +46,22 @@ jobs:
           const engines={};
           for(const x of targeted){const k=x.engine||'unknown';engines[k]=(engines[k]||0)+1;}
           console.log('SQUARE_TO_CUBE_ENGINES',JSON.stringify(engines));
+          // Expose every remaining exponent failure before changing recognition
+          // rules. These are immutable benchmark cases, not training examples.
+          const exponentFailures=now.records.filter(x=>!x.correct&&
+            (x.category==='powers'||x.category==='measuredArithmetic'));
+          console.log('EXPONENT_FAILURES',JSON.stringify(exponentFailures.map(x=>({
+            id:x.id,partition:x.partition,expected:x.expected,actual:x.actual,
+            engine:x.engine,flagged:x.flagged
+          }))));
+          const exponentMatrix={};
+          for(const x of now.records.filter(x=>x.category==='powers'||x.category==='measuredArithmetic')){
+            const k=x.expected+' / '+(x.engine||'unknown');
+            const cell=exponentMatrix[k]??={correct:0,wrong:0,flaggedWrong:0};
+            if(x.correct)cell.correct++;
+            else{cell.wrong++;if(x.flagged)cell.flaggedWrong++;}
+          }
+          console.log('EXPONENT_ENGINE_MATRIX',JSON.stringify(exponentMatrix));
 
           console.log('BUILD',now.build,'READER_SHA256',now.readerSha256);
           NODE
