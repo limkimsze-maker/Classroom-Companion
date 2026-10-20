@@ -15,11 +15,16 @@ const S=coords=>({size:5,points:coords.map(([x,y])=>({x:x/400,y:y/300}))});
 const bracket=[S([[70,95],[61,106],[55,127],[55,150],[61,173],[70,185]]),
  S([[95,113],[95,163]]),S([[120,120],[133,110],[145,120],[147,148],[138,164],[124,157],[120,137]]),
  S([[166,95],[176,106],[182,127],[182,150],[176,173],[166,185]])];
+
+// A roof-first radical must not be interpreted as the letter V.
+const reverseRoot=[S([[112,71],[160,66],[220,62],[300,59]]),
+ S([[110,76],[104,102],[97,116],[89,108],[74,98]]),
+ ...bracket.map(stroke=>({...stroke,points:stroke.points.map(p=>({x:p.x+0.22,y:((p.y*300-95)*0.48+78)/300}))}))];
 const radical=[S([[46,85],[52,111],[59,128],[68,92],[77,55]]),
  S([[77,55],[125,55],[170,55],[225,55],[270,55]])];
 (async()=>{
  const nested=bracket.map(stroke=>({...stroke,points:stroke.points.map(p=>({x:p.x+0.19,y:((p.y*300-95)*0.55+62)/300}))}));
- const cases=[['standalone parentheses',bracket],['radical with parentheses',[...radical,...nested]]];
+ const cases=[['standalone parentheses',bracket],['radical with parentheses',[...radical,...nested]],['roof-first radical with parentheses',reverseRoot]];
  let failures=0;
  for(const [label,ink] of cases){
   const r=await ctx.WhiteboardHandwritingMath.recognize(ink,400,300,{mode:'auto'});
