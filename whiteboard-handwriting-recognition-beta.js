@@ -986,6 +986,12 @@ async function recognizeUnitComponents(strokes,W,H,options){
   const raised=suffix.slice(-upperCount),baseline=suffix.slice(0,-upperCount);
   const rb=bounds(raised.map(p=>p.scaled)),bb=bounds(baseline.map(p=>p.scaled));
   const tall=Math.max(bb.h,...prefix.map(p=>p.box.h));
+  // A true superscript sits above the baseline's visual centre and occupies
+  // less vertical space. Reject ambiguous suffix splits before digit reading.
+  const baselineBottom=bb.y+bb.h,raisedBottom=rb.y+rb.h;
+  const verticalLift=(baselineBottom-raisedBottom)/Math.max(1,bb.h);
+  const raisedHeightRatio=rb.h/Math.max(1,bb.h);
+  if(verticalLift<.28||raisedHeightRatio>.72)continue;
   // Cut the complete right-hand exponent from the complete unit body. Small
   // finishing strokes or the top of a multi-stroke m are not separate powers.
   if(bb.h<10||rb.h<6||rb.w<3||rb.h>tall*.85||
