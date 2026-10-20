@@ -141,6 +141,25 @@ function crossedSevenGroup(first,second){
  return pen?.[0]?.label==='7'&&pen[0].p>=.985&&pen[0].p-(pen[1]?.p||0)>=.95;
 }
 
+// Some open 4s have a detached upright: the left section starts higher and
+// ends above the upright's foot. Require this staggered structure and two
+// independent votes for the complete 4 before bridging its small pen gap.
+// Ordinary adjacent digits such as 61 share a baseline and stay separate.
+function detachedFourGroup(first,second){
+ if(first.length!==1||second.length!==1||!window.WhiteboardDigitModel||!window.WhiteboardUjiReader)return false;
+ const parts=[first[0],second[0]].sort((a,b)=>bounds([a]).cx-bounds([b]).cx);
+ const left=bounds([parts[0]]),stem=bounds([parts[1]]),joined=bounds(parts),h=joined.h;
+ const gap=stem.x-left.x-left.w,verticalOverlap=Math.min(left.y+left.h,stem.y+stem.h)-Math.max(left.y,stem.y);
+ if(h<14||joined.w<12||joined.w>h*1.15||gap<0||gap>h*.24||
+    left.w<h*.35||left.h<h*.50||stem.h<h*.50||stem.w>h*.22||
+    !line(parts[1]).vertical||stem.y-left.y<h*.18||
+    stem.y+stem.h-left.y-left.h<h*.18||verticalOverlap<h*.20)return false;
+ const digit=predictDigit(rasterDigit(parts))[0];
+ if(digit.char!=='4'||digit.score<.80)return false;
+ const pen=window.WhiteboardUjiReader.read(parts.map(s=>s.points));
+ return pen?.[0]?.label==='4'&&pen[0].p>=.985&&pen[0].p-(pen[1]?.p||0)>=.95;
+}
+
 function segment(strokes,W,H){
  const equalPairs=window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[];
  const consumed=new Set(equalPairs.flatMap(pair=>pair.indices));
@@ -174,7 +193,8 @@ function segment(strokes,W,H){
   while(changed){changed=false;for(let i=0;i<groups.length&&!changed;i++)for(let j=i+1;j<groups.length;j++){
    const a=bounds(groups[i]),b=bounds(groups[j]),overlap=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x),joined=bounds([...groups[i],...groups[j]]);
    if((overlap>=-Math.max(1,height*.035)&&joined.w<height*1.25)||
-      crossedSevenGroup(groups[i],groups[j])){groups[i].push(...groups[j]);groups.splice(j,1);changed=true;break}
+      crossedSevenGroup(groups[i],groups[j])||detachedFourGroup(groups[i],groups[j])){
+     groups[i].push(...groups[j]);groups.splice(j,1);changed=true;break}
   }}
   const rowTokens=[];
   for(const group of groups){
@@ -1459,5 +1479,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-crossed-seven1';
+window.WhiteboardHandwritingMath.build='20261020-detached-four1';
 })();

@@ -7,6 +7,7 @@ on:
       - scripts/compare-handwriting-engines.cjs
       - scripts/test-powered-component-priority.cjs
       - scripts/test-crossed-seven-grouping.cjs
+      - scripts/test-detached-four-grouping.cjs
       - scripts/test-recognition-learning-priority.cjs
   workflow_dispatch:
 jobs:
@@ -18,8 +19,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify crossed sevens, powered component priority and personal corrections
+      - name: Verify detached fours, crossed sevens, powered units and personal corrections
         run: |
+          node scripts/test-detached-four-grouping.cjs
           node scripts/test-crossed-seven-grouping.cjs
           node scripts/test-powered-component-priority.cjs
           node scripts/test-recognition-learning-priority.cjs
