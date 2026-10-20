@@ -1325,6 +1325,11 @@ async function recognizeWithContext(strokes,W,H,options,reading){
  const original=context.canonical(reading.text);
  const pinned=String(reading.text).match(/^\s*([−-]?\d+(?:\.\d+)?(?:\s*[+−×÷=]\s*[−-]?\d+(?:\.\d+)?)*)/)?.[1];
  const pinPrefix=pinned&&(/[A-Za-z?]/.test(reading.text)||/[+−×÷=]/.test(reading.text));
+ // Equation context: preserve the complete left-to-right arithmetic statement
+ // when comparing measurement suffixes. A unit candidate must not consume an
+ // operand or change an operator, even if its letter score is higher.
+ const equationPrefix=String(reading.text).match(/^\\s*((?:[−-]?\\d+(?:\\.\\d+)?\\s*[+−×÷]\\s*)*[−-]?\\d+(?:\\.\\d+)?\\s*=\\s*[−-]?\\d+(?:\\.\\d+)?)/)?.[1];
+ const canonicalMath=s=>String(s||'').replace(/\\s+/g,'').replace(/-/g,'−');
  const originalUnit=String(reading.text).match(/([A-Za-z]+[²³]?)\s*$/)?.[1];
  const protectedMeasurement=reading.engine==='unit-first-trained-measurement'&&!reading.uncertain?.length;
  for(const layout of layouts){
@@ -1333,6 +1338,7 @@ async function recognizeWithContext(strokes,W,H,options,reading){
   if(!prefixCache.has(prefixId))prefixCache.set(prefixId,await readUnitPrefix(prefix,W,H,options,true));
   const number=prefixCache.get(prefixId);if(!number)continue;
   if(pinPrefix&&context.canonical(number.text)!==context.canonical(pinned))continue;
+  if(equationPrefix&&canonicalMath(number.text)!==canonicalMath(equationPrefix))continue;
   let powers=[{char:'',score:1,parts:[]}];
   if(raised.length){
    const parts=raised.map(p=>p.scaled),digits=predictDigit(rasterDigit(parts));
