@@ -182,7 +182,7 @@ async function review(group){
  }
  function updatePreview(){
   const arithmetic=arithmeticResult();
-  const obj=formatted();apply.disabled=!obj||reading||testing;test.disabled=!obj||reading||testing||!!pendingLearning;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
+  const obj=formatted();const canApply=!!obj&&!reading&&!testing;apply.disabled=!canApply;test.disabled=!canApply||!!pendingLearning;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
   stopRead.hidden=!reading&&!testing;retryRead.disabled=reading||testing;
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
   status.textContent=reading?'Reading handwriting on this device…':obj&&correctionToggle.checked&&arithmetic?.supported&&!arithmetic.correct?'Arithmetic correction in preview: '+arithmetic.original+' → '+arithmetic.corrected+'. Untick to keep the written answer.':obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Check the notation. Math accepts LaTeX, such as \\frac{1}{2}; units accept cm2 or cm².':'Enter or correct the reading to continue.';
