@@ -1583,8 +1583,21 @@ async function detectParenthesizedNumber(strokes,W,H,options={}){
  if(interior.x<=left.box.cx||interior.x+interior.w>=right.box.cx||
     interior.h<height*.22||interior.h>height*1.1||
     Math.abs(left.box.cy-right.box.cy)>height*.30)return null;
- const number=await recognizeNumericContext(middle.map(p=>p.raw),W,H,options);
- if(!number||!/^[0-9]+$/.test(number.text))return null;
+ let number=await recognizeNumericContext(middle.map(p=>p.raw),W,H,{...options,measurementPrefix:true});
+ // The brackets themselves establish numeric context. If the strict
+ // multi-model reader abstains, retain individual digit predictions and
+ // explicitly flag the weaker result for teacher confirmation.
+ if(!number){
+  const recovered=[];
+  for(const part of middle){
+   const guesses=predictDigit(rasterDigit([part.scaled]));
+   const guess=guesses?.[0];
+   if(!guess||!/^[0-9]$/.test(guess.char)||guess.score<.48)return null;
+   recovered.push({char:guess.char,score:Math.min(.74,guess.score),parts:[part.scaled],engine:'parenthesis-digit-fallback'});
+  }
+  number={text:recovered.map(t=>t.char).join(''),tokens:recovered,uncertain:recovered};
+ }
+ if(!/^[0-9]+$/.test(number.text))return null;
  return{text:'('+number.text+')',tokens:[{char:'(',score:.94,parts:[left.scaled]},
   ...number.tokens,{char:')',score:.94,parts:[right.scaled]}],
   uncertain:number.uncertain||[],engine:'local-parenthesized-number',format:'math'};
@@ -1895,5 +1908,5 @@ async function recognize(strokes,W,H,options={}){
  }
 }
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment};
-window.WhiteboardHandwritingMath.build='20261020-bracket-number5';
+window.WhiteboardHandwritingMath.build='20261020-bracket-number6';
 })();
