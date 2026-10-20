@@ -1,4 +1,4 @@
-/* Full Auto review/Apply/Undo with generated radicals and public UJI V1 ink. */
+/* Full Auto review/Apply/Undo with generated radicals and public UJI V1 ink. CI rerun after CSP polling correction. */
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const ctx=require('./helpers/handwriting-context.cjs')(),{make,W,H}=require('./helpers/square-root-fixtures.cjs')(ctx);
 // Poll through the protocol: older Playwright waitForFunction injects eval,
