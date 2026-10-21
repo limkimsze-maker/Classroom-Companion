@@ -89,27 +89,25 @@ function removeLeftoverComparisonMarks(bars){
 // never remove a single handwritten numeral or unrelated distant ink.
 function cleanExistingComparisonOrphans(){
  const models=strokes.filter(o=>o?.smartType==='barModel'&&o.smartBarType==='comparison'&&Number(o.barCount)>=2);
- if(!models.length)return false;
  let changed=false;
  for(const obj of models){
-  const left=obj.x+obj.w*(180/900),right=obj.x+obj.w*(830/900);
-  const top=obj.y,bottom=obj.y+obj.h;
-  const marks=strokes.filter(s=>{
-   if(!rawInk(s))return false;
-   const b=pxBox(s),gap=(left-(b.x+b.w))*cssW;
-   return b.pw<=34&&b.ph>=12&&b.ph<=105&&b.ph>=b.pw*1.5&&gap>=12&&gap<=160&&b.cy>=top-.035&&b.cy<=bottom+.05&&b.x<right;
+  // SVG bar edges are inset within the model image. Compare in canvas pixels.
+  const left=(obj.x+obj.w*180/900)*cssW;
+  const top=(obj.y+obj.h*60/Math.max(340,150+obj.barCount*145))*cssH;
+  const bottom=(obj.y+obj.h*(60+(obj.barCount-1)*145+76)/Math.max(340,150+obj.barCount*145))*cssH;
+  const marks=strokes.filter(ink=>{
+   if(!rawInk(ink))return false;
+   const b=pxBox(ink),right=(b.x+b.w)*cssW,mid=b.cy*cssH;
+   return b.pw<=40&&b.ph>=12&&b.ph<=105&&b.ph>=b.pw*1.4&&right>=left-180&&right<=left-8&&mid>=top-70&&mid<=bottom+115;
   });
-  if(marks.length<2)continue;
-  const centerX=marks.reduce((sum,s)=>sum+box(s).cx,0)/marks.length;
-  const clustered=marks.filter(s=>Math.abs((box(s).cx-centerX)*cssW)<=35);
-  if(clustered.length<2)continue;
-  const remove=new Set(clustered);
-  strokes=strokes.filter(s=>!remove.has(s));changed=true;
+  // Only remove a vertically aligned cluster; a lone mark could be a label.
+  const cluster=marks.filter(q=>marks.filter(t=>Math.abs((box(q).cx-box(t).cx)*cssW)<=40).length>=2);
+  if(!cluster.length)continue;
+  const doomed=new Set(cluster);strokes=strokes.filter(q=>!doomed.has(q));changed=true;
  }
- if(changed){redraw();syncUi()}
  return changed;
 }
-setTimeout(()=>{try{cleanExistingComparisonOrphans()}catch{}},350);
+setTimeout(()=>{try{if(cleanExistingComparisonOrphans()){redraw();syncUi()}}catch{}},350);
 function prepareFinish(){
  const type=window.__smartBarType||'';if(type!=='comparison')return;
  const group=strokes.slice(startIndex).filter(rawInk);if(group.length<2)return;
