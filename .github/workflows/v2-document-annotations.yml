@@ -1,0 +1,55 @@
+name: V2 document annotations
+on:
+  push:
+    branches: [main, 'fix/v2-document-anchors-*']
+    paths:
+      - whiteboard-v2-trial.html
+      - whiteboard-document-open-v2-trial.js
+      - whiteboard-document-gestures-v2-trial.js
+      - experimental/math-structure/**
+      - .github/workflows/v2-document-annotations.yml
+  pull_request:
+    paths:
+      - whiteboard-v2-trial.html
+      - whiteboard-document-*-v2-trial.js
+      - experimental/math-structure/**
+      - .github/workflows/v2-document-annotations.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  document-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and existing recognition controls
+        run: |
+          node --check whiteboard-document-open-v2-trial.js
+          node --check whiteboard-document-gestures-v2-trial.js
+          node --check experimental/math-structure/smart-math-recognition-v2.js
+          node --check experimental/math-structure/whiteboard-text-drag-resizable-v2.js
+          node --check experimental/math-structure/beautify-v2.js
+          node experimental/math-structure/test-signs-v2.cjs
+          node experimental/math-structure/test-symbol-learning-v2.cjs
+      - name: Install Chromium
+        run: |
+          npm install --prefix /tmp/classroom-document-browser --no-save playwright@1.55.0
+          node /tmp/classroom-document-browser/node_modules/playwright/cli.js install --with-deps chromium --only-shell
+      - name: Test actual document renderers and desktop/mobile annotation workflows
+        env:
+          NODE_PATH: /tmp/classroom-document-browser/node_modules
+          DOCUMENT_TEST_OUTPUT: document-validation
+        run: node experimental/math-structure/test-document-annotations-v2.cjs
+      - name: Preserve existing handwriting, resizing and selection workflows
+        env:
+          NODE_PATH: /tmp/classroom-document-browser/node_modules
+        run: node experimental/math-structure/test-shipped-browser.cjs document-validation/handwriting
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-document-annotation-browser-evidence
+          path: document-validation/

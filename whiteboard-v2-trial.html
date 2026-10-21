@@ -17,6 +17,13 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#eef4f5;color:var(--navy)}button,input,select,textarea{font:inherit}button{cursor:pointer}.shell{height:100%;display:flex;flex-direction:column;padding:10px;gap:9px}.top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:17px;padding:8px 10px;box-shadow:0 8px 22px rgba(18,32,46,.08);flex:none}.brand{display:flex;align-items:center;gap:8px;margin-right:auto}.icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--teal2);font-size:22px}.meta strong{display:block;font-size:16px;font-weight:1000;letter-spacing:-.02em}.meta span{display:block;font-size:10px;color:var(--muted);font-weight:800;margin-top:1px}.tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;visibility:hidden}body.toolbar-ready .tools{visibility:visible}.btn{min-height:38px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--navy);padding:7px 10px;font-size:12px;font-weight:950}.btn:hover,.btn:focus-visible{border-color:#73c8bc;outline:none}.btn.active{background:var(--teal);border-color:var(--teal);color:#fff}.btn.soft{background:var(--teal2);border-color:#9dd9d0;color:#0a5d57}.btn.danger{background:#fff3f1;border-color:#efb4ad;color:var(--red)}.btn:disabled{opacity:.42;cursor:not-allowed}.colors{display:flex;align-items:center;gap:5px;padding:3px 5px;border:1px solid #e3e9ed;border-radius:12px;background:#f8fafb}.colour{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #ccd5db;cursor:pointer;padding:0}.colour.active{box-shadow:0 0 0 3px #0f766e}.sizeControl{display:flex;align-items:center;gap:6px;padding:0 4px}.sizeControl span{font-size:10px;font-weight:900;color:var(--muted)}.sizeControl input{width:82px;accent-color:var(--teal)}.sizeValue{min-width:26px;text-align:center;font-size:10px;font-weight:950;color:var(--navy)}.boardWrap{position:relative;flex:1;min-height:0;border:1px solid #cfd9de;border-radius:18px;overflow:hidden;background-color:#fff;box-shadow:0 10px 28px rgba(18,32,46,.08)}.boardWrap.grid{background-image:linear-gradient(#e8eef1 1px,transparent 1px),linear-gradient(90deg,#e8eef1 1px,transparent 1px);background-size:32px 32px}.boardWrap::after{content:attr(data-watermark);position:absolute;right:12px;bottom:9px;font-size:10px;font-weight:900;color:#a7b3ba;pointer-events:none;user-select:none}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}.mode{position:absolute;left:10px;bottom:9px;padding:5px 8px;border-radius:999px;background:rgba(23,50,77,.82);color:#fff;font-size:10px;font-weight:900;pointer-events:none;backdrop-filter:blur(4px)}.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(8px);background:#17324d;color:#fff;padding:8px 13px;border-radius:999px;font-size:11px;font-weight:900;opacity:0;pointer-events:none;transition:.18s;z-index:100}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:800px){#mainSettingsBtn{margin-left:auto!important;order:0!important}.shell{padding:6px;gap:6px}.top{border-radius:14px;padding:7px}.meta span{display:none}.tools{width:100%}.brand{width:100%;margin-right:0}.btn{min-height:36px;padding:6px 8px}.boardWrap{border-radius:14px}.sizeControl{margin-left:auto}.colors{order:10}.colour{width:27px;height:27px}}
 #barModelOverlay{position:fixed;inset:8px;z-index:500;background:white;border:2px solid #0f766e;border-radius:16px;display:none;flex-direction:column;overflow:hidden}#barModelOverlay.open{display:flex}#barModelOverlay iframe{border:0;width:100%;flex:1;min-height:0}#barModelOverlay .overlayHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;background:#e7f7f4;font-weight:800}#barModelOverlay .overlayHead button{min-height:36px}#fullBtn{display:none!important}.tools{gap:8px}@media(max-width:800px){.tools{justify-content:flex-start}}
+/* Keep Settings at the top-right of the main header on every screen size. */
+.top{position:relative}
+#mainSettingsBtn{position:absolute!important;top:8px!important;right:10px!important;margin:0!important;z-index:120;order:0!important}
+.brand{padding-right:125px}
+body.document-open-mode #mainSettingsBtn{top:2px!important;right:4px!important}
+body.document-open-mode .tools{padding-right:112px!important}
+@media(max-width:800px){#mainSettingsBtn{top:7px!important;right:7px!important}.brand{padding-right:110px}}
 </style>
 </head>
 <body>
@@ -47,7 +54,7 @@
 <div class="toast" id="toast"></div>
 <script src="whiteboard-moe-local-only-guard-v1.js?v=20261017-moesafe2"></script>
 <script src="whiteboard-core.js?v=20261011-0534-core1"></script>
-<script src="experimental/math-structure/whiteboard-text-drag-resizable-v2.js?v=20261021-pen-erase3"></script>
+<script src="experimental/math-structure/whiteboard-text-drag-resizable-v2.js?v=20261021-page-anchor2"></script>
 <script src="whiteboard-handwriting-digit-model-beta.js?v=20261018-handwriting1"></script>
 <script src="whiteboard-handwriting-character-models-beta.js?v=20261018-letters-cnn1"></script>
 <script src="whiteboard-handwriting-character-inference-beta.js?v=20261020-words2"></script>
@@ -73,7 +80,7 @@
 <script defer src="whiteboard-handwriting-words-beta.js?v=20261020-words2"></script>
 <script src="experimental/math-structure/reader-v2.js?v=20261021-v2-symbol-learning1"></script>
 <script src="whiteboard-beta-arithmetic-verifier.js?v=20261020-mathverify1"></script>
-<script src="experimental/math-structure/beautify-v2.js?v=20261021-settings-learning5"></script>
+<script src="experimental/math-structure/beautify-v2.js?v=20261021-page-anchor2"></script>
 <script src="experimental/math-structure/learning-controls-v2.js?v=20261021-settings-learning5"></script>
 <script src="whiteboard-right-click-paste.js?v=20261011-rcpaste-2215"></script>
 <script src="whiteboard-classroom-pro.js?v=67565ce9d90f"></script>
@@ -81,7 +88,7 @@
 <script src="whiteboard-escape-select.js?v=20261011-0645-esc-select1"></script>
 <script src="whiteboard-bar-move-handle-beta.js?v=20261018-precisehandles1"></script>
 <script src="whiteboard-rotate.js?v=20261016-3dguard1"></script>
-<script src="smart-math-recognition.js?v=20261011-smartmath-beta1"></script>
+<script src="experimental/math-structure/smart-math-recognition-v2.js?v=20261021-page-anchor2"></script>
 <script src="smart-math-no-number-line.js?v=20261016-noauto1"></script>
 <script src="smart-math-solids-cad-v1.js?v=20261016-solidcad3"></script>
 <script src="smart-math-solid-toolbar-v1.js?v=20261017-solidshortcutremoved1"></script>
@@ -119,8 +126,8 @@
 <script src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
 <script src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
 <script src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
-<script src="whiteboard-document-open-moe-v2.js?v=20261021-page-anchor1"></script>
-<script src="whiteboard-document-gestures-v4.js?v=20261018-dial-target1"></script>
+<script src="whiteboard-document-open-v2-trial.js?v=20261021-page-anchor2"></script>
+<script src="whiteboard-document-gestures-v2-trial.js?v=20261021-page-anchor2"></script>
 <script src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
 <script src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>
 <script src="whiteboard-document-right-rail-v1.js?v=20261018-direct-finger1"></script>
