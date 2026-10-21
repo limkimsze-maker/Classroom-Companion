@@ -706,23 +706,53 @@ function compactEqualsPairsV2(strokes,W,H){
  });
 }
 
+// Reserve a complete bar-and-two-dots before two-stroke equals matching or
+// row assignment can consume part of it. Dot sampling density is irrelevant:
+// a pen held down briefly may record many points within the same small mark.
+function divisionGroupsV2(strokes,W,H){
+ if(!Array.isArray(strokes)||strokes.length<3||strokes.length>180)return[];
+ const marks=strokes.map((source,index)=>{
+  const scaled={source,size:Number(source.size)||4,points:source.points.map(p=>({x:p.x*W,y:p.y*H}))};
+  return{index,scaled,b:bounds([scaled])};
+ });
+ const candidates=[];
+ for(const bar of marks){
+  const b=bar.b,ink=Math.max(1,bar.scaled.size);
+  if(b.w<Math.max(8,ink*2.2)||!operatorStroke(bar.scaled).horizontal)continue;
+  const dots=marks.filter(m=>m!==bar&&Math.max(m.b.w,m.b.h)<=Math.max(ink*1.4,b.w*.24)&&
+   Math.abs(m.b.cx-b.cx)<=b.w*.38&&Math.abs(m.b.cy-b.cy)>Math.max(ink*.6,b.w*.12)&&
+   Math.abs(m.b.cy-b.cy)<=b.w*1.4);
+  const top=dots.filter(m=>m.b.cy<b.cy),bottom=dots.filter(m=>m.b.cy>b.cy);
+  if(top.length!==1||bottom.length!==1)continue;
+  const parts=[bar.scaled,top[0].scaled,bottom[0].scaled],box=bounds(parts),indices=[bar.index,top[0].index,bottom[0].index];
+  // Exclude stacked numerals, a fourth mark, or a neighbouring glyph sharing
+  // this column. Such layouts remain with the existing structural parser.
+  if(marks.some(m=>!indices.includes(m.index)&&m.b.cx>=b.x-ink*.3&&m.b.cx<=b.x+b.w+ink*.3&&
+    m.b.y<=box.y+box.h+ink&&m.b.y+m.b.h>=box.y-ink))continue;
+  candidates.push({indices,box,token:{char:'÷',score:.96,x:box.x,parts,engine:'local-three-stroke-division-v2'}});
+ }
+ const used=new Set();return candidates.filter(c=>{
+  if(c.indices.some(i=>used.has(i)))return false;c.indices.forEach(i=>used.add(i));return true;
+ });
+}
 function segment(strokes,W,H,mode='auto'){
- const equalPairs=window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[];
+ const divisions=mode==='auto'?divisionGroupsV2(strokes,W,H):[],reserved=new Set(divisions.flatMap(p=>p.indices));
+ const equalPairs=(window.WhiteboardEqualSign?.embeddedPairs?.(strokes,W,H)||[]).filter(p=>!p.indices.some(i=>reserved.has(i)));
  if(mode==='auto'){
-  const taken=new Set(equalPairs.flatMap(p=>p.indices));
+  const taken=new Set([...reserved,...equalPairs.flatMap(p=>p.indices)]);
   for(const pair of compactEqualsPairsV2(strokes,W,H))if(!pair.indices.some(i=>taken.has(i))){
    equalPairs.push(pair);pair.indices.forEach(i=>taken.add(i));
   }
  }
- const consumed=new Set(equalPairs.flatMap(pair=>pair.indices));
+ const consumed=new Set([...reserved,...equalPairs.flatMap(pair=>pair.indices)]);
  const jPairs=window.WhiteboardTrainedJ?.embeddedPairs?.(strokes,W,H,[...consumed])||[];
  for(const pair of jPairs)for(const index of pair.indices)consumed.add(index);
  const jTokens=jPairs.map(pair=>({...pair.token,parts:pair.indices.map(i=>({source:strokes[i],size:Number(strokes[i].size)||4,points:strokes[i].points.map(p=>({x:p.x*W,y:p.y*H}))}))}));
- const equalTokens=equalPairs.map(pair=>{
+ const equalTokens=[...divisions.map(p=>p.token),...equalPairs.map(pair=>{
    const ink=pair.indices.map(i=>strokes[i]).map(s=>({source:s,size:Number(s.size)||4,
      points:s.points.map(p=>({x:p.x*W,y:p.y*H}))}));
    return {...pair.token,parts:ink};
- });
+ })];
  const parts=strokes.filter((s,i)=>!consumed.has(i)).filter(s=>Array.isArray(s.points)&&s.points.length).map(s=>({source:s,size:Number(s.size)||4,points:s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H}))})).filter(s=>s.points.length);
  if(!parts.length)return [...equalTokens,...jTokens].sort((a,b)=>a.x-b.x);
  if(parts.length===1){const b=bounds(parts),dotSize=Math.max(3,parts[0].size*1.2);if(b.w<dotSize&&b.h<dotSize)return[{char:'.',score:.85,x:b.x,parts}]}
@@ -2634,5 +2664,5 @@ const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStro
 const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});
 const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
 window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261021-v2-symbol-learning1';
+window.WhiteboardHandwritingMath.build='20261021-v2-division-grouping2';
 })();
