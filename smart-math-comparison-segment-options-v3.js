@@ -103,12 +103,12 @@ function drawVisibleSegments(){
  cg.lineWidth=2.6;
  cg.lineCap='butt';
  cg.setLineDash([]);
+ const rect=wrap.getBoundingClientRect(),W=rect.width,H=rect.height;
  for(const o of strokes){
   if(!isComparison(o))continue;
   for(let row=0;row<count(o);row++){
    const segments=smallSegments(o,row);
    if(segments.length<2)continue;
-   const H=wrap.getBoundingClientRect().height,W=wrap.getBoundingClientRect().width;
    // CSS-pixel geometry keeps the dividers aligned as the model is moved or resized.
    const y1=(o.y+o.h*((START_Y+row*ROW_GAP)/modelH(o)))*H+3;
    const y2=(o.y+o.h*((START_Y+row*ROW_GAP+BAR_H)/modelH(o)))*H-3;
