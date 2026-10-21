@@ -43,3 +43,7 @@ Baseline: main `fde629487572753ce51471613997927633050ffd`, reader SHA256
 `9aba1a68779f36e36e20eacbbd833bd2ba7b8044917a5e18693a85d5d0e6f9d2`.
 The protected V1 reader remains SHA256
 `8f65225b10916834a4740353eb652b5bedf56f26144d523fdb384aa26718713f`.
+
+## Isolated audit — 2026-10-21
+
+Run the shipped-V2 regression workflow against the latest published V2 trial source, including the arithmetic Insert menu and equals-sign update. This branch changes documentation only; no V1, normal whiteboard, or production recognition logic is modified. Held-out independent-writer expression accuracy is not established by the existing frozen simulation benchmark.
