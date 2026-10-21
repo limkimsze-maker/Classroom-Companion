@@ -7,6 +7,8 @@ on:
       - experimental/math-structure/beautify-v2.js
       - experimental/math-structure/learning-controls-v2.js
       - experimental/math-structure/test-shipped-browser.cjs
+      - experimental/math-structure/test-letter-trainer-browser-v2.cjs
+      - experimental/math-structure/test-shared-letters-v2.cjs
       - whiteboard-v2-trial.html
       - .github/workflows/v2-pen-erase.yml
   workflow_dispatch:

@@ -5,12 +5,12 @@ const root=path.resolve(__dirname,'../..'),server=http.createServer((req,res)=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({headless:true,args:['--no-sandbox']}),url='http://127.0.0.1:'+server.address().port+'/whiteboard-v2-trial.html';
  try{for(const viewport of [{width:1365,height:900},{width:390,height:844}]){
   const context=await browser.newContext({viewport}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(url,{waitUntil:'load'});
-  const shared=await page.evaluate(async()=>{
-   const reader=WhiteboardHandwritingMath,holdout=await fetch('experimental/math-structure/fixtures/shared-letter-holdout-v2.json').then(r=>r.json());
+  const shared=await page.evaluate(holdout=>{
+   const reader=WhiteboardHandwritingMath;
    const before=JSON.stringify(WhiteboardHandwritingLearning.exportPack().characters);
    const correct=holdout.samples.filter(s=>reader.sharedLettersV2.matchFeature(s.feature)?.char===s.char).length;
    return{correct,total:holdout.samples.length,unchanged:before===JSON.stringify(WhiteboardHandwritingLearning.exportPack().characters)};
-  });
+  },require('./fixtures/shared-letter-holdout-v2.json'));
   assert.equal(shared.correct,16);assert.equal(shared.total,18);assert(shared.unchanged,'Shared examples require no import and do not write personal learning');
   await page.locator('#mainSettingsBtn').click();await page.locator('#trainLowercaseLettersBtn').click();await page.locator('#letterTrainerPad').waitFor({state:'visible'});
   const draw=async()=>{const b=await page.locator('#letterTrainerPad').boundingBox();await page.mouse.move(b.x+b.width*.47,b.y+b.height*.2);await page.mouse.down();await page.mouse.move(b.x+b.width*.49,b.y+b.height*.55,{steps:8});await page.mouse.move(b.x+b.width*.55,b.y+b.height*.74,{steps:5});await page.mouse.up();};
