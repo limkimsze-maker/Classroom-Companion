@@ -33,6 +33,15 @@ panel.addEventListener('click',e=>{const a=e.target.dataset.action;if(!a)return;
 if(a==='close'){try{rec?.stop()}catch{}panel.style.display='none'}
 if(a==='math')ta.value=mathify(ta.value);
 if(a==='listen'){if(!SR){status.textContent='Try a supported browser such as Chrome.';return}try{rec?.stop()}catch{}rec=new SR();rec.lang=document.documentElement.lang||'en-SG';rec.interimResults=false;rec.maxAlternatives=1;rec.onresult=e=>{const raw=e.results[0][0].transcript;ta.value=mathify(raw);status.textContent='Recognised: '+raw+' | Output: '+ta.value};rec.onerror=e=>{status.textContent='Microphone error: '+e.error};rec.onend=()=>{if(status.textContent==='Listening…')status.textContent='Stopped listening.'};try{rec.start();status.textContent='Listening…'}catch(e){status.textContent=e.message}}
-if(a==='insert'){const value=mathify(ta.value);status.textContent='Inserting: '+value+' · '+BUILD;if(!value)return;if(/[0-9]/.test(value)&&/[×*]/.test(value)&&!/[0-9]\s*×\s*[0-9]/.test(value)){status.textContent='Please review multiplication before inserting: '+value;return}const detail={text:value,inserted:false};document.dispatchEvent(new CustomEvent('whiteboard-insert-speech-text',{detail}));if(detail.inserted){status.textContent='Inserted: '+detail.insertedText;panel.style.display='none'}else{status.textContent='Not inserted: '+(detail.error||'Whiteboard text handler unavailable')+' · '+BUILD}}
+if(a==='insert'){const value=mathify(ta.value);status.textContent='Inserting: '+value+' · '+BUILD;if(!value)return;if(/[0-9]/.test(value)&&/[×*]/.test(value)&&!/[0-9]\s*×\s*[0-9]/.test(value)){status.textContent='Please review multiplication before inserting: '+value;return}const detail={text:value,inserted:false};document.dispatchEvent(new CustomEvent('whiteboard-insert-speech-text',{detail}));if(!detail.inserted){
+ try{
+  // Recovery route: core whiteboard state is shared by classic scripts.
+  if(typeof strokes!=='undefined'&&typeof redraw==='function'){
+   const obj={type:'text',x:.12,y:.2,w:.68,h:.22,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
+   strokes.push(obj);redraw();detail.inserted=strokes.includes(obj);detail.insertedText=obj.text;
+  }
+ }catch(err){detail.error=String(err?.message||err)}
+}
+if(detail.inserted){status.textContent='Inserted: '+detail.insertedText;panel.style.display='none'}else{status.textContent='Not inserted: '+(detail.error||'Whiteboard text handler unavailable')+' · '+BUILD}}
 });
 })();
