@@ -27,6 +27,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 
 /* Document actions share the same compact header row as Usual whiteboard. */
 /* One canonical Save button; legacy document Save controls must never surface. */
+body.document-open-mode header.top>a.btn[href="whiteboard-smart-beta.html"]{display:none!important}
 #ccDocumentSaveTop,#ccDocumentSaveBtn,#ccInlineSave,#ccQuickSave{display:none!important}
 #ccSaveSlot>a.btn{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 auto;min-height:36px!important;height:36px!important;padding:5px 8px!important;border:1px solid #cbd5df;border-radius:9px;text-decoration:none!important;font-size:11px!important;white-space:nowrap}
 #ccSaveSlot #ccPermanentSaveBtn{flex:1 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -57,7 +58,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
 <button class="btn danger" id="clearBtn" type="button">Clear</button>
 </div>
-<div id="ccSaveSlot"><button type="button" id="ccPermanentSaveBtn" aria-label="Save to My Documents">💾 Save to My Documents</button><button type="button" id="ccPermanentExitBtn" aria-label="Exit document" title="Exit document">✕</button></div>
+<div id="ccSaveSlot"><a class="btn" id="ccUsualWhiteboardInSlot" href="whiteboard-smart-beta.html">Usual whiteboard</a><button type="button" id="ccPermanentSaveBtn" aria-label="Save to My Documents">💾 Save to My Documents</button><button type="button" id="ccPermanentExitBtn" aria-label="Exit document" title="Exit document">✕</button></div>
 </header>
 <main class="boardWrap grid" id="boardWrap" data-watermark="MOE Safe Beta"><canvas id="board" aria-label="Interactive whiteboard"></canvas><div class="mode" id="modeBadge">Pen · navy · 5 px</div></main>
 </div>
@@ -145,7 +146,6 @@ body.document-open-mode .tools{padding-right:112px!important}
 <script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
 <script src="experimental/math-structure/letter-trainer-v2.js?v=20261021-letter-trainer1"></script>
 <script src="experimental/math-structure/main-settings-v2.js?v=20261021-letter-trainer1"></script>
-<script src="my-documents-header-layout-test.js?v=20261022-real-link17"></script>
 <script src="my-documents-v1.js?v=20261022-single-save17"></script>
 </body>
 </html>
