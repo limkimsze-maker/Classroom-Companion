@@ -362,7 +362,7 @@ async function review(group){
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
- panel.append(title,help,ink,label,input,appearance,status,contextArea,preview,feedbackArea,actions);panel.appendChild(exportInk);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
+ const settings=document.createElement('details');settings.className='handwriting-advanced-settings';settings.style.cssText='margin-top:12px;border-top:1px solid #d8e1e8;padding-top:10px';const settingsLabel=document.createElement('summary');settingsLabel.textContent='⚙ Settings';settingsLabel.style.cssText='cursor:pointer;font-weight:700;color:#17324d;padding:7px 2px;list-style:revert';settings.append(settingsLabel,exportInk);panel.append(title,help,ink,label,input,appearance,status,contextArea,preview,feedbackArea,actions,settings);backdrop.appendChild(panel);document.body.appendChild(backdrop);cancel.focus();
  window.MathJax?.startup?.promise?.then(()=>{if(session===id&&dialog===backdrop)updatePreview()}).catch(()=>{});
  async function readSelection(){
  activeReviewAbort?.abort();
