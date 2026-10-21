@@ -26,7 +26,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 @media(max-width:800px){#mainSettingsBtn{top:7px!important;right:7px!important}.brand{padding-right:110px}}
 
 /* Permanent second-row save control, never overlays existing tools. */
-#ccSaveSlot{display:none;align-items:center;gap:6px;flex:1 1 100%;order:100;min-width:0}body.document-open-mode #ccSaveSlot{display:flex!important}#ccSaveSlot button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;max-width:100%;min-height:36px;padding:7px 10px;border:1px solid #0f766e;border-radius:10px;background:#0f766e;color:white;font:700 12px system-ui;white-space:nowrap;box-shadow:none!important}#ccSaveSlot button:disabled{opacity:.6}
+#ccSaveSlot{display:none;align-items:center;gap:6px;flex:1 1 100%;order:100;min-width:0}body.document-open-mode #ccSaveSlot{display:flex!important}#ccSaveSlot button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;max-width:100%;min-height:36px;padding:7px 10px;border:1px solid #0f766e;border-radius:10px;background:#0f766e;color:white;font:700 12px system-ui;white-space:nowrap;box-shadow:none!important}#ccSaveSlot button:disabled{opacity:.6}#ccSaveSlot #ccPermanentExitBtn{background:#fff!important;color:#17324d!important;border:1px solid #cbd5df!important;min-width:38px;font-size:19px;padding:4px 10px}
 </style>
 </head>
 <body>
@@ -51,7 +51,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
 <button class="btn danger" id="clearBtn" type="button">Clear</button>
 </div>
-<div id="ccSaveSlot"><button type="button" id="ccPermanentSaveBtn">💾 Save to My Documents</button></div>
+<div id="ccSaveSlot"><button type="button" id="ccPermanentSaveBtn">💾 Save to My Documents</button><button type="button" id="ccPermanentExitBtn" aria-label="Exit document" title="Exit document">✕</button></div>
 </header>
 <main class="boardWrap grid" id="boardWrap" data-watermark="MOE Safe Beta"><canvas id="board" aria-label="Interactive whiteboard"></canvas><div class="mode" id="modeBadge">Pen · navy · 5 px</div></main>
 </div>
@@ -130,7 +130,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <script src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
 <script src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
 <script src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
-<script src="whiteboard-document-open-my-documents-test.js?v=20261022-inline-save6"></script>
+<script src="whiteboard-document-open-my-documents-test.js?v=20261022-save-exit9"></script>
 <script src="whiteboard-document-gestures-v2-trial.js?v=20261021-page-anchor2"></script>
 <script src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
 <script src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>
