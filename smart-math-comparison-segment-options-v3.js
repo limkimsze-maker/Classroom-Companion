@@ -105,7 +105,26 @@ function drawColours(){const {W,H}=sizeCanvas(colourOv,cg);cg.clearRect(0,0,W,H)
  }for(const lab of ensureLabels(o)){if(!lab?.text)continue;const row=clamp(Number(lab.row)||0,0,count(o)-1),rg=rowGeom(o,row,W,H),x1=(o.x+o.w*Number(lab.x1||0))*W,x2=(o.x+o.w*Number(lab.x2||0))*W;if(x2<=x1)continue;const cx=(x1+x2)/2,cy=(rg.y1+rg.y2)/2,maxW=Math.max(18,x2-x1-14);let size=17;cg.save();cg.font=`800 ${size}px Inter,Arial,sans-serif`;while(size>10&&cg.measureText(lab.text).width>maxW){size--;cg.font=`800 ${size}px Inter,Arial,sans-serif`}cg.textAlign='center';cg.textBaseline='middle';cg.lineJoin='round';cg.lineWidth=4;cg.strokeStyle='rgba(255,255,255,.94)';cg.fillStyle='#17324d';cg.strokeText(lab.text,cx,cy,maxW);cg.fillText(lab.text,cx,cy,maxW);cg.restore()}}}
 function brace(x1,x2,y,top,label){if(x2<x1)[x1,x2]=[x2,x1];const w=Math.max(18,x2-x1),mid=(x1+x2)/2,end=clamp(w*.05,5,11),neck=clamp(w*.035,5,9),depth=8,edgeDir=top?1:-1,notchDir=top?-1:1;g.save();g.strokeStyle='#111827';g.fillStyle='#111827';g.lineWidth=2.3;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(x1,y+edgeDir*depth);g.bezierCurveTo(x1,y+edgeDir*3,x1+2,y,x1+end,y);g.lineTo(mid-neck,y);g.bezierCurveTo(mid-neck*.35,y,mid-4,y+notchDir*2,mid,y+notchDir*depth);g.bezierCurveTo(mid+4,y+notchDir*2,mid+neck*.35,y,mid+neck,y);g.lineTo(x2-end,y);g.bezierCurveTo(x2-2,y,x2,y+edgeDir*3,x2,y+edgeDir*depth);g.stroke();if(label){g.font='700 20px Arial,sans-serif';g.textAlign='center';g.textBaseline=top?'bottom':'top';g.fillText(label,mid,y+(top?-16:16))}g.restore()}
 function drawBrackets(){const {W,H}=sizeCanvas(ov,g);g.clearRect(0,0,W,H);for(const o of strokes){if(!isComparison(o)||!Array.isArray(o.segmentBrackets))continue;for(const b of o.segmentBrackets){if(!b||b.visible===false)continue;const rg=rowGeom(o,clamp(Number(b.row)||0,0,count(o)-1),W,H),x1=(o.x+o.w*Number(b.x1||0))*W,x2=(o.x+o.w*Number(b.x2||0))*W,top=b.side!=='bottom',y=top?rg.y1-13:rg.y2+13;brace(x1,x2,y,top,b.label||'')}}if(preview){const o=preview.o,rg=rowGeom(o,preview.row,W,H),x1=(o.x+o.w*preview.x1)*W,x2=(o.x+o.w*preview.x2)*W;g.save();g.fillStyle='rgba(37,99,235,.14)';g.strokeStyle='rgba(37,99,235,.85)';g.lineWidth=3;g.fillRect(x1,rg.y1,Math.max(2,x2-x1),Math.max(2,rg.y2-rg.y1));g.strokeRect(x1+1.5,rg.y1+1.5,Math.max(1,x2-x1-3),Math.max(1,rg.y2-rg.y1-3));g.restore()}}
-function drawAll(){drawColours();drawBrackets()}
+function drawAll(){
+ drawColours();drawBrackets();
+ // Paint the dividers on the top overlay, above the SVG image and colour layer.
+ const {W,H}=sizeCanvas(ov,g);
+ for(const o of strokes){
+  if(!isComparison(o))continue;
+  const ws=widths(o),max=Math.max(...ws);
+  if(max<=0)continue;
+  for(let row=0;row<count(o);row++){
+   const own=ws[row],rg=rowGeom(o,row,W,H);
+   const ends=uniqueSorted(ws).filter(v=>v<own-.012);
+   g.save();g.strokeStyle='#17324d';g.lineWidth=3;g.lineCap='butt';
+   for(const v of ends){
+    const x=(o.x+o.w*(X0+MAX_W*v)/900)*W;
+    g.beginPath();g.moveTo(x,rg.y1+2);g.lineTo(x,rg.y2-2);g.stroke();
+   }
+   g.restore();
+  }
+ }
+}
 function clearUiZones(){for(const z of wrap.querySelectorAll('.comparison-segment-hit-zone,.comparison-segment-bracket-hit'))z.remove()}
 function selectionMode(){try{return typeof tool==='undefined'||tool==='select'}catch{return true}}
 function segmentAtX(o,row,clientX){const r=canvas.getBoundingClientRect(),x=(clientX-r.left)/Math.max(1,r.width);for(const s of smallSegments(o,row)){const a=o.x+o.w*s.x1,b=o.x+o.w*s.x2;if(x>=a-.006&&x<=b+.006)return s}return null}
