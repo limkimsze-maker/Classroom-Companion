@@ -1,0 +1,1 @@
+Trigger existing 924-case benchmark workflow by GitHub push. No recognition source changes.
