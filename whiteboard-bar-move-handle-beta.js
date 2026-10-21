@@ -262,6 +262,9 @@ function endDrag(cancelled,e){
 window.addEventListener('pointerdown',e=>{
  if(drag){stop(e);return}
  if(e.button!==undefined&&e.button!==0)return;
+ // The explicit green grip is handled by its own pointer listener below.
+ // Do not clear the selected model during the window capture phase.
+ if(e.target===modelGrip)return;
  pointerTip(e);
  const handle=handleAt(e),o=handle?.o||modelAt(e);
  const visible=o||modelInVisibleContent(e);
