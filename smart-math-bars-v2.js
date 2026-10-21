@@ -112,13 +112,7 @@ function analyse(group){
 }
 function finishBar(){
  if(!active||!barType)return;
- let group=strokes.slice(startIndex).filter(rawInk),a=analyse(group);
- // Comparison recognises geometry regardless of whether bars were drawn before or after selecting the mode.
- if(!a&&barType==='comparison'){
-  const all=strokes.filter(rawInk);
-  if(all.length>=2){const retry=analyse(all);if(retry){group=all;a=retry}}
- }
- if(!a){notify(L.no);forcePen();showActive();return}
+ const group=strokes.slice(startIndex).filter(rawInk),a=analyse(group);if(!a){notify(L.no);forcePen();showActive();return}
  const before=clone(strokes),set=new Set(group);strokes=strokes.filter(s=>!set.has(s));
  const b=a.box,fills=barType==='partwhole'?Array(a.count).fill('#ffffff'):null,labels=barType==='partwhole'?Array(a.count).fill(''):null;
  const obj={type:'image',src:buildModel(barType,a.count,a.cuts,fills,labels),x:clamp(b.x,0,.94),y:clamp(b.y,0,.94),w:clamp(b.w,.12,1-b.x),h:clamp(Math.max(b.h,barType==='comparison'?.12:.08),.08,1-b.y),smartGenerated:true,smartType:'barModel',smartBarType:barType,smartId:uid(),barCount:a.count,barCuts:a.cuts?clone(a.cuts):null,barFills:fills,barLabels:labels,smartOriginal:clone(group)};
