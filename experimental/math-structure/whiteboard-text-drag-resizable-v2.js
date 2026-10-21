@@ -223,9 +223,9 @@ document.addEventListener('whiteboard-insert-speech-text',e=>{
   const value=raw.replace(/(\d)\s*\/\s*(?=\d)/g,'$1 ÷ ').replace(/(\d)\s*\*\s*(?=\d)/g,'$1 × ').replace(/\b(\d+)\s+[xX]\s+(?=\d)/g,'$1 × ');
   if(editor)finishEditing(true);
   remember();
-  const obj={type:'text',x:.12,y:.2,w:.68,h:.22,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
+  const obj={type:'text',x:.06,y:.12,w:.86,h:Math.max(.22,64/Math.max(cssH,1)),text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
   strokes.push(obj);selected=obj;tool='select';redraw();syncUi();
-  detail.inserted=strokes.includes(obj);detail.insertedText=obj.text;
+  detail.inserted=strokes.includes(obj);detail.insertedText=obj.text;detail.boardSize=Math.round(cssW)+'×'+Math.round(cssH);
  }catch(err){detail.error=String(err?.message||err);console.error('Speech text insertion failed',err)}
 });
 window.WhiteboardAnnotationHistory={
