@@ -33,6 +33,7 @@ jobs:
           node --check experimental/math-structure/smart-math-recognition-v2.js
           node --check experimental/math-structure/whiteboard-text-drag-resizable-v2.js
           node --check experimental/math-structure/beautify-v2.js
+          node experimental/math-structure/test-letter-trainer-v2.cjs
           node experimental/math-structure/test-lowercase-policy-v2.cjs
           node experimental/math-structure/test-division-grouping-v2.cjs
           node experimental/math-structure/test-signs-v2.cjs

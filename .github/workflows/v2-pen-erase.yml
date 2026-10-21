@@ -45,6 +45,8 @@ jobs:
         run: NODE_PATH=/tmp/classroom-v2-browser/node_modules node experimental/math-structure/test-shipped-browser.cjs v2-shipped-validation/browser
       - name: Check learning guidance, export and import on desktop and mobile
         run: NODE_PATH=/tmp/classroom-v2-browser/node_modules node experimental/math-structure/test-learning-browser-v2.cjs v2-shipped-validation/learning-browser
+      - name: Verify focused letter training on desktop and mobile
+        run: NODE_PATH=/tmp/classroom-v2-browser/node_modules node experimental/math-structure/test-letter-trainer-browser-v2.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
