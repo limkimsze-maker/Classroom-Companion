@@ -6,6 +6,7 @@ const board=document.getElementById('boardWrap');
 if(!board||document.getElementById('barModelMoveCursorStyles'))return;
 const cache=new WeakMap(),undoMoves=[];
 let drag=null,lastPointer=null,suppressed=null,queued=false,suppressClickUntil=0;
+let selectedModel=null,lastSeenNewest=null;
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const copy=v=>JSON.parse(JSON.stringify(v));
 const signature=()=>JSON.stringify(strokes);
@@ -17,9 +18,25 @@ style.textContent=`
 #boardWrap.bar-model-move-released,#boardWrap.bar-model-move-released *{cursor:default!important}
 #boardWrap.bar-model-resize-ready,#boardWrap.bar-model-resize-ready *{cursor:default!important}
 #barModelPointerTip{position:fixed;width:5px;height:5px;margin:0;border:1px solid white;border-radius:50%;box-sizing:content-box;background:#ef2020;transform:translate(-50%,-50%);pointer-events:none!important;z-index:2147483647;display:none}
+#boardWrap #barModelScaleGrip{cursor:nwse-resize!important;touch-action:none!important}
 `;
 document.head.appendChild(style);
 const tip=document.createElement('span');tip.id='barModelPointerTip';tip.setAttribute('aria-hidden','true');document.body.appendChild(tip);
+/* Explicit bottom-right resize grip. Only the bar-model presentation changes:
+   comparison segments, row endpoints and bracket model data remain untouched. */
+const selectionOutline=document.createElement('div');
+selectionOutline.id='barModelSelectionOutline';
+selectionOutline.setAttribute('aria-hidden','true');
+selectionOutline.style.cssText='position:absolute;z-index:1290;pointer-events:none;border:2px dashed #0f766e;border-radius:3px;display:none;box-sizing:border-box;';
+board.appendChild(selectionOutline);
+const modelGrip=document.createElement('button');
+modelGrip.id='barModelScaleGrip';
+modelGrip.type='button';
+modelGrip.textContent='⤡';
+modelGrip.title='Drag to resize the whole bar model';
+modelGrip.setAttribute('aria-label','Resize selected bar model proportionally');
+modelGrip.style.cssText='position:absolute;z-index:1350;width:38px;height:38px;display:none;border:3px solid white;border-radius:10px;background:#0f766e;color:white;font:900 23px system-ui;box-shadow:0 2px 9px #0005;padding:0;align-items:center;justify-content:center;touch-action:none;user-select:none;';
+board.appendChild(modelGrip);
 function pointerTip(e){
  const r=canvas.getBoundingClientRect(),inside=e.clientX>=r.left&&e.clientX<=r.left+r.width&&e.clientY>=r.top&&e.clientY<=r.top+r.height;
  const show=selectable()&&(drag||inside&&usableTarget(e.target))&&(e.pointerType!=='touch'||!!drag||e.type==='pointerdown');
@@ -82,6 +99,16 @@ function rebuildLength(o){
  o.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="${H}" viewBox="0 0 900 ${H}">${els.join('')}</svg>`);
 }
 function resizeTo(d,e){
+ if(d.kind==='scale'){
+  const r=canvas.getBoundingClientRect(),dx=e.clientX-d.clientX,dy=e.clientY-d.clientY;
+  const w=Math.max(1,d.objectBefore.w*r.width),h=Math.max(1,d.objectBefore.h*r.height);
+  const delta=Math.abs(dx/w)>Math.abs(dy/h)?dx/w:dy/h;
+  const maxFactor=Math.min(6,(1-d.objectBefore.x)/Math.max(.001,d.objectBefore.w),(1-d.objectBefore.y)/Math.max(.001,d.objectBefore.h));
+  const factor=clamp(1+delta,Math.min(.2,maxFactor),Math.max(.2,maxFactor));
+  d.o.w=Math.max(.001,d.objectBefore.w*factor);
+  d.o.h=Math.max(.001,d.objectBefore.h*factor);
+  redraw();return;
+ }
  const o=d.o,r=canvas.getBoundingClientRect(),x=(e.clientX-r.left-d.grabX)/Math.max(1,r.width),y=(e.clientY-r.top-d.grabY)/Math.max(1,r.height);
  if(d.kind==='width'){
   const widths=widthsFor(o),v=clamp((x-o.x-o.w*(180/900))/Math.max(.001,o.w*(650/900)),.16,1);
@@ -124,6 +151,35 @@ function shape(o){
  return result;
 }
 function boxes(o,r){return shape(o).rects.map(q=>({x:(o.x+o.w*q.x)*r.width,y:(o.y+o.h*q.y)*r.height,w:o.w*q.w*r.width,h:o.h*q.h*r.height}))}
+function visibleBounds(o,r){
+ const rs=boxes(o,r),fallback={x:o.x*r.width,y:o.y*r.height,w:o.w*r.width,h:o.h*r.height};
+ if(!rs.length)return fallback;
+ const x=Math.min(...rs.map(b=>b.x)),y=Math.min(...rs.map(b=>b.y));
+ return{x,y,w:Math.max(20,...rs.map(b=>b.x+b.w-x)),h:Math.max(20,...rs.map(b=>b.y+b.h-y))};
+}
+function modelInVisibleContent(e){
+ if(!selectable()||!usableTarget(e.target))return null;
+ const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+ for(let i=strokes.length-1;i>=0;i--){
+  const o=strokes[i];if(!isModel(o))continue;
+  const pieces=boxes(o,r);
+  if(pieces.some(b=>x>=b.x-5&&x<=b.x+b.w+5&&y>=b.y-5&&y<=b.y+b.h+5))return o;
+ }
+ return null;
+}
+function refreshModelGrip(){
+ if(!selectable()||!selectedModel||!strokes.includes(selectedModel)||selectedModel.locked){
+  selectionOutline.style.display='none';modelGrip.style.display='none';return;
+ }
+ const cr=canvas.getBoundingClientRect(),br=board.getBoundingClientRect(),b=visibleBounds(selectedModel,cr);
+ const left=cr.left-br.left,top=cr.top-br.top;
+ selectionOutline.style.left=(left+b.x-5)+'px';selectionOutline.style.top=(top+b.y-5)+'px';
+ selectionOutline.style.width=(b.w+10)+'px';selectionOutline.style.height=(b.h+10)+'px';
+ selectionOutline.style.display='block';
+ const gx=clamp(left+b.x+b.w+2,19,Math.max(19,br.width-19)),gy=clamp(top+b.y+b.h+2,19,Math.max(19,br.height-19));
+ modelGrip.style.left=(gx-19)+'px';modelGrip.style.top=(gy-19)+'px';modelGrip.style.display='flex';
+}
+
 function reservedHandle(o,p,rects,r){
  if(!rects.length)return false;
  if(o.smartBarType==='partwhole'||o.smartBarType==='comparison'){
@@ -166,6 +222,10 @@ function schedule(){
   if(drag&&(!selectable()||!strokes.includes(drag.o)))endDrag(true);
   else if(lastPointer)hover(lastPointer);
   else{cursor('');board.classList.remove('bar-model-resize-ready');tip.style.display='none'}
+  if(selectedModel&&!strokes.includes(selectedModel))selectedModel=null;
+  const current=strokes.filter(isModel).at(-1)||null;
+  if(current&&current!==lastSeenNewest){lastSeenNewest=current;if(selectable())selectedModel=current}
+  refreshModelGrip();
  });
 }
 function stop(e){e.preventDefault();e.stopImmediatePropagation()}
@@ -188,7 +248,7 @@ function endDrag(cancelled,e){
  if(e&&!cancelled)updateDrag(e);
  drag=null;
  if(cancelled&&strokes.includes(d.o))restoreObject(d.o,d.objectBefore);
- try{canvas.releasePointerCapture(d.id)}catch{}
+ try{(d.captureElement||canvas).releasePointerCapture?.(d.id)}catch{}
  redraw();
  if(!cancelled&&strokes.includes(d.o)&&JSON.stringify(d.o)!==JSON.stringify(d.objectBefore)){
   undoMoves.push({index:strokes.indexOf(d.o),before:d.objectBefore,after:signature()});if(undoMoves.length>100)undoMoves.shift();
@@ -203,7 +263,11 @@ window.addEventListener('pointerdown',e=>{
  if(drag){stop(e);return}
  if(e.button!==undefined&&e.button!==0)return;
  pointerTip(e);
- const handle=handleAt(e),o=handle?.o||modelAt(e);if(!o)return;
+ const handle=handleAt(e),o=handle?.o||modelAt(e);
+ const visible=o||modelInVisibleContent(e);
+ selectedModel=visible||null;
+ schedule();
+ if(!o)return;
  stop(e);lastPointer=e;suppressed=null;
  const r=canvas.getBoundingClientRect();
  drag={...handle,kind:handle?.kind||'move',id:e.pointerId,o,start:{x:o.x,y:o.y},objectBefore:copy(o),clientX:e.clientX,clientY:e.clientY,grabX:handle?e.clientX-r.left-handle.x:0,grabY:handle?e.clientY-r.top-handle.y:0,before:copy(strokes)};
@@ -219,9 +283,22 @@ window.addEventListener('pointermove',e=>{
 window.addEventListener('pointerup',e=>{if(!drag||e.pointerId!==drag.id)return;stop(e);endDrag(false,e)},{capture:true,passive:false});
 window.addEventListener('pointercancel',e=>{if(!drag||e.pointerId!==drag.id)return;stop(e);endDrag(true)},{capture:true,passive:false});
 canvas.addEventListener('lostpointercapture',e=>{if(drag&&e.pointerId===drag.id)endDrag(true)});
+modelGrip.addEventListener('pointerdown',e=>{
+ if(!selectable()||!selectedModel||!strokes.includes(selectedModel)||selectedModel.locked||(e.button!==undefined&&e.button!==0))return;
+ if(drag){stop(e);return}
+ const o=selectedModel;
+ drag={kind:'scale',id:e.pointerId,o,start:{x:o.x,y:o.y},objectBefore:copy(o),clientX:e.clientX,clientY:e.clientY,before:copy(strokes),captureElement:modelGrip};
+ try{modelGrip.setPointerCapture?.(e.pointerId)}catch{}
+ e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+ modelGrip.style.cursor='nwse-resize';
+});
+modelGrip.addEventListener('lostpointercapture',e=>{if(drag?.kind==='scale'&&drag.id===e.pointerId)endDrag(true)});
 board.addEventListener('pointerleave',()=>{if(!drag){lastPointer=null;suppressed=null;cursor('');board.classList.remove('bar-model-resize-ready');tip.style.display='none'}});
 window.addEventListener('click',e=>{if(Date.now()<suppressClickUntil&&usableTarget(e.target))stop(e)},true);
-window.addEventListener('keydown',e=>{if(drag&&(e.key==='Escape'||((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'))){stop(e);endDrag(true)}},true);
+window.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!drag){selectedModel=null;schedule()}
+ if(drag&&(e.key==='Escape'||((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'))){stop(e);endDrag(true)}
+},true);
 window.addEventListener('blur',()=>{endDrag(true);lastPointer=null;suppressed=null;cursor('');board.classList.remove('bar-model-resize-ready');tip.style.display='none'});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){endDrag(true);lastPointer=null;cursor('');board.classList.remove('bar-model-resize-ready');tip.style.display='none'}});
 const previousRedraw=redraw;redraw=function(){const r=previousRedraw.apply(this,arguments);schedule();return r};
