@@ -7,6 +7,10 @@ const groups=JSON.parse(source.match(/const groups=(\{"l":.*\});/)[1]);
 const holdout=require('./fixtures/shared-letter-holdout-v2.json').samples;
 const c=create();vm.runInContext(source,c);
 const R=c.WhiteboardHandwritingMath,S=R.sharedLettersV2;
+const loader=fs.readFileSync('experimental/math-structure/beautify-v2.js','utf8');
+assert.equal(loader.match(/const readerBuild='([^']+)'/)[1],R.build,'Beautify loader and reader versions must agree');
+const html=fs.readFileSync('whiteboard-v2-trial.html','utf8');
+for(const file of ['reader-v2.js','beautify-v2.js'])assert(html.includes(file+'?v='+R.build),'HTML cache version: '+file);
 function pixels(feature){
  const a=new Float32Array(784);
  for(let y=0;y<14;y++)for(let x=0;x<14;x++){
