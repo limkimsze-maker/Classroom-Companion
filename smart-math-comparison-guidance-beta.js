@@ -84,6 +84,32 @@ function removeLeftoverComparisonMarks(bars){
   return !(sameRow&&narrow&&distance>=15&&distance<=160);
  });
 }
+// Clean orphaned short vertical marks from previously converted comparison sketches.
+// Require a cluster of at least two marks beside the same generated model;
+// never remove a single handwritten numeral or unrelated distant ink.
+function cleanExistingComparisonOrphans(){
+ const models=strokes.filter(o=>o?.smartType==='barModel'&&o.smartBarType==='comparison'&&Number(o.barCount)>=2);
+ if(!models.length)return false;
+ let changed=false;
+ for(const obj of models){
+  const left=obj.x+obj.w*(180/900),right=obj.x+obj.w*(830/900);
+  const top=obj.y,bottom=obj.y+obj.h;
+  const marks=strokes.filter(s=>{
+   if(!rawInk(s))return false;
+   const b=pxBox(s),gap=(left-(b.x+b.w))*cssW;
+   return b.pw<=34&&b.ph>=12&&b.ph<=105&&b.ph>=b.pw*1.5&&gap>=12&&gap<=160&&b.cy>=top-.035&&b.cy<=bottom+.05&&b.x<right;
+  });
+  if(marks.length<2)continue;
+  const centerX=marks.reduce((sum,s)=>sum+box(s).cx,0)/marks.length;
+  const clustered=marks.filter(s=>Math.abs((box(s).cx-centerX)*cssW)<=35);
+  if(clustered.length<2)continue;
+  const remove=new Set(clustered);
+  strokes=strokes.filter(s=>!remove.has(s));changed=true;
+ }
+ if(changed){redraw();syncUi()}
+ return changed;
+}
+setTimeout(()=>{try{cleanExistingComparisonOrphans()}catch{}},350);
 function prepareFinish(){
  const type=window.__smartBarType||'';if(type!=='comparison')return;
  const group=strokes.slice(startIndex).filter(rawInk);if(group.length<2)return;
@@ -102,7 +128,7 @@ function prepareFinish(){
   removeLeftoverComparisonMarks(p.bars);
   const ordered=[...p.bars].sort((a,b)=>a.b.cy-b.b.cy);
   obj.barCount=Math.max(2,Math.min(5,ordered.length));obj.barCompareWidths=modelWidths(ordered);if(!Array.isArray(obj.barFills))obj.barFills=Array(obj.barCount).fill('#ffffff');
-  rebuild(obj);fitTwoBarToSketch(obj,ordered);obj.rotation=0;obj.angle=0;obj.userDrawnBrackets=ensureDifference(obj,makeBrackets(originals,obj,ordered));obj.userDrawnBracketScan=true;hideAuto(obj);pending=null;redraw();syncUi();
+  rebuild(obj);fitTwoBarToSketch(obj,ordered);obj.rotation=0;obj.angle=0;obj.userDrawnBrackets=ensureDifference(obj,makeBrackets(originals,obj,ordered));obj.userDrawnBracketScan=true;hideAuto(obj);pending=null;cleanExistingComparisonOrphans();redraw();syncUi();
  },0)
 }
 
