@@ -22,7 +22,7 @@ function components(entries){
  const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent[b]=a};
  // Rough teacher-drawn bars may have tiny gaps at corners, so allow a little
  // more joining tolerance than the old closed-rectangle detector.
- for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const g=gap(boxes[i],boxes[j]);if(g.dx<=24&&g.dy<=14)join(i,j)}
+ for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const g=gap(boxes[i],boxes[j]);if(g.dx<=20&&g.dy<=20)join(i,j)}
  const groups=new Map();
  for(let i=0;i<n;i++){const k=find(i);if(!groups.has(k))groups.set(k,[]);groups.get(k).push({...entries[i],b:boxes[i]})}
  return [...groups.values()].map(items=>{
@@ -30,11 +30,11 @@ function components(entries){
   return{items,l,t,r,b,pw:r-l,ph:b-t,cx:(l+r)/2,cy:(t+b)/2,last:Math.max(...items.map(q=>q.i)),x:l/d.w,y:t/d.h,w:(r-l)/d.w,h:(b-t)/d.h}
  })
 }
-function barLike(c){return c&&c.pw>=75&&c.ph>=8&&c.ph<=155&&c.pw>=c.ph*1.6}
+function barLike(c){return c&&c.pw>=80&&c.ph>=10&&c.pw>=c.ph*1.30}
 function compatible(a,b){
  const overlap=Math.max(0,Math.min(a.r,b.r)-Math.max(a.l,b.l)),ratio=overlap/Math.max(1,Math.min(a.pw,b.pw));
  const dy=Math.abs(a.cy-b.cy),leftDiff=Math.abs(a.l-b.l),leftTol=Math.max(140,Math.min(a.pw,b.pw)*.55);
- return ratio>=.12&&dy>=Math.max(26,Math.min(a.ph,b.ph)*.55)&&dy<=720&&leftDiff<=leftTol;
+ return ratio>=.18&&dy>=20&&dy<=720&&leftDiff<=leftTol;
 }
 function chooseBars(source){
  const entries=(source||[]).map((s,i)=>({s,i})).filter(q=>rawInk(q.s));if(!entries.length)return[];
@@ -83,13 +83,8 @@ document.addEventListener('pointerdown',e=>{
  // 1) draw bars first, then choose Comparison; and
  // 2) choose Comparison first, then draw the rough bars.
  // The old fallback handled only (1), which is why normal classroom use failed.
- const freshlyDrawn=strokes.slice(selectionStrokeCount).filter(rawInk);
- // Include earlier ink too: choosing Comparison after sketching, or an extra pen stroke,
- // must not make the recogniser discard one of the two bars.
- const allInk=strokes.filter(rawInk);
- let bars=chooseBars(freshlyDrawn);
- if(bars.length<2)bars=chooseBars(allInk);
- if(bars.length<2)bars=chooseBars(snapshot);if(bars.length<2)return;
+ const freshlyDrawn=strokes.slice(selectionStrokeCount).filter(rawInk),source=freshlyDrawn.length?freshlyDrawn:snapshot;
+ const bars=chooseBars(source);if(bars.length<2)return;
  const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
  strokes.push(...temp);injected={temp,originals,beforeState,priorIds}
 },true);
