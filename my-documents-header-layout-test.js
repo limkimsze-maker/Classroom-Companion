@@ -2,21 +2,21 @@
 const slot=document.getElementById('ccSaveSlot'),tools=document.querySelector('.tools');
 if(!slot||!tools)return;
 const placeholder=document.getElementById('ccUsualWhiteboardInSlot');
-let queued=false;
+let scheduled=false,settled=false;
 function arrange(){
- queued=false;
- const matches=[...document.querySelectorAll('button')].filter(b=>b!==placeholder&&b.textContent.trim()==='Usual whiteboard');
- const actual=matches[0];
- if(actual){
-   if(placeholder?.isConnected)placeholder.remove();
-   if(actual.parentElement!==slot)slot.insertBefore(actual,slot.firstChild);
- }else if(placeholder){
-   placeholder.onclick=()=>{const live=[...document.querySelectorAll('button')].find(b=>b!==placeholder&&b.textContent.trim()==='Usual whiteboard');if(live)live.click()};
+ scheduled=false;
+ // Do not relocate dynamically managed buttons: other toolbar scripts may recreate them.
+ // Hide the static duplicate and leave the original Usual whiteboard in its native toolbar.
+ if(placeholder)placeholder.remove();
+ const native=[...tools.querySelectorAll('button')].find(b=>b.textContent.trim()==='Usual whiteboard');
+ if(native&&native.parentElement!==tools)tools.appendChild(native);
+ for(const id of ['ccDocumentSaveTop','ccInlineSave','ccQuickSave']){
+  const el=document.getElementById(id);
+  if(el)el.style.setProperty('display','none','important');
  }
- for(const id of ['ccDocumentSaveTop','ccInlineSave','ccQuickSave']){const el=document.getElementById(id);if(el)el.style.setProperty('display','none','important')}
+ settled=true;
 }
-function schedule(){if(queued)return;queued=true;requestAnimationFrame(arrange)}
-new MutationObserver(schedule).observe(tools,{childList:true,subtree:true});
-new MutationObserver(schedule).observe(slot,{childList:true});
-arrange();
+function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(arrange)}
+schedule();
+new MutationObserver(schedule).observe(tools,{childList:true});
 })();
