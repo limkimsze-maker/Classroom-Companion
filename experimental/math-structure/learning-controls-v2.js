@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const learner=window.WhiteboardHandwritingLearning,tools=document.querySelector('.tools');if(!learner?.exportPack||!tools)return;
-const button=document.createElement('button');button.type='button';button.className='btn';button.id='handwritingLearningBtn';button.textContent='Learning';button.title='Export or import saved handwriting examples';tools.appendChild(button);
+const button=document.createElement('button');button.type='button';button.className='btn';button.id='handwritingLearningBtn';button.textContent='Learning';button.title='Export or import saved handwriting examples';tools.appendChild(button);button.hidden=true;button.setAttribute('aria-hidden','true');
 button.onclick=()=>{
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','learningTitle');
@@ -14,7 +14,7 @@ button.onclick=()=>{
  for(const text of [
   'Label accurately: correct Recognised text to exactly what you wrote before saving. Avoid guessing or giving the same shape conflicting labels. Correct labels matter more than quantity.',
   'Teach a sign: use Auto for =, +, −, × or ÷. If it is still misread inside an equation, select only that sign’s strokes and enter the correct symbol.',
-  'Keep useful examples: choose Learn & Test Again, then Apply. Add a few natural variations in slant, size or spacing. Repeating identical strokes adds little. Cancel discards provisional learning; Undo reverses the saved learning from that action.',
+  'Keep useful examples: correct wrong readings, press Learn, then Apply. Add a few natural variations in slant, size or spacing. Repeating identical strokes adds little. Cancel discards uncommitted learning; Undo can reverse the saved learning associated with an applied correction.',
   'Check fresh handwriting: write a different equation before training it. Test Again reuses the same ink, so its success alone does not prove new handwriting will be recognised. Improvement varies with how closely the new writing matches your examples.'
  ]){const item=document.createElement('li');item.textContent=text;item.style.marginBottom='8px';tips.appendChild(item)}
  guide.append(guideTitle,tips);
