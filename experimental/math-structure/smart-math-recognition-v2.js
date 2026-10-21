@@ -27,7 +27,7 @@ const smartBtn=document.createElement('button');smartBtn.className='btn soft';sm
 tools.insertBefore(smartBtn,undoBtn);
 const menu=document.createElement('div');
 Object.assign(menu.style,{position:'fixed',zIndex:'10020',display:'none',minWidth:'180px',padding:'7px',background:'#fff',border:'1px solid #d8e1e8',borderRadius:'12px',boxShadow:'0 10px 30px rgba(18,32,46,.2)'});document.body.appendChild(menu);
-const entries=[['auto',L.auto],['counters',L.counters],['fraction',L.fraction],['bar',L.bar],['number',L.number],['equation',L.equation],['solid',L.solid],['off',L.off]];
+const entries=[['auto',L.auto],['counters',L.counters],['fraction',L.fraction],['bar',L.bar],['number',L.number],['equation',L.equation],['off',L.off]];
 for(const [m,label] of entries){const b=document.createElement('button');b.className='btn';b.type='button';b.textContent=label;b.style.cssText='display:block;width:100%;text-align:left;margin:3px 0';b.onclick=()=>{menu.style.display='none';setMode(m)};menu.appendChild(b)}
 smartBtn.onclick=e=>{const r=smartBtn.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(innerWidth-200,r.left))+'px';menu.style.top=Math.min(innerHeight-330,r.bottom+5)+'px';menu.style.display=menu.style.display==='block'?'none':'block';e.stopPropagation()};
 document.addEventListener('pointerdown',e=>{if(!menu.contains(e.target)&&e.target!==smartBtn)menu.style.display='none'},true);
