@@ -2,7 +2,7 @@
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const anchor=document.getElementById('textBtn'),board=document.getElementById('board');
 if(!anchor||!board)return;
-const btn=document.createElement('button');btn.className='btn soft';btn.type='button';btn.textContent='🎙 Speech to Text';anchor.insertAdjacentElement('afterend',btn);
+const btn=document.getElementById('speechToTextBtn');if(!btn)return;
 const panel=document.createElement('div');panel.style.cssText='display:none;position:fixed;top:15%;left:50%;transform:translateX(-50%);width:min(92vw,430px);padding:16px;background:white;border:1px solid #cfd9de;border-radius:14px;box-shadow:0 14px 45px #17324d44;z-index:20000';
 panel.innerHTML='<strong>🎙 Speech to Text</strong><p style="font-size:12px">Speak a sentence or mathematical equation. Review before inserting.</p><textarea aria-label="Speech transcript" rows="3" style="width:100%;padding:9px;border:1px solid #cfd9de;border-radius:8px"></textarea><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px"><button type="button" class="btn" data-action="listen">🎙 Listen</button><button type="button" class="btn" data-action="math">Convert maths</button><button type="button" class="btn soft" data-action="insert">Insert</button><button type="button" class="btn" data-action="close">Close</button></div><p data-status style="font-size:11px;color:#667085"></p>';
 document.body.appendChild(panel);
