@@ -25,8 +25,8 @@ body.document-open-mode #mainSettingsBtn{top:2px!important;right:4px!important}
 body.document-open-mode .tools{padding-right:112px!important}
 @media(max-width:800px){#mainSettingsBtn{top:7px!important;right:7px!important}.brand{padding-right:110px}}
 
-/* Permanent second-row save control, never overlays existing tools. */
-#ccSaveSlot{display:none;align-items:center;gap:6px;flex:0 1 auto;order:100;min-width:0;flex-wrap:nowrap;margin:0}body.document-open-mode #ccSaveSlot{display:flex!important}#ccSaveSlot button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;max-width:100%;min-height:36px;padding:7px 9px;border:1px solid #0f766e;border-radius:10px;background:#0f766e;color:white;font:700 12px system-ui;white-space:nowrap;box-shadow:none!important}#ccSaveSlot button:disabled{opacity:.6}#ccSaveSlot #ccPermanentExitBtn{display:inline-flex!important;visibility:visible!important;background:#fff!important;color:#17324d!important;border:1px solid #cbd5df!important;min-width:38px;font-size:19px;padding:4px 10px}#ccSaveSlot #ccPermanentSaveBtn{display:inline-flex!important;visibility:visible!important}#ccSaveSlot button:first-child{flex-shrink:0}
+/* Document actions share the same compact header row as Usual whiteboard. */
+#ccSaveSlot{display:none;align-items:center;gap:6px;flex:1 1 100%;order:100;min-width:0;flex-wrap:nowrap;margin:0}body.document-open-mode #ccSaveSlot{display:flex!important}#ccSaveSlot button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;max-width:100%;min-height:36px;padding:7px 9px;border:1px solid #0f766e;border-radius:10px;background:#0f766e;color:white;font:700 12px system-ui;white-space:nowrap;box-shadow:none!important}#ccSaveSlot button:disabled{opacity:.6}#ccSaveSlot #ccPermanentExitBtn{display:inline-flex!important;visibility:visible!important;background:#fff!important;color:#17324d!important;border:1px solid #cbd5df!important;min-width:38px;font-size:19px;padding:4px 10px}#ccSaveSlot #ccPermanentSaveBtn{display:inline-flex!important;visibility:visible!important}#ccSaveSlot button:first-child{flex-shrink:0}#ccSaveSlot #ccPermanentSaveBtn{font-size:11px!important;padding:6px 8px!important}#ccSaveSlot #ccPermanentExitBtn{min-width:34px!important;min-height:34px!important;padding:3px 7px!important}
 </style>
 </head>
 <body>
@@ -51,7 +51,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
 <button class="btn danger" id="clearBtn" type="button">Clear</button>
 </div>
-<div id="ccSaveSlot"><button type="button" id="ccPermanentSaveBtn">💾 Save to My Documents</button><button type="button" id="ccPermanentExitBtn" aria-label="Exit document" title="Exit document">✕</button></div>
+<div id="ccSaveSlot"><button class="btn" type="button" id="ccUsualWhiteboardInSlot">Usual whiteboard</button><button type="button" id="ccPermanentSaveBtn">💾 Save to My Documents</button><button type="button" id="ccPermanentExitBtn" aria-label="Exit document" title="Exit document">✕</button></div>
 </header>
 <main class="boardWrap grid" id="boardWrap" data-watermark="MOE Safe Beta"><canvas id="board" aria-label="Interactive whiteboard"></canvas><div class="mode" id="modeBadge">Pen · navy · 5 px</div></main>
 </div>
@@ -139,7 +139,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
 <script src="experimental/math-structure/letter-trainer-v2.js?v=20261021-letter-trainer1"></script>
 <script src="experimental/math-structure/main-settings-v2.js?v=20261021-letter-trainer1"></script>
-<script src="my-documents-header-layout-test.js?v=20261022-header-tidy11"></script>
+<script src="my-documents-header-layout-test.js?v=20261022-row-fixed13"></script>
 <script src="my-documents-v1.js?v=20261022-header-tidy10"></script>
 </body>
 </html>
