@@ -21,7 +21,7 @@ function mathify(t){
  s=numberWords(s);
  return s.replace(/\s+/g,' ').trim().replace(/\s*×\s*/g,' × ');
 }
-function looksLikeMath(t){return /(?:\d\s*(?:[×*÷+=−-]|\bx\b)|\b(?:times|multiplied by|divide(?:d)? by|plus|minus|equals?|equal to)\b)/i.test(t)}
+function looksLikeMath(t){return /(?:\d\s*(?:[×*÷/+=−-]|\bx\b)|\b(?:times|multiplied by|divide(?:d)? by|plus|minus|equals?|equal to)\b)/i.test(t)}
 btn.addEventListener('click',()=>{panel.style.display='block';status.textContent=SR?'Tap Listen and allow microphone access.':'Speech recognition is not supported in this browser.'});
 panel.addEventListener('click',e=>{const a=e.target.dataset.action;if(!a)return;
 if(a==='close'){try{rec?.stop()}catch{}panel.style.display='none'}
