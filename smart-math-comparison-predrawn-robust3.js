@@ -38,8 +38,11 @@ function compatible(a,b){
 }
 function chooseBars(source){
  const entries=(source||[]).map((s,i)=>({s,i})).filter(q=>rawInk(q.s));if(!entries.length)return[];
- let comps=components(entries).filter(barLike);
- if(comps.length<2)comps=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
+ // Prefer individually drawn, wide bar outlines. Adjacent rows can nearly touch
+ // and the component grouper would otherwise merge both into one huge shape.
+ const individual=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
+ let comps=individual.length>=2?individual:components(entries).filter(barLike);
+ if(comps.length<2)comps=individual;
  if(comps.length<2)return[];
 
  // 3 bars is the maximum comparison model supported by this beta. Start from
