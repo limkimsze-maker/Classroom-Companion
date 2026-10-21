@@ -424,5 +424,6 @@ window.addEventListener('keydown',e=>{
 },true);
 window.addEventListener('blur',()=>{if(selecting)endSelection()});
 document.getElementById('undoBtn')?.addEventListener('click',undoBeautify,true);
+window.WhiteboardBeautifyHistory={get(){return clone(history)},set(items){history.splice(0,history.length,...clone(items||[]))}};
 const oldSync=syncUi;syncUi=function(){const result=oldSync.apply(this,arguments);if(availableUndo())document.getElementById('undoBtn').disabled=false;return result};
 })();

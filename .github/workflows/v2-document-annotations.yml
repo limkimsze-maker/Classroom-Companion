@@ -6,6 +6,7 @@ on:
       - whiteboard-document-open-v2-trial.js
       - whiteboard-v2-trial.html
       - experimental/math-structure/whiteboard-text-drag-resizable-v2.js
+      - experimental/math-structure/beautify-v2.js
       - experimental/math-structure/test-document-annotations-v2.cjs
       - experimental/math-structure/fixtures/documents/**
       - .github/workflows/v2-document-annotations.yml
@@ -34,11 +35,13 @@ jobs:
           fi
           cat /tmp/document-baseline.log
           grep -E 'AssertionError.*(zoom|resize|pan)' /tmp/document-baseline.log
-      - name: Verify V2 document formats in desktop and tablet browsers
+      - name: Verify V2 document formats in desktop and phone browsers
         run: |
           node --check whiteboard-document-open-v2-trial.js
           node --check experimental/math-structure/whiteboard-text-drag-resizable-v2.js
           NODE_PATH=/tmp/document-browser/node_modules node experimental/math-structure/test-document-annotations-v2.cjs document-annotation-evidence
+      - name: Preserve existing V2 handwriting, object resize and eraser flows
+        run: NODE_PATH=/tmp/document-browser/node_modules node experimental/math-structure/test-shipped-browser.cjs document-annotation-evidence/handwriting
       - uses: actions/upload-artifact@v4
         if: always()
         with:

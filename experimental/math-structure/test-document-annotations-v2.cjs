@@ -40,15 +40,24 @@ const selectors={pdf:'#documentPdfCanvas',word:'#documentWordPaper',pptx:'#docum
     await page.locator('#documentTouchNavBtn').click();box=await page.locator('#board').boundingBox();await page.mouse.move(box.x+box.width*.5,box.y+box.height*.5);await page.mouse.down();await page.mouse.move(box.x+box.width*.5+45,box.y+box.height*.5+30,{steps:6});await page.mouse.up();await page.waitForTimeout(900);await check('hand pan');await page.locator('#documentPenModeBtn').click();
    }
    if(['pdf','word','pptx','sheet'].includes(kind)){
-    const input=page.locator('#documentQuickBar input[type=number]');await input.fill('2');await input.dispatchEvent('change');await page.waitForTimeout(650);
+    const dial=page.getByRole('slider',{name:'Page jog dial'});await dial.press('ArrowDown');await page.waitForTimeout(650);
     if(kind!=='word')assert.equal(await page.evaluate(()=>strokes.length),0,kind+' second page isolated');
     // Drawing on page 2 and undoing cannot reveal page 1 or blank-board ink.
     await page.locator('#penBtn').click();box=await page.locator('#board').boundingBox();const count=await page.evaluate(()=>strokes.length);await page.mouse.move(box.x+30,box.y+30);await page.mouse.down();await page.mouse.move(box.x+60,box.y+55,{steps:4});await page.mouse.up();assert.equal(await page.evaluate(()=>strokes.length),count+1);await page.locator('#undoBtn').click();assert.equal(await page.evaluate(()=>strokes.length),count);
-    await input.fill('1');await input.dispatchEvent('change');await page.waitForTimeout(650);await check('page return');
+    await dial.press('Home');await page.waitForTimeout(650);await check('page return');
    }
    if(kind==='pdf'){
     // Multiple zoom clicks and page requests while PDF rendering is pending.
     await page.evaluate(()=>{const bar=document.getElementById('documentQuickBar');for(let i=0;i<4;i++)bar.querySelector('[title="Zoom in"]').click();const p=bar.querySelector('input');for(const v of [2,1,2,1]){p.value=v;p.dispatchEvent(new Event('change'))}});await page.waitForTimeout(1500);await check('rapid navigation');
+   }
+   if(kind==='pdf'){
+    // Use the actual Beautify dialog, then zoom and Undo back to pen strokes.
+    await page.evaluate(()=>{strokes=[{colour:'#17324d',size:4,points:[{x:60/cssW,y:80/cssH},{x:60/cssW,y:125/cssH}]}];redraw();syncUi()});
+    await page.locator('#handwritingBeautifyBtn').click();box=await page.locator('#board').boundingBox();await page.mouse.move(box.x+30,box.y+55);await page.mouse.down();await page.mouse.move(box.x+110,box.y+155,{steps:6});await page.mouse.up();
+    await page.waitForFunction(()=>document.getElementById('handwritingReadText')?.value?.trim()&&document.getElementById('handwritingStopReadBtn')?.hidden);
+    await page.locator('#handwritingCorrectArithmetic').uncheck();await page.locator('#handwritingReadText').fill('1 + 1');await page.locator('.handwriting-apply').click();
+    assert.equal(await page.evaluate(()=>strokes[0].handwritingBeautified),true,'actual Beautify Apply');
+    await page.locator('#documentQuickBar button[title="Zoom out"]').click();await page.waitForTimeout(600);await page.locator('#undoBtn').click();assert.equal(await page.evaluate(()=>strokes[0].type||'pen'),'pen','Beautify Undo survives zoom');assert.equal(await page.evaluate(()=>strokes[0].points.length),2);
    }
    await page.screenshot({path:path.join(output,kind+'-'+viewport.width+'.png')});
    await page.locator('#documentQuickBar button[title="Close document"]').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),blank,'blank-board ink restored after '+kind);

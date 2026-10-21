@@ -12,7 +12,7 @@ const XLSX_URL='vendor/moe/xlsx.full.min.js';
 let layer,pdfCanvas,wordViewport,wordPaper,pptViewport,sheetViewport,sheetPaper,genericViewport;
 let toolbar,fileInput,pageInput,pageTotal,zoomLabel,prevBtn,nextBtn,searchBtn,searchPanel,searchInput,searchStatus,interactBtn;
 let active=false,docKind=null,docName='',currentPage=1,totalPages=1,zoom=1,renderToken=0;
-let pageStore=new Map(),preDocumentStrokes=null,preDocumentHistory=[];
+let pageStore=new Map(),preDocumentStrokes=null,preDocumentHistory=[],preDocumentBeautify=[];
 let lastAnnotationRect=null,viewBusy=false,viewRevision=0,viewQueue=Promise.resolve();
 let pdfDoc=null,pptViewer=null,pptModule=null,pptMatches=[],pptMatchIndex=-1,pptQuery='';
 let workbook=null,sheetNames=[];
@@ -61,20 +61,22 @@ function convertAnnotations(items,r,toPage){
   return s;
  });
 }
+function convertBeautifyHistory(items,r,toPage){return items.map(h=>({...h,before:convertAnnotations(h.before,r,toPage),after:JSON.stringify(convertAnnotations(JSON.parse(h.after),r,toPage))}))}
 function savePage(){
  if(!active||viewBusy)return;
  const r=lastAnnotationRect||annotationRect();if(!r)return;
  const undo=window.WhiteboardAnnotationHistory?.get()||[];
- pageStore.set(pageKey(),{relative:true,items:convertAnnotations(strokes,r,true),undo:undo.map(items=>convertAnnotations(items,r,true))});
+ pageStore.set(pageKey(),{relative:true,items:convertAnnotations(strokes,r,true),undo:undo.map(items=>convertAnnotations(items,r,true)),beautify:convertBeautifyHistory(window.WhiteboardBeautifyHistory?.get()||[],r,true)});
 }
 function loadPageAnnotations(){
  const r=annotationRect();if(!r)return;
  const saved=pageStore.get(pageKey());
  strokes=saved?.relative?convertAnnotations(saved.items,r,false):[];
  window.WhiteboardAnnotationHistory?.set((saved?.undo||[]).map(items=>convertAnnotations(items,r,false)));
+ window.WhiteboardBeautifyHistory?.set(convertBeautifyHistory(saved?.beautify||[],r,false));
  lastAnnotationRect=r;current=null;drawing=false;redraw();syncUi();
 }
-function restoreBlankBoard(){if(preDocumentStrokes!==null){strokes=clone(preDocumentStrokes);preDocumentStrokes=null;window.WhiteboardAnnotationHistory?.set(preDocumentHistory);preDocumentHistory=[];lastAnnotationRect=null;current=null;drawing=false;redraw();syncUi()}}
+function restoreBlankBoard(){if(preDocumentStrokes!==null){strokes=clone(preDocumentStrokes);preDocumentStrokes=null;window.WhiteboardAnnotationHistory?.set(preDocumentHistory);window.WhiteboardBeautifyHistory?.set(preDocumentBeautify);preDocumentHistory=[];preDocumentBeautify=[];lastAnnotationRect=null;current=null;drawing=false;redraw();syncUi()}}
 // Queue rendering and keep only the latest requested view. Pending PDF/slide
 // renders must not overwrite a newer page's annotation set.
 function changeView(change){
@@ -169,7 +171,7 @@ function ensureOpenButton(){
 function ensureFileInput(){if(fileInput)return;fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='*/*';fileInput.style.display='none';fileInput.addEventListener('change',async()=>{const f=fileInput.files?.[0];fileInput.value='';if(f)await openFile(f)});document.body.appendChild(fileInput)}
 
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=(viewBusy||interactionMode)?'none':'auto';}
-function enterMode(){ensureLayer();ensureToolbar();finishAnnotationEdit();if(!active){preDocumentStrokes=clone(strokes);preDocumentHistory=window.WhiteboardAnnotationHistory?.get()||[]}viewRevision++;viewBusy=false;lastAnnotationRect=null;active=true;window.WhiteboardAnnotationHistory?.set([]);pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');redraw();syncUi()}
+function enterMode(){ensureLayer();ensureToolbar();finishAnnotationEdit();if(!active){preDocumentStrokes=clone(strokes);preDocumentHistory=window.WhiteboardAnnotationHistory?.get()||[];preDocumentBeautify=window.WhiteboardBeautifyHistory?.get()||[]}viewRevision++;viewBusy=false;lastAnnotationRect=null;active=true;window.WhiteboardAnnotationHistory?.set([]);window.WhiteboardBeautifyHistory?.set([]);pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');redraw();syncUi()}
 function destroyPpt(){if(pptViewer){try{pptViewer.destroy()}catch{}pptViewer=null}if(pptViewport)pptViewport.innerHTML=''}
 function exitMode(){viewRevision++;viewBusy=false;lastAnnotationRect=null;active=false;renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
 function closeDocument(){if(!active)return;finishAnnotationEdit();savePage();exitMode()}
