@@ -216,7 +216,9 @@ document.addEventListener('keydown',e=>{if(editor)return;if(/INPUT|TEXTAREA|SELE
 
 // Speech transcripts use the same movable, corner-resizable text boxes as typed text.
 document.addEventListener('whiteboard-insert-speech-text',e=>{
- const value=String(e.detail?.text||'').trim();if(!value)return;
+ const raw=String(e.detail?.text||'').trim();if(!raw)return;
+ // Final mathematical typography guard, independent of the speech parser.
+ const value=raw.replace(/(\\d)\\s*\\/\\s*(?=\\d)/g,'$1 ÷ ').replace(/(\\d)\\s*\\*\\s*(?=\\d)/g,'$1 × ').replace(/\\b(\\d+)\\s+[xX]\\s+(?=\\d)/g,'$1 × ');
  if(editor)finishEditing(true);
  remember();
  const obj={type:'text',x:.12,y:.2,w:.5,h:.2,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
