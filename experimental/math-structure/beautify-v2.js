@@ -297,7 +297,19 @@ async function review(group){
  input.addEventListener('input',()=>{stopReading(false);clearProvisional();contextArea.hidden=true;updatePreview()});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!apply.disabled){e.preventDefault();apply.click()}});
  correctionToggle.addEventListener('change',updatePreview);
  colourSelect.addEventListener('change',updatePreview);
- insert.addEventListener('change',()=>{if(!insert.value)return;stopReading(false);clearProvisional();contextArea.hidden=true;const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
+ let savedInsertStart=null,savedInsertEnd=null;
+ function rememberInsertCaret(){if(document.activeElement!==input)return;savedInsertStart=input.selectionStart;savedInsertEnd=input.selectionEnd}
+ input.addEventListener('keyup',rememberInsertCaret);input.addEventListener('click',rememberInsertCaret);input.addEventListener('select',rememberInsertCaret);input.addEventListener('blur',rememberInsertCaret);
+ insert.addEventListener('change',()=>{
+  const symbol=insert.value;if(!symbol)return;
+  stopReading(false);clearProvisional();contextArea.hidden=true;
+  const start=Number.isInteger(savedInsertStart)?savedInsertStart:input.value.length;
+  const end=Number.isInteger(savedInsertEnd)?savedInsertEnd:start;
+  const a=Math.max(0,Math.min(input.value.length,start)),z=Math.max(a,Math.min(input.value.length,end));
+  input.value=input.value.slice(0,a)+symbol+input.value.slice(z);
+  insert.selectedIndex=0;input.focus();input.setSelectionRange(a+symbol.length,a+symbol.length);
+  rememberInsertCaret();input.dispatchEvent(new Event('input',{bubbles:true}));updatePreview();
+ });
  test.onclick=async()=>{
   if(reading||testing||pendingLearning||!formatted())return;
   const learner=window.WhiteboardHandwritingLearning,recogniser=window.WhiteboardHandwritingMath;
