@@ -94,7 +94,7 @@ const style=document.createElement('style');style.textContent=`
 .handwriting-review .handwriting-context-options button[aria-pressed=true]{background:#0f766e;color:white}
 .handwriting-review [hidden]{display:none!important}
 `;document.head.appendChild(style);
-const btn=document.createElement('button');btn.id='handwritingBeautifyBtn';btn.type='button';btn.className='btn soft';btn.textContent='✨ Beautify';btn.title='Recognise handwritten numbers, learned letters and equations';tools.insertBefore(btn,document.getElementById('undoBtn'));
+const btn=document.createElement('button');btn.id='handwritingBeautifyBtn';btn.type='button';btn.className='btn soft';btn.textContent='✨ Beautify';btn.title='Recognise handwritten numbers, learned letters and equations';tools.insertBefore(btn,document.getElementById('undoBtn'));const help=document.createElement('button');help.id='handwritingHowToUseBtn';help.type='button';help.className='btn';help.textContent='? How to Use';tools.insertBefore(help,btn.nextSibling);help.onclick=()=>{const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;background:#0009;z-index:1200;display:grid;place-items:center;padding:16px';const panel=document.createElement('section');panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Beautify help');panel.style.cssText='background:white;color:#17324d;border-radius:16px;padding:20px;max-width:540px;width:100%;max-height:85vh;overflow:auto';const h=document.createElement('h2');h.textContent='Beautify · How to Use';const ol=document.createElement('ol');['Write with Pen, select Beautify and box the handwriting.','Correct wrong digits, signs, units or superscripts in the recognised reading.','Press Apply & Learn to beautify and save the confirmed example locally.','Write varied examples: learning accumulates on this browser, but future accuracy is not guaranteed.','Use the Learning controls to export/import JSON for backup or sharing. No automatic upload occurs.'].forEach(t=>{const li=document.createElement('li');li.textContent=t;li.style.marginBottom='9px';ol.appendChild(li)});const p=document.createElement('p');p.textContent='Correct just the mistaken part of an equation. The original selected strokes and corrected expression form the confirmed example.';const close=document.createElement('button');close.type='button';close.className='btn soft';close.textContent='Close';const dismiss=()=>overlay.remove();close.onclick=dismiss;overlay.onclick=e=>{if(e.target===overlay)dismiss()};panel.append(h,ol,p,close);overlay.appendChild(panel);document.body.appendChild(overlay);close.focus()};
 const eligible=s=>s&&!s.erase&&!s.locked&&!s.background&&!s.smartGenerated&&!s.shape&&Array.isArray(s.points)&&s.points.length&&s.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
 function sayLocal(text){if(typeof say==='function')say(text)}
 function groupBounds(group){const pts=group.flatMap(s=>s.points),xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),x=Math.min(...xs),y=Math.min(...ys);return{x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y}}
@@ -241,15 +241,15 @@ async function review(group){
  const contextArea=document.createElement('section');contextArea.className='handwriting-context';contextArea.id='handwritingContextChoices';contextArea.setAttribute('aria-label','Possible handwriting readings');contextArea.hidden=true;
  const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Beautified preview in the original writing area';preview.hidden=true;
  const actions=document.createElement('div');actions.className='handwriting-actions';
- const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply beautify';apply.disabled=true;
+ const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply & Learn';apply.disabled=true;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=closeReview;
  const stopRead=document.createElement('button');stopRead.id='handwritingStopReadBtn';stopRead.type='button';stopRead.className='btn';stopRead.textContent='Stop reading';
  const retryRead=document.createElement('button');retryRead.id='handwritingRetryReadBtn';retryRead.type='button';retryRead.className='btn';retryRead.textContent='Read again';retryRead.hidden=true;
  const feedbackArea=document.createElement('div');feedbackArea.className='handwriting-feedback-controls';
  const test=document.createElement('button');test.type='button';test.className='btn';test.textContent='↻ Learn & Test Again';test.title='Save a confirmed correction locally, then read the SAME original strokes again';
  const feedback=document.createElement('p');feedback.className='handwriting-feedback-message';feedback.setAttribute('aria-live','polite');
- feedback.textContent='Correct the reading above, then test the same ink. Draw again afterward to test generalisation.';
- feedbackArea.append(test,feedback);
+ feedback.textContent='Correct the reading, then select Apply & Learn to save locally.';
+ feedbackArea.append(feedback);
  function clearProvisional(){
   feedbackStamp++;
   if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}
