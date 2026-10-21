@@ -38,11 +38,8 @@ function compatible(a,b){
 }
 function chooseBars(source){
  const entries=(source||[]).map((s,i)=>({s,i})).filter(q=>rawInk(q.s));if(!entries.length)return[];
- // Prefer individually drawn, wide bar outlines. Adjacent rows can nearly touch
- // and the component grouper would otherwise merge both into one huge shape.
- const individual=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
- let comps=individual.length>=2?individual:components(entries).filter(barLike);
- if(comps.length<2)comps=individual;
+ let comps=components(entries).filter(barLike);
+ if(comps.length<2)comps=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
  if(comps.length<2)return[];
 
  // 3 bars is the maximum comparison model supported by this beta. Start from
@@ -68,24 +65,6 @@ function chooseBars(source){
  if(cluster.length<2)return[];
  return cluster.slice(0,3).sort((a,b)=>a.cy-b.cy)
 }
-// Remove short, isolated strokes belonging to the rough comparison sketch.
-// Do not use the generated SVG as a deletion target: it is not raw ink.
-function sketchArtifacts(source,bars){
- const chosen=new Set(bars.flatMap(c=>c.items.map(q=>q.s)));
- const outlines=bars.map(c=>({l:c.l,r:c.r,t:c.t,b:c.b,cy:c.cy,pw:c.pw,ph:c.ph}));
- const minLeft=Math.min(...outlines.map(b=>b.l));
- const top=Math.min(...outlines.map(b=>b.t)),bottom=Math.max(...outlines.map(b=>b.b));
- const d=dims();
- return source.filter(s=>{
-  if(!rawInk(s)||chosen.has(s))return false;
-  const b=box(s),vertical=b.ph>=b.pw*1.35;
-  const narrow=b.pw<=38&&b.ph>=10&&b.ph<=105;
-  const nearLeft=b.r>=minLeft-165&&b.r<=minLeft-8;
-  const nearRows=b.cy>=top-40&&b.cy<=bottom+100;
-  const nearBar=outlines.some(q=>Math.abs(b.cy-q.cy)<=Math.max(75,q.ph*1.5))||b.t<=bottom+100;
-  return vertical&&narrow&&nearLeft&&nearRows&&nearBar;
- });
-}
 function synthetic(c){
  const x1=Math.max(0,Math.min(1,c.x)),y1=Math.max(0,Math.min(1,c.y)),x2=Math.max(0,Math.min(1,c.x+c.w)),y2=Math.max(0,Math.min(1,c.y+c.h));
  return{erase:false,colour:'#17324d',size:5,smartGenerated:false,__predrawnComparisonFallback:true,__predrawnPreflightTemp:true,points:[{x:x1,y:y1},{x:x2,y:y1},{x:x2,y:y2},{x:x1,y:y2},{x:x1,y:y1}]}
@@ -106,7 +85,7 @@ document.addEventListener('pointerdown',e=>{
  // The old fallback handled only (1), which is why normal classroom use failed.
  const freshlyDrawn=strokes.slice(selectionStrokeCount).filter(rawInk),source=freshlyDrawn.length?freshlyDrawn:snapshot;
  const bars=chooseBars(source);if(bars.length<2)return;
- const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set([...bars.flatMap(c=>c.items.map(q=>q.s)),...sketchArtifacts(source,bars)])];
+ const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
  strokes.push(...temp);injected={temp,originals,beforeState,priorIds}
 },true);
 
