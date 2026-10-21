@@ -1,4 +1,4 @@
-{'use strict';
+(function(){'use strict';
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const anchor=document.getElementById('textBtn'),board=document.getElementById('board');
 if(!anchor||!board)return;
@@ -18,4 +18,4 @@ if(a==='math')ta.value=mathify(ta.value);
 if(a==='listen'){if(!SR){status.textContent='Try a supported browser such as Chrome.';return}try{rec?.stop()}catch{}rec=new SR();rec.lang=document.documentElement.lang||'en-SG';rec.interimResults=false;rec.maxAlternatives=1;rec.onresult=e=>{ta.value=e.results[0][0].transcript;status.textContent='Review or convert maths, then insert.'};rec.onerror=e=>{status.textContent='Microphone error: '+e.error};rec.onend=()=>{if(status.textContent==='Listening…')status.textContent='Stopped listening.'};try{rec.start();status.textContent='Listening…'}catch(e){status.textContent=e.message}}
 if(a==='insert'){const value=ta.value.trim();if(!value)return;const pos={x:.12,y:.2};strokes.push({type:'text',x:pos.x,y:pos.y,text:value,colour:'#17324d',size:Math.max(20,typeof fontSize==='function'?fontSize():26)});redraw();syncUi();panel.style.display='none'}
 });
-}
+})();
