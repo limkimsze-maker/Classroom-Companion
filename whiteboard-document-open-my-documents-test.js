@@ -164,7 +164,8 @@ function ensureToolbar(){
  const zOut=smallBtn('−','Zoom out',()=>setZoom(zoom-.15)),zIn=smallBtn('+','Zoom in',()=>setZoom(zoom+.15));zoomLabel=document.createElement('span');zoomLabel.textContent='100%';
  searchBtn=smallBtn('🔎','Search document',toggleSearch);interactBtn=smallBtn('☝','Interact with displayed content',()=>setInteraction(!interactionMode));
  const reopen=smallBtn('📄','Open another file',()=>fileInput?.click()),close=smallBtn('×','Close document',closeDocument);
- toolbar.append(prevBtn,pageInput,pageTotal,nextBtn,zOut,zoomLabel,zIn,searchBtn,interactBtn,reopen,close);document.body.appendChild(toolbar);ensureSearchPanel();
+ const saveDocumentBtn=smallBtn('💾 Save','Save current file to My Documents',()=>{if(typeof window.ccSaveCurrentDocument==='function')window.ccSaveCurrentDocument();else alert('My Documents is not ready. Reload the test page.')});saveDocumentBtn.id='ccDocumentSaveBtn';saveDocumentBtn.style.cssText='background:#0f766e;color:#fff;font-weight:800;min-width:66px';
+ toolbar.append(prevBtn,pageInput,pageTotal,nextBtn,zOut,zoomLabel,zIn,searchBtn,interactBtn,saveDocumentBtn,reopen,close);document.body.appendChild(toolbar);ensureSearchPanel();
 }
 function ensureOpenButton(){
  const tools=document.querySelector('.tools');if(!tools||document.getElementById('openDocumentBtn'))return;
