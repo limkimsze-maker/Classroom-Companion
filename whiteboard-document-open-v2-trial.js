@@ -193,6 +193,7 @@ function isText(file,ext){return (file.type||'').startsWith('text/')||['txt','md
 function isMedia(file,ext){return (file.type||'').startsWith('video/')||(file.type||'').startsWith('audio/')||['mp4','webm','mov','m4v','mp3','wav','ogg','m4a'].includes(ext)}
 async function openFile(file){
  try{
+  window.dispatchEvent(new CustomEvent('cc-document-opened',{detail:{file}}));
   resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
   if(ext==='pdf'||file.type==='application/pdf')return await openPdf(await file.arrayBuffer());
   if(ext==='docx')return await openWord(await file.arrayBuffer());
@@ -286,6 +287,7 @@ body.document-open-mode .shell{padding:2px!important;gap:2px!important}body.docu
 @media(max-width:800px){#documentQuickBar{right:2px;top:2px}#documentQuickBar button{padding:0 4px;min-width:24px}#documentQuickBar span{min-width:30px}#documentSearchPanel{right:3px;top:33px}#documentSearchPanel{max-width:calc(100vw - 142px);flex-wrap:wrap}#documentSearchPanel input{width:100%}body.document-open-mode .tools{padding-right:300px!important}}
 `;document.head.appendChild(style);
 
+window.addEventListener('cc-my-documents-open',e=>{if(e.detail?.file instanceof Blob)openFile(e.detail.file)});
 ensureFileInput();ensureOpenButton();ensureLayer();ensureToolbar();updateControls();
 window.addEventListener('resize',()=>{if(!active)return;changeView(()=>{}).catch(console.error)});
 requestAnimationFrame(watchAnnotations);
