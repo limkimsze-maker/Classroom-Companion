@@ -68,6 +68,22 @@ function ensureDifference(obj,list){
  return list;
 }
 function restoreTemp(){if(!pending)return;for(const s of pending.brackets){s.smartGenerated=!!s.__cmpWasSmart;delete s.__cmpWasSmart;delete s.__cmpBracketTemp}pending=null}
+// Remove isolated short pen marks immediately to the left of the recognised bars.
+// Keep unrelated writing and any ink outside the comparison sketch untouched.
+function removeLeftoverComparisonMarks(bars){
+ if(!Array.isArray(bars)||bars.length<2)return;
+ const rows=bars.map(q=>q.b),left=Math.min(...rows.map(b=>b.x));
+ const selected=new Set(bars.map(q=>q.s));
+ strokes=strokes.filter(s=>{
+  if(!rawInk(s)||selected.has(s))return true;
+  const b=pxBox(s);
+  const distance=(left-(b.x+b.w))*cssW;
+  const sameRow=rows.some(row=>Math.abs((b.cy-row.cy)*cssH)<=Math.max(48,row.ph*.8));
+  const narrow=b.pw<=30&&b.ph<=85;
+  // Only the small isolated marks 15–160px to the left of a recognised bar.
+  return !(sameRow&&narrow&&distance>=15&&distance<=160);
+ });
+}
 function prepareFinish(){
  const type=window.__smartBarType||'';if(type!=='comparison')return;
  const group=strokes.slice(startIndex).filter(rawInk);if(group.length<2)return;
@@ -83,6 +99,7 @@ function prepareFinish(){
   const tempSet=new Set(p.brackets);strokes=strokes.filter(s=>!tempSet.has(s));
   const originals=p.original.map(s=>{const c=clone(s);delete c.__cmpWasSmart;delete c.__cmpBracketTemp;c.smartGenerated=false;return c});
   obj.smartOriginal=[...(Array.isArray(obj.smartOriginal)?obj.smartOriginal:[]),...originals];
+  removeLeftoverComparisonMarks(p.bars);
   const ordered=[...p.bars].sort((a,b)=>a.b.cy-b.b.cy);
   obj.barCount=Math.max(2,Math.min(5,ordered.length));obj.barCompareWidths=modelWidths(ordered);if(!Array.isArray(obj.barFills))obj.barFills=Array(obj.barCount).fill('#ffffff');
   rebuild(obj);fitTwoBarToSketch(obj,ordered);obj.rotation=0;obj.angle=0;obj.userDrawnBrackets=ensureDifference(obj,makeBrackets(originals,obj,ordered));obj.userDrawnBracketScan=true;hideAuto(obj);pending=null;redraw();syncUi();
