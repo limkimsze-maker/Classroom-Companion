@@ -216,13 +216,17 @@ document.addEventListener('keydown',e=>{if(editor)return;if(/INPUT|TEXTAREA|SELE
 
 // Speech transcripts use the same movable, corner-resizable text boxes as typed text.
 document.addEventListener('whiteboard-insert-speech-text',e=>{
- const raw=String(e.detail?.text||'').trim();if(!raw)return;
- // Final mathematical typography guard, independent of the speech parser.
- const value=raw.replace(/(\\d)\\s*\\/\\s*(?=\\d)/g,'$1 ÷ ').replace(/(\\d)\\s*\\*\\s*(?=\\d)/g,'$1 × ').replace(/\\b(\\d+)\\s+[xX]\\s+(?=\\d)/g,'$1 × ');
- if(editor)finishEditing(true);
- remember();
- const obj={type:'text',x:.12,y:.2,w:.5,h:.2,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
- strokes.push(obj);selected=obj;tool='select';redraw();syncUi();
+ const detail=e.detail||{};
+ try{
+  const raw=String(detail.text||'').trim();
+  if(!raw){detail.error='Empty transcript';return}
+  const value=raw.replace(/(\d)\s*\/\s*(?=\d)/g,'$1 ÷ ').replace(/(\d)\s*\*\s*(?=\d)/g,'$1 × ').replace(/\b(\d+)\s+[xX]\s+(?=\d)/g,'$1 × ');
+  if(editor)finishEditing(true);
+  remember();
+  const obj={type:'text',x:.12,y:.2,w:.68,h:.22,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
+  strokes.push(obj);selected=obj;tool='select';redraw();syncUi();
+  detail.inserted=strokes.includes(obj);detail.insertedText=obj.text;
+ }catch(err){detail.error=String(err?.message||err);console.error('Speech text insertion failed',err)}
 });
 window.WhiteboardAnnotationHistory={
  finish(){if(editor)finishEditing(true);if(dragMode)up();selected=null},
