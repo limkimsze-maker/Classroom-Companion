@@ -42,6 +42,6 @@ if(a==='insert'){const value=mathify(ta.value);status.textContent='Inserting: '+
   }
  }catch(err){detail.error=String(err?.message||err)}
 }
-if(detail.inserted){status.textContent='Inserted: '+detail.insertedText;panel.style.display='none'}else{status.textContent='Not inserted: '+(detail.error||'Whiteboard text handler unavailable')+' · '+BUILD}}
+if(detail.inserted){status.textContent='Inserted: '+detail.insertedText+' · '+(detail.boardSize||'board');panel.style.display='none'}else{status.textContent='Not inserted: '+(detail.error||'Whiteboard text handler unavailable')+' · '+BUILD}}
 });
 })();
