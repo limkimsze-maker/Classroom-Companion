@@ -62,8 +62,8 @@ function ensureComparisonSegments(obj){
   }
  }
  const replacement='<g data-comparison-segment-dividers="1">'+lines.join('')+'</g>';
- const existing=/<g data-comparison-segment-dividers="1">[\\s\\S]*?<\\/g>/;
- const updated=existing.test(svg)?svg.replace(existing,replacement):svg.replace(/<\\/svg>\\s*$/,replacement+'</svg>');
+ const existing=new RegExp('<g data-comparison-segment-dividers="1">[\\s\\S]*?</g>');
+ const updated=existing.test(svg)?svg.replace(existing,replacement):svg.replace('</svg>',replacement+'</svg>');
  if(updated===svg)return false;
  obj.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(updated);
  return true;
