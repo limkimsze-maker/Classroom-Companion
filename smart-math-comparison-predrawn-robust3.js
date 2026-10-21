@@ -106,7 +106,7 @@ document.addEventListener('pointerdown',e=>{
  // The old fallback handled only (1), which is why normal classroom use failed.
  const freshlyDrawn=strokes.slice(selectionStrokeCount).filter(rawInk),source=freshlyDrawn.length?freshlyDrawn:snapshot;
  const bars=chooseBars(source);if(bars.length<2)return;
- const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
+ const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set([...bars.flatMap(c=>c.items.map(q=>q.s)),...sketchArtifacts(source,bars)])];
  strokes.push(...temp);injected={temp,originals,beforeState,priorIds}
 },true);
 
