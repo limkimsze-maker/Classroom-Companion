@@ -80,8 +80,8 @@ function teach(result,text,raster,strokes,W,H,mode){
 function undoSymbols(tx){if(!tx?.added?.length)return;const ids=new Set(tx.added),samples=read().filter(s=>!ids.has(s.id)),seen=new Set(samples.map(s=>s.id));write([...(tx.removed||[]).filter(s=>validSymbol(s)&&!seen.has(s.id)),...samples].slice(-LIMIT))}
 function match(strokes,W,H,raster,samples){
  const ss=scaled(strokes,W,H);if(!ss)return null;const b=box(ss),aspect=Math.max(.005,b.w/Math.max(1,b.h));let f;const ranked=[];
- for(const s of samples){if(s.strokes.length!==ss.length||Math.abs(Math.log(s.aspect/aspect))>.24||!geometry(ss,s.char))continue;if(!f)f=feature(raster(ss));if(f)ranked.push({s,d:distance(f,s.feature)})}
- ranked.sort((a,b)=>a.d-b.d);const best=ranked[0];if(!best||best.d>.065||ranked.some(q=>q.s.char!==best.s.char&&q.d-best.d<.025))return null;
+ for(const s of samples){if(s.strokes.length!==ss.length||Math.abs(Math.log(s.aspect/aspect))>(s.char==='÷'?.65:.24)||!geometry(ss,s.char))continue;if(!f)f=feature(raster(ss));if(f)ranked.push({s,d:distance(f,s.feature)})}
+ ranked.sort((a,b)=>a.d-b.d);const best=ranked[0];if(!best||best.d>(best.s.char==='÷'?.13:.065)||ranked.some(q=>q.s.char!==best.s.char&&q.d-best.d<.025))return null;
  return{char:best.s.char,score:Math.max(.86,.99-best.d),personal:true,engine:'local-personal-symbol-v2'};
 }
 function propose(strokes,W,H,mode,raster){
