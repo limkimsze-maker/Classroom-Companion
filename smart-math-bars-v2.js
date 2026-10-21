@@ -127,7 +127,14 @@ function comparisonCandidateGroup(){
 }
 function finishBar(){
  if(!active||!barType)return;
- const group=barType==='comparison'?comparisonCandidateGroup():strokes.slice(startIndex).filter(rawInk),a=analyse(group);if(!a){notify(L.no);forcePen();showActive();return}
+ const candidates=barType==='comparison'?comparisonCandidateGroup():null;
+ // The chosen bars define the conversion geometry, but ALL ink drawn during
+ // this comparison session belongs to its sketch. Remove it together so
+ // small pen fragments cannot remain next to the generated bars.
+ const group=barType==='comparison'&&candidates?.length>=2
+  ?[...new Set([...strokes.slice(startIndex).filter(rawInk),...candidates])]
+  :barType==='comparison'?candidates:strokes.slice(startIndex).filter(rawInk);
+ const a=analyse(barType==='comparison'?candidates:group);if(!a){notify(L.no);forcePen();showActive();return}
  const before=clone(strokes),set=new Set(group);strokes=strokes.filter(s=>!set.has(s));
  const b=a.box,fills=barType==='partwhole'?Array(a.count).fill('#ffffff'):null,labels=barType==='partwhole'?Array(a.count).fill(''):null;
  const obj={type:'image',src:buildModel(barType,a.count,a.cuts,fills,labels),x:clamp(b.x,0,.94),y:clamp(b.y,0,.94),w:clamp(b.w,.12,1-b.x),h:clamp(Math.max(b.h,barType==='comparison'?.12:.08),.08,1-b.y),smartGenerated:true,smartType:'barModel',smartBarType:barType,smartId:uid(),barCount:a.count,barCuts:a.cuts?clone(a.cuts):null,barFills:fills,barLabels:labels,smartOriginal:clone(group)};
