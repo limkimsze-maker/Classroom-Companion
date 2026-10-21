@@ -110,9 +110,24 @@ function analyse(group){
  const max=barType==='equal'?12:8,layout=inferPartLayout(group,modelBox,max);
  return{box:modelBox,count:layout.count,cuts:layout.cuts};
 }
+function comparisonCandidateGroup(){
+ const recent=strokes.slice(startIndex).filter(rawInk);
+ const eligible=strokes.filter(rawInk);
+ // A comparison can be drawn before selecting its mode, or after it.
+ // Recover only the most recent pair of independently wide, separated bars.
+ const bar=s=>{const b=box(s);return b.w*cssW>=75&&b.h*cssH>=10&&b.w*cssW>=b.h*cssH*1.3};
+ const candidates=(recent.filter(bar).length>=2?recent:eligible).filter(bar);
+ for(let i=candidates.length-1;i>=1;i--){
+  const a=candidates[i],b=candidates[i-1],A=box(a),B=box(b);
+  const left=Math.abs(A.x-B.x)*cssW,overlap=Math.max(0,Math.min(A.x+A.w,B.x+B.w)-Math.max(A.x,B.x))*cssW;
+  const vertical=Math.abs(A.cy-B.cy)*cssH;
+  if(left<=Math.max(75,Math.min(A.w,B.w)*cssW*.4)&&overlap>=Math.min(A.w,B.w)*cssW*.4&&vertical>=Math.max(18,Math.min(A.h,B.h)*cssH*.5))return[b,a];
+ }
+ return recent;
+}
 function finishBar(){
  if(!active||!barType)return;
- const group=strokes.slice(startIndex).filter(rawInk),a=analyse(group);if(!a){notify(L.no);forcePen();showActive();return}
+ const group=barType==='comparison'?comparisonCandidateGroup():strokes.slice(startIndex).filter(rawInk),a=analyse(group);if(!a){notify(L.no);forcePen();showActive();return}
  const before=clone(strokes),set=new Set(group);strokes=strokes.filter(s=>!set.has(s));
  const b=a.box,fills=barType==='partwhole'?Array(a.count).fill('#ffffff'):null,labels=barType==='partwhole'?Array(a.count).fill(''):null;
  const obj={type:'image',src:buildModel(barType,a.count,a.cuts,fills,labels),x:clamp(b.x,0,.94),y:clamp(b.y,0,.94),w:clamp(b.w,.12,1-b.x),h:clamp(Math.max(b.h,barType==='comparison'?.12:.08),.08,1-b.y),smartGenerated:true,smartType:'barModel',smartBarType:barType,smartId:uid(),barCount:a.count,barCuts:a.cuts?clone(a.cuts):null,barFills:fills,barLabels:labels,smartOriginal:clone(group)};
