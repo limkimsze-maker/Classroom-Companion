@@ -15,7 +15,7 @@ The user confirmed the restored Classroom Companion V2 looked good and instructe
 2. Before any proposed change, inspect the approved snapshot and make a separate development branch. Back up files and record baseline tests.
 3. Make changes only on a development branch, test recognition and display for two- and three-bar comparison, segment dividers, selection, resizing, and existing whiteboard tools; merge only with explicit user approval.
 4. Avoid swapping or stacking recogniser scripts without verifying the whole interaction. Preserve all unrelated functionality.
-5. The user previously requested speech-to-text, but the frozen V2 HTML does not load the later speech-to-text experiment. **Do not add it to this frozen version without permission.**
+5. **Speech-to-text is also a protected feature. Do not remove, disable, replace, regress, or alter its recognition, insertion, clear-panel button, controls, or workflow during any future development.** Preserve the working speech-to-text implementation wherever it currently exists. The frozen V2 HTML does not load the later speech-to-text experiment, so preserve the separate existing implementation and do not silently add it to this frozen page. Any integration must be independently tested and explicitly approved by the user.
 6. The freeze is a Git snapshot, not a GitHub branch protection rule. Do not claim automated test verification or protection settings were configured.
 
 ## Recovery
