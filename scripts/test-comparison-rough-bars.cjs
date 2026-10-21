@@ -20,5 +20,5 @@ const equal=bar(150,470,410,76,true);
 assert.deepEqual(select([upper,equal,dot],0),[upper,equal],'equal-length comparison accepted');
 const upperShort=bar(150,350,220,85,true),lowerLong=bar(150,470,410,76,true);
 assert.deepEqual(select([upperShort,lowerLong,dot],0),[upperShort,lowerLong],'longer bottom bar accepted');
-assert.equal(select([upper,dot],0).length,2,'existing single-bar fallback remains available');
+assert.equal(select([upper,dot],0).length,1,'stray dot does not create a second bar');
 console.log('PASS: 6 rough comparison candidate-selection regression checks');
