@@ -78,7 +78,7 @@ const style=document.createElement('style');style.textContent=`
 .handwriting-review img{display:block;max-width:100%;height:110px;object-fit:contain;object-position:left center;background:#fafcfc;border-radius:8px}
 .handwriting-review .handwriting-clean-preview{height:150px;background:white}
 .handwriting-review .handwriting-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.handwriting-review .handwriting-actions .handwriting-apply{flex:1}
+.handwriting-review .handwriting-actions .handwriting-apply{flex:1 1 100%}\n.handwriting-review .handwriting-actions .handwriting-learn{order:1;flex:1 1 100%;width:100%;background:#2563eb;border-color:#1d4ed8;color:#fff;white-space:normal;text-align:center;min-height:44px}\n.handwriting-review .handwriting-actions .handwriting-learn:disabled{background:#2563eb;color:#fff;opacity:.5}\n.handwriting-review .handwriting-actions #handwritingStopReadBtn{order:2}
 .handwriting-review .handwriting-appearance{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:7px 0}
 .handwriting-review .handwriting-appearance label{margin:0}
 .handwriting-review .handwriting-appearance select{font:13px Arial,sans-serif;max-width:150px;padding:5px 8px;border:1px solid #cfd9de;border-radius:7px;background:white;color:#17324d}
@@ -241,7 +241,7 @@ async function review(group){
  const contextArea=document.createElement('section');contextArea.className='handwriting-context';contextArea.id='handwritingContextChoices';contextArea.setAttribute('aria-label','Possible handwriting readings');contextArea.hidden=true;
  const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Beautified preview in the original writing area';preview.hidden=true;
  const actions=document.createElement('div');actions.className='handwriting-actions';
- const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply';apply.disabled=true;const learn=document.createElement('button');learn.type='button';learn.className='btn soft';learn.textContent='✎ Learn';learn.title='Save a corrected recognition example locally';learn.disabled=true;
+ const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply';apply.disabled=true;const learn=document.createElement('button');learn.type='button';learn.className='btn handwriting-learn';learn.textContent='Learn: If wrong, correct and press here.';learn.title='Save a corrected recognition example locally';learn.disabled=true;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=closeReview;
  const stopRead=document.createElement('button');stopRead.id='handwritingStopReadBtn';stopRead.type='button';stopRead.className='btn';stopRead.textContent='Stop reading';
  const retryRead=document.createElement('button');retryRead.id='handwritingRetryReadBtn';retryRead.type='button';retryRead.className='btn';retryRead.textContent='Read again';retryRead.hidden=true;
