@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script src="experimental/math-structure/preview-bootstrap.js?v=20261020-v2-glyph-consensus1"></script>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self' blob:">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<link rel="preload" href="vendor/moe/pdf.min.js" as="script">
+<link rel="preload" href="vendor/moe/pdf.worker.min.js" as="script">
+<link rel="preload" href="vendor/moe/mammoth.browser.min.js" as="script">
+<link rel="preload" href="vendor/moe/xlsx.full.min.js" as="script">
+<link rel="modulepreload" href="vendor/moe/pptx-renderer.browser.es.js">
+<title>MOE Safe Beta • Classroom Companion</title>
+<style>
+:root{--teal:#0f766e;--teal2:#e7f7f4;--navy:#17324d;--muted:#667085;--line:#d8e1e8;--red:#b42318}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#eef4f5;color:var(--navy)}button,input,select,textarea{font:inherit}button{cursor:pointer}.shell{height:100%;display:flex;flex-direction:column;padding:10px;gap:9px}.top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:17px;padding:8px 10px;box-shadow:0 8px 22px rgba(18,32,46,.08);flex:none}.brand{display:flex;align-items:center;gap:8px;margin-right:auto}.icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--teal2);font-size:22px}.meta strong{display:block;font-size:16px;font-weight:1000;letter-spacing:-.02em}.meta span{display:block;font-size:10px;color:var(--muted);font-weight:800;margin-top:1px}.tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;visibility:hidden}body.toolbar-ready .tools{visibility:visible}.btn{min-height:38px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--navy);padding:7px 10px;font-size:12px;font-weight:950}.btn:hover,.btn:focus-visible{border-color:#73c8bc;outline:none}.btn.active{background:var(--teal);border-color:var(--teal);color:#fff}.btn.soft{background:var(--teal2);border-color:#9dd9d0;color:#0a5d57}.btn.danger{background:#fff3f1;border-color:#efb4ad;color:var(--red)}.btn:disabled{opacity:.42;cursor:not-allowed}.colors{display:flex;align-items:center;gap:5px;padding:3px 5px;border:1px solid #e3e9ed;border-radius:12px;background:#f8fafb}.colour{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #ccd5db;cursor:pointer;padding:0}.colour.active{box-shadow:0 0 0 3px #0f766e}.sizeControl{display:flex;align-items:center;gap:6px;padding:0 4px}.sizeControl span{font-size:10px;font-weight:900;color:var(--muted)}.sizeControl input{width:82px;accent-color:var(--teal)}.sizeValue{min-width:26px;text-align:center;font-size:10px;font-weight:950;color:var(--navy)}.boardWrap{position:relative;flex:1;min-height:0;border:1px solid #cfd9de;border-radius:18px;overflow:hidden;background-color:#fff;box-shadow:0 10px 28px rgba(18,32,46,.08)}.boardWrap.grid{background-image:linear-gradient(#e8eef1 1px,transparent 1px),linear-gradient(90deg,#e8eef1 1px,transparent 1px);background-size:32px 32px}.boardWrap::after{content:attr(data-watermark);position:absolute;right:12px;bottom:9px;font-size:10px;font-weight:900;color:#a7b3ba;pointer-events:none;user-select:none}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}.mode{position:absolute;left:10px;bottom:9px;padding:5px 8px;border-radius:999px;background:rgba(23,50,77,.82);color:#fff;font-size:10px;font-weight:900;pointer-events:none;backdrop-filter:blur(4px)}.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(8px);background:#17324d;color:#fff;padding:8px 13px;border-radius:999px;font-size:11px;font-weight:900;opacity:0;pointer-events:none;transition:.18s;z-index:100}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:800px){#mainSettingsBtn{margin-left:auto!important;order:0!important}.shell{padding:6px;gap:6px}.top{border-radius:14px;padding:7px}.meta span{display:none}.tools{width:100%}.brand{width:100%;margin-right:0}.btn{min-height:36px;padding:6px 8px}.boardWrap{border-radius:14px}.sizeControl{margin-left:auto}.colors{order:10}.colour{width:27px;height:27px}}
+#barModelOverlay{position:fixed;inset:8px;z-index:500;background:white;border:2px solid #0f766e;border-radius:16px;display:none;flex-direction:column;overflow:hidden}#barModelOverlay.open{display:flex}#barModelOverlay iframe{border:0;width:100%;flex:1;min-height:0}#barModelOverlay .overlayHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;background:#e7f7f4;font-weight:800}#barModelOverlay .overlayHead button{min-height:36px}#fullBtn{display:none!important}.tools{gap:8px}@media(max-width:800px){.tools{justify-content:flex-start}}
+/* Keep Settings at the top-right of the main header on every screen size. */
+.top{position:relative}
+#mainSettingsBtn{position:absolute!important;top:8px!important;right:10px!important;margin:0!important;z-index:120;order:0!important}
+.brand{padding-right:125px}
+body.document-open-mode #mainSettingsBtn{top:2px!important;right:4px!important}
+body.document-open-mode .tools{padding-right:112px!important}
+@media(max-width:800px){#mainSettingsBtn{top:7px!important;right:7px!important}.brand{padding-right:110px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="top">
+<div class="brand"><div class="icon">🔒</div><div class="meta"><strong id="boardTitle">MOE Safe Beta</strong><span id="boardSubtitle">Local PDF/Word/PowerPoint/Excel/media · no document upload · outbound app connections blocked.</span></div></div>
+<button class="btn" id="mainSettingsBtn" type="button" aria-haspopup="dialog" style="margin-left:8px;order:99;white-space:nowrap">⚙ Settings</button>
+<div class="tools" role="toolbar" aria-label="Whiteboard tools">
+<button class="btn active" id="penBtn" type="button">✏️ Pen</button>
+<button class="btn" id="textBtn" type="button">T Text</button>
+<button class="btn" id="eraserBtn" type="button">⌫ Eraser</button>
+<div class="colors" aria-label="Pen colour">
+<button class="colour active" type="button" data-colour="#17324d" style="background:#17324d" aria-label="Navy"></button>
+<button class="colour" type="button" data-colour="#2563eb" style="background:#2563eb" aria-label="Blue"></button>
+<button class="colour" type="button" data-colour="#dc2626" style="background:#dc2626" aria-label="Red"></button>
+<button class="colour" type="button" data-colour="#15803d" style="background:#15803d" aria-label="Green"></button>
+<button class="colour" type="button" data-colour="#7c3aed" style="background:#7c3aed" aria-label="Purple"></button>
+</div>
+<label class="sizeControl"><span id="sizeLabel">Thickness</span><input id="size" type="range" min="2" max="24" step="1" value="5" aria-label="Pen thickness"><b class="sizeValue" id="sizeValue">5</b></label>
+<button class="btn" id="undoBtn" type="button" disabled>↶ Undo</button>
+<button class="btn soft" id="gridBtn" type="button" aria-pressed="true">▦ Grid</button>
+<button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
+<button class="btn danger" id="clearBtn" type="button">Clear</button>
+</div>
+</header>
+<main class="boardWrap grid" id="boardWrap" data-watermark="MOE Safe Beta"><canvas id="board" aria-label="Interactive whiteboard"></canvas><div class="mode" id="modeBadge">Pen · navy · 5 px</div></main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="whiteboard-moe-local-only-guard-v1.js?v=20261017-moesafe2"></script>
+<script src="whiteboard-core.js?v=20261011-0534-core1"></script>
+<script src="experimental/math-structure/whiteboard-text-drag-resizable-v2.js?v=20261021-page-anchor2"></script>
+<script src="whiteboard-handwriting-digit-model-beta.js?v=20261018-handwriting1"></script>
+<script src="whiteboard-handwriting-character-models-beta.js?v=20261018-letters-cnn1"></script>
+<script src="whiteboard-handwriting-character-inference-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-handwriting-character-reader-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-handwriting-learning-beta.js?v=20261020-words2"></script>
+<script src="experimental/math-structure/symbol-learning-v2.js?v=20261021-v2-symbol-learning1"></script>
+<script src="whiteboard-handwriting-math-render-beta.js?v=20261020-radical-live-test2"></script>
+<script src="vendor/mathjax/tex-svg-full-3.2.2.js"></script>
+<script src="whiteboard-handwriting-math-reader-beta.js?v=20261018-math-units1"></script>
+<script src="vendor/handwriting/uji/reader-weights-beta.js?v=20261018-uji-adultink2"></script>
+<script src="vendor/handwriting/uji/reader-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-primary-grammar-beta.js?v=20261018-uji-adultink2"></script>
+<script src="whiteboard-equal-sign-geometry-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-trained-9gq-equals-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-trained-j-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-trained-remaining-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-teacher-units-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-teacher-confusables-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-unit-exponent-trained-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-handwriting-context-model-beta.js?v=20261020-words2"></script>
+<script src="whiteboard-handwriting-context-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-word-list-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-words-beta.js?v=20261020-words2"></script>
+<script src="experimental/math-structure/reader-v2.js?v=20261021-v2-shared-letters1"></script>
+<script src="whiteboard-beta-arithmetic-verifier.js?v=20261020-mathverify1"></script>
+<script src="experimental/math-structure/beautify-v2.js?v=20261021-v2-shared-letters1"></script>
+<script src="experimental/math-structure/learning-controls-v2.js?v=20261021-settings-learning5"></script>
+<script src="whiteboard-right-click-paste.js?v=20261011-rcpaste-2215"></script>
+<script src="whiteboard-classroom-pro.js?v=67565ce9d90f"></script>
+<script src="whiteboard-extra-shapes.js?v=20261011-0650-square-triangle1"></script>
+<script src="whiteboard-escape-select.js?v=20261011-0645-esc-select1"></script>
+<script src="whiteboard-bar-move-handle-beta.js?v=20261018-precisehandles1"></script>
+<script src="whiteboard-rotate.js?v=20261016-3dguard1"></script>
+<script src="experimental/math-structure/smart-math-recognition-v2.js?v=20261021-page-anchor2"></script>
+<script src="smart-math-no-number-line.js?v=20261016-noauto1"></script>
+<script src="smart-math-solids-cad-v1.js?v=20261016-solidcad3"></script>
+<script src="smart-math-solid-toolbar-v1.js?v=20261017-solidshortcutremoved1"></script>
+<script src="smart-math-equation-pretty-v1.js?v=20261020-radical-live-test2"></script>
+<script src="smart-math-counters-v2.js?v=20261011-0751-counterlarge4"></script>
+<script src="smart-math-fractions-v2.js?v=20261011-0820-fractioncolour3"></script>
+<script src="smart-math-fraction-height.js?v=20261011-0825-fractionheight1"></script>
+<script src="whiteboard-marquee-select-beta.js?v=20261018-handwriting1"></script>
+<script src="smart-math-partwhole-legacy-guard.js?v=20261016-bracketspace1"></script>
+<script src="smart-math-bars-v2.js?v=20261016-roughpartwhole1"></script>
+<script src="smart-math-partwhole-rough-finish.js?v=20261016-roughfinish2"></script>
+<script src="smart-math-bar-colours-noncomparison.js?v=20261016-compactcolour1"></script>
+<script src="smart-math-comparison-colour-geometry-fix.js?v=20261016-colourgeometry2"></script>
+<script src="smart-math-bar-part-length.js?v=20261011-1058-partheight2"></script>
+<script src="smart-math-bar-compare-length.js?v=20261016-compactbars1"></script>
+<script src="smart-math-bar-brackets.js?v=20261016-manualonly1"></script>
+<script src="smart-math-user-brackets-beta.js?v=20261016-partwhole-screen-gap1"></script>
+<script src="smart-math-partwhole-guidance.js?v=20261011-1148-pwrecognition-anchor1"></script>
+<script src="smart-math-partwhole-options-v1.js?v=20261016-partwholecompact2"></script>
+<script src="smart-math-comparison-guidance-beta.js?v=20261014-2bar-preserve-auto-diff2"></script>
+<script src="smart-math-equal-groups-auto.js?v=20261016-equalgrouping-nodraw2"></script>
+<script src="smart-math-equal-grouping-hide-derived-answer.js?v=20261016-hide-derived1"></script>
+<script src="smart-math-equal-sharing-v1.js?v=20261016-equalsharing3"></script>
+<script src="smart-math-equal-sharing-menu-fix.js?v=20261016-equalsharing-menu1"></script>
+<script src="smart-math-multiplicative-comparison-v1.js?v=20261016-multiplicative1"></script>
+<script src="smart-math-multiplicative-divider-overlay.js?v=20261016-multiplicative-dividers2"></script>
+<script src="smart-math-multiplicative-menu-fix.js?v=20261016-multiplicative-menu2"></script>
+<script src="smart-math-multiplicative-bracket-unified-v2.js?v=20261016-multiplicative-followcomparison1"></script>
+<script src="smart-math-comparison-predrawn-robust3.js?v=20261015-roughdraw1"></script>
+<!-- V2 diagnostic: disable automatic comparison dotted-guide overlay (draws dark vertical marks). -->
+<script src="smart-math-comparison-intuitive-v2.js?v=20261016-manualonly2"></script>
+<script src="smart-math-comparison-segment-options-v3.js?v=20261016-compactcolour1"></script>
+<script src="smart-math-comparison-bracket-label-safety.js?v=20261016-compactbars1"></script>
+<script src="smart-math-comparison-manual-total.js?v=20261016-compactbars1"></script>
+<script src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
+<script src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
+<script src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
+<script src="whiteboard-document-open-v2-trial.js?v=20261021-page-anchor2"></script>
+<script src="whiteboard-document-gestures-v2-trial.js?v=20261021-page-anchor2"></script>
+<script src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
+<script src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>
+<script src="whiteboard-document-right-rail-v1.js?v=20261018-direct-finger1"></script>
+<script src="whiteboard-contextual-actions-v1.js?v=20261017-down-increases1"></script>
+<script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
+<script src="experimental/math-structure/letter-trainer-v2.js?v=20261021-letter-trainer1"></script>
+<script src="experimental/math-structure/main-settings-v2.js?v=20261021-letter-trainer1"></script>
+<script src="whiteboard-speech-to-text-experiment.js?v=20261021-stt1"></script>
+</body>
+</html>
