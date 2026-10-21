@@ -105,7 +105,7 @@ function buildModel(type,count,cuts,fills,labels){
 function analyse(group){
  if(!group.length)return null;
  const rawBox=groupBox(group),gw=rawBox.w*cssW,gh=rawBox.h*cssH;if(gw<38||gh<7)return null;
- if(barType==='comparison'){const count=inferComparisonRows(group,rawBox);if(count<2)return null;return{box:rawBox,count,cuts:null}}
+ if(barType==='comparison'){if(group.length<2)return null;const count=inferComparisonRows(group,rawBox);if(count<2)return null;return{box:rawBox,count,cuts:null}}
  const modelBox=barType==='partwhole'?roughPartWholeBox(group,rawBox):rawBox;
  const max=barType==='equal'?12:8,layout=inferPartLayout(group,modelBox,max);
  return{box:modelBox,count:layout.count,cuts:layout.cuts};
@@ -123,7 +123,7 @@ function comparisonCandidateGroup(){
   const vertical=Math.abs(A.cy-B.cy)*cssH;
   if(left<=Math.max(75,Math.min(A.w,B.w)*cssW*.4)&&overlap>=Math.min(A.w,B.w)*cssW*.4&&vertical>=Math.max(18,Math.min(A.h,B.h)*cssH*.5))return[b,a];
  }
- return recent;
+ return candidates;
 }
 function finishBar(){
  if(!active||!barType)return;
