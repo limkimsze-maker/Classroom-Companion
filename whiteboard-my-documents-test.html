@@ -139,27 +139,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
 <script src="experimental/math-structure/letter-trainer-v2.js?v=20261021-letter-trainer1"></script>
 <script src="experimental/math-structure/main-settings-v2.js?v=20261021-letter-trainer1"></script>
-<script>
-(function(){
-'use strict';
-const slot=document.getElementById('ccSaveSlot');
-const tools=document.querySelector('.tools');
-if(!slot||!tools)return;
-let pending=false;
-function arrange(){
- pending=false;
- const usual=[...tools.querySelectorAll('button')].find(b=>b.textContent.trim()==='Usual whiteboard');
- if(usual&&usual.parentElement!==slot)slot.insertBefore(usual,slot.firstChild);
- const old=document.getElementById('ccDocumentSaveTop');
- if(old)old.style.setProperty('display','none','important');
- const inline=document.getElementById('ccInlineSave');
- if(inline)inline.style.setProperty('display','none','important');
-}
-const observer=new MutationObserver(()=>{if(!pending){pending=true;requestAnimationFrame(arrange)}});
-observer.observe(tools,{childList:true,subtree:false});
-arrange();
-})();
-</script>
+<script src="my-documents-header-layout-test.js?v=20261022-header-tidy11"></script>
 <script src="my-documents-v1.js?v=20261022-header-tidy10"></script>
 </body>
 </html>
