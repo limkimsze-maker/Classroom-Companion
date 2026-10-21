@@ -1,0 +1,21 @@
+(function(){'use strict';
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const anchor=document.getElementById('textBtn'),board=document.getElementById('board');
+if(!anchor||!board)return;
+const btn=document.createElement('button');btn.className='btn soft';btn.type='button';btn.textContent='🎙 Speech to Text';anchor.insertAdjacentElement('afterend',btn);
+const panel=document.createElement('div');panel.style.cssText='display:none;position:fixed;top:15%;left:50%;transform:translateX(-50%);width:min(92vw,430px);padding:16px;background:white;border:1px solid #cfd9de;border-radius:14px;box-shadow:0 14px 45px #17324d44;z-index:20000';
+panel.innerHTML='<strong>🎙 Speech to Text</strong><p style="font-size:12px">Speak a sentence or mathematical equation. Review before inserting.</p><textarea aria-label="Speech transcript" rows="3" style="width:100%;padding:9px;border:1px solid #cfd9de;border-radius:8px"></textarea><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px"><button type="button" class="btn" data-action="listen">🎙 Listen</button><button type="button" class="btn" data-action="math">Convert maths</button><button type="button" class="btn soft" data-action="insert">Insert</button><button type="button" class="btn" data-action="close">Close</button></div><p data-status style="font-size:11px;color:#667085"></p>';
+document.body.appendChild(panel);
+const ta=panel.querySelector('textarea'),status=panel.querySelector('[data-status]');let rec=null;
+const units={'zero':'0','one':'1','two':'2','three':'3','four':'4','five':'5','six':'6','seven':'7','eight':'8','nine':'9','ten':'10','eleven':'11','twelve':'12','thirteen':'13','fourteen':'14','fifteen':'15','sixteen':'16','seventeen':'17','eighteen':'18','nineteen':'19'};
+const tens={'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90};
+function numberWords(s){return s.replace(/\\b(?:minus\\s+)?(?:(?:one|two|three|four|five|six|seven|eight|nine)\\s+thousand\\s+)?(?:(?:one|two|three|four|five|six|seven|eight|nine)\\s+hundred(?:\\s+and)?\\s+)?(?:(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:[ -](?:one|two|three|four|five|six|seven|eight|nine))?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)\\b/gi,m=>{let total=0,cur=0;for(const w of m.toLowerCase().replace(/-/g,' ').split(/\\s+/)){if(w==='and')continue;if(w==='thousand'){total+=cur*1000;cur=0}else if(w==='hundred')cur*=100;else if(w in tens)cur+=tens[w];else if(w in units)cur+=+units[w];else return m}return String(total+cur)})}
+function mathify(t){let s=t.toLowerCase().replace(/[.,!?]+$/,'').replace(/\\bmultiplied by\\b|\\btimes\\b|\\bmultiply by\\b/g,' × ').replace(/\\bdivided by\\b|\\bdivide by\\b/g,' ÷ ').replace(/\\bplus\\b|\\badd\\b/g,' + ').replace(/\\bminus\\b|\\bsubtract\\b/g,' − ').replace(/\\bequals?\\b|\\bis equal to\\b/g,' = ');s=numberWords(s);return s.replace(/\\s+/g,' ').trim()}
+btn.onclick=()=>{panel.style.display='block';status.textContent=SR?'Tap Listen and allow microphone access.':'Speech recognition is not supported in this browser.'};
+panel.addEventListener('click',e=>{const a=e.target.dataset.action;if(!a)return;
+if(a==='close'){try{rec?.stop()}catch{}panel.style.display='none'}
+if(a==='math')ta.value=mathify(ta.value);
+if(a==='listen'){if(!SR){status.textContent='Try a supported browser such as Chrome.';return}try{rec?.stop()}catch{}rec=new SR();rec.lang=document.documentElement.lang||'en-SG';rec.interimResults=false;rec.maxAlternatives=1;rec.onresult=e=>{ta.value=e.results[0][0].transcript;status.textContent='Review or convert maths, then insert.'};rec.onerror=e=>{status.textContent='Microphone error: '+e.error};rec.onend=()=>{if(status.textContent==='Listening…')status.textContent='Stopped listening.'};try{rec.start();status.textContent='Listening…'}catch(e){status.textContent=e.message}}
+if(a==='insert'){const value=ta.value.trim();if(!value)return;const pos={x:.12,y:.2};strokes.push({type:'text',x:pos.x,y:pos.y,text:value,colour:'#17324d',size:Math.max(20,typeof fontSize==='function'?fontSize():26)});redraw();syncUi();panel.style.display='none'}
+});
+})();
