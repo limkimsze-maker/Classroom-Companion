@@ -1,0 +1,19 @@
+name: V2 rough comparison regression
+on:
+  push:
+    paths:
+      - smart-math-bars-v2.js
+      - smart-math-comparison-predrawn-robust3.js
+      - scripts/test-comparison-rough-bars.cjs
+      - .github/workflows/v2-comparison-regression.yml
+  workflow_dispatch:
+jobs:
+  comparison-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test rough comparison bars
+        run: node scripts/test-comparison-rough-bars.cjs
