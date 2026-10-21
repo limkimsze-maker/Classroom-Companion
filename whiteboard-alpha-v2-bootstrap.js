@@ -25,5 +25,18 @@ document.addEventListener('DOMContentLoaded',()=>{
  document.getElementById('boardTitle').textContent='Classroom Companion · Whiteboard V2';
  document.getElementById('boardSubtitle').textContent='Write, draw and explain · V2 recognition · My Documents.';
  document.getElementById('boardWrap').dataset.watermark='Whiteboard V2';
+ // Move the existing CAD entry, preserving its protected click behaviour.
+ const rectangles=new Set(['Rectangle','矩形','Segi empat','செவ்வகம்']);
+ const solids=new Set(['3D Solid','3D 立体图形','Pepejal 3D','3D திண்மம்']);
+ const shapeMenu=Array.from(document.body.children).find(el=>
+  el.tagName==='DIV'&&el.style.position==='fixed'&&
+  Array.from(el.children).some(b=>b.tagName==='BUTTON'&&rectangles.has(b.textContent.trim())));
+ const solidButton=Array.from(document.querySelectorAll('button')).find(b=>solids.has(b.textContent.trim()));
+ if(shapeMenu&&solidButton){
+  solidButton.id='alpha3DShapesBtn';
+  solidButton.setAttribute('aria-haspopup','dialog');
+  shapeMenu.appendChild(solidButton);
+ }
+
 });
 })();
