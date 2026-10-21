@@ -78,7 +78,7 @@ const style=document.createElement('style');style.textContent=`
 .handwriting-review img{display:block;max-width:100%;height:110px;object-fit:contain;object-position:left center;background:#fafcfc;border-radius:8px}
 .handwriting-review .handwriting-clean-preview{height:150px;background:white}
 .handwriting-review .handwriting-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.handwriting-review .handwriting-actions .handwriting-apply{flex:1 1 100%}\n.handwriting-review .handwriting-actions .handwriting-learn{order:1;flex:1 1 100%;width:100%;background:#2563eb;border-color:#1d4ed8;color:#fff;white-space:normal;text-align:center;min-height:44px}\n.handwriting-review .handwriting-actions .handwriting-learn:disabled{background:#2563eb;color:#fff;opacity:.5}\n.handwriting-review .handwriting-actions #handwritingStopReadBtn{order:2}
+.handwriting-review .handwriting-actions>button{order:2}\n.handwriting-review .handwriting-actions .handwriting-apply{order:0;flex:1 1 100%}\n.handwriting-review .handwriting-actions .handwriting-learn{order:1;flex:1 1 100%;width:100%;background:#2563eb;border-color:#1d4ed8;color:#fff;white-space:normal;text-align:center;min-height:44px}\n.handwriting-review .handwriting-actions .handwriting-learn:disabled{background:#2563eb;color:#fff;opacity:.5}\n.handwriting-review .handwriting-actions #handwritingStopReadBtn{order:2}
 .handwriting-review .handwriting-appearance{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:7px 0}
 .handwriting-review .handwriting-appearance label{margin:0}
 .handwriting-review .handwriting-appearance select{font:13px Arial,sans-serif;max-width:150px;padding:5px 8px;border:1px solid #cfd9de;border-radius:7px;background:white;color:#17324d}
@@ -123,7 +123,7 @@ async function review(group){
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Check that Recognised text matches your ink: accurate labels matter more than quantity. In Auto, a clear correction to =, +, −, × or ÷ can teach that symbol; select only its strokes if needed. Learn & Test Again checks the same ink. Apply keeps learning; Cancel discards it; Undo reverses it. Add a few natural variations, then write a different equation to test. Open Learning for tips and export/import.';
+ const help=document.createElement('p');help.textContent='Check that Recognised text matches your handwriting. If it is correct, press Apply. If it is wrong, correct it and press the blue Learn button, then Apply. Accurate labels and a few natural variations help the local recogniser. Cancel discards a correction learned in this review; Undo after Apply reverses it. Use Settings for the guide and learning backups.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=600;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised numbers, letters, units or mathematical notation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
@@ -253,7 +253,7 @@ async function review(group){
  function clearProvisional(){
   feedbackStamp++;
   if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}
-  feedback.textContent='Edit the reading and test again; earlier provisional learning was discarded.';
+  feedback.textContent='Edit the reading, then press Learn again. The earlier correction from this review was discarded.';
  }
  function updatePreview(){
   const arithmetic=arithmeticResult();
@@ -423,6 +423,19 @@ window.addEventListener('keydown',e=>{
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName||''))undoBeautify(e);
 },true);
 window.addEventListener('blur',()=>{if(selecting)endSelection()});
+let annotationContext='whiteboard';
+const annotationHistories=new Map();
+document.addEventListener('whiteboard-annotation-context',e=>{
+ const key=e.detail?.key;if(!key||key===annotationContext)return;
+ closeReview();endSelection();annotationHistories.set(annotationContext,history.slice());
+ history.splice(0,history.length,...(annotationHistories.get(key)||[]));annotationContext=key;
+ if(key==='whiteboard'){annotationHistories.clear();annotationHistories.set(key,history.slice())}
+});
+document.addEventListener('whiteboard-annotation-transform',e=>{
+ const map=e.detail?.map;if(!map)return;
+ for(const h of history){h.before=map(h.before);h.after=JSON.stringify(map(JSON.parse(h.after)))}
+ if(dialog){closeReview();endSelection()}
+});
 document.getElementById('undoBtn')?.addEventListener('click',undoBeautify,true);
 window.WhiteboardBeautifyHistory={get(){return clone(history)},set(items){history.splice(0,history.length,...clone(items||[]))}};
 const oldSync=syncUi;syncUi=function(){const result=oldSync.apply(this,arguments);if(availableUndo())document.getElementById('undoBtn').disabled=false;return result};

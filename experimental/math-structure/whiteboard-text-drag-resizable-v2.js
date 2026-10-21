@@ -170,11 +170,26 @@ document.addEventListener('paste',e=>{if(editor)return;const items=Array.from(e.
 wrap.addEventListener('dragover',e=>{if(Array.from(e.dataTransfer?.items||[]).some(i=>i.kind==='file'&&i.type?.startsWith('image/'))){e.preventDefault();e.dataTransfer.dropEffect='copy'}});wrap.addEventListener('drop',e=>{const files=Array.from(e.dataTransfer?.files||[]).filter(f=>f.type?.startsWith('image/'));if(!files.length)return;e.preventDefault();addImageFiles(files,point(e))});
 document.addEventListener('keydown',e=>{if(editor)return;if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName))return;const k=e.key.toLowerCase();if((e.ctrlKey||e.metaKey)&&k==='d'){if(selected){e.preventDefault();e.stopImmediatePropagation();duplicateSelected()}return}if((e.key==='Delete'||e.key==='Backspace')&&selected){e.preventDefault();e.stopImmediatePropagation();removeSelected();return}if(e.key==='Enter'&&selected?.type==='text'){e.preventDefault();editSelected();return}if(e.key==='Escape'){if(selected){e.preventDefault();selected=null;redraw();syncUi()}return}if(k==='v'&&!e.ctrlKey&&!e.metaKey){switchTool('select');return}if(k==='p'&&!e.ctrlKey&&!e.metaKey){switchTool('pen');return}if(k==='t'&&!e.ctrlKey&&!e.metaKey){switchTool('text');return}if(k==='e'&&!e.ctrlKey&&!e.metaKey){switchTool('eraser');return}},true);
 
-// The V2 document viewer keeps Undo with the page that owns each annotation.
 window.WhiteboardAnnotationHistory={
  finish(){if(editor)finishEditing(true);if(dragMode)up();selected=null},
  get(){return clone(history)},
  set(items){selected=null;history=clone(items||[])}
 };
+// Each document page has its own Undo stack. Reproject snapshots along with ink.
+let annotationContext='whiteboard';
+const annotationHistories=new Map();
+document.addEventListener('whiteboard-annotation-context',e=>{
+ const key=e.detail?.key;if(!key||key===annotationContext)return;
+ if(dragMode)up();if(editor)finishEditing(true);
+ annotationHistories.set(annotationContext,history);history=annotationHistories.get(key)||[];
+ annotationContext=key;selected=null;pendingHistory=null;startObject=null;
+ if(key==='whiteboard'){annotationHistories.clear();annotationHistories.set(key,history)}
+});
+document.addEventListener('whiteboard-annotation-transform',e=>{
+ const map=e.detail?.map;if(!map)return;
+ history=history.map(map);if(pendingHistory)pendingHistory=map(pendingHistory);
+ if(editSnapshot)editSnapshot=map(editSnapshot);if(startObject)startObject=map([startObject])[0];
+ if(editor)editorStyle();
+});
 tool='select';selected=null;redraw();syncUi();
 })();
