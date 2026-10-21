@@ -95,7 +95,23 @@ function propose(strokes,W,H,mode,raster){
    // An omitted dot/mark in the same column is evidence of another symbol.
    const pad=Math.max(4,b.h*.85,b.w*.45);
    if(marks.some(q=>!indices.includes(q.i)&&q.b.cx>=b.x-pad*.3&&q.b.cx<=b.x+b.w+pad*.3&&q.b.y<=b.y+b.h+pad&&q.b.y+q.b.h>=b.y-pad))continue;
-   const token=match(ink,W,H,raster,samples);if(token)out.push({indices,token:{...token,x:b.x,parts:scaled(ink,W,H).map((s,i)=>({...s,source:ink[i]}))},box:b});
+   let token=match(ink,W,H,raster,samples);
+   // A taught three-stroke division sign can be missed by raster similarity.
+   // Only recover an unambiguous bar-between-two-dots geometry; the surrounding
+   // reader must still validate separate numeric operands before accepting it.
+   if(!token&&ink.length===3&&samples.some(sample=>sample.char==='÷'&&sample.strokes.length===3)){
+    const scaledInk=scaled(ink,W,H);
+    if(geometry(scaledInk,'÷')){
+     const parts=scaledInk.map(t=>box([t]));const bar=scaledInk.findIndex(horizontal);
+     const line=parts[bar],dots=parts.filter((_,i)=>i!==bar);
+     if(line.w>=Math.max(12,Math.max(...scaledInk.map(t=>t.size))*2.5)&&
+        dots.every(d=>Math.max(d.w,d.h)<=Math.max(8,line.w*.20))&&
+        dots.every(d=>Math.abs(d.cx-line.cx)<=line.w*.22)&&
+        dots.some(d=>d.cy<line.cy)&&dots.some(d=>d.cy>line.cy))
+      token={char:'÷',score:.88,personal:true,engine:'local-personal-symbol-geometry-v2'};
+    }
+   }
+   if(token)out.push({indices,token:{...token,x:b.x,parts:scaled(ink,W,H).map((s,i)=>({...s,source:ink[i]}))},box:b});
   }
  }
  const used=new Set();return out.sort((a,b)=>b.token.score-a.token.score).filter(p=>{if(p.indices.some(i=>used.has(i)))return false;p.indices.forEach(i=>used.add(i));return true}).sort((a,b)=>a.box.cx-b.box.cx);
