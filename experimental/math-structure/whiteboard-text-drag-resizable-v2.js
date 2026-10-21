@@ -39,8 +39,8 @@ function bounds(s){if(!s)return null;if(s.type==='text'){normaliseText(s);return
 function drawTextBox(s){normaliseText(s);const b=bounds(s),lineH=s.size*1.25,lines=wrapLines(s,b.w);ctx.save();ctx.globalCompositeOperation='source-over';ctx.fillStyle=s.colour||'#17324d';ctx.font=fontString(s);ctx.textBaseline='top';ctx.textAlign=s.align==='center'?'center':s.align==='right'?'right':'left';const tx=s.align==='center'?b.x+b.w/2:s.align==='right'?b.x+b.w-6:b.x+6;let y=b.y+5;for(const line of lines){if(y+lineH>b.y+b.h+2)break;ctx.fillText(line,tx,y);if(s.underline&&line){const w=ctx.measureText(line).width;let x1=tx,x2=tx+w;if(s.align==='center'){x1=tx-w/2;x2=tx+w/2}else if(s.align==='right'){x1=tx-w;x2=tx}ctx.lineWidth=Math.max(1,s.size/16);ctx.strokeStyle=s.colour||'#17324d';ctx.beginPath();ctx.moveTo(x1,y+s.size+2);ctx.lineTo(x2,y+s.size+2);ctx.stroke()}y+=lineH}ctx.restore()}
 function point(e){const r=canvas.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}}
 function hitObject(p){const px=p.x*cssW,py=p.y*cssH;for(let i=strokes.length-1;i>=0;i--){const s=strokes[i];if(s?.type!=='text'&&s?.type!=='image')continue;const b=bounds(s),pad=s.type==='image'?5:6;if(px>=b.x-pad&&px<=b.x+b.w+pad&&py>=b.y-pad&&py<=b.y+b.h+pad)return s}return null}
-function handleBox(s){const b=bounds(s);if(!b)return null;return{x:b.x+b.w+7,y:b.y+b.h+7,r:11,b}}
-function hitHandle(p,s){const h=handleBox(s);if(!h)return false;const px=p.x*cssW,py=p.y*cssH;return Math.abs(px-h.x)<=h.r+1&&Math.abs(py-h.y)<=h.r+1}
+function handleBox(s){const b=bounds(s);if(!b)return null;return{x:b.x+b.w+7,y:b.y+b.h+7,r:16,b}}
+function hitHandle(p,s){const h=handleBox(s);if(!h)return false;const px=p.x*cssW,py=p.y*cssH;return Math.abs(px-h.x)<=h.r+12&&Math.abs(py-h.y)<=h.r+12}
 function getImage(src){let img=imageCache.get(src);if(img)return img;img=new Image();imageCache.set(src,img);img.onload=()=>redraw();img.src=src;return img}
 function drawImageObject(s){const img=getImage(s.src);if(!img.complete||!img.naturalWidth)return;const b=bounds(s);ctx.save();ctx.globalCompositeOperation='source-over';ctx.drawImage(img,b.x,b.y,b.w,b.h);ctx.restore()}
 function drawSelection(){if(!selected||!strokes.includes(selected)||editor)return;const b=bounds(selected);if(!b)return;ctx.save();ctx.strokeStyle='rgba(15,118,110,.98)';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(b.x-6,b.y-5,b.w+12,b.h+10);ctx.setLineDash([]);const h=handleBox(selected);ctx.fillStyle='#0f766e';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.fillRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2);ctx.strokeRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2);ctx.restore()}
@@ -91,7 +91,7 @@ function drag(e){
    const dx=p.x-startPoint.x,dy=p.y-startPoint.y,maxX=Math.max(0,1-selected.w),maxY=Math.max(0,1-selected.h);
    selected.x=Math.min(maxX,Math.max(0,startObject.x+dx));selected.y=Math.min(maxY,Math.max(0,startObject.y+dy));
   }else if(selected.type==='text'){
-   const px=Math.max(70,p.x*cssW-selected.x*cssW),py=Math.max(45,p.y*cssH-selected.y*cssH);selected.w=Math.min(1-selected.x,px/cssW);selected.h=Math.min(1-selected.y,py/cssH);
+   const dx=(p.x-startPoint.x)*cssW,dy=(p.y-startPoint.y)*cssH;const startW=Math.max(70,startObject.w*cssW),startH=Math.max(45,startObject.h*cssH);const ratio=Math.max(.35,Math.min(4,1+(Math.abs(dx/startW)>Math.abs(dy/startH)?dx/startW:dy/startH)));const maxRatio=Math.min((cssW-selected.x*cssW)/startW,(cssH-selected.y*cssH)/startH);const scale=Math.max(.2,Math.min(ratio,maxRatio));selected.w=Math.max(.001,startW*scale/cssW);selected.h=Math.max(.001,startH*scale/cssH);selected.size=Math.max(10,Math.min(160,(startObject.size||28)*scale));
   }else if(selected.type==='image'){
    const px=p.x*cssW,py=p.y*cssH,x=selected.x*cssW,y=selected.y*cssH;
    // Green corner handle: move right/down to enlarge, left/up to shrink.
