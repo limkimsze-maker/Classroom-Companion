@@ -15,7 +15,7 @@ function mathify(t){
  s=s.replace(/[.,!?]+$/,'')
  .replace(/\b(?:is\s+equal\s+to|equals?|equal\s+to)\b/g,' = ')
  .replace(/\b(?:multiplied\s+by|multiply\s+by|times)\b|[×*]|\bx\b/g,' × ')
- .replace(/\b(?:divided\s+by|divide\s+by|over)\b|[÷]/g,' ÷ ')
+ .replace(/\b(?:divided\s+by|divide\s+by|over)\b|[÷/]/g,' ÷ ')
  .replace(/\b(?:plus|add)\b|[+]/g,' + ')
  .replace(/\b(?:minus|subtract)\b|[−-]/g,' − ');
  s=numberWords(s);
