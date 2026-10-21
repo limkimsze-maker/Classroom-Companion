@@ -35,8 +35,38 @@ function restore(snapshot){finishEditing(false);const id=dragPointerId;dragMode=
 function normaliseText(s){if(!s||s.type!=='text')return s;s.size=Math.max(10,Number(s.size)||24);s.font=s.font||'Arial';s.bold=s.bold!==false;s.italic=!!s.italic;s.underline=!!s.underline;s.align=s.align||'left';if(!Number.isFinite(s.w))s.w=Math.min(.55,Math.max(.18,((s.text||'').length*s.size*.55+28)/Math.max(cssW,1)));if(!Number.isFinite(s.h))s.h=Math.min(.45,Math.max(.09,(s.size*1.8)/Math.max(cssH,1)));return s}
 function fontString(s){normaliseText(s);return `${s.italic?'italic ':''}${s.bold?'700':'400'} ${s.size}px ${JSON.stringify(s.font)},Arial,sans-serif`}
 function wrapLines(s,maxW){ctx.save();ctx.font=fontString(s);const paras=String(s.text||'').split('\n'),lines=[];for(const para of paras){if(!para){lines.push('');continue}const words=para.split(/\s+/);let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width<=maxW-12||!line)line=test;else{lines.push(line);line=word}}lines.push(line)}ctx.restore();return lines}
+/* Content-sized text bounds: new text and speech use their measured glyph width.
+   An explicitly dragged resize remains manual; do not overwrite it on redraw. */
+const examinedLegacyText=new WeakSet();
+function fittedTextDimensions(s){
+ const raw=String(s.text||'').replace(/\r/g,'');
+ const paragraphs=raw.split('\n');
+ ctx.save();ctx.font=fontString(s);
+ const naturalWidth=Math.max(0,...paragraphs.map(line=>ctx.measureText(line).width));
+ ctx.restore();
+ const availableW=Math.max(32,(1-s.x)*cssW-8);
+ const availableH=Math.max(32,(1-s.y)*cssH-8);
+ const width=Math.max(32,Math.min(availableW,Math.ceil(naturalWidth+18)));
+ const lines=wrapLines(s,width);
+ const height=Math.max(30,Math.min(availableH,Math.ceil(lines.length*s.size*1.25+12)));
+ return {width,height,naturalWidth};
+}
+function fitTextToContent(s,legacy=false){
+ if(!s||s.type!=='text'||s.textAutoFit===false||!String(s.text||'').trim())return false;
+ normaliseText(s);
+ const fit=fittedTextDimensions(s),current=s.w*cssW;
+ if(legacy){
+  // Legacy manual boxes cannot be identified reliably, so only fix markedly
+  // oversized, left-aligned, single-line boxes; leave ordinary layouts alone.
+  if(s.align!=='left'||String(s.text).includes('\n')||current<fit.width*1.9||current-fit.width<75)return false;
+ }
+ const w=Math.max(.001,fit.width/Math.max(1,cssW)),h=Math.max(.001,fit.height/Math.max(1,cssH));
+ if(Math.abs(s.w-w)<.0001&&Math.abs(s.h-h)<.0001)return false;
+ s.w=w;s.h=h;s.textAutoFit=true;
+ return true;
+}
 function bounds(s){if(!s)return null;if(s.type==='text'){normaliseText(s);return{x:s.x*cssW,y:s.y*cssH,w:s.w*cssW,h:s.h*cssH}}if(s.type==='image')return{x:s.x*cssW,y:s.y*cssH,w:s.w*cssW,h:s.h*cssH};return null}
-function drawTextBox(s){normaliseText(s);const b=bounds(s),lineH=s.size*1.25,lines=wrapLines(s,b.w);ctx.save();ctx.globalCompositeOperation='source-over';ctx.fillStyle=s.colour||'#17324d';ctx.font=fontString(s);ctx.textBaseline='top';ctx.textAlign=s.align==='center'?'center':s.align==='right'?'right':'left';const tx=s.align==='center'?b.x+b.w/2:s.align==='right'?b.x+b.w-6:b.x+6;let y=b.y+5;for(const line of lines){if(y+lineH>b.y+b.h+2)break;ctx.fillText(line,tx,y);if(s.underline&&line){const w=ctx.measureText(line).width;let x1=tx,x2=tx+w;if(s.align==='center'){x1=tx-w/2;x2=tx+w/2}else if(s.align==='right'){x1=tx-w;x2=tx}ctx.lineWidth=Math.max(1,s.size/16);ctx.strokeStyle=s.colour||'#17324d';ctx.beginPath();ctx.moveTo(x1,y+s.size+2);ctx.lineTo(x2,y+s.size+2);ctx.stroke()}y+=lineH}ctx.restore()}
+function drawTextBox(s){normaliseText(s);if(!examinedLegacyText.has(s)){examinedLegacyText.add(s);if(s.textAutoFit===true)fitTextToContent(s);else if(s.textAutoFit===undefined)fitTextToContent(s,true)}const b=bounds(s),lineH=s.size*1.25,lines=wrapLines(s,b.w);ctx.save();ctx.globalCompositeOperation='source-over';ctx.fillStyle=s.colour||'#17324d';ctx.font=fontString(s);ctx.textBaseline='top';ctx.textAlign=s.align==='center'?'center':s.align==='right'?'right':'left';const tx=s.align==='center'?b.x+b.w/2:s.align==='right'?b.x+b.w-6:b.x+6;let y=b.y+5;for(const line of lines){if(y+lineH>b.y+b.h+2)break;ctx.fillText(line,tx,y);if(s.underline&&line){const w=ctx.measureText(line).width;let x1=tx,x2=tx+w;if(s.align==='center'){x1=tx-w/2;x2=tx+w/2}else if(s.align==='right'){x1=tx-w;x2=tx}ctx.lineWidth=Math.max(1,s.size/16);ctx.strokeStyle=s.colour||'#17324d';ctx.beginPath();ctx.moveTo(x1,y+s.size+2);ctx.lineTo(x2,y+s.size+2);ctx.stroke()}y+=lineH}ctx.restore()}
 function point(e){const r=canvas.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}}
 function hitObject(p){const px=p.x*cssW,py=p.y*cssH;for(let i=strokes.length-1;i>=0;i--){const s=strokes[i];if(s?.type!=='text'&&s?.type!=='image')continue;const b=bounds(s),pad=s.type==='image'?5:6;if(px>=b.x-pad&&px<=b.x+b.w+pad&&py>=b.y-pad&&py<=b.y+b.h+pad)return s}return null}
 function handleBox(s){const b=bounds(s);if(!b)return null;return{x:b.x+b.w+7,y:b.y+b.h+7,r:16,b}}
@@ -73,7 +103,7 @@ function moveGrip(e){
  const desired=Math.max(.3,Math.min(6,1+delta));
  const limit=Math.min((1-g.obj.x)*cssW/w,(1-g.obj.y)*cssH/h,160/Math.max(1,g.size));
  const factor=Math.max(.2,Math.min(desired,limit));
- g.obj.w=w*factor/cssW;g.obj.h=h*factor/cssH;g.obj.size=Math.max(10,g.size*factor);
+ g.obj.w=w*factor/cssW;g.obj.h=h*factor/cssH;g.obj.size=Math.max(10,g.size*factor);g.obj.textAutoFit=false;
  g.changed=g.changed||Math.abs(factor-1)>.002;
  redraw();
 }
@@ -98,8 +128,8 @@ function switchTool(next){if(dragMode)up();if(editor)finishEditing(true);tool=ne
 
 function editorStyle(){if(!editor||!selected)return;const b=bounds(selected);Object.assign(editor.style,{left:`${b.x}px`,top:`${b.y}px`,width:`${Math.max(70,b.w)}px`,height:`${Math.max(45,b.h)}px`,fontFamily:selected.font,fontSize:`${selected.size}px`,fontWeight:selected.bold?'700':'400',fontStyle:selected.italic?'italic':'normal',textDecoration:selected.underline?'underline':'none',textAlign:selected.align,color:selected.colour||'#17324d'})}
 function beginEditing(obj,selectAll){if(!obj||obj.type!=='text')return;if(editor)finishEditing(true);selected=obj;normaliseText(obj);tool='select';editSnapshot=clone(strokes);editor=document.createElement('textarea');editor.value=obj.text||'';editor.spellcheck=true;Object.assign(editor.style,{position:'absolute',zIndex:'45',resize:'none',overflow:'auto',padding:'4px 6px',border:'2px solid #0f766e',borderRadius:'4px',outline:'none',background:'rgba(255,255,255,.96)',lineHeight:'1.25',boxSizing:'border-box'});wrap.appendChild(editor);editorStyle();redraw();syncUi();editor.focus();if(selectAll)editor.select();else{const n=editor.value.length;editor.setSelectionRange(n,n)}editor.addEventListener('input',()=>{selected.text=editor.value;redraw()});editor.addEventListener('blur',()=>setTimeout(()=>{if(editor&&document.activeElement!==editor&&!formatBar.contains(document.activeElement))finishEditing(true)},0));editor.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();finishEditing(true);canvas.focus?.()}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='b'){e.preventDefault();applyFormat('bold',!selected.bold)}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='i'){e.preventDefault();applyFormat('italic',!selected.italic)}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='u'){e.preventDefault();applyFormat('underline',!selected.underline)}})}
-function finishEditing(commit){if(!editor)return;const old=editSnapshot,el=editor;editor=null;editSnapshot=null;el.remove();if(selected?.type==='text'){selected.text=(selected.text||'').replace(/\r/g,'');if(!selected.text.trim()){if(commit)remember(old);strokes=strokes.filter(s=>s!==selected);selected=null}else if(commit&&old&&JSON.stringify(old)!==JSON.stringify(strokes))remember(old)}redraw();syncUi()}
-function applyFormat(key,value){if(!selected||selected.type!=='text')return;const snap=clone(strokes);normaliseText(selected);if(selected[key]===value)return;selected[key]=value;remember(snap);if(editor)editorStyle();redraw();syncUi();if(editor)editor.focus()}
+function finishEditing(commit){if(!editor)return;const old=editSnapshot,el=editor;editor=null;editSnapshot=null;el.remove();if(selected?.type==='text'){selected.text=(selected.text||'').replace(/\r/g,'');if(!selected.text.trim()){if(commit)remember(old);strokes=strokes.filter(s=>s!==selected);selected=null}else{if(commit)fitTextToContent(selected);if(commit&&old&&JSON.stringify(old)!==JSON.stringify(strokes))remember(old)}}redraw();syncUi()}
+function applyFormat(key,value){if(!selected||selected.type!=='text')return;const snap=clone(strokes);normaliseText(selected);if(selected[key]===value)return;selected[key]=value;if(!editor)fitTextToContent(selected);remember(snap);if(editor)editorStyle();redraw();syncUi();if(editor)editor.focus()}
 function applyFontSize(value){if(!selected||selected.type!=='text')return;const n=Math.max(8,Math.min(120,Number(value)||24));applyFormat('size',n)}
 
 function ownsPointer(e){return dragPointerId==null||e?.pointerId==null||e.pointerId===dragPointerId}
@@ -123,7 +153,7 @@ function down(e){
   if(hit){dragMode='move';startPoint=p;startObject={x:hit.x,y:hit.y,size:hit.size,w:hit.w,h:hit.h};pendingHistory=clone(strokes);holdSelection(e);return}
   e.preventDefault();return;
  }
- if(tool==='text'){remember();const obj={type:'text',x:Math.min(.94,p.x),y:Math.min(.88,p.y),w:.32,h:.16,text:'',colour,size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};strokes.push(obj);selected=obj;tool='select';redraw();syncUi();beginEditing(obj,false);e.preventDefault();return}
+ if(tool==='text'){remember();const obj={type:'text',x:Math.min(.94,p.x),y:Math.min(.88,p.y),w:.32,h:.16,text:'',textAutoFit:true,colour,size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};strokes.push(obj);selected=obj;tool='select';redraw();syncUi();beginEditing(obj,false);e.preventDefault();return}
  if(baseStart){remember();baseStart(e);syncUi()}
 }
 function drag(e){
@@ -135,7 +165,7 @@ function drag(e){
    const dx=p.x-startPoint.x,dy=p.y-startPoint.y,maxX=Math.max(0,1-selected.w),maxY=Math.max(0,1-selected.h);
    selected.x=Math.min(maxX,Math.max(0,startObject.x+dx));selected.y=Math.min(maxY,Math.max(0,startObject.y+dy));
   }else if(selected.type==='text'){
-   const dx=(p.x-startPoint.x)*cssW,dy=(p.y-startPoint.y)*cssH;const startW=Math.max(70,startObject.w*cssW),startH=Math.max(45,startObject.h*cssH);const ratio=Math.max(.35,Math.min(4,1+(Math.abs(dx/startW)>Math.abs(dy/startH)?dx/startW:dy/startH)));const maxRatio=Math.min((cssW-selected.x*cssW)/startW,(cssH-selected.y*cssH)/startH);const scale=Math.max(.2,Math.min(ratio,maxRatio));selected.w=Math.max(.001,startW*scale/cssW);selected.h=Math.max(.001,startH*scale/cssH);selected.size=Math.max(10,Math.min(160,(startObject.size||28)*scale));
+   const dx=(p.x-startPoint.x)*cssW,dy=(p.y-startPoint.y)*cssH;const startW=Math.max(70,startObject.w*cssW),startH=Math.max(45,startObject.h*cssH);const ratio=Math.max(.35,Math.min(4,1+(Math.abs(dx/startW)>Math.abs(dy/startH)?dx/startW:dy/startH)));const maxRatio=Math.min((cssW-selected.x*cssW)/startW,(cssH-selected.y*cssH)/startH);const scale=Math.max(.2,Math.min(ratio,maxRatio));selected.w=Math.max(.001,startW*scale/cssW);selected.h=Math.max(.001,startH*scale/cssH);selected.size=Math.max(10,Math.min(160,(startObject.size||28)*scale));selected.textAutoFit=false;
   }else if(selected.type==='image'){
    const px=p.x*cssW,py=p.y*cssH,x=selected.x*cssW,y=selected.y*cssH;
    // Green corner handle: move right/down to enlarge, left/up to shrink.
@@ -223,8 +253,8 @@ document.addEventListener('whiteboard-insert-speech-text',e=>{
   const value=raw.replace(/(\d)\s*\/\s*(?=\d)/g,'$1 ÷ ').replace(/(\d)\s*\*\s*(?=\d)/g,'$1 × ').replace(/\b(\d+)\s+[xX]\s+(?=\d)/g,'$1 × ');
   if(editor)finishEditing(true);
   remember();
-  const obj={type:'text',x:.06,y:.12,w:.86,h:Math.max(.22,64/Math.max(cssH,1)),text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
-  strokes.push(obj);selected=obj;tool='select';redraw();syncUi();
+  const obj={type:'text',x:.06,y:.12,w:.86,h:Math.max(.22,64/Math.max(cssH,1)),text:value,textAutoFit:true,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
+  fitTextToContent(obj);strokes.push(obj);selected=obj;tool='select';redraw();syncUi();
   detail.inserted=strokes.includes(obj);detail.insertedText=obj.text;detail.boardSize=Math.round(cssW)+'×'+Math.round(cssH);
  }catch(err){detail.error=String(err?.message||err);console.error('Speech text insertion failed',err)}
 });
