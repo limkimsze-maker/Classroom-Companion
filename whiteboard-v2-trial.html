@@ -26,6 +26,12 @@ body.document-open-mode .tools{padding-right:112px!important}
 @media(max-width:800px){#mainSettingsBtn{top:7px!important;right:7px!important}.brand{padding-right:110px}}
 
 /* Document actions share the same compact header row as Usual whiteboard. */
+/* One canonical Save button; legacy document Save controls must never surface. */
+#ccDocumentSaveTop,#ccDocumentSaveBtn,#ccInlineSave,#ccQuickSave{display:none!important}
+#ccSaveSlot>a.btn{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 auto;min-height:36px!important;height:36px!important;padding:5px 8px!important;border:1px solid #cbd5df;border-radius:9px;text-decoration:none!important;font-size:11px!important;white-space:nowrap}
+#ccSaveSlot #ccPermanentSaveBtn{flex:1 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ccSaveSlot #ccPermanentExitBtn{flex:0 0 36px}
+
 #ccSaveSlot{display:none;align-items:center;gap:6px;flex:1 1 100%;order:100;min-width:0;flex-wrap:nowrap;margin:0}body.document-open-mode #ccSaveSlot{display:flex!important}#ccSaveSlot button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;max-width:100%;min-height:36px;padding:7px 9px;border:1px solid #0f766e;border-radius:10px;background:#0f766e;color:white;font:700 12px system-ui;white-space:nowrap;box-shadow:none!important}#ccSaveSlot button:disabled{opacity:.6}#ccSaveSlot #ccPermanentExitBtn{display:inline-flex!important;visibility:visible!important;background:#fff!important;color:#17324d!important;border:1px solid #cbd5df!important;min-width:38px;font-size:19px;padding:4px 10px}#ccSaveSlot #ccPermanentSaveBtn{display:inline-flex!important;visibility:visible!important}#ccSaveSlot button:first-child{flex-shrink:0}#ccSaveSlot #ccPermanentSaveBtn{font-size:11px!important;padding:6px 8px!important}#ccSaveSlot #ccPermanentExitBtn{min-width:34px!important;min-height:34px!important;padding:3px 7px!important}
 </style>
 </head>
@@ -51,7 +57,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
 <button class="btn danger" id="clearBtn" type="button">Clear</button>
 </div>
-<div id="ccSaveSlot"><button class="btn" type="button" id="ccUsualWhiteboardInSlot">Usual whiteboard</button><button type="button" id="ccPermanentSaveBtn">💾 Save to My Documents</button><button type="button" id="ccPermanentExitBtn" aria-label="Exit document" title="Exit document">✕</button></div>
+<div id="ccSaveSlot"><button type="button" id="ccPermanentSaveBtn" aria-label="Save to My Documents">💾 Save to My Documents</button><button type="button" id="ccPermanentExitBtn" aria-label="Exit document" title="Exit document">✕</button></div>
 </header>
 <main class="boardWrap grid" id="boardWrap" data-watermark="MOE Safe Beta"><canvas id="board" aria-label="Interactive whiteboard"></canvas><div class="mode" id="modeBadge">Pen · navy · 5 px</div></main>
 </div>
@@ -130,7 +136,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <script src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
 <script src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
 <script src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
-<script src="whiteboard-document-open-my-documents-test.js?v=20261022-single-save16"></script>
+<script src="whiteboard-document-open-my-documents-test.js?v=20261022-no-legacy-save17"></script>
 <script src="whiteboard-document-gestures-v2-trial.js?v=20261021-page-anchor2"></script>
 <script src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
 <script src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>
@@ -139,7 +145,7 @@ body.document-open-mode .tools{padding-right:112px!important}
 <script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
 <script src="experimental/math-structure/letter-trainer-v2.js?v=20261021-letter-trainer1"></script>
 <script src="experimental/math-structure/main-settings-v2.js?v=20261021-letter-trainer1"></script>
-<script src="my-documents-header-layout-test.js?v=20261022-no-flicker15"></script>
-<script src="my-documents-v1.js?v=20261022-header-tidy10"></script>
+<script src="my-documents-header-layout-test.js?v=20261022-real-link17"></script>
+<script src="my-documents-v1.js?v=20261022-single-save17"></script>
 </body>
 </html>
