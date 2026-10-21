@@ -68,46 +68,6 @@ function ensureDifference(obj,list){
  return list;
 }
 function restoreTemp(){if(!pending)return;for(const s of pending.brackets){s.smartGenerated=!!s.__cmpWasSmart;delete s.__cmpWasSmart;delete s.__cmpBracketTemp}pending=null}
-// Remove isolated short pen marks immediately to the left of the recognised bars.
-// Keep unrelated writing and any ink outside the comparison sketch untouched.
-function removeLeftoverComparisonMarks(bars){
- if(!Array.isArray(bars)||bars.length<2)return;
- const rows=bars.map(q=>q.b),left=Math.min(...rows.map(b=>b.x));
- const selected=new Set(bars.map(q=>q.s));
- strokes=strokes.filter(s=>{
-  if(!rawInk(s)||selected.has(s))return true;
-  const b=pxBox(s);
-  const distance=(left-(b.x+b.w))*cssW;
-  const sameRow=rows.some(row=>Math.abs((b.cy-row.cy)*cssH)<=Math.max(48,row.ph*.8));
-  const narrow=b.pw<=30&&b.ph<=85;
-  // Only the small isolated marks 15–160px to the left of a recognised bar.
-  return !(sameRow&&narrow&&distance>=15&&distance<=160);
- });
-}
-// Clean orphaned short vertical marks from previously converted comparison sketches.
-// Require a cluster of at least two marks beside the same generated model;
-// never remove a single handwritten numeral or unrelated distant ink.
-function cleanExistingComparisonOrphans(){
- const models=strokes.filter(o=>o?.smartType==='barModel'&&o.smartBarType==='comparison'&&Number(o.barCount)>=2);
- let changed=false;
- for(const obj of models){
-  // SVG bar edges are inset within the model image. Compare in canvas pixels.
-  const left=(obj.x+obj.w*180/900)*cssW;
-  const top=(obj.y+obj.h*60/Math.max(340,150+obj.barCount*145))*cssH;
-  const bottom=(obj.y+obj.h*(60+(obj.barCount-1)*145+76)/Math.max(340,150+obj.barCount*145))*cssH;
-  const marks=strokes.filter(ink=>{
-   if(!rawInk(ink))return false;
-   const b=pxBox(ink),right=(b.x+b.w)*cssW,mid=b.cy*cssH;
-   return b.pw<=40&&b.ph>=12&&b.ph<=105&&b.ph>=b.pw*1.4&&right>=left-180&&right<=left-8&&mid>=top-70&&mid<=bottom+115;
-  });
-  // Only remove a vertically aligned cluster; a lone mark could be a label.
-  const cluster=marks.filter(q=>marks.filter(t=>Math.abs((box(q).cx-box(t).cx)*cssW)<=40).length>=2);
-  if(!cluster.length)continue;
-  const doomed=new Set(cluster);strokes=strokes.filter(q=>!doomed.has(q));changed=true;
- }
- return changed;
-}
-setTimeout(()=>{try{if(cleanExistingComparisonOrphans()){redraw();syncUi()}}catch{}},350);
 function prepareFinish(){
  const type=window.__smartBarType||'';if(type!=='comparison')return;
  const group=strokes.slice(startIndex).filter(rawInk);if(group.length<2)return;
@@ -123,10 +83,9 @@ function prepareFinish(){
   const tempSet=new Set(p.brackets);strokes=strokes.filter(s=>!tempSet.has(s));
   const originals=p.original.map(s=>{const c=clone(s);delete c.__cmpWasSmart;delete c.__cmpBracketTemp;c.smartGenerated=false;return c});
   obj.smartOriginal=[...(Array.isArray(obj.smartOriginal)?obj.smartOriginal:[]),...originals];
-  removeLeftoverComparisonMarks(p.bars);
   const ordered=[...p.bars].sort((a,b)=>a.b.cy-b.b.cy);
   obj.barCount=Math.max(2,Math.min(5,ordered.length));obj.barCompareWidths=modelWidths(ordered);if(!Array.isArray(obj.barFills))obj.barFills=Array(obj.barCount).fill('#ffffff');
-  rebuild(obj);fitTwoBarToSketch(obj,ordered);obj.rotation=0;obj.angle=0;obj.userDrawnBrackets=ensureDifference(obj,makeBrackets(originals,obj,ordered));obj.userDrawnBracketScan=true;hideAuto(obj);pending=null;cleanExistingComparisonOrphans();redraw();syncUi();
+  rebuild(obj);fitTwoBarToSketch(obj,ordered);obj.rotation=0;obj.angle=0;obj.userDrawnBrackets=ensureDifference(obj,makeBrackets(originals,obj,ordered));obj.userDrawnBracketScan=true;hideAuto(obj);pending=null;redraw();syncUi();
  },0)
 }
 
