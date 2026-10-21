@@ -5,7 +5,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 const tools=document.querySelector('.tools'),board=document.getElementById('boardWrap');if(!tools||!board)return;
 const clone=x=>JSON.parse(JSON.stringify(x)),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let activeReviewAbort=null;
-const readerBuild='20261021-v2-division-grouping2';
+const readerBuild='20261021-v2-lowercase-litre2';
 function abortError(){return Object.assign(new Error('Reading cancelled'),{name:'AbortError'})}
 function stopReaders(){window.WhiteboardCharacterReader?.cancel();window.WhiteboardMathReader?.cancel();window.WhiteboardInkOnOriginalDemo?.cancel?.()}
 function boundedRead(task,signal,milliseconds){
@@ -123,14 +123,14 @@ async function review(group){
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Check that Recognised text matches your handwriting. If it is correct, press Apply. If it is wrong, correct it and press the blue Learn button, then Apply. Accurate labels and a few natural variations help the local recogniser. Cancel discards a correction learned in this review; Undo after Apply reverses it. Use Settings for the guide and learning backups.';
+ const help=document.createElement('p');help.textContent='Letters are read as lowercase, with L kept for litre and ml for millilitre. Standard unit notation is retained. Check that Recognised text matches your handwriting. If it is correct, press Apply. If it is wrong, correct it and press the blue Learn button, then Apply. Accurate labels and a few natural variations help the local recogniser. Cancel discards a correction learned in this review; Undo after Apply reverses it. Use Settings for the guide and learning backups.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=600;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised numbers, letters, units or mathematical notation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
  const appearance=document.createElement('div');appearance.className='handwriting-appearance';
  const modeLabel=document.createElement('label');modeLabel.htmlFor='handwritingReadMode';modeLabel.textContent='Read';
  const modeSelect=document.createElement('select');modeSelect.id='handwritingReadMode';modeSelect.setAttribute('aria-label','Handwriting reading mode');
- for(const [value,text]of [['auto','Auto'],['math','Math formulas'],['lowercase','Letters a–z'],['uppercase','Letters A–Z'],['digits','Numbers']]){const option=document.createElement('option');option.value=value;option.textContent=text;modeSelect.appendChild(option)}modeSelect.value='auto';appearance.append(modeLabel,modeSelect);
+ for(const [value,text]of [['auto','Auto · maths + a–z'],['math','Math formulas'],['lowercase','Letters a–z'],['digits','Numbers']]){const option=document.createElement('option');option.value=value;option.textContent=text;modeSelect.appendChild(option)}modeSelect.value='auto';appearance.append(modeLabel,modeSelect);
  const colourLabel=document.createElement('label');colourLabel.htmlFor='handwritingColour';colourLabel.textContent='Colour';
  const colourSelect=document.createElement('select');colourSelect.id='handwritingColour';colourSelect.setAttribute('aria-label','Beautified writing colour');
  const palette=[['#1d4ed8','Royal blue'],['#17324d','Navy'],['#000000','Black'],['#2563eb','Blue'],['#dc2626','Red'],['#15803d','Green'],['#7c3aed','Purple']];
@@ -141,7 +141,7 @@ async function review(group){
  const correctionToggle=document.createElement('input');correctionToggle.type='checkbox';correctionToggle.checked=true;correctionToggle.id='handwritingCorrectArithmetic';
  correctionLabel.append(correctionToggle,document.createTextNode('Correct arithmetic answers'));appearance.appendChild(correctionLabel);
  const insert=document.createElement('select');insert.id='handwritingInsert';insert.setAttribute('aria-label','Insert a mathematical symbol, structure or measurement unit');
- for(const [value,text]of [['','Insert…'],['+','Addition +'],['−','Subtraction −'],['×','Multiplication ×'],['÷','Division ÷'],['=','Equals ='],['\\frac{1}{2}','Fraction ½'],['x^{2}','Power x²'],['\\sqrt{x}','Root √'],['\\int_{0}^{1} x\\,dx','Integral ∫'],['\\sum_{i=1}^{n} i','Sum ∑'],['\\alpha','Greek α'],['\\pi','Pi π'],['\\leq','Less or equal ≤'],['\\infty','Infinity ∞'],['\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}','Matrix'],['cm²','cm² · area'],['m²','m² · area'],['cm³','cm³ · volume'],['m³','m³ · volume'],['mm','mm · length'],['cm','cm · length'],['m','m · length'],['km','km · length'],['mg','mg · mass'],['g','g · mass'],['kg','kg · mass'],['mL','mL · capacity'],['L','L · capacity'],['s','s · time'],['min','min · time'],['h','h · time'],['°C','°C · temperature'],['m/s²','m/s² · acceleration'],['km/h','km/h · speed']]){const option=document.createElement('option');option.value=value;option.textContent=text;insert.appendChild(option)}appearance.appendChild(insert);
+ for(const [value,text]of [['','Insert…'],['+','Addition +'],['−','Subtraction −'],['×','Multiplication ×'],['÷','Division ÷'],['=','Equals ='],['\\frac{1}{2}','Fraction ½'],['x^{2}','Power x²'],['\\sqrt{x}','Root √'],['\\int_{0}^{1} x\\,dx','Integral ∫'],['\\sum_{i=1}^{n} i','Sum ∑'],['\\alpha','Greek α'],['\\pi','Pi π'],['\\leq','Less or equal ≤'],['\\infty','Infinity ∞'],['\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}','Matrix'],['cm²','cm² · area'],['m²','m² · area'],['cm³','cm³ · volume'],['m³','m³ · volume'],['mm','mm · length'],['cm','cm · length'],['m','m · length'],['km','km · length'],['mg','mg · mass'],['g','g · mass'],['kg','kg · mass'],['ml','ml · capacity'],['L','L · capacity'],['s','s · time'],['min','min · time'],['h','h · time'],['°C','°C · temperature'],['m/s²','m/s² · acceleration'],['km/h','km/h · speed']]){const option=document.createElement('option');option.value=value;option.textContent=text;insert.appendChild(option)}appearance.appendChild(insert);
  function arithmeticResult(){return window.WhiteboardBetaArithmetic?.verify(input.value)}
  function displayReading(){const result=arithmeticResult();return correctionToggle.checked&&result?.supported&&!result.correct?result.corrected:input.value}
  function leadingEqualsFallback(value,b,colour){
@@ -267,8 +267,8 @@ async function review(group){
   const choices=result?.context?.alternatives||[];
   if(choices.length<2)return;
   const message=document.createElement('p');message.textContent=result.context.kind==='words'?
-   'Possible words — check the spelling and capital letters against your ink.':result.context.kind==='letter-case'?
-   'Lowercase or uppercase? Choose the letter you intended.':result.context.kind==='glyphs'?
+   'Possible words — check the spelling against your ink.':result.context.kind==='letter-case'?
+   'Possible letters — compare these choices with your handwriting.':result.context.kind==='glyphs'?
    'Possible characters — compare these choices with your handwriting.':'Possible readings — compare the unit or superscript with your ink.';
   const buttons=document.createElement('div');buttons.className='handwriting-context-options';
   for(const choice of choices){

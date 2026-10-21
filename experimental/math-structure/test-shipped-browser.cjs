@@ -92,7 +92,7 @@ const server=http.createServer((req,res)=>{
    await page.locator('.handwriting-apply').click();
    assert.equal(await page.locator('.handwriting-review-backdrop').count(),0,'Measurement Apply completes');
    assert.equal(await page.locator('#penBtn').getAttribute('class').then(c=>c.includes('active')),true,'Measurement returns to pen');
-   // The user can resolve an ambiguous character through a visible choice.
+   // Classroom letters default to lowercase; case-only choices are collapsed.
    const glyph=number('c');
    await page.evaluate(ink=>{
     strokes=ink.map(s=>({...s,colour:'#17324d',points:s.points.map(p=>({x:p.x*1800/cssW,y:p.y*1200/cssH}))}));
@@ -103,8 +103,14 @@ const server=http.createServer((req,res)=>{
    await page.mouse.move(glyphBoard.x+75,glyphBoard.y+45);await page.mouse.down();
    await page.mouse.move(glyphBoard.x+glyph.w+105,glyphBoard.y+glyph.h+75,{steps:10});await page.mouse.up();
    const upper=page.getByRole('button',{name:'Use reading C',exact:true}),lower=page.getByRole('button',{name:'Use reading c',exact:true});
-   await upper.waitFor({state:'visible',timeout:20000});await lower.waitFor({state:'visible'});
-   await upper.click();assert.equal(await page.locator('#handwritingReadText').inputValue(),'C');
+   await page.waitForFunction(()=>document.getElementById('handwritingReadText')?.value==='c',{}, {timeout:20000});
+   assert.equal(await upper.count(),0,'No uppercase alternative');
+   assert.equal(await page.locator('#handwritingReadMode option[value=uppercase]').count(),0,'No uppercase reading mode');
+   assert.equal(await page.locator('#handwritingInsert option[value=ml]').count(),1,'ml remains available');
+   assert.equal(await page.locator('#handwritingInsert option[value=L]').count(),1,'L remains available for litre');
+   assert(await lower.count()<=1,'Lowercase choices are deduplicated');
+   if(await lower.isVisible())await lower.click();
+   assert.equal(await page.locator('#handwritingReadText').inputValue(),'c');
    await page.screenshot({path:path.join(output,`glyph-choices-${viewport.width}.png`)});
    await page.locator('.handwriting-apply').click();
    assert.equal(await page.locator('.handwriting-review-backdrop').count(),0,'Chosen character Apply completes');

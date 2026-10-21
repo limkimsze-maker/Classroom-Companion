@@ -56,7 +56,7 @@ function coverage(result,ink){const sources=result.tokens.flatMap(t=>t.parts.map
   const a=await baseline.WhiteboardHandwritingMath.recognize(eq,W,H,{mode}),b=await reader.recognize(eq,W,H,{mode});assert.equal(b.text,a.text,'Explicit mode retained: '+mode);controls++;
  }
  const before=await reader.recognize(eq,W,H,{mode:'auto'}),tx=ctx.WhiteboardHandwritingLearning.confirm(before,'X',reader.rasterDigit,eq,W,H,'auto');
- assert(tx?.count);assert.equal((await reader.recognize(eq,W,H,{mode:'auto'})).text,'X');ctx.WhiteboardHandwritingLearning.undo(tx);
+ assert(tx?.count);assert.equal((await reader.recognize(eq,W,H,{mode:'auto'})).text,'x');ctx.WhiteboardHandwritingLearning.undo(tx);
  assert.equal((await reader.recognize(eq,W,H,{mode:'auto'})).text,'=');
  await assert.rejects(reader.recognize(eq,W,H,{mode:'auto',signal:{aborted:true}}),{name:'AbortError'});
  console.log('PASS',controls,'division/equals controls; stroke coverage, incorrect written answers, multiplication/plus/minus/colon negatives, explicit modes, personal correction/Undo and cancellation');

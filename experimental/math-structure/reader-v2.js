@@ -2663,6 +2663,29 @@ async function recognize(strokes,W,H,options={}){
 const structuralV2=window.WhiteboardStructuralParserFactory({bounds,operatorStroke,operatorCrossing,radicalHook,radicalDescendingHook,radicalParenthesis,recognizeNumericContext,segment,predictDigit,rasterDigit,closedZeroInk,completeNumericExpression,checkCancelled});
 const glyphV2=window.WhiteboardGlyphReviewFactory({bounds,rasterDigit,predictDigit,groupMeasurementInk,checkCancelled});
 const compoundV2=window.WhiteboardCompoundReviewFactory({bounds,rasterDigit});
-window.WhiteboardHandwritingMath={recognize,predictDigit,rasterDigit,segment,structuralV2};
-window.WhiteboardHandwritingMath.build='20261021-v2-division-grouping2';
+// Classroom letters are lowercase. Apply this after recognition so numbers,
+// stroke grouping, mathematical parsing and stored teaching examples retain
+// their existing evidence. Standard unit notation and LaTeX stay authoritative.
+function lowercaseReadingV2(reading,options={}){
+ if(!reading||!['auto','lowercase'].includes(options.mode||'auto')||
+    reading.format==='latex'||reading.format==='unit')return reading;
+ const lower=text=>typeof text==='string'?text.replace(/\\[A-Za-z]+|°C|[A-Z]/g,s=>s.startsWith('\\')||s==='°C'||s==='L'?s:s.toLowerCase()):text;
+ const choices=list=>{
+  if(!Array.isArray(list))return list;
+  const out=[];
+  for(const choice of list){
+   const next={...choice,...('char'in choice?{char:lower(choice.char)}:{}),...('text'in choice?{text:lower(choice.text)}:{})};
+   const key=next.char??next.text,prior=out.find(p=>(p.char??p.text)===key);
+   if(!prior)out.push(next);else prior.score=Math.max(prior.score||0,next.score||0);
+  }
+  return out;
+ };
+ const token=t=>({...t,char:lower(t.char),...(t.choices?{choices:choices(t.choices)}:{})});
+ const alternatives=reading.context?.alternatives?.map(c=>({...c,text:lower(c.text),...(c.tokens?{tokens:c.tokens.map(token)}:{})}));
+ return{...reading,text:lower(reading.text),tokens:(reading.tokens||[]).map(token),uncertain:(reading.uncertain||[]).map(token),
+  ...(reading.context?{context:{...reading.context,originalText:lower(reading.context.originalText),
+   ...(alternatives?{alternatives:choices(alternatives)}:{})}}:{})};
+}
+window.WhiteboardHandwritingMath={recognize:async(strokes,W,H,options={})=>lowercaseReadingV2(await recognize(strokes,W,H,options),options),predictDigit,rasterDigit,segment,structuralV2,letterPolicy:'lowercase-with-litre-L'};
+window.WhiteboardHandwritingMath.build='20261021-v2-lowercase-litre2';
 })();
