@@ -1,0 +1,35 @@
+name: Alpha V2 promotion
+on:
+  push:
+    branches: [main, 'promote/v2-alpha-*']
+    paths:
+      - whiteboard.html
+      - whiteboard-alpha-v2-bootstrap.js
+      - scripts/test-alpha-v2-promotion.cjs
+      - .github/workflows/alpha-v2-promotion.yml
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check whiteboard-alpha-v2-bootstrap.js
+      - run: node experimental/math-structure/test-division-grouping-v2.cjs
+      - name: Install browser
+        run: |
+          npm install --prefix /tmp/alpha-browser --no-save playwright@1.55.0
+          node /tmp/alpha-browser/node_modules/playwright/cli.js install --with-deps chromium --only-shell
+      - name: Verify Alpha desktop and mobile
+        env:
+          NODE_PATH: /tmp/alpha-browser/node_modules
+        run: node scripts/test-alpha-v2-promotion.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: alpha-v2-screenshots
+          path: /tmp/alpha-v2-*.png
