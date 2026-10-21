@@ -47,27 +47,6 @@ function modelWidths(bars){
 }
 function svgData(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
 function rebuild(obj){const n=Math.max(2,Math.min(5,obj.barCount||2)),H=modelH(n),x=180,maxW=650,rowGap=145,barH=76,startY=60,stroke='#17324d',widths=obj.barCompareWidths||Array.from({length:n},(_,i)=>1-i*.11),els=[];for(let i=0;i<n;i++){const w=maxW*clamp(widths[i]??1,.16,1),fill=obj.barFills?.[i]||'#ffffff';els.push(`<rect x="${x}" y="${startY+i*rowGap}" width="${w}" height="${barH}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="8"/>`)}obj.barCompareLayoutVersion=2;obj.src=svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="${H}" viewBox="0 0 900 ${H}">${els.join('')}</svg>`)}
-// Keep segment boundaries inside the actual SVG, not an overlay that may sit behind the bar image.
-function ensureComparisonSegments(obj){
- if(!obj||obj.smartType!=='barModel'||obj.smartBarType!=='comparison'||typeof obj.src!=='string'||!obj.src.startsWith('data:image/svg+xml'))return false;
- const comma=obj.src.indexOf(',');if(comma<0)return false;
- let svg;try{svg=decodeURIComponent(obj.src.slice(comma+1))}catch{return false}
- const n=Math.max(2,Math.min(5,Number(obj.barCount)||2)),ws=Array.isArray(obj.barCompareWidths)?obj.barCompareWidths:[];
- const widths=Array.from({length:n},(_,i)=>clamp(Number(ws[i]??(1-i*.11))||.5,.16,1));
- const lines=[];
- for(let row=0;row<n;row++){
-  const ends=[...new Set(widths.filter(v=>v<widths[row]-.012).map(v=>v.toFixed(4)))];
-  for(const end of ends){const x=180+650*Number(end),y=60+row*145;
-   lines.push('<line x1="'+x+'" y1="'+(y+2)+'" x2="'+x+'" y2="'+(y+74)+'" stroke="#17324d" stroke-width="5"/>');
-  }
- }
- const replacement='<g data-comparison-segment-dividers="1">'+lines.join('')+'</g>';
- const existing=new RegExp('<g data-comparison-segment-dividers="1">[\\s\\S]*?</g>');
- const updated=existing.test(svg)?svg.replace(existing,replacement):svg.replace('</svg>',replacement+'</svg>');
- if(updated===svg)return false;
- obj.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(updated);
- return true;
-}
 function hideAuto(obj){return;
 if(!obj.barBracketState||typeof obj.barBracketState!=='object')obj.barBracketState={};const n=Math.max(2,obj.barCount||2);for(let i=0;i<n;i++){if(!obj.barBracketState['c'+i])obj.barBracketState['c'+i]={visible:false,label:'',position:i%2?'bottom':'top'};else obj.barBracketState['c'+i].visible=false}}
 function roughAnchor(x,bars){let best={d:Infinity,a:{kind:'start'}};const left=Math.min(...bars.map(q=>q.b.x));const ds=Math.abs(x-left);best={d:ds,a:{kind:'start'}};for(let i=0;i<bars.length;i++){const d=Math.abs(x-(bars[i].b.x+bars[i].b.w));if(d<best.d)best={d,a:{kind:'end',row:i}}}return best.a}
@@ -113,7 +92,7 @@ function prepareFinish(){
 document.addEventListener('click',e=>{const el=e.target;if(!(el instanceof Element))return;if(el.closest('#smartBarTypeMenu'))setTimeout(()=>{const t=window.__smartBarType||'';if(t&&t!==lastType){lastType=t;startIndex=strokes.length}},0);const finish=smartBtn.nextElementSibling;if(finish&&el===finish)prepareFinish()},true);
 function anchorX(obj,a){if(!a||a.kind==='start')return 180/900;const widths=Array.isArray(obj.barCompareWidths)?obj.barCompareWidths:[];const row=clamp(Number(a.row)||0,0,Math.max(0,(obj.barCount||2)-1));return(180+650*clamp(widths[row]??1,.16,1))/900}
 function follow(){let changed=false;for(const obj of strokes){if(!obj||obj.smartType!=='barModel'||obj.smartBarType!=='comparison'||!Array.isArray(obj.userDrawnBrackets))continue;hideAuto(obj);for(const b of obj.userDrawnBrackets){if(!b.compareAnchorLeft||!b.compareAnchorRight)continue;let x1=anchorX(obj,b.compareAnchorLeft),x2=anchorX(obj,b.compareAnchorRight);if(x2<x1)[x1,x2]=[x2,x1];const row=clamp(Number.isInteger(b.compareRow)?b.compareRow:0,0,Math.max(0,(obj.barCount||2)-1)),y=b.isDifference?clamp((60+Math.min(Number(b.compareAnchorLeft?.row??0),Number(b.compareAnchorRight?.row??1))*145+76+(Math.abs(Number(b.compareAnchorLeft?.row??0)-Number(b.compareAnchorRight?.row??1))*145-76)/2+(-8)/Math.max(1,obj.h*cssH)*modelH(Math.max(2,Math.min(5,obj.barCount||2))))/modelH(Math.max(2,Math.min(5,obj.barCount||2))),.01,.99):bracketY(obj,row,b.position==='bottom'?'bottom':'top');if(Math.abs((b.x1??0)-x1)>.0005||Math.abs((b.x2??0)-x2)>.0005||Math.abs((b.y??0)-y)>.0005){b.x1=x1;b.x2=x2;b.y=y;changed=true}}}return changed}
-const priorRedraw=redraw;redraw=function(){for(const o of strokes)ensureComparisonSegments(o);follow();priorRedraw();if(!refreshing&&follow()){refreshing=true;requestAnimationFrame(()=>{refreshing=false;priorRedraw()})}};
+const priorRedraw=redraw;redraw=function(){follow();priorRedraw();if(!refreshing&&follow()){refreshing=true;requestAnimationFrame(()=>{refreshing=false;priorRedraw()})}};
 setTimeout(()=>{try{redraw()}catch{}},0);
 })();
 (function(){if(document.querySelector('script[data-compare-total-bracket]'))return;const s=document.createElement('script');s.dataset.compareTotalBracket='1';s.src='smart-math-comparison-total-bracket.js?v=20261011-1245-totalright2';document.head.appendChild(s)})();
