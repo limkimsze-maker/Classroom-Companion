@@ -32,8 +32,29 @@ function loadScript(src,globalName){
 }
 function releaseObjectUrl(){if(objectUrl){try{URL.revokeObjectURL(objectUrl)}catch{}objectUrl=null}}
 function pageKey(p=currentPage){return `${docKind||'doc'}:${p}`}
-function savePage(){if(active)pageStore.set(pageKey(),clone(strokes))}
-function loadPageAnnotations(){try{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))}catch{}strokes=clone(pageStore.get(pageKey())||[]);current=null;drawing=false;redraw();syncUi()}
+// Document-relative coordinates keep ink attached to the rendered page/slide/sheet
+// when its screen position or size changes. Never mutate original stroke objects.
+function annotationRect(){
+ const el=docKind==='pdf'?pdfCanvas:docKind==='word'?wordPaper:docKind==='pptx'?pptViewport:docKind==='sheet'?sheetPaper:genericEl;
+ const r=el?.getBoundingClientRect(),b=canvas.getBoundingClientRect();
+ if(!r||!b.width||!b.height||r.width<1||r.height<1)return null;
+ return{x:r.left-b.left,y:r.top-b.top,w:r.width,h:r.height,bw:b.width,bh:b.height};
+}
+function convertAnnotations(items,r,toPage){
+ if(!r)return clone(items);
+ return clone(items).map(s=>{
+  const point=p=>{if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))return;
+   if(toPage){p.x=(p.x*r.bw-r.x)/r.w;p.y=(p.y*r.bh-r.y)/r.h}
+   else{p.x=(r.x+p.x*r.w)/r.bw;p.y=(r.y+p.y*r.h)/r.bh}
+  };
+  if(Array.isArray(s.points))s.points.forEach(point);
+  if(Number.isFinite(s.x)&&Number.isFinite(s.y))point(s);
+  if(Number.isFinite(s.size))s.size=toPage?s.size/r.w:s.size*r.w;
+  return s;
+ });
+}
+function savePage(){if(active)pageStore.set(pageKey(),{relative:true,items:convertAnnotations(strokes,annotationRect(),true)})}
+function loadPageAnnotations(){try{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))}catch{}const saved=pageStore.get(pageKey());strokes=saved?.relative?convertAnnotations(saved.items,annotationRect(),false):clone(saved||[]);current=null;drawing=false;redraw();syncUi()}
 function restoreBlankBoard(){if(preDocumentStrokes!==null){strokes=clone(preDocumentStrokes);preDocumentStrokes=null;current=null;drawing=false;redraw();syncUi()}}
 function resetSearch(clearText=false){
  searchRevision++;if(clearText){documentRevision++;pdfTextCache.clear();genericSearchText=''}
@@ -107,7 +128,7 @@ function exitMode(){active=false;renderToken++;hideSearch();resetSearch(true);in
 function closeDocument(){if(!active)return;savePage();exitMode()}
 function updateControls(){if(!toolbar)return;pageInput.value=String(currentPage);pageInput.max=String(Math.max(1,totalPages));pageTotal.textContent=`/ ${Math.max(1,totalPages)}`;zoomLabel.textContent=`${Math.round(zoom*100)}%`;prevBtn.disabled=currentPage<=1;nextBtn.disabled=currentPage>=totalPages;searchBtn.disabled=!['pdf','word','pptx','sheet','text','html'].includes(docKind)}
 
-async function setZoom(z){zoom=Math.max(.5,Math.min(2.5,Math.round(z*20)/20));updateControls();if(docKind==='pdf')await renderPdfPage();else if(docKind==='word')layoutWord(true);else if(docKind==='pptx'&&pptViewer){try{await pptViewer.setZoom(Math.round(zoom*100))}catch{}}else if(docKind==='sheet')renderSheet();else layoutGeneric()}
+async function setZoom(z){savePage();zoom=Math.max(.5,Math.min(2.5,Math.round(z*20)/20));updateControls();if(docKind==='pdf')await renderPdfPage();else if(docKind==='word')layoutWord(true);else if(docKind==='pptx'&&pptViewer){try{await pptViewer.setZoom(Math.round(zoom*100))}catch{}}else if(docKind==='sheet')renderSheet();else layoutGeneric();loadPageAnnotations()}
 async function goToPage(p){p=Math.max(1,Math.min(totalPages,Math.round(p)||1));if(p===currentPage){updateControls();return}savePage();currentPage=p;updateControls();if(docKind==='pdf')await renderPdfPage();else if(docKind==='word')layoutWord(false);else if(docKind==='pptx'&&pptViewer)await pptViewer.goToSlide(currentPage-1);else if(docKind==='sheet')renderSheet();loadPageAnnotations()}
 
 function extOf(file){const n=(file.name||'').toLowerCase(),i=n.lastIndexOf('.');return i>=0?n.slice(i+1):''}
