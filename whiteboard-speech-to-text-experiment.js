@@ -19,14 +19,14 @@ function mathify(t){
  .replace(/\b(?:plus|add)\b|[+]/g,' + ')
  .replace(/\b(?:minus|subtract)\b|[−-]/g,' − ');
  s=numberWords(s);
- return s.replace(/\s+/g,' ').trim();
+ return s.replace(/\s+/g,' ').trim().replace(/\s*×\s*/g,' × ');
 }
 function looksLikeMath(t){return /(?:\d\s*(?:[×*÷+=−-]|\bx\b)|\b(?:times|multiplied by|divide(?:d)? by|plus|minus|equals?|equal to)\b)/i.test(t)}
 btn.addEventListener('click',()=>{panel.style.display='block';status.textContent=SR?'Tap Listen and allow microphone access.':'Speech recognition is not supported in this browser.'});
 panel.addEventListener('click',e=>{const a=e.target.dataset.action;if(!a)return;
 if(a==='close'){try{rec?.stop()}catch{}panel.style.display='none'}
 if(a==='math')ta.value=mathify(ta.value);
-if(a==='listen'){if(!SR){status.textContent='Try a supported browser such as Chrome.';return}try{rec?.stop()}catch{}rec=new SR();rec.lang=document.documentElement.lang||'en-SG';rec.interimResults=false;rec.maxAlternatives=1;rec.onresult=e=>{const raw=e.results[0][0].transcript;ta.value=looksLikeMath(raw)?mathify(raw):raw;status.textContent='Review the recognised text, then insert.'};rec.onerror=e=>{status.textContent='Microphone error: '+e.error};rec.onend=()=>{if(status.textContent==='Listening…')status.textContent='Stopped listening.'};try{rec.start();status.textContent='Listening…'}catch(e){status.textContent=e.message}}
-if(a==='insert'){const value=looksLikeMath(ta.value)?mathify(ta.value):ta.value.trim();if(!value)return;document.dispatchEvent(new CustomEvent('whiteboard-insert-speech-text',{detail:{text:value}}));panel.style.display='none'}
+if(a==='listen'){if(!SR){status.textContent='Try a supported browser such as Chrome.';return}try{rec?.stop()}catch{}rec=new SR();rec.lang=document.documentElement.lang||'en-SG';rec.interimResults=false;rec.maxAlternatives=1;rec.onresult=e=>{const raw=e.results[0][0].transcript;ta.value=looksLikeMath(raw)?mathify(raw):raw;status.textContent='Recognised: '+raw+' | Output: '+ta.value};rec.onerror=e=>{status.textContent='Microphone error: '+e.error};rec.onend=()=>{if(status.textContent==='Listening…')status.textContent='Stopped listening.'};try{rec.start();status.textContent='Listening…'}catch(e){status.textContent=e.message}}
+if(a==='insert'){const value=looksLikeMath(ta.value)?mathify(ta.value):ta.value.trim();if(!value)return;if(/[0-9]/.test(value)&&/[×*]/.test(value)&&!/[0-9]\s*×\s*[0-9]/.test(value)){status.textContent='Please review multiplication before inserting: '+value;return}document.dispatchEvent(new CustomEvent('whiteboard-insert-speech-text',{detail:{text:value}}));panel.style.display='none'}
 });
 })();
