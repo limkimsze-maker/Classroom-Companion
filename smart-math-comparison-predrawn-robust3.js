@@ -30,7 +30,7 @@ function components(entries){
   return{items,l,t,r,b,pw:r-l,ph:b-t,cx:(l+r)/2,cy:(t+b)/2,last:Math.max(...items.map(q=>q.i)),x:l/d.w,y:t/d.h,w:(r-l)/d.w,h:(b-t)/d.h}
  })
 }
-function barLike(c){return c&&c.pw>=80&&c.ph>=10&&c.pw>=c.ph*1.30}
+function barLike(c){return c&&c.pw>=70&&c.ph>=9&&c.pw>=c.ph*1.15}
 function compatible(a,b){
  const overlap=Math.max(0,Math.min(a.r,b.r)-Math.max(a.l,b.l)),ratio=overlap/Math.max(1,Math.min(a.pw,b.pw));
  const dy=Math.abs(a.cy-b.cy),leftDiff=Math.abs(a.l-b.l),leftTol=Math.max(140,Math.min(a.pw,b.pw)*.55);
@@ -38,8 +38,11 @@ function compatible(a,b){
 }
 function chooseBars(source){
  const entries=(source||[]).map((s,i)=>({s,i})).filter(q=>rawInk(q.s));if(!entries.length)return[];
- let comps=components(entries).filter(barLike);
- if(comps.length<2)comps=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
+ // Prefer separately sketched long outlines: proximity grouping can merge two
+ // slanted bars into one component, even though they are distinct rows.
+ const individual=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
+ let comps=individual.length>=2?individual:components(entries).filter(barLike);
+ if(comps.length<2)comps=individual;
  if(comps.length<2)return[];
 
  // 3 bars is the maximum comparison model supported by this beta. Start from
