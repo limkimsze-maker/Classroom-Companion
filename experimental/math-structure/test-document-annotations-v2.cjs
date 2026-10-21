@@ -10,7 +10,7 @@ const selectors={pdf:'#documentPdfCanvas',word:'#documentWordPaper',pptx:'#docum
  try{for(const viewport of [{width:1365,height:900},{width:390,height:844}]){
   const page=await browser.newPage({viewport}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port+'/whiteboard-v2-trial.html',{waitUntil:'load'});
-  await page.locator('#openDocumentBtn').waitFor();await page.locator('#mainSettingsBtn').click();await page.getByRole('dialog').waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.locator('#openDocumentBtn').waitFor();const settingsBox=await page.locator('#mainSettingsBtn').boundingBox();assert(settingsBox.x>viewport.width-140&&settingsBox.y<40,'Settings stays at top right of main page');await page.locator('#mainSettingsBtn').click();await page.getByRole('dialog').waitFor();await page.getByRole('button',{name:'Close',exact:true}).click();
   // Draw through the actual Pen handler; the blank board and its Undo must survive.
   await page.locator('#penBtn').click();let box=await page.locator('#board').boundingBox();await page.mouse.move(box.x+30,box.y+30);await page.mouse.down();await page.mouse.move(box.x+80,box.y+60,{steps:4});await page.mouse.up();const blank=await page.evaluate(()=>JSON.stringify(strokes));
   for(const [kind,file] of [['pdf','pages.pdf'],['word','pages.docx'],['pptx','pages.pptx'],['sheet','pages.xlsx'],['image','page.svg'],['text','page.txt'],['html','page.html']]){

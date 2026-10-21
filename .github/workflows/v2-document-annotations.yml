@@ -7,6 +7,7 @@ on:
       - whiteboard-v2-trial.html
       - experimental/math-structure/whiteboard-text-drag-resizable-v2.js
       - experimental/math-structure/beautify-v2.js
+      - experimental/math-structure/test-learning-browser-v2.cjs
       - experimental/math-structure/test-document-annotations-v2.cjs
       - experimental/math-structure/fixtures/documents/**
       - .github/workflows/v2-document-annotations.yml
@@ -42,6 +43,8 @@ jobs:
           NODE_PATH=/tmp/document-browser/node_modules node experimental/math-structure/test-document-annotations-v2.cjs document-annotation-evidence
       - name: Preserve existing V2 handwriting, object resize and eraser flows
         run: NODE_PATH=/tmp/document-browser/node_modules node experimental/math-structure/test-shipped-browser.cjs document-annotation-evidence/handwriting
+      - name: Verify current Learn and Settings export/import controls
+        run: NODE_PATH=/tmp/document-browser/node_modules node experimental/math-structure/test-learning-browser-v2.cjs document-annotation-evidence/learning
       - uses: actions/upload-artifact@v4
         if: always()
         with:
