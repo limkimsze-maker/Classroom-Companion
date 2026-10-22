@@ -13,7 +13,7 @@ let layer,pdfCanvas,wordViewport,wordPaper,pptViewport,sheetViewport,sheetPaper,
 let toolbar,fileInput,pageInput,pageTotal,zoomLabel,prevBtn,nextBtn,searchBtn,searchPanel,searchInput,searchStatus,interactBtn;
 let active=false,docKind=null,docName='',currentPage=1,totalPages=1,zoom=1,renderToken=0;
 let pageStore=new Map(),preDocumentStrokes=null;
-let pdfDoc=null,pptViewer=null,pptModule=null,pptMatches=[],pptMatchIndex=-1,pptQuery='';
+let pdfDoc=null,pdfLoadingTask=null,pptViewer=null,pptModule=null,pptMatches=[],pptMatchIndex=-1,pptQuery='';
 let workbook=null,sheetNames=[];
 let objectUrl=null,genericEl=null,interactionMode=false;
 let pdfTextCache=new Map(),pdfQuery='',pdfMatches=[],pdfMatchIndex=-1,pdfHasText=true;
@@ -55,7 +55,20 @@ function preparePdfEngine(){
   return lib;
  });
 }
-function warmPdfEngine(){void preparePdfEngine().catch(()=>{});}
+// One PDF.js worker can process multiple documents without downloading its
+// 1 MB script for each. PDF.js keeps shared workers alive when a document task
+// is destroyed, allowing us to release the document without losing the worker.
+let pdfWorkerPromise=null;
+function preparePdfWorker(){
+ if(pdfWorkerPromise)return pdfWorkerPromise;
+ pdfWorkerPromise=preparePdfEngine().then(async lib=>{
+  const worker=new lib.PDFWorker({name:'classroom-companion-pdf'});
+  await worker.promise;
+  return worker;
+ }).catch(error=>{pdfWorkerPromise=null;throw error});
+ return pdfWorkerPromise;
+}
+function warmPdfEngine(){void preparePdfWorker().catch(()=>{});}
 window.CCWarmPdfEngine=warmPdfEngine;
 
 function releaseObjectUrl(){if(objectUrl){try{URL.revokeObjectURL(objectUrl)}catch{}objectUrl=null}}
@@ -251,7 +264,7 @@ function ensureFileInput(){if(fileInput)return;fileInput=document.createElement(
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=interactionMode?'none':'auto';if(active)toast(interactionMode?'Interact mode — tap the document':'Annotation mode')}
 function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);resetPan();documentSession++;viewSerial++;viewChanging=true;annotationBasis=null;annotationKey='';active=true;setAnnotationContext(contextKey('opening'));pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');redraw();syncUi()}
 function destroyPpt(){if(pptViewer){try{pptViewer.destroy()}catch{}pptViewer=null}if(pptViewport)pptViewport.innerHTML=''}
-function exitMode(){window.dispatchEvent(new Event('cc-document-closed'));resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
+function exitMode(){window.dispatchEvent(new Event('cc-document-closed'));if(pdfLoadingTask){const task=pdfLoadingTask;pdfLoadingTask=null;void task.destroy().catch(()=>{})}resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
 function closeDocument(){if(!active)return;finishAnnotationEdit();savePage();exitMode()}
 const permanentExit=document.getElementById('ccPermanentExitBtn');if(permanentExit)permanentExit.addEventListener('click',closeDocument);
 function updateControls(){if(!toolbar)return;pageInput.value=String(currentPage);pageInput.max=String(Math.max(1,totalPages));pageTotal.textContent=`/ ${Math.max(1,totalPages)}`;zoomLabel.textContent=`${Math.round(zoom*100)}%`;prevBtn.disabled=currentPage<=1;nextBtn.disabled=currentPage>=totalPages;searchBtn.disabled=!['pdf','word','pptx','sheet','text','html'].includes(docKind)}
@@ -274,8 +287,8 @@ async function openFile(file,options={}){
   resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();importDocumentAnnotations(options.annotations);currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
   if(ext==='pdf'||file.type==='application/pdf'){
     // Read the local PDF and load its offline renderer concurrently.
-    const [data]=await Promise.all([file.arrayBuffer(),preparePdfEngine()]);
-    return await openPdf(data);
+    const [data,worker]=await Promise.all([file.arrayBuffer(),preparePdfWorker()]);
+    return await openPdf(data,worker);
    }
   if(ext==='docx')return await openWord(await file.arrayBuffer());
   if(['pptx','pptm','ppsx','potx'].includes(ext))return await openPptx(await file.arrayBuffer());
@@ -288,7 +301,7 @@ async function openFile(file,options={}){
  }catch(err){console.error(err);toast('Could not open this file.');exitMode()}
 }
 
-async function openPdf(data){docKind='pdf';pdfCanvas.style.display='block';await preparePdfEngine();if(!window.pdfjsLib)throw new Error('PDF engine unavailable');pdfDoc=await window.pdfjsLib.getDocument({data:new Uint8Array(data)}).promise;totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();await renderPdfPage();loadPageAnnotations();toast(`${docName} opened`)}
+async function openPdf(data,worker){docKind='pdf';pdfCanvas.style.display='block';if(!window.pdfjsLib)throw new Error('PDF engine unavailable');pdfLoadingTask=window.pdfjsLib.getDocument({data:new Uint8Array(data),worker});pdfDoc=await pdfLoadingTask.promise;totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();await renderPdfPage();loadPageAnnotations();toast(`${docName} opened`)}
 async function renderPdfPage(){if(!pdfDoc||!active)return;const token=++renderToken,page=await pdfDoc.getPage(currentPage);if(token!==renderToken)return;const base=page.getViewport({scale:1}),r=wrap.getBoundingClientRect(),fit=Math.min((r.width-8)/base.width,(r.height-8)/base.height),vp=page.getViewport({scale:Math.max(.1,fit*zoom)}),dpr=Math.min(devicePixelRatio||1,2),tmp=document.createElement('canvas');tmp.width=Math.max(1,Math.round(vp.width*dpr));tmp.height=Math.max(1,Math.round(vp.height*dpr));await page.render({canvasContext:tmp.getContext('2d'),viewport:vp,transform:[dpr,0,0,dpr,0,0]}).promise;if(token!==renderToken)return;pdfCanvas.width=tmp.width;pdfCanvas.height=tmp.height;pdfCanvas.style.width=`${vp.width}px`;pdfCanvas.style.height=`${vp.height}px`;pdfCanvas.getContext('2d').drawImage(tmp,0,0);updateControls()}
 
 async function openWord(data){docKind='word';wordViewport.style.display='block';await loadScript(MAMMOTH_URL,'mammoth');if(!window.mammoth)throw new Error('Word engine unavailable');const result=await window.mammoth.convertToHtml({arrayBuffer:data});wordPaper.innerHTML=result.value||'<p>(Empty document)</p>';requestAnimationFrame(()=>{layoutWord(false);loadPageAnnotations();toast(`${docName} opened`)})}
