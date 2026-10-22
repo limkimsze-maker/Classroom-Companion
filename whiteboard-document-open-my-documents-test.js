@@ -324,7 +324,7 @@ async function openPdf(data,worker,timing=null){
  pdfDoc=await pdfLoadingTask.promise;
  const parseMs=Math.round(performance.now()-startedParsing);
  totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();
- const initial=await renderPdfPage(true);
+ const initial=await renderPdfPage(true,data.byteLength>=400000);
  if(!active||docKind!=='pdf')return;
  loadPageAnnotations();
  const elapsed=Math.round(performance.now()-t.start);
@@ -364,7 +364,7 @@ function schedulePdfRefinement(view,diagnostics){
  if(typeof requestIdleCallback==='function')pdfRefineTimer=requestIdleCallback(refine,{timeout:2200});
  else pdfRefineTimer=setTimeout(refine,450);
 }
-async function renderPdfPage(firstPaint=false){
+async function renderPdfPage(firstPaint=false,heavyDocument=false){
  if(!pdfDoc||!active)return;
  const token=++renderToken,pdfSource=pdfDoc,docSession=documentSession,started=performance.now();
  const page=await pdfDoc.getPage(currentPage);
@@ -373,8 +373,11 @@ async function renderPdfPage(firstPaint=false){
  const base=page.getViewport({scale:1}),r=wrap.getBoundingClientRect();
  const fit=Math.min((r.width-8)/base.width,(r.height-8)/base.height);
  const vp=page.getViewport({scale:Math.max(.1,fit*zoom)});
- const actualDpr=Math.min(devicePixelRatio||1,2),dpr=firstPaint?1:actualDpr;
- const preview=firstPaint&&actualDpr>1.05;
+ const actualDpr=Math.min(devicePixelRatio||1,2);
+ // The quick preview matters even on 1x desktop monitors for large scanned PDFs.
+ // Small PDFs retain full resolution immediately to avoid redundant work.
+ const dpr=firstPaint?Math.min(actualDpr,heavyDocument?.82:1):actualDpr;
+ const preview=firstPaint&&dpr<actualDpr*.98;
  const tmp=firstPaint?pdfCanvas:document.createElement('canvas');
  tmp.width=Math.max(1,Math.round(vp.width*dpr));tmp.height=Math.max(1,Math.round(vp.height*dpr));
  if(firstPaint){pdfCanvas.style.width=`${vp.width}px`;pdfCanvas.style.height=`${vp.height}px`;}
