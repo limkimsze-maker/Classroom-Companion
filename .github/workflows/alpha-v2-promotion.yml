@@ -8,6 +8,8 @@ on:
       - scripts/test-alpha-startup-performance.cjs
       - scripts/test-alpha-v2-promotion.cjs
       - scripts/test-alpha-annotation-actions.cjs
+      - scripts/test-alpha-page-drag.cjs
+      - whiteboard-document-gestures-v2-trial.js
       - whiteboard-document-open-my-documents-test.js
       - my-documents-v1.js
       - .github/workflows/alpha-v2-promotion.yml
@@ -36,6 +38,10 @@ jobs:
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-v2-promotion.cjs
+      - name: Verify drag-to-turn document pages and protected pen input
+        env:
+          NODE_PATH: /tmp/alpha-browser/node_modules
+        run: node scripts/test-alpha-page-drag.cjs
       - name: Verify annotation save, reopen, delete and rename
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
