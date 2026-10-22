@@ -21,7 +21,7 @@ let searchRevision=0,documentRevision=0,sheetQuery='',sheetMatches=[],sheetMatch
 let wordMatches=[],wordMatchIndex=-1,wordQuery='';
 
 const clone=v=>{try{return structuredClone(v)}catch{return JSON.parse(JSON.stringify(v))}};
-let documentLoading=null,loadingTimer=0,loadingRevision=0;
+let documentLoading=null,loadingTimer=0,loadingRevision=0,openingDocument=false;
 let pickerPending=false,pickerSerial=0;
 function ensureDocumentLoading(){
  if(documentLoading)return documentLoading;
@@ -232,7 +232,7 @@ function loadPageAnnotations(){
  historyTransform(saved?.basis,r);
  try{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))}catch{}
  strokes=saved?convertAnnotations(saved.items,pageSpace,r):[];
- annotationBasis=r;annotationKey=key;current=null;drawing=false;redraw();syncUi();hideDocumentLoading();
+ annotationBasis=r;annotationKey=key;current=null;drawing=false;redraw();syncUi();if(!openingDocument)hideDocumentLoading();
 }
 function syncAnnotationGeometry(){
  if(!active||viewChanging||!annotationBasis||annotationKey!==pageKey())return;
@@ -332,7 +332,7 @@ function ensureFileInput(){
  fileInput.addEventListener('change',async()=>{
   const f=fileInput.files?.[0];fileInput.value='';
   pickerPending=false;++pickerSerial;
-  if(f)await openFile(f);
+  if(f){setDocumentLoadingCopy(f);showDocumentLoading();await paintDocumentLoading();await openFile(f);}
   else hideDocumentLoading();
  });
  // File-input cancel is supported by current Chrome and other modern browsers.
@@ -364,6 +364,10 @@ function isHtml(file,ext){return ['html','htm'].includes(ext)||file.type==='text
 function isText(file,ext){return (file.type||'').startsWith('text/')||['txt','md','markdown','json','xml','log','ini','yaml','yml','css','js','ts','py','java'].includes(ext)}
 function isMedia(file,ext){return (file.type||'').startsWith('video/')||(file.type||'').startsWith('audio/')||['mp4','webm','mov','m4v','mp3','wav','ogg','m4a'].includes(ext)}
 async function openFile(file,options={}){
+ openingDocument=true;
+ setDocumentLoadingCopy(file,!!options.recordId);
+ showDocumentLoading();
+ await paintDocumentLoading();
  try{
   if(active){finishAnnotationEdit();savePage();exitMode()}
   window.dispatchEvent(new CustomEvent('cc-document-opened',{detail:{file,recordId:options.recordId||null}}));
@@ -387,6 +391,7 @@ async function openFile(file,options={}){
   if(isMedia(file,ext))return await openMedia(file);
   return await openNative(file);
  }catch(err){console.error(err);toast('Could not open this file.');exitMode()}
+ finally{openingDocument=false;hideDocumentLoading()}
 }
 
 // Fast first paint: display the initial PDF page at ordinary CSS-pixel
