@@ -82,6 +82,21 @@ const fixture=fs.readFileSync(path.join(root,'experimental/math-structure/fixtur
     assert(undone.allOriginals&&undone.unrelated,'Undo restores source ink and leaves unrelated ink');
     console.log('PASS',width,kind,'single Undo restores all original rough bars');
    }
+   // Never destroy a partial one-bar sketch just because the teacher
+   // pressed Finished prematurely.
+   await seed('after');await choose();
+   await page.evaluate(()=>{strokes.push(window.__comparisonExpected[0]);redraw();syncUi()});
+   await page.locator('#smartMathBtn + button').click();
+   const partial=await page.evaluate(()=>({
+     raw:strokes.filter(q=>Array.isArray(q.points)).length,
+     models:strokes.filter(q=>q.smartType==='barModel'&&q.smartBarType==='comparison').length,
+     original:strokes.includes(window.__comparisonExpected[0]),
+     other:strokes.includes(window.__comparisonUnrelated)
+   }));
+   assert.equal(partial.models,0,'One bar must not become a false two-bar comparison');
+   assert.equal(partial.raw,2,'Failed recognition keeps all original ink');
+   assert(partial.original&&partial.other,'Incomplete model cannot discard ink');
+   console.log('PASS',width,'Incomplete one-bar comparison retains original sketch');
    // Verify model conversion also cleans strokes drawn over an opened PDF.
    await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'Teaching.pdf',mimeType:'application/pdf',buffer:fixture});
    await page.waitForFunction(()=>window.CCDocumentAnnotations?.ready(),null,{timeout:15000});
