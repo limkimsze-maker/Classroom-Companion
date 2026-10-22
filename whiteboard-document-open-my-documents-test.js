@@ -76,7 +76,9 @@ function setDocumentLoadingCopy(file,fromSaved=false){
 // Give the browser a chance to paint the message before starting expensive
 // Word/PowerPoint conversion. The message stays visible until content is ready.
 function paintDocumentLoading(){
- return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ // Yield a real task after the next paint: two animation frames alone can
+ // still return before the compositor presents a freshly opened modal.
+ return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,100))));
 }
 // Display the message on the first Open click, before the native file
 // chooser. Two animation frames allow the browser to paint the message;
@@ -361,7 +363,7 @@ function ensureFileInput(){
   if(f)openingDocument=true; // Set synchronously, before a focus/cancel callback can hide the message.
   fileInput.value='';
   pickerPending=false;++pickerSerial;
-  if(f){floatingOpening(true,f);setDocumentLoadingCopy(f);showDocumentLoading();await paintDocumentLoading();await openFile(f);}
+  if(f){setDocumentLoadingCopy(f);showDocumentLoading();await paintDocumentLoading();await openFile(f);}
   else hideDocumentLoading();
  });
  // File-input cancel is supported by current Chrome and other modern browsers.
@@ -394,7 +396,7 @@ function isText(file,ext){return (file.type||'').startsWith('text/')||['txt','md
 function isMedia(file,ext){return (file.type||'').startsWith('video/')||(file.type||'').startsWith('audio/')||['mp4','webm','mov','m4v','mp3','wav','ogg','m4a'].includes(ext)}
 async function openFile(file,options={}){
  const floatTicket=++floatingOpenTicket;
- floatingOpening(true,file);
+ // The Alpha page owns the single top-layer modal; avoid stacking two dialogs.
  openingDocument=true;
  setDocumentLoadingCopy(file,!!options.recordId);
  showDocumentLoading();
