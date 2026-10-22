@@ -15,6 +15,7 @@ on:
       - smart-math-bars-v2.js
       - smart-math-comparison-predrawn-robust3.js
       - experimental/math-structure/beautify-v2.js
+      - experimental/math-structure/whiteboard-text-drag-resizable-v2.js
       - scripts/test-alpha-annotation-actions.cjs
       - scripts/test-alpha-page-drag.cjs
       - whiteboard-document-gestures-v2-trial.js
