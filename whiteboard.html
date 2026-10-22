@@ -216,6 +216,34 @@ body.document-open-mode:has(#documentTouchNavBtn[aria-pressed="true"]) #boardWra
 <script defer src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
 <script defer src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
 <script defer src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
+<script>
+/* Alpha: independent file-picker loading status, installed before deferred document engine. */
+(function(){
+ let dialog=null,session=0;
+ function ensure(){
+  if(dialog)return dialog;
+  dialog=document.createElement('dialog');dialog.id='ccAlphaFileOpenProgress';
+  dialog.style.cssText='position:fixed;inset:0;margin:auto;width:max-content;min-width:min(320px,88vw);max-width:92vw;padding:24px 28px;border:2px solid #0f766e;border-radius:16px;background:#fff;color:#17324d;text-align:center;box-shadow:0 16px 60px #0005;font:700 16px system-ui';
+  dialog.innerHTML='<strong>⏳ Loading... Please wait.</strong><p style="font:500 12px system-ui;color:#667085;margin:10px 0 0">Opening your file…</p>';
+  dialog.addEventListener('cancel',e=>e.preventDefault());
+  document.body.appendChild(dialog);
+  const style=document.createElement('style');style.textContent='#ccAlphaFileOpenProgress::backdrop{background:rgba(23,50,77,.25)}';document.head.appendChild(style);
+  return dialog;
+ }
+ function show(file){
+  ++session;
+  const d=ensure();d.querySelector('p').textContent='Opening '+(file?.name||'document')+'…';
+  if(!d.open){try{d.showModal()}catch{d.setAttribute('open','')}}
+ }
+ function hide(){
+  const id=session;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(id!==session||!dialog)return;try{dialog.close()}catch{dialog.removeAttribute('open')}}));
+ }
+ document.addEventListener('change',e=>{if(e.target instanceof HTMLInputElement&&e.target.type==='file'&&e.target.files?.length)show(e.target.files[0])},true);
+ window.addEventListener('cc-alpha-file-open-settled',hide);
+ window.addEventListener('cc-document-closed',hide);
+})();
+</script>
 <script defer src="whiteboard-document-open-my-documents-test.js?v=20261022-modal-toplayer6"></script>
 <script defer src="whiteboard-document-gestures-v2-trial.js?v=20261022-edge-first-pan2"></script>
 <script defer src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
