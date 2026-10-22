@@ -13,7 +13,7 @@ let layer,pdfCanvas,wordViewport,wordPaper,pptViewport,sheetViewport,sheetPaper,
 let toolbar,fileInput,pageInput,pageTotal,zoomLabel,prevBtn,nextBtn,searchBtn,searchPanel,searchInput,searchStatus,interactBtn;
 let active=false,docKind=null,docName='',currentPage=1,totalPages=1,zoom=1,renderToken=0;
 let pageStore=new Map(),preDocumentStrokes=null;
-let pdfDoc=null,pdfLoadingTask=null,pptViewer=null,pptModule=null,pptMatches=[],pptMatchIndex=-1,pptQuery='';
+let pdfDoc=null,pdfLoadingTask=null,pdfRefineTask=null,pdfRefineTimer=0,pptViewer=null,pptModule=null,pptMatches=[],pptMatchIndex=-1,pptQuery='';
 let workbook=null,sheetNames=[];
 let objectUrl=null,genericEl=null,interactionMode=false;
 let pdfTextCache=new Map(),pdfQuery='',pdfMatches=[],pdfMatchIndex=-1,pdfHasText=true;
@@ -181,6 +181,7 @@ function finishAnnotationEdit(){window.WhiteboardAnnotationHistory?.finish();win
 // Render one view at a time, discarding requests superseded before they start.
 function changeView(change){
  if(!active)return Promise.resolve();
+ cancelPdfRefinement();
  if(!viewChanging){finishAnnotationEdit();savePage()}
  viewChanging=true;canvas.style.pointerEvents='none';change();updateControls();
  const serial=++viewSerial;
@@ -264,7 +265,7 @@ function ensureFileInput(){if(fileInput)return;fileInput=document.createElement(
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=interactionMode?'none':'auto';if(active)toast(interactionMode?'Interact mode — tap the document':'Annotation mode')}
 function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);resetPan();documentSession++;viewSerial++;viewChanging=true;annotationBasis=null;annotationKey='';active=true;setAnnotationContext(contextKey('opening'));pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');redraw();syncUi()}
 function destroyPpt(){if(pptViewer){try{pptViewer.destroy()}catch{}pptViewer=null}if(pptViewport)pptViewport.innerHTML=''}
-function exitMode(){window.dispatchEvent(new Event('cc-document-closed'));if(pdfLoadingTask){const task=pdfLoadingTask;pdfLoadingTask=null;void task.destroy().catch(()=>{})}resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
+function exitMode(){window.dispatchEvent(new Event('cc-document-closed'));cancelPdfRefinement();if(pdfLoadingTask){const task=pdfLoadingTask;pdfLoadingTask=null;void task.destroy().catch(()=>{})}resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
 function closeDocument(){if(!active)return;finishAnnotationEdit();savePage();exitMode()}
 const permanentExit=document.getElementById('ccPermanentExitBtn');if(permanentExit)permanentExit.addEventListener('click',closeDocument);
 function updateControls(){if(!toolbar)return;pageInput.value=String(currentPage);pageInput.max=String(Math.max(1,totalPages));pageTotal.textContent=`/ ${Math.max(1,totalPages)}`;zoomLabel.textContent=`${Math.round(zoom*100)}%`;prevBtn.disabled=currentPage<=1;nextBtn.disabled=currentPage>=totalPages;searchBtn.disabled=!['pdf','word','pptx','sheet','text','html'].includes(docKind)}
@@ -287,8 +288,12 @@ async function openFile(file,options={}){
   resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();importDocumentAnnotations(options.annotations);currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
   if(ext==='pdf'||file.type==='application/pdf'){
     // Read the local PDF and load its offline renderer concurrently.
-    const [data,worker]=await Promise.all([file.arrayBuffer(),preparePdfWorker()]);
-    return await openPdf(data,worker);
+    const timing={start:performance.now(),readMs:0,workerReadyMs:0};
+    const [data,worker]=await Promise.all([
+     file.arrayBuffer().then(buf=>{timing.readMs=Math.round(performance.now()-timing.start);return buf}),
+     preparePdfWorker().then(w=>{timing.workerReadyMs=Math.round(performance.now()-timing.start);return w})
+    ]);
+    return await openPdf(data,worker,timing);
    }
   if(ext==='docx')return await openWord(await file.arrayBuffer());
   if(['pptx','pptm','ppsx','potx'].includes(ext))return await openPptx(await file.arrayBuffer());
@@ -301,8 +306,90 @@ async function openFile(file,options={}){
  }catch(err){console.error(err);toast('Could not open this file.');exitMode()}
 }
 
-async function openPdf(data,worker){docKind='pdf';pdfCanvas.style.display='block';if(!window.pdfjsLib)throw new Error('PDF engine unavailable');pdfLoadingTask=window.pdfjsLib.getDocument({data:new Uint8Array(data),worker});pdfDoc=await pdfLoadingTask.promise;totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();await renderPdfPage();loadPageAnnotations();toast(`${docName} opened`)}
-async function renderPdfPage(){if(!pdfDoc||!active)return;const token=++renderToken,page=await pdfDoc.getPage(currentPage);if(token!==renderToken)return;const base=page.getViewport({scale:1}),r=wrap.getBoundingClientRect(),fit=Math.min((r.width-8)/base.width,(r.height-8)/base.height),vp=page.getViewport({scale:Math.max(.1,fit*zoom)}),dpr=Math.min(devicePixelRatio||1,2),tmp=document.createElement('canvas');tmp.width=Math.max(1,Math.round(vp.width*dpr));tmp.height=Math.max(1,Math.round(vp.height*dpr));await page.render({canvasContext:tmp.getContext('2d'),viewport:vp,transform:[dpr,0,0,dpr,0,0]}).promise;if(token!==renderToken)return;pdfCanvas.width=tmp.width;pdfCanvas.height=tmp.height;pdfCanvas.style.width=`${vp.width}px`;pdfCanvas.style.height=`${vp.height}px`;pdfCanvas.getContext('2d').drawImage(tmp,0,0);updateControls()}
+// Fast first paint: display the initial PDF page at ordinary CSS-pixel
+// resolution, then refine it at device-pixel resolution while the board is
+// idle. The CSS page rectangle remains identical, so annotation coordinates
+// and page-edge geometry do not change when detail is added.
+function cancelPdfRefinement(){
+ if(pdfRefineTimer){if(typeof cancelIdleCallback==='function')cancelIdleCallback(pdfRefineTimer);else clearTimeout(pdfRefineTimer);pdfRefineTimer=0}
+ if(pdfRefineTask){try{pdfRefineTask.cancel()}catch{}pdfRefineTask=null}
+}
+window.CCPdfOpenDiagnostics=null;
+async function openPdf(data,worker,timing=null){
+ docKind='pdf';pdfCanvas.style.display='block';
+ if(!window.pdfjsLib)throw new Error('PDF engine unavailable');
+ const t=timing||{start:performance.now(),readMs:0,workerReadyMs:0};
+ const startedParsing=performance.now();
+ pdfLoadingTask=window.pdfjsLib.getDocument({data:new Uint8Array(data),worker});
+ pdfDoc=await pdfLoadingTask.promise;
+ const parseMs=Math.round(performance.now()-startedParsing);
+ totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();
+ const initial=await renderPdfPage(true);
+ if(!active||docKind!=='pdf')return;
+ loadPageAnnotations();
+ const elapsed=Math.round(performance.now()-t.start);
+ const diagnostics={readMs:t.readMs,workerReadyMs:t.workerReadyMs,
+  parseMs,getPageMs:initial?.getPageMs||0,renderMs:initial?.renderMs||0,
+  firstVisibleMs:elapsed,preview:!!initial?.preview,quality:initial?.preview?'preview':'full'};
+ window.CCPdfOpenDiagnostics=diagnostics;
+ toast(`${docName} opened`);
+ if(initial?.preview)schedulePdfRefinement(initial,diagnostics);
+}
+function schedulePdfRefinement(view,diagnostics){
+ const {page,vp,token,pdfSource,docSession}=view;
+ if(!page||!vp||!active)return;
+ const refine=async()=>{
+  pdfRefineTimer=0;
+  if(!active||pdfDoc!==pdfSource||documentSession!==docSession||token!==renderToken)return;
+  const ratio=Math.min(devicePixelRatio||1,2);
+  const next=document.createElement('canvas');
+  next.width=Math.max(1,Math.round(vp.width*ratio));
+  next.height=Math.max(1,Math.round(vp.height*ratio));
+  const started=performance.now();
+  try{
+   const task=page.render({canvasContext:next.getContext('2d'),viewport:vp,transform:[ratio,0,0,ratio,0,0]});
+   pdfRefineTask=task;
+   await task.promise;
+   if(!active||pdfDoc!==pdfSource||documentSession!==docSession||token!==renderToken)return;
+   pdfCanvas.width=next.width;pdfCanvas.height=next.height;
+   // pdfCanvas.style.width and height were set at initial paint and are
+   // deliberately left unchanged. Existing pen annotations stay aligned.
+   pdfCanvas.getContext('2d').drawImage(next,0,0);
+   diagnostics.quality='full';
+   diagnostics.refineMs=Math.round(performance.now()-started);
+  }catch(error){
+   if(error?.name!=='RenderingCancelledException')console.warn('PDF detail refinement unavailable',error);
+  }finally{if(pdfRefineTask?.promise)pdfRefineTask=null}
+ };
+ if(typeof requestIdleCallback==='function')pdfRefineTimer=requestIdleCallback(refine,{timeout:2200});
+ else pdfRefineTimer=setTimeout(refine,450);
+}
+async function renderPdfPage(firstPaint=false){
+ if(!pdfDoc||!active)return;
+ const token=++renderToken,pdfSource=pdfDoc,docSession=documentSession,started=performance.now();
+ const page=await pdfDoc.getPage(currentPage);
+ if(token!==renderToken||pdfDoc!==pdfSource)return;
+ const getPageMs=Math.round(performance.now()-started);
+ const base=page.getViewport({scale:1}),r=wrap.getBoundingClientRect();
+ const fit=Math.min((r.width-8)/base.width,(r.height-8)/base.height);
+ const vp=page.getViewport({scale:Math.max(.1,fit*zoom)});
+ const actualDpr=Math.min(devicePixelRatio||1,2),dpr=firstPaint?1:actualDpr;
+ const preview=firstPaint&&actualDpr>1.05;
+ const tmp=firstPaint?pdfCanvas:document.createElement('canvas');
+ tmp.width=Math.max(1,Math.round(vp.width*dpr));tmp.height=Math.max(1,Math.round(vp.height*dpr));
+ if(firstPaint){pdfCanvas.style.width=`${vp.width}px`;pdfCanvas.style.height=`${vp.height}px`;}
+ const drawingStarted=performance.now();
+ await page.render({canvasContext:tmp.getContext('2d'),viewport:vp,transform:[dpr,0,0,dpr,0,0]}).promise;
+ if(token!==renderToken||pdfDoc!==pdfSource)return;
+ if(!firstPaint){
+  pdfCanvas.width=tmp.width;pdfCanvas.height=tmp.height;
+  pdfCanvas.style.width=`${vp.width}px`;pdfCanvas.style.height=`${vp.height}px`;
+  pdfCanvas.getContext('2d').drawImage(tmp,0,0);
+ }
+ updateControls();
+ return {getPageMs,renderMs:Math.round(performance.now()-drawingStarted),
+  preview,page,vp,token,pdfSource,docSession};
+}
 
 async function openWord(data){docKind='word';wordViewport.style.display='block';await loadScript(MAMMOTH_URL,'mammoth');if(!window.mammoth)throw new Error('Word engine unavailable');const result=await window.mammoth.convertToHtml({arrayBuffer:data});wordPaper.innerHTML=result.value||'<p>(Empty document)</p>';requestAnimationFrame(()=>{layoutWord(false);loadPageAnnotations();toast(`${docName} opened`)})}
 function layoutWord(keep){if(docKind!=='word'||!active)return;const r=wordViewport.getBoundingClientRect(),old=currentPage;wordPaper.style.transform='translateX(-50%)';wordPaper.style.width='794px';const h=Math.max(wordPaper.scrollHeight,1123),visible=Math.max(120,r.height-12);totalPages=Math.max(1,Math.ceil((h*zoom)/visible));currentPage=Math.max(1,Math.min(totalPages,old));const offset=((currentPage-1)*visible)/zoom;wordPaper.style.transform=`translateX(-50%) scale(${zoom}) translateY(${-offset}px)`;updateControls();}
