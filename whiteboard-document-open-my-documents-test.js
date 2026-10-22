@@ -78,6 +78,7 @@ function savePage(){
 async function exportDocumentAnnotations(scope='all'){
  if(!active)throw new Error('Open a document first.');
  await viewQueue.catch(()=>{});
+ if(!annotationBasis||viewChanging||annotationKey!==pageKey())throw Error('Document page is still loading.');
  finishAnnotationEdit();savePage();
  const pages={};
  const keys=scope==='page'?[pageKey()]:[...pageStore.keys()];
@@ -90,6 +91,7 @@ async function exportDocumentAnnotations(scope='all'){
 async function clearDocumentAnnotations(scope='page'){
  if(!active)throw new Error('Open a document first.');
  await viewQueue.catch(()=>{});
+ if(!annotationBasis||viewChanging||annotationKey!==pageKey())throw Error('Document page is still loading.');
  finishAnnotationEdit();savePage();
  if(scope==='all')pageStore.clear();
  else pageStore.delete(pageKey());
@@ -109,6 +111,7 @@ function importDocumentAnnotations(snapshot){
 }
 window.CCDocumentAnnotations={
  isOpen:()=>active,
+ ready:()=>active&&!viewChanging&&!!annotationBasis&&annotationKey===pageKey(),
  currentPage:()=>currentPage,
  pageCount:()=>totalPages,
  name:()=>docName,
