@@ -6,11 +6,6 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self' blob:">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
-<link rel="preload" href="vendor/moe/pdf.min.js" as="script">
-<link rel="preload" href="vendor/moe/pdf.worker.min.js" as="script">
-<link rel="preload" href="vendor/moe/mammoth.browser.min.js" as="script">
-<link rel="preload" href="vendor/moe/xlsx.full.min.js" as="script">
-<link rel="modulepreload" href="vendor/moe/pptx-renderer.browser.es.js">
 <title>Whiteboard V2 • Classroom Companion</title>
 <style>
 :root{--teal:#0f766e;--teal2:#e7f7f4;--navy:#17324d;--muted:#667085;--line:#d8e1e8;--red:#b42318}
@@ -139,7 +134,7 @@ body.document-open-mode:has(#documentTouchNavBtn[aria-pressed="true"]) #boardWra
 <script src="whiteboard-core.js?v=20261011-0534-core1"></script>
 <script src="experimental/math-structure/whiteboard-text-drag-resizable-v2.js?v=20261022-alpha-autofit-text-1"></script>
 <script src="whiteboard-handwriting-digit-model-beta.js?v=20261018-handwriting1"></script>
-<script src="whiteboard-handwriting-character-models-beta.js?v=20261018-letters-cnn1"></script>
+<!-- Letter CNN weights are loaded on-demand by Beautify ensureReader(), not on initial whiteboard startup. -->
 <script src="whiteboard-handwriting-character-inference-beta.js?v=20261020-words2"></script>
 <script src="whiteboard-handwriting-character-reader-beta.js?v=20261020-words2"></script>
 <script src="whiteboard-handwriting-learning-beta.js?v=20261020-words2"></script>
