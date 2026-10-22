@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const top=document.querySelector('header.top'),original=document.getElementById('highlighterBtn');
  if(!top||!original||document.getElementById('ccHighlighterHeader'))return;
  const b=document.createElement('button');b.type='button';b.id='ccHighlighterHeader';b.textContent='🖍️ Highlighter';b.title='Highlight on documents and whiteboard';
- top.insertBefore(b,top.querySelector('.tools'));
+ original.insertAdjacentElement('afterend',b);
  b.addEventListener('click',()=>{original.click();b.setAttribute('aria-pressed','true')});
  document.querySelectorAll('#penBtn,#eraserBtn,#textBtn').forEach(x=>x.addEventListener('click',()=>b.setAttribute('aria-pressed','false')));
 });
@@ -137,6 +137,24 @@ document.addEventListener('DOMContentLoaded',()=>{
 body.document-open-mode #ccHighlighterPalette{padding:2px 4px!important;gap:3px!important}
 body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important}
 </style>
+<style id="ccInkPaletteLayout">
+/* Keep each writing tool immediately adjacent to its own colours. */
+.ccInkCluster{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;min-width:0;padding:4px 6px;border:1px solid #d5e0e7;border-radius:13px;background:#f8fafc;white-space:nowrap}
+.ccHighlighterCluster{background:#fffcef;border-color:#ead7a0}
+.ccInkCluster .btn{flex-shrink:0}
+.ccInkCluster .colors{order:initial!important;display:inline-flex!important;align-items:center;flex-wrap:nowrap;gap:4px;padding:2px 3px;margin:0;background:transparent;border:0;border-radius:0}
+.ccInkCluster .colour{width:25px;height:25px;min-width:25px;min-height:25px;flex-shrink:0}
+.ccHighlighterCluster #highlighterBtn{display:none!important}
+.ccHighlighterCluster #ccHighlighterHeader{display:inline-flex!important;position:static!important;margin:0!important;min-height:35px!important;border-radius:9px!important;padding:5px 9px!important;flex:0 0 auto}
+.ccHighlighterCluster #ccHighlighterPalette{display:inline-flex!important;flex-wrap:nowrap!important;gap:5px!important;padding:2px 3px!important;margin:0!important;background:transparent!important;border:0!important;border-radius:0!important;white-space:nowrap}
+.ccHighlighterCluster #ccHighlighterPalette > span{display:none!important}
+.ccHighlighterCluster #ccHighlighterPalette button[data-highlight-colour]{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;flex-shrink:0}
+.ccHighlighterCluster #ccCustomHighlighterColour{width:29px!important;min-width:29px!important;height:27px!important}
+body.document-open-mode .ccInkCluster{gap:3px!important;padding:2px 4px!important}
+body.document-open-mode .ccInkCluster #ccHighlighterHeader{height:24px!important;min-height:24px!important;padding:2px 5px!important;font-size:10px!important}
+body.document-open-mode .ccInkCluster .colour{width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important}
+@media(max-width:900px){.ccInkCluster{max-width:100%;gap:4px}.ccInkCluster .colour{width:23px;height:23px;min-width:23px;min-height:23px}.ccHighlighterCluster #ccHighlighterPalette button[data-highlight-colour]{width:21px!important;height:21px!important;min-width:21px!important;min-height:21px!important}}
+</style>
 </head>
 <body>
 <div id="ccStartupLoading" role="status" aria-live="polite" aria-label="Loading...Please wait."><span class="cc-loading-message"><span class="cc-loading-spinner" aria-hidden="true"></span><span>Loading...Please wait.</span></span></div>
@@ -145,7 +163,17 @@ body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{widt
 <div class="brand"><div class="icon">🔒</div><div class="meta"><strong id="boardTitle">MOE Safe Beta</strong><span id="boardSubtitle">Local PDF/Word/PowerPoint/Excel/media · no document upload · outbound app connections blocked.</span></div></div>
 <button class="btn" id="mainSettingsBtn" type="button" aria-haspopup="dialog" style="margin-left:8px;order:99;white-space:nowrap">⚙ Settings</button>
 <div class="tools" role="toolbar" aria-label="Whiteboard tools">
+<div class="ccInkCluster ccPenCluster" role="group" aria-label="Pen and pen colours">
 <button class="btn active" id="penBtn" type="button">✏️ Pen</button>
+<div class="colors" aria-label="Pen colour">
+<button class="colour active" type="button" data-colour="#17324d" style="background:#17324d" aria-label="Navy"></button>
+<button class="colour" type="button" data-colour="#2563eb" style="background:#2563eb" aria-label="Blue"></button>
+<button class="colour" type="button" data-colour="#dc2626" style="background:#dc2626" aria-label="Red"></button>
+<button class="colour" type="button" data-colour="#15803d" style="background:#15803d" aria-label="Green"></button>
+<button class="colour" type="button" data-colour="#7c3aed" style="background:#7c3aed" aria-label="Purple"></button>
+</div>
+</div>
+<div class="ccInkCluster ccHighlighterCluster" role="group" aria-label="Highlighter and highlighter colours">
 <button class="btn" id="highlighterBtn" type="button" title="Highlight on the whiteboard or document">🖍️ Highlighter</button>
 <div id="ccHighlighterPalette" role="group" aria-label="Highlighter colours" title="Choose your highlighter colour">
  <span style="font-size:11px;font-weight:850;white-space:nowrap">Highlight:</span>
@@ -157,16 +185,11 @@ body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{widt
  <button type="button" data-highlight-colour="#ffa34b" aria-label="Orange highlighter" title="Orange" style="background:#ffa34b"></button>
  <input type="color" id="ccCustomHighlighterColour" value="#ffe34f" aria-label="Custom highlighter colour" title="Choose any highlighter colour">
 </div>
+</div>
 <button class="btn" id="textBtn" type="button">T Text</button>
 <button class="btn" id="speechToTextBtn" type="button">🎙 Speech to Text</button>
 <button class="btn" id="eraserBtn" type="button">⌫ Eraser</button>
-<div class="colors" aria-label="Pen colour">
-<button class="colour active" type="button" data-colour="#17324d" style="background:#17324d" aria-label="Navy"></button>
-<button class="colour" type="button" data-colour="#2563eb" style="background:#2563eb" aria-label="Blue"></button>
-<button class="colour" type="button" data-colour="#dc2626" style="background:#dc2626" aria-label="Red"></button>
-<button class="colour" type="button" data-colour="#15803d" style="background:#15803d" aria-label="Green"></button>
-<button class="colour" type="button" data-colour="#7c3aed" style="background:#7c3aed" aria-label="Purple"></button>
-</div>
+
 <label class="sizeControl"><span id="sizeLabel">Thickness</span><input id="size" type="range" min="2" max="24" step="1" value="5" aria-label="Pen thickness"><b class="sizeValue" id="sizeValue">5</b></label>
 <button class="btn" id="undoBtn" type="button" disabled>↶ Undo</button>
 <button class="btn soft" id="gridBtn" type="button" aria-pressed="true">▦ Grid</button>
