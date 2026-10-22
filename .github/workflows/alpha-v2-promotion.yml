@@ -11,6 +11,9 @@ on:
       - scripts/test-alpha-pdf-firstpaint.cjs
       - scripts/test-alpha-v2-promotion.cjs
       - scripts/test-alpha-beautify-select.cjs
+      - scripts/test-alpha-comparison-atomic.cjs
+      - smart-math-bars-v2.js
+      - smart-math-comparison-predrawn-robust3.js
       - experimental/math-structure/beautify-v2.js
       - scripts/test-alpha-annotation-actions.cjs
       - scripts/test-alpha-page-drag.cjs
@@ -57,6 +60,10 @@ jobs:
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-beautify-select.cjs
+      - name: Verify atomic comparison replacement for before/after, rough ink, and PDF
+        env:
+          NODE_PATH: /tmp/alpha-browser/node_modules
+        run: node scripts/test-alpha-comparison-atomic.cjs
       - name: Verify Alpha desktop and mobile
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
