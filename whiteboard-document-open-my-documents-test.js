@@ -23,6 +23,24 @@ let wordMatches=[],wordMatchIndex=-1,wordQuery='';
 const clone=v=>{try{return structuredClone(v)}catch{return JSON.parse(JSON.stringify(v))}};
 let documentLoading=null,loadingTimer=0,loadingRevision=0,openingDocument=false;
 let pickerPending=false,pickerSerial=0;
+let floatingOpenTicket=0;
+function floatingOpening(show,file){
+ let popup=document.getElementById('ccFloatingFileProgress');
+ if(!popup){
+  popup=document.createElement('div');popup.id='ccFloatingFileProgress';
+  popup.setAttribute('role','status');popup.setAttribute('aria-live','polite');
+  popup.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2147483646;display:none;min-width:260px;max-width:92vw;padding:22px 28px;border:2px solid #0f766e;border-radius:17px;background:#fff;color:#17324d;box-shadow:0 0 0 200vmax rgba(23,50,77,.26),0 16px 60px rgba(0,0,0,.25);text-align:center;font:700 15px system-ui,sans-serif;pointer-events:auto';
+  const spinner=document.createElement('span');spinner.style.cssText='display:inline-block;width:22px;height:22px;border:3px solid #b3dad3;border-top-color:#0f766e;border-radius:50%;animation:ccFloatingSpin .8s linear infinite;vertical-align:middle;margin-right:11px';
+  const label=document.createElement('span');label.id='ccFloatingFileLabel';label.textContent='Loading... Please wait.';
+  const detail=document.createElement('div');detail.id='ccFloatingFileDetail';detail.style.cssText='font-size:12px;font-weight:500;color:#667085;margin-top:9px;overflow-wrap:anywhere';
+  popup.append(spinner,label,detail);
+  document.body.appendChild(popup);
+  const style=document.createElement('style');style.textContent='@keyframes ccFloatingSpin{to{transform:rotate(360deg)}}';document.head.appendChild(style);
+ }
+ if(show){const d=popup.querySelector('#ccFloatingFileDetail');if(d)d.textContent=file?.name?'Opening '+file.name+'…':'Preparing document…';popup.style.display='block';}
+ else popup.style.display='none';
+}
+
 function ensureDocumentLoading(){
  if(documentLoading)return documentLoading;
  const overlay=document.createElement('div');overlay.id='ccDocumentLoading';overlay.hidden=true;
@@ -370,6 +388,8 @@ function isHtml(file,ext){return ['html','htm'].includes(ext)||file.type==='text
 function isText(file,ext){return (file.type||'').startsWith('text/')||['txt','md','markdown','json','xml','log','ini','yaml','yml','css','js','ts','py','java'].includes(ext)}
 function isMedia(file,ext){return (file.type||'').startsWith('video/')||(file.type||'').startsWith('audio/')||['mp4','webm','mov','m4v','mp3','wav','ogg','m4a'].includes(ext)}
 async function openFile(file,options={}){
+ const floatTicket=++floatingOpenTicket;
+ floatingOpening(true,file);
  openingDocument=true;
  setDocumentLoadingCopy(file,!!options.recordId);
  showDocumentLoading();
@@ -397,7 +417,7 @@ async function openFile(file,options={}){
   if(isMedia(file,ext))return await openMedia(file);
   return await openNative(file);
  }catch(err){console.error(err);toast('Could not open this file.');openingDocument=false;exitMode()}
- finally{openingDocument=false;hideDocumentLoading()}
+ finally{openingDocument=false;hideDocumentLoading();if(floatTicket===floatingOpenTicket)floatingOpening(false)}
 }
 
 // Fast first paint: display the initial PDF page at ordinary CSS-pixel
