@@ -27,18 +27,23 @@ let floatingOpenTicket=0;
 function floatingOpening(show,file){
  let popup=document.getElementById('ccFloatingFileProgress');
  if(!popup){
-  popup=document.createElement('div');popup.id='ccFloatingFileProgress';
-  popup.setAttribute('role','status');popup.setAttribute('aria-live','polite');
-  popup.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2147483646;display:none;min-width:260px;max-width:92vw;padding:22px 28px;border:2px solid #0f766e;border-radius:17px;background:#fff;color:#17324d;box-shadow:0 0 0 200vmax rgba(23,50,77,.26),0 16px 60px rgba(0,0,0,.25);text-align:center;font:700 15px system-ui,sans-serif;pointer-events:auto';
-  const spinner=document.createElement('span');spinner.style.cssText='display:inline-block;width:22px;height:22px;border:3px solid #b3dad3;border-top-color:#0f766e;border-radius:50%;animation:ccFloatingSpin .8s linear infinite;vertical-align:middle;margin-right:11px';
-  const label=document.createElement('span');label.id='ccFloatingFileLabel';label.textContent='Loading... Please wait.';
-  const detail=document.createElement('div');detail.id='ccFloatingFileDetail';detail.style.cssText='font-size:12px;font-weight:500;color:#667085;margin-top:9px;overflow-wrap:anywhere';
-  popup.append(spinner,label,detail);
+  popup=document.createElement('dialog');
+  popup.id='ccFloatingFileProgress';
+  popup.setAttribute('aria-label','Opening document');
+  popup.setAttribute('aria-live','polite');
+  popup.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;max-width:min(92vw,480px);width:max-content;min-width:280px;box-sizing:border-box;padding:24px 28px;border:2px solid #0f766e;border-radius:18px;background:white;color:#17324d;box-shadow:0 18px 70px rgba(0,0,0,.35);text-align:center;font:700 16px system-ui,sans-serif';
+  popup.innerHTML='<div style="font-size:24px;margin-bottom:7px">⏳</div><strong>Loading... Please wait.</strong><div id="ccFloatingFileDetail" style="font-size:12px;font-weight:500;color:#667085;margin-top:9px;overflow-wrap:anywhere">Opening document…</div>';
+  popup.addEventListener('cancel',e=>{if(openingDocument)e.preventDefault()});
   document.body.appendChild(popup);
-  const style=document.createElement('style');style.textContent='@keyframes ccFloatingSpin{to{transform:rotate(360deg)}}';document.head.appendChild(style);
+  const style=document.createElement('style');
+  style.textContent='#ccFloatingFileProgress::backdrop{background:rgba(23,50,77,.36)}';
+  document.head.appendChild(style);
  }
- if(show){const d=popup.querySelector('#ccFloatingFileDetail');if(d)d.textContent=file?.name?'Opening '+file.name+'…':'Preparing document…';popup.style.display='block';}
- else popup.style.display='none';
+ if(show){
+  const d=popup.querySelector('#ccFloatingFileDetail');
+  if(d)d.textContent=file?.name?'Opening '+file.name+'…':'Preparing document…';
+  if(!popup.open){try{popup.showModal()}catch(err){popup.setAttribute('open','')}}
+ }else if(popup.open){try{popup.close()}catch(err){popup.removeAttribute('open')}}
 }
 
 function ensureDocumentLoading(){
@@ -356,7 +361,7 @@ function ensureFileInput(){
   if(f)openingDocument=true; // Set synchronously, before a focus/cancel callback can hide the message.
   fileInput.value='';
   pickerPending=false;++pickerSerial;
-  if(f){setDocumentLoadingCopy(f);showDocumentLoading();await paintDocumentLoading();await openFile(f);}
+  if(f){floatingOpening(true,f);setDocumentLoadingCopy(f);showDocumentLoading();await paintDocumentLoading();await openFile(f);}
   else hideDocumentLoading();
  });
  // File-input cancel is supported by current Chrome and other modern browsers.
