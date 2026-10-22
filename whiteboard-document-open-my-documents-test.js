@@ -72,6 +72,50 @@ function savePage(){
  if(!active||!annotationKey||!annotationBasis)return;
  pageStore.set(annotationKey,{relative:true,items:convertAnnotations(strokes,annotationBasis,pageSpace),basis:{...annotationBasis}});
 }
+// The persisted format stores each page relative to its actual document page,
+ // rather than relative to the current canvas or its zoom level.
+ // That keeps page annotations independent through page changes and reloads.
+async function exportDocumentAnnotations(scope='all'){
+ if(!active)throw new Error('Open a document first.');
+ await viewQueue.catch(()=>{});
+ finishAnnotationEdit();savePage();
+ const pages={};
+ const keys=scope==='page'?[pageKey()]:[...pageStore.keys()];
+ for(const key of keys){
+  const entry=pageStore.get(key);
+  pages[key]=entry?.items?clone(entry.items):[];
+ }
+ return {version:1,kind:docKind,pages,page:currentPage};
+}
+async function clearDocumentAnnotations(scope='page'){
+ if(!active)throw new Error('Open a document first.');
+ await viewQueue.catch(()=>{});
+ finishAnnotationEdit();savePage();
+ if(scope==='all')pageStore.clear();
+ else pageStore.delete(pageKey());
+ strokes=[];current=null;drawing=false;
+ window.WhiteboardAnnotationHistory?.set([]);
+ redraw();syncUi();
+ return true;
+}
+function importDocumentAnnotations(snapshot){
+ const pages=snapshot?.pages;
+ if(!pages||typeof pages!=='object'||Array.isArray(pages))return;
+ for(const [key,items] of Object.entries(pages)){
+  if(!/^(?:pdf|word|pptx|sheet|image|html|text|media|native):(?:\d+|document)$/.test(key))continue;
+  if(!Array.isArray(items)||items.length>10000)continue;
+  pageStore.set(key,{relative:true,items:clone(items)});
+ }
+}
+window.CCDocumentAnnotations={
+ isOpen:()=>active,
+ currentPage:()=>currentPage,
+ pageCount:()=>totalPages,
+ name:()=>docName,
+ setName:name=>{docName=String(name||docName);document.title=docName+' · Classroom Companion'},
+ export:exportDocumentAnnotations,
+ clear:clearDocumentAnnotations
+};
 function loadPageAnnotations(){
  viewChanging=false;const key=pageKey(),r=annotationRect();if(!r)return;
  const saved=pageStore.get(key);setAnnotationContext(contextKey(key));
@@ -176,7 +220,7 @@ function ensureFileInput(){if(fileInput)return;fileInput=document.createElement(
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=interactionMode?'none':'auto';if(active)toast(interactionMode?'Interact mode — tap the document':'Annotation mode')}
 function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);resetPan();documentSession++;viewSerial++;viewChanging=true;annotationBasis=null;annotationKey='';active=true;setAnnotationContext(contextKey('opening'));pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');redraw();syncUi()}
 function destroyPpt(){if(pptViewer){try{pptViewer.destroy()}catch{}pptViewer=null}if(pptViewport)pptViewport.innerHTML=''}
-function exitMode(){resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
+function exitMode(){window.dispatchEvent(new Event('cc-document-closed'));resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
 function closeDocument(){if(!active)return;finishAnnotationEdit();savePage();exitMode()}
 const permanentExit=document.getElementById('ccPermanentExitBtn');if(permanentExit)permanentExit.addEventListener('click',closeDocument);
 function updateControls(){if(!toolbar)return;pageInput.value=String(currentPage);pageInput.max=String(Math.max(1,totalPages));pageTotal.textContent=`/ ${Math.max(1,totalPages)}`;zoomLabel.textContent=`${Math.round(zoom*100)}%`;prevBtn.disabled=currentPage<=1;nextBtn.disabled=currentPage>=totalPages;searchBtn.disabled=!['pdf','word','pptx','sheet','text','html'].includes(docKind)}
@@ -192,10 +236,11 @@ function isImage(file,ext){return (file.type||'').startsWith('image/')||['png','
 function isHtml(file,ext){return ['html','htm'].includes(ext)||file.type==='text/html'}
 function isText(file,ext){return (file.type||'').startsWith('text/')||['txt','md','markdown','json','xml','log','ini','yaml','yml','css','js','ts','py','java'].includes(ext)}
 function isMedia(file,ext){return (file.type||'').startsWith('video/')||(file.type||'').startsWith('audio/')||['mp4','webm','mov','m4v','mp3','wav','ogg','m4a'].includes(ext)}
-async function openFile(file){
+async function openFile(file,options={}){
  try{
-  window.dispatchEvent(new CustomEvent('cc-document-opened',{detail:{file}}));
-  resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
+  if(active){finishAnnotationEdit();savePage();exitMode()}
+  window.dispatchEvent(new CustomEvent('cc-document-opened',{detail:{file,recordId:options.recordId||null}}));
+  resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();importDocumentAnnotations(options.annotations);currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
   if(ext==='pdf'||file.type==='application/pdf')return await openPdf(await file.arrayBuffer());
   if(ext==='docx')return await openWord(await file.arrayBuffer());
   if(['pptx','pptm','ppsx','potx'].includes(ext))return await openPptx(await file.arrayBuffer());
@@ -289,7 +334,7 @@ body.document-open-mode .shell{padding:2px!important;gap:2px!important}body.docu
 @media(max-width:800px){#documentQuickBar{right:2px;top:2px}#documentQuickBar button{padding:0 4px;min-width:24px}#documentQuickBar span{min-width:30px}#documentSearchPanel{right:3px;top:33px}#documentSearchPanel{max-width:calc(100vw - 142px);flex-wrap:wrap}#documentSearchPanel input{width:100%}body.document-open-mode .tools{padding-right:300px!important}}
 `;document.head.appendChild(style);
 
-window.addEventListener('cc-my-documents-open',e=>{if(e.detail?.file instanceof Blob)openFile(e.detail.file)});
+window.addEventListener('cc-my-documents-open',e=>{if(e.detail?.file instanceof Blob)openFile(e.detail.file,e.detail)});
 ensureFileInput();ensureOpenButton();ensureLayer();ensureToolbar();updateControls();
 window.addEventListener('resize',()=>{if(!active)return;changeView(()=>{}).catch(console.error)});
 requestAnimationFrame(watchAnnotations);
