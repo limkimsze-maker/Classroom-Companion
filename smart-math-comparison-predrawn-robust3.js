@@ -85,22 +85,36 @@ document.addEventListener('pointerdown',e=>{
  // The old fallback handled only (1), which is why normal classroom use failed.
  const freshlyDrawn=strokes.slice(selectionStrokeCount).filter(rawInk),source=freshlyDrawn.length?freshlyDrawn:snapshot;
  const bars=chooseBars(source);if(bars.length<2)return;
- const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
- strokes.push(...temp);injected={temp,originals,beforeState,priorIds}
+ const beforeState=clone(strokes),priorModels=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison')),priorIds=new Set([...priorModels].map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
+ strokes.push(...temp);injected={temp,originals,beforeState,priorIds,priorModels}
 },true);
 
 document.addEventListener('click',e=>{
  const el=e.target instanceof Element?e.target:null;if(!el||!finishButton(el)||window.__smartBarType!=='comparison'||!injected)return;
  const job=injected;injected=null;
- setTimeout(()=>{
-  const made=[...strokes].reverse().find(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison'&&!job.priorIds.has(s.smartId)),tempSet=new Set(job.temp);
+ // Models may be committed after the click handler's own animation frame or
+ // asynchronous beautification. Do not abandon the cleanup at 160 ms.
+ // Prefer object identity: some model creators reuse a smartId.
+ let attempt=0;
+ function settle(){
+  const all=strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison');
+  const made=[...all].reverse().find(s=>!job.priorModels.has(s))
+    || [...all].reverse().find(s=>!job.priorIds.has(s.smartId));
   if(made){
-   const originalSet=new Set(job.originals);strokes=strokes.filter(s=>!tempSet.has(s)&&!originalSet.has(s));
-   // Preserve the teacher's actual rough bars for any later intent analysis.
+   const remove=new Set([...job.temp,...job.originals]);
+   strokes=strokes.filter(s=>!remove.has(s));
    made.smartOriginal=clone(job.originals);
-   if(window.__smartBarLastHistory)window.__smartBarLastHistory.before=job.beforeState
-  }else strokes=strokes.filter(s=>!tempSet.has(s));
+   if(window.__smartBarLastHistory)window.__smartBarLastHistory.before=job.beforeState;
+   try{redraw();if(typeof syncUi==='function')syncUi()}catch{}
+   return;
+  }
+  if(++attempt<12){setTimeout(settle,100);return}
+  // If generation really failed, discard only temporary synthetic strokes.
+  // The teacher's original drawing must never be lost.
+  const temporary=new Set(job.temp);
+  strokes=strokes.filter(s=>!temporary.has(s));
   try{redraw();if(typeof syncUi==='function')syncUi()}catch{}
- },160)
+ }
+ setTimeout(settle,100);
 },true);
 })();
