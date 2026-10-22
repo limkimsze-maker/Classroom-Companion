@@ -422,7 +422,7 @@ async function openFile(file,options={}){
   if(isMedia(file,ext))return await openMedia(file);
   return await openNative(file);
  }catch(err){console.error(err);toast('Could not open this file.');openingDocument=false;exitMode()}
- finally{openingDocument=false;hideDocumentLoading();if(floatTicket===floatingOpenTicket)floatingOpening(false)}
+ finally{openingDocument=false;hideDocumentLoading();if(floatTicket===floatingOpenTicket)floatingOpening(false);window.dispatchEvent(new Event('cc-alpha-file-open-settled'))}
 }
 
 // Fast first paint: display the initial PDF page at ordinary CSS-pixel
