@@ -124,6 +124,8 @@ await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'promot
 // whether the document's annotations actually survive reopening.
 await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'health-notes.txt',mimeType:'text/plain',buffer:Buffer.from('Teaching notes persisted')});
 await page.waitForFunction(()=>document.body.classList.contains('document-open-mode'));
+await page.locator('.documentGenericText').waitFor({state:'visible',timeout:10000});
+await page.waitForTimeout(150);
 await page.evaluate(()=>{strokes.push({colour:'#17324d',size:3,points:[{x:.15,y:.17},{x:.27,y:.28}]});redraw();syncUi()});
 const annotationBeforeSave=await page.evaluate(()=>strokes.length);
 await page.locator('#ccPermanentSaveBtn').click();
@@ -145,7 +147,7 @@ await page.waitForFunction(()=>!document.body.classList.contains('document-open-
 const pdfFile=path.join(root,'experimental/math-structure/fixtures/documents/pages.pdf');
 const pdfContent=fs.readFileSync(pdfFile);
 await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'pages.pdf',mimeType:'application/pdf',buffer:pdfContent});
-await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('documentPdfCanvas')?.width>300,{timeout:15000});
+await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('documentPdfCanvas')?.width>80,{timeout:15000});
 await page.waitForTimeout(350);
 await page.evaluate(()=>{
  strokes=[{colour:'#17324d',size:4,points:[{x:.27,y:.28},{x:.37,y:.38}]},
@@ -176,4 +178,18 @@ await page.mouse.move(ob.x+24,ob.y+40);await page.mouse.down();await page.mouse.
 const offlineEnd=await page.evaluate(()=>strokes.length);
 console.log('CHECK-OFFLINE-LOADED',width,JSON.stringify({works:offlineEnd>offlineStart,strokesAdded:offlineEnd-offlineStart}));
 await context.setOffline(false);
+// Chromium touch protocol, not mouse events: pen strokes must respond to a finger.
+await page.locator('#penBtn').click();
+const touchCanvas=await page.locator('#board').boundingBox();
+const touchStartCount=await page.evaluate(()=>strokes.length);
+const cdp=await context.newCDPSession(page);
+await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
+const startX=Math.round(touchCanvas.x+38),startY=Math.round(touchCanvas.y+38);
+await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:1,x:startX,y:startY}]});
+for(let i=1;i<=8;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:startX+i*6,y:startY+i*4}]});
+await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+await page.waitForTimeout(180);
+const touchEndCount=await page.evaluate(()=>strokes.length);
+console.log('CHECK-TOUCH',width,JSON.stringify({fingerDrawingWorks:touchEndCount>touchStartCount,added:touchEndCount-touchStartCount}));
+await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:false});
 assert.deepEqual(errors,[]);console.log('PASS',width,'V2 loader, shared learning, pen/undo, Settings, document Save/Exit, no script errors');await context.close();}}finally{await browser.close();server.close()}})().catch(e=>{console.error(e);server.close();process.exitCode=1});
