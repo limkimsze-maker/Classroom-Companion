@@ -48,5 +48,37 @@ await speech.click();await transcript.fill('Clear this transcript');await page.g
 await page.screenshot({path:'/tmp/alpha-v2-speech-'+width+'.png'});
 await page.getByRole('button',{name:'Close',exact:true}).click();assert.equal(await transcript.isVisible(),false);
 console.log('PASS',width,'Speech button, panel, maths conversion, simulated recognition, insertion, Undo, Clear panel and Close');
+// Additional Alpha performance and bar-model controls smoke test.
+await page.locator('#penBtn').click();
+const penCursor=await page.locator('#board').evaluate(e=>getComputedStyle(e).cursor);
+assert(penCursor.includes('data:image/svg+xml'),'Pen should show the cute pencil cursor');
+await page.locator('#eraserBtn').click();
+const eraserCursor=await page.locator('#board').evaluate(e=>getComputedStyle(e).cursor);
+assert(eraserCursor.includes('data:image/svg+xml'),'Eraser should show an eraser cursor');
+await page.locator('#selectBtn').click();
+await page.evaluate(()=>{
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="900" height="440" viewBox="0 0 900 440"><rect x="180" y="60" width="650" height="58" rx="2" fill="#ffffff" stroke="#17324d" stroke-width="8"/><rect x="180" y="205" width="455" height="58" rx="2" fill="#ffffff" stroke="#17324d" stroke-width="8"/></svg>';
+ const o={type:'image',smartType:'barModel',smartBarType:'comparison',smartId:'alpha-smoke-bar',x:.09,y:.10,w:.56,h:.53,barCount:2,barCompareWidths:[1,.7],src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)};
+ strokes.push(o);redraw();syncUi();
+});
+const grip=page.locator('#barModelScaleGrip');
+await grip.waitFor({state:'visible',timeout:6000});
+const beforeBar=await page.evaluate(()=>{const o=strokes.find(s=>s.smartId==='alpha-smoke-bar');return{w:o.w,h:o.h}});
+const bb=await grip.boundingBox();assert(bb?.width>=30&&bb?.height>=30,'Green bar resize grip must be visible');
+await page.mouse.move(bb.x+bb.width/2,bb.y+bb.height/2);await page.mouse.down();
+await page.mouse.move(bb.x+bb.width/2+46,bb.y+bb.height/2+24,{steps:12});await page.mouse.up();
+const afterBar=await page.evaluate(()=>{const o=strokes.find(s=>s.smartId==='alpha-smoke-bar');return{w:o.w,h:o.h}});
+assert(afterBar.w>beforeBar.w&&afterBar.h>beforeBar.h,'Bar drag grip must enlarge the whole model');
+assert(Math.abs(afterBar.w/beforeBar.w-afterBar.h/beforeBar.h)<.001,'Bar model resize must be proportional');
+const paint=await page.evaluate(async()=>{
+ const t=performance.now();
+ for(let i=0;i<25;i++)redraw();
+ const synchronous=Math.round((performance.now()-t)*10)/10;
+ await new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)));
+ return {synchronousMs:synchronous,totalMs:Math.round((performance.now()-t)*10)/10,objects:strokes.length};
+});
+console.log('PASS',width,'pencil/eraser cursor, visible comparison-bar grip and proportional resize');
+console.log('PERF',width,JSON.stringify({redraw25:paint,baselinePixelWidth:beforeBar.w,resizedPixelWidth:afterBar.w}));
+await page.evaluate(()=>{strokes=strokes.filter(s=>s.smartId!=='alpha-smoke-bar');redraw();syncUi()});
 await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'promotion-check.txt',mimeType:'text/plain',buffer:Buffer.from('V2 promotion check')});await page.waitForFunction(()=>document.body.classList.contains('document-open-mode'));await page.locator('#ccPermanentSaveBtn').waitFor({state:'visible'});await page.locator('#ccPermanentExitBtn').waitFor({state:'visible'});assert.equal(await page.locator('#ccPermanentSaveBtn').count(),1);await page.screenshot({path:'/tmp/alpha-v2-'+width+'.png'});await page.locator('#ccPermanentExitBtn').click();await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
 assert.deepEqual(errors,[]);console.log('PASS',width,'V2 loader, shared learning, pen/undo, Settings, document Save/Exit, no script errors');await context.close();}}finally{await browser.close();server.close()}})().catch(e=>{console.error(e);server.close();process.exitCode=1});
