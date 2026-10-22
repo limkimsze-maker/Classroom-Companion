@@ -14,6 +14,11 @@ body.toolbar-ready #ccStartupLoading{display:none}
 #ccDocumentLoading{position:absolute;inset:0;z-index:210;display:grid;place-items:center;background:rgba(245,249,250,.90);pointer-events:auto;color:#17324d;font:700 16px system-ui,sans-serif;text-align:center}
 #ccDocumentLoading[hidden]{display:none!important}
 .cc-loading-message{display:flex;align-items:center;gap:11px;padding:14px 20px;border:1px solid #d8e1e8;border-radius:12px;background:#fff;box-shadow:0 4px 18px #17324d18}
+#ccDocumentLoading .cc-loading-copy{display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:min(74vw,430px);min-width:0;text-align:left;line-height:1.35}
+#ccDocumentLoading .cc-loading-message{max-width:calc(100vw - 40px)}
+#ccLoadingDetail{font-size:13px;font-weight:650;color:#284e60}
+#ccLoadingTip{font-size:12px;font-weight:450;line-height:1.5;color:#587080}
+
 .cc-loading-spinner{width:19px;height:19px;border:3px solid #b3dad3;border-top-color:#0f766e;border-radius:50%;animation:ccLoadingSpin .75s linear infinite}
 @keyframes ccLoadingSpin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.cc-loading-spinner{animation:none;border-top-color:#0f766e}}
@@ -211,7 +216,7 @@ body.document-open-mode:has(#documentTouchNavBtn[aria-pressed="true"]) #boardWra
 <script defer src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
 <script defer src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
 <script defer src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
-<script defer src="whiteboard-document-open-my-documents-test.js?v=20261022-loading-message1"></script>
+<script defer src="whiteboard-document-open-my-documents-test.js?v=20261022-document-loading-tip1"></script>
 <script defer src="whiteboard-document-gestures-v2-trial.js?v=20261022-edge-first-pan2"></script>
 <script defer src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
 <script defer src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>

@@ -1,7 +1,11 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright'),root=path.resolve(__dirname,'..');
-const fixture=fs.readFileSync(path.join(root,'experimental/math-structure/fixtures/documents/pages.pdf'));
+const fixtures=[
+ {name:'Test Lesson.pdf',type:'application/pdf',format:'Opening PDF…',content:fs.readFileSync(path.join(root,'experimental/math-structure/fixtures/documents/pages.pdf'))},
+ {name:'Test Lesson.docx',type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',format:'Opening Word document…',content:fs.readFileSync(path.join(root,'experimental/math-structure/fixtures/documents/pages.docx'))},
+ {name:'Test Lesson.pptx',type:'application/vnd.openxmlformats-officedocument.presentationml.presentation',format:'Opening PowerPoint…',content:fs.readFileSync(path.join(root,'experimental/math-structure/fixtures/documents/pages.pptx'))}
+];
 const server=http.createServer((req,res)=>{
  const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
  const p=path.resolve(root,'.'+pathname);
@@ -17,7 +21,7 @@ const server=http.createServer((req,res)=>{
   await context.addInitScript(()=>{
    const native=Blob.prototype.arrayBuffer;
    Blob.prototype.arrayBuffer=function(...args){
-    if(this.type==='application/pdf')return new Promise(resolve=>setTimeout(resolve,750)).then(()=>native.apply(this,args));
+    if(this.type?.startsWith('application/'))return new Promise(resolve=>setTimeout(resolve,800)).then(()=>native.apply(this,args));
     return native.apply(this,args);
    };
   });
@@ -35,19 +39,45 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.locator('#ccStartupLoading').evaluate(el=>getComputedStyle(el).display),'none','Startup message must vanish when toolbar ready');
   console.log('PASS',width,'Startup message dismissed when whiteboard is ready');
   const input=page.locator('input[type=file][accept="*/*"]');
-  await input.setInputFiles({name:'Test Lesson.pdf',mimeType:'application/pdf',buffer:fixture});
-  await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('ccDocumentLoading')&&!document.getElementById('ccDocumentLoading').hidden,null,{timeout:6000});
-  assert.equal(await page.locator('#ccDocumentLoading').innerText(),'Loading...Please wait.');
-  console.log('PASS',width,'Document message visible while PDF reads and renders');
+  for(const fixture of fixtures){
+    await input.setInputFiles({name:fixture.name,mimeType:fixture.type,buffer:fixture.content});
+    await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('ccDocumentLoading')&&!document.getElementById('ccDocumentLoading').hidden,null,{timeout:6000});
+    const visible=await page.locator('#ccDocumentLoading').evaluate(el=>({
+      text:el.innerText,detail:el.querySelector('#ccLoadingDetail')?.textContent,tip:el.querySelector('#ccLoadingTip')?.textContent
+    }));
+    assert(visible.text.includes('Loading...Please wait.'),'Core loading wording retained for '+fixture.name);
+    assert.equal(visible.detail,fixture.format,'File type displayed for '+fixture.name);
+    assert(visible.tip.includes('Save to My Documents for quicker access next time'),'Saving benefit is access, not claimed guaranteed speed');
+    assert(visible.tip.includes('still requires processing'),'Rendering caveat is explicit');
+    console.log('PASS',width,fixture.name,'visible type-specific progress and technically accurate save tip');
+    await page.waitForFunction(()=>window.CCDocumentAnnotations?.ready()&&document.getElementById('ccDocumentLoading')?.hidden,null,{timeout:20000});
+    const summary=await page.evaluate(()=>({
+      mode:document.body.classList.contains('document-open-mode'),
+      pageCount:window.CCDocumentAnnotations.pageCount(),
+      visible:!document.getElementById('ccDocumentLoading').hidden
+    }));
+    assert(summary.mode&&summary.pageCount>=1&&!summary.visible,'Ready '+fixture.name+' must hide loading overlay');
+    console.log('PASS',width,fixture.name,'loading overlay hidden after page ready');
+
+    if(fixture.name.endsWith('.pdf')){
+      await page.locator('#ccPermanentSaveBtn').click();
+      await page.waitForFunction(()=>document.getElementById('ccPermanentSaveBtn').textContent.includes('Saved to My Documents'));
+    }
+    await page.locator('#ccPermanentExitBtn').click();
+    await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
+    assert.equal(await page.locator('#ccDocumentLoading').isHidden(),true,'Exit must hide document status');
+  }
+  await page.getByRole('button',{name:/My Documents/}).first().click();
+  await page.locator('#ccDocsDialog').waitFor({state:'visible'});
+  await page.locator('#ccDocsDialog').getByRole('button',{name:'Open',exact:true}).first().click();
+  await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&!document.getElementById('ccDocumentLoading')?.hidden,null,{timeout:7000});
+  const savedTip=await page.locator('#ccLoadingTip').innerText();
+  assert(savedTip.includes('saved copy from My Documents'),'Saved file status describes local copy');
+  assert(savedTip.includes('may still take time to process and display'),'No false promise of faster rendering');
   await page.waitForFunction(()=>window.CCDocumentAnnotations?.ready()&&document.getElementById('ccDocumentLoading')?.hidden,null,{timeout:16000});
-  assert.equal(await page.locator('#ccDocumentLoading').isHidden(),true,'Document loading message disappears after annotations ready');
-  const drawing=await page.evaluate(()=>({buttons:!!document.getElementById('penBtn'),pages:window.CCDocumentAnnotations.pageCount(),canv:document.getElementById('documentPdfCanvas')?.width}));
-  assert(drawing.pages>=2&&drawing.canv>40,'PDF still opened and rendered');
-  console.log('PASS',width,'Document message dismissed only after first PDF page and annotations are ready');
+  console.log('PASS',width,'Saved My Documents copy shows accurate local reuse message, then clears');
   await page.locator('#ccPermanentExitBtn').click();
   await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
-  assert.equal(await page.locator('#ccDocumentLoading').isHidden(),true,'Exit hides document loading');
-  console.log('PASS',width,'Exit leaves no loading overlay behind');
   assert.deepEqual(errors,[],'No uncaught browser errors');
   await context.close();
  }}finally{await browser.close();server.close()}

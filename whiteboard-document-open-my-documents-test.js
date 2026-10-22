@@ -29,9 +29,27 @@ function ensureDocumentLoading(){
  overlay.setAttribute('aria-label','Loading...Please wait.');
  const message=document.createElement('div');message.className='cc-loading-message';
  const spinner=document.createElement('span');spinner.className='cc-loading-spinner';spinner.setAttribute('aria-hidden','true');
- const words=document.createElement('span');words.textContent='Loading...Please wait.';
- message.append(spinner,words);overlay.append(message);wrap.appendChild(overlay);
+ const copy=document.createElement('div');copy.className='cc-loading-copy';
+ const headline=document.createElement('strong');headline.id='ccLoadingHeadline';headline.textContent='Loading...Please wait.';
+ const detail=document.createElement('span');detail.id='ccLoadingDetail';detail.textContent='Opening document…';
+ const tip=document.createElement('span');tip.id='ccLoadingTip';
+ tip.textContent='Tip: Save to My Documents for quicker access next time. The file still needs to be processed when reopened.';
+ copy.append(headline,detail,tip);message.append(spinner,copy);overlay.append(message);wrap.appendChild(overlay);
  documentLoading=overlay;return overlay;
+}
+function setDocumentLoadingCopy(file,fromSaved=false){
+ ensureDocumentLoading();
+ const ext=extOf(file),mime=file?.type||'';
+ const format=ext==='pdf'||mime==='application/pdf'?'PDF':ext==='docx'?'Word document':['pptx','pptm','ppsx','potx'].includes(ext)?'PowerPoint': 'document';
+ document.getElementById('ccLoadingDetail').textContent='Opening '+format+'…';
+ document.getElementById('ccLoadingTip').textContent=fromSaved
+  ?'Opening your saved copy from My Documents. It may still take time to process and display.'
+  :'Tip: Save to My Documents for quicker access next time. Reopening still requires processing and displaying the file.';
+}
+// Give the browser a chance to paint the message before starting expensive
+// Word/PowerPoint conversion. The message stays visible until content is ready.
+function paintDocumentLoading(){
+ return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 }
 function showDocumentLoading(delay=false){
  const overlay=ensureDocumentLoading(),ticket=++loadingRevision;
@@ -308,7 +326,8 @@ async function openFile(file,options={}){
  try{
   if(active){finishAnnotationEdit();savePage();exitMode()}
   window.dispatchEvent(new CustomEvent('cc-document-opened',{detail:{file,recordId:options.recordId||null}}));
-  resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();importDocumentAnnotations(options.annotations);currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
+  resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();setDocumentLoadingCopy(file,!!options.recordId);importDocumentAnnotations(options.annotations);currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
+   if(ext==='pdf'||file.type==='application/pdf'||ext==='docx'||['pptx','pptm','ppsx','potx'].includes(ext))await paintDocumentLoading();
   if(ext==='pdf'||file.type==='application/pdf'){
     // Read the local PDF and load its offline renderer concurrently.
     const timing={start:performance.now(),readMs:0,workerReadyMs:0};
