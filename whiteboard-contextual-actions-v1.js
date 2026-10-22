@@ -87,6 +87,9 @@ function go(box,dir){
  return true;
 }
 function onWheel(e){
+ // The V8 Hand gesture controller owns page-edge scrolling. Do not allow
+ // this older 42px wheel shortcut to jump pages before the top/bottom is seen.
+ if(document.documentElement.dataset.docGesturesV8==='1')return;
  if(e.target?.closest?.('#documentQuickBar'))return;
  if(!active()||e.ctrlKey||e.metaKey)return;
  const board=document.getElementById('boardWrap');

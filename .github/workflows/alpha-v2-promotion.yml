@@ -25,6 +25,8 @@ jobs:
         with:
           node-version: '22'
       - run: node --check whiteboard-alpha-v2-bootstrap.js
+      - run: node --check whiteboard-document-gestures-v2-trial.js
+      - run: node --check whiteboard-contextual-actions-v1.js
       - run: node experimental/math-structure/test-division-grouping-v2.cjs
       - name: Install browser
         run: |
