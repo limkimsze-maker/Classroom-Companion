@@ -74,7 +74,7 @@ async function chooseDocumentFile(){
  try{fileInput.click()}catch(err){pickerPending=false;hideDocumentLoading();console.error(err)}
 }
 function closeFileChooserWithoutSelection(){
- if(!pickerPending)return;
+ if(!pickerPending||openingDocument||fileInput?.files?.length)return;
  pickerPending=false;
  ++pickerSerial;
  hideDocumentLoading();
@@ -86,6 +86,7 @@ function showDocumentLoading(delay=false){
  else overlay.hidden=false;
 }
 function hideDocumentLoading(){
+ if(openingDocument)return;
  loadingRevision++;clearTimeout(loadingTimer);loadingTimer=0;
  if(documentLoading)documentLoading.hidden=true;
 }
@@ -333,7 +334,9 @@ function ensureFileInput(){
  if(fileInput)return;
  fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='*/*';fileInput.style.display='none';
  fileInput.addEventListener('change',async()=>{
-  const f=fileInput.files?.[0];fileInput.value='';
+  const f=fileInput.files?.[0];
+  if(f)openingDocument=true; // Set synchronously, before a focus/cancel callback can hide the message.
+  fileInput.value='';
   pickerPending=false;++pickerSerial;
   if(f){setDocumentLoadingCopy(f);showDocumentLoading();await paintDocumentLoading();await openFile(f);}
   else hideDocumentLoading();
@@ -393,7 +396,7 @@ async function openFile(file,options={}){
   if(isText(file,ext))return await openText(file);
   if(isMedia(file,ext))return await openMedia(file);
   return await openNative(file);
- }catch(err){console.error(err);toast('Could not open this file.');exitMode()}
+ }catch(err){console.error(err);toast('Could not open this file.');openingDocument=false;exitMode()}
  finally{openingDocument=false;hideDocumentLoading()}
 }
 
