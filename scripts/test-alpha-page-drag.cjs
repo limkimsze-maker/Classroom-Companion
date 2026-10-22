@@ -15,6 +15,16 @@ const server=http.createServer((req,res)=>{
    const ctx=await browser.newContext({viewport:{width,height:900}});
    const page=await ctx.newPage(),errors=[];
    page.on('pageerror',e=>errors.push(e.message));
+   await page.addInitScript(()=>{
+    window.__gestureProbe={};
+    for(const type of ['pointerdown','pointermove','pointerup','pointercancel','touchstart','touchmove','touchend']){
+     window.addEventListener(type,e=>{
+      const p=window.__gestureProbe;
+      p[type]=(p[type]||0)+1;
+      if(type==='pointerdown'){p.target=e.target?.id||e.target?.tagName;p.kind=e.pointerType}
+     },{capture:true,passive:true});
+    }
+   });
    await page.goto('http://127.0.0.1:'+server.address().port+'/whiteboard.html',{waitUntil:'load'});
    await page.waitForFunction(()=>document.body.classList.contains('toolbar-ready'));
    await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'pages.pdf',mimeType:'application/pdf',buffer:fs.readFileSync(pdf)});
@@ -105,6 +115,12 @@ const server=http.createServer((req,res)=>{
     const cdp=await ctx.newCDPSession(page);
     await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
     const sx=Math.round(x),sY=Math.round(downStart);
+    console.log('TOUCH-START',width,JSON.stringify(await page.evaluate(({sx,sy})=>{
+      window.__gestureProbe={};
+      const el=document.elementFromPoint(sx,sy),hand=document.getElementById('documentTouchNavBtn');
+      const canvas=document.getElementById('board');
+      return {target:el?.id||el?.tagName,cssPointer:canvas.style.pointerEvents,mode:hand?.getAttribute('aria-pressed'),touchAction:getComputedStyle(el).touchAction,coords:{sx,sy}};
+    },{sx,sy:sY})));
     const swipe=async delta=>{
      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:1,x:sx,y:sY}]});
      for(let i=1;i<=12;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:1,x:sx,y:sY+delta*i/12}]});
@@ -120,6 +136,7 @@ const server=http.createServer((req,res)=>{
       assert.equal(st.page,2,'Touch can reveal the top before turning');
     }
     console.log('TOUCH-EDGE-DETAIL',width,JSON.stringify(touchStates.map(z=>({page:z.page,pan:+z.pan.toFixed(1),limit:+z.limit.toFixed(1),top:z.top,fullPageFits:z.fullPageFits}))));
+    console.log('TOUCH-EVENTS',width,JSON.stringify(await page.evaluate(()=>window.__gestureProbe)));
     assert((await state()).top,'Touch can reach page top');
     await swipe(210);
     await readyPage(1);
