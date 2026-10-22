@@ -70,12 +70,7 @@ async function removeAnnotations(scope){
   await api().clear(scope);
   const record=await byId(currentId);
   if(record){
-   const pages=scope==='page'?{...(record.annotations?.pages||{}),[String(record.annotations?.kind||'')]:[]}:{}; // normalized below
-   if(scope==='page'){
-    const current=await api().export('page');
-    Object.assign(pages,current.pages);
-    delete pages['']; // ignore legacy metadata
-   }
+   const pages=scope==='page'?{...(record.annotations?.pages||{}),...(await api().export('page')).pages}:{};
    record.annotations={version:1,pages};
    record.savedAt=Date.now();
    await request('readwrite',s=>s.put(record));
