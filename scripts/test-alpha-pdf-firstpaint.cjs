@@ -38,6 +38,12 @@ const server=http.createServer((req,res)=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{for(const density of [1,2]){
   const context=await browser.newContext({viewport:{width:1200,height:900},deviceScaleFactor:density,serviceWorkers:'block'});
+  // Give the test a deterministic window to inspect the preview before the
+  // browser's idle callback upgrades backing pixels. Production timing is unchanged.
+  await context.addInitScript(()=>{
+   window.requestIdleCallback=callback=>setTimeout(()=>callback({didTimeout:false,timeRemaining:()=>50}),1000);
+   window.cancelIdleCallback=id=>clearTimeout(id);
+  });
   const page=await context.newPage(),errors=[],consoleErrors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',msg=>{if(msg.type()==='error')consoleErrors.push(msg.text())});
   await page.goto('http://127.0.0.1:'+server.address().port+'/whiteboard.html',{waitUntil:'load'});
   await page.waitForFunction(()=>document.body.classList.contains('toolbar-ready'));
