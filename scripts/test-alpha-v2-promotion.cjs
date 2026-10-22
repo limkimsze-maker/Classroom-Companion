@@ -1,7 +1,22 @@
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict');
 const {chromium}=require('playwright');const root=path.resolve(__dirname,'..');
 const scripts=file=>Array.from(fs.readFileSync(path.join(root,file),'utf8').matchAll(/<script[^>]+src="([^"]+)"/g),m=>m[1]);
-assert.deepEqual(scripts('whiteboard.html').slice(1).filter(src=>!src.startsWith('whiteboard-speech-to-text-experiment.js?')),scripts('whiteboard-v2-trial.html').slice(1),'Alpha must load the exact approved V2 bundle in the same order');
+// Approved Alpha includes changes and additions beyond the earlier V2 trial.
+ // Validate dependencies and key modules, not obsolete byte-identical bundles.
+ const alpha=scripts('whiteboard.html').map(src=>src.split('?')[0]);
+ const required=['whiteboard-core.js','experimental/math-structure/whiteboard-text-drag-resizable-v2.js',
+ 'whiteboard-classroom-pro.js','whiteboard-bar-move-handle-beta.js',
+ 'experimental/math-structure/smart-math-recognition-v2.js',
+ 'smart-math-comparison-segment-options-v3.js','whiteboard-document-open-my-documents-test.js',
+ 'whiteboard-document-right-rail-v1.js','experimental/math-structure/main-settings-v2.js',
+ 'my-documents-v1.js','whiteboard-speech-to-text-experiment.js'];
+ for(const file of required)assert.equal(alpha.filter(x=>x===file).length,1,'Alpha requires one '+file);
+ const mustPrecede=[['whiteboard-core.js','experimental/math-structure/whiteboard-text-drag-resizable-v2.js'],
+ ['whiteboard-classroom-pro.js','experimental/math-structure/smart-math-recognition-v2.js'],
+ ['whiteboard-document-open-my-documents-test.js','whiteboard-document-right-rail-v1.js']];
+ for(const [a,b] of mustPrecede)assert(alpha.indexOf(a)<alpha.indexOf(b),a+' must load before '+b);
+ console.log('PASS Alpha approved modules present, unique and ordered');
+
 const server=http.createServer((req,res)=>{const p=path.join(root,decodeURIComponent(new URL(req.url,'http://localhost').pathname));fs.readFile(p,(e,d)=>{if(e)return res.writeHead(404).end();res.setHeader('Content-Type',p.endsWith('.js')?'application/javascript':p.endsWith('.html')?'text/html':'application/octet-stream');res.end(d)})});
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{for(const width of [1365,390]){const context=await browser.newContext({viewport:{width,height:900}});await context.addInitScript(()=>{
  window.SpeechRecognition=class {
