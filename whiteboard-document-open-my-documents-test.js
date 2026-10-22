@@ -363,7 +363,15 @@ function ensureFileInput(){
   if(f)openingDocument=true; // Set synchronously, before a focus/cancel callback can hide the message.
   fileInput.value='';
   pickerPending=false;++pickerSerial;
-  if(f){setDocumentLoadingCopy(f);showDocumentLoading();await paintDocumentLoading();await openFile(f);}
+  if(f){
+   // The Alpha page's capture-phase change listener displays its modal first.
+   // Give the browser a separate paint/task opportunity BEFORE document setup,
+   // file reads, document state resets, and the PDF worker become busy.
+   await new Promise(resolve=>setTimeout(resolve,250));
+   setDocumentLoadingCopy(f);showDocumentLoading();
+   await paintDocumentLoading();
+   await openFile(f);
+  }
   else hideDocumentLoading();
  });
  // File-input cancel is supported by current Chrome and other modern browsers.
