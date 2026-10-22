@@ -35,7 +35,10 @@ function ensureDocumentLoading(){
  const detail=document.createElement('span');detail.id='ccLoadingDetail';detail.textContent='Opening document…';
  const tip=document.createElement('span');tip.id='ccLoadingTip';
  tip.textContent='Tip: Save to My Documents for quicker access next time. The file still needs to be processed when reopened.';
- copy.append(headline,detail,tip);message.append(spinner,copy);overlay.append(message);wrap.appendChild(overlay);
+ copy.append(headline,detail,tip);message.append(spinner,copy);overlay.append(message);document.body.appendChild(overlay);
+ // Place above the whiteboard and document underlay even while they re-render.
+ // Fixed positioning prevents board layout/transforms from hiding the status.
+ Object.assign(overlay.style,{position:'fixed',inset:'0',zIndex:'2147483000',display:'grid',placeItems:'center',background:'rgba(245,249,250,.92)',pointerEvents:'auto'});
  documentLoading=overlay;return overlay;
 }
 function setDocumentLoadingCopy(file,fromSaved=false){
