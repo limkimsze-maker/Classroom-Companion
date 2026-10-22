@@ -22,14 +22,42 @@ let wordMatches=[],wordMatchIndex=-1,wordQuery='';
 
 const clone=v=>{try{return structuredClone(v)}catch{return JSON.parse(JSON.stringify(v))}};
 function toast(msg){if(typeof say==='function'){try{say(msg);return}catch{}}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
+// Reuse a single engine request when PDF selection, a saved-document open and
+// idle preparation happen together. Comparing relative src to script.src
+// (absolute URL) used to miss in-flight loads and could request duplicates.
+const engineRequests=new Map();
 function loadScript(src,globalName){
  if(globalName&&window[globalName])return Promise.resolve(window[globalName]);
- return new Promise((resolve,reject)=>{
-  const old=[...document.scripts].find(s=>s.src===src);
-  if(old){if(globalName&&window[globalName])resolve(window[globalName]);else{old.addEventListener('load',()=>resolve(globalName?window[globalName]:true),{once:true});old.addEventListener('error',reject,{once:true})}return}
-  const s=document.createElement('script');s.src=src;s.async=true;s.onload=()=>resolve(globalName?window[globalName]:true);s.onerror=()=>reject(new Error('Could not load document engine'));document.head.appendChild(s);
+ if(engineRequests.has(src))return engineRequests.get(src);
+ const ready=new Promise((resolve,reject)=>{
+  const url=new URL(src,document.baseURI).href;
+  const old=[...document.scripts].find(s=>s.src===url);
+  if(old){
+   if(globalName&&window[globalName])return resolve(window[globalName]);
+   old.addEventListener('load',()=>resolve(globalName?window[globalName]:true),{once:true});
+   old.addEventListener('error',()=>reject(new Error('Could not load document engine')),{once:true});
+   return;
+  }
+  const script=document.createElement('script');
+  script.src=src;script.async=true;
+  script.onload=()=>resolve(globalName?window[globalName]:true);
+  script.onerror=()=>{script.remove();reject(new Error('Could not load document engine'))};
+  document.head.appendChild(script);
+ }).catch(error=>{engineRequests.delete(src);throw error});
+ engineRequests.set(src,ready);
+ return ready;
+}
+// Load PDF.js once the whiteboard is idle; never block the initial board.
+// File-picker activation additionally starts it while the teacher chooses a file.
+function preparePdfEngine(){
+ return loadScript(PDFJS_URL,'pdfjsLib').then(lib=>{
+  if(lib?.GlobalWorkerOptions)lib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;
+  return lib;
  });
 }
+function warmPdfEngine(){void preparePdfEngine().catch(()=>{});}
+window.CCWarmPdfEngine=warmPdfEngine;
+
 function releaseObjectUrl(){if(objectUrl){try{URL.revokeObjectURL(objectUrl)}catch{}objectUrl=null}}
 // Only the V2 trial loads this controller. Stable V1 source stays unchanged.
 let annotationBasis=null,annotationKey='',viewSerial=0,viewChanging=false,documentSession=0,viewQueue=Promise.resolve();
@@ -218,7 +246,7 @@ function ensureOpenButton(){
  const b=document.createElement('button');b.id='openDocumentBtn';b.type='button';b.className='btn soft';b.textContent='📄 Open';b.title='Open PDF, Word, PowerPoint, spreadsheet, image or other displayable file';
  const ov=document.getElementById('liveOverlayBtn');if(ov)tools.insertBefore(b,ov);else{const grid=document.getElementById('gridBtn');if(grid)tools.insertBefore(b,grid);else tools.appendChild(b)}b.addEventListener('click',()=>fileInput.click());
 }
-function ensureFileInput(){if(fileInput)return;fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='*/*';fileInput.style.display='none';fileInput.addEventListener('change',async()=>{const f=fileInput.files?.[0];fileInput.value='';if(f)await openFile(f)});document.body.appendChild(fileInput)}
+function ensureFileInput(){if(fileInput)return;fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='*/*';fileInput.style.display='none';fileInput.addEventListener('click',warmPdfEngine);fileInput.addEventListener('change',async()=>{const f=fileInput.files?.[0];fileInput.value='';if(f)await openFile(f)});document.body.appendChild(fileInput)}
 
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=interactionMode?'none':'auto';if(active)toast(interactionMode?'Interact mode — tap the document':'Annotation mode')}
 function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);resetPan();documentSession++;viewSerial++;viewChanging=true;annotationBasis=null;annotationKey='';active=true;setAnnotationContext(contextKey('opening'));pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');redraw();syncUi()}
@@ -244,7 +272,11 @@ async function openFile(file,options={}){
   if(active){finishAnnotationEdit();savePage();exitMode()}
   window.dispatchEvent(new CustomEvent('cc-document-opened',{detail:{file,recordId:options.recordId||null}}));
   resetSearch(true);hideSearch();releaseObjectUrl();destroyPpt();docName=file.name||'Document';enterMode();importDocumentAnnotations(options.annotations);currentPage=1;totalPages=1;zoom=1;hideViews();updateControls();const ext=extOf(file);
-  if(ext==='pdf'||file.type==='application/pdf')return await openPdf(await file.arrayBuffer());
+  if(ext==='pdf'||file.type==='application/pdf'){
+    // Read the local PDF and load its offline renderer concurrently.
+    const [data]=await Promise.all([file.arrayBuffer(),preparePdfEngine()]);
+    return await openPdf(data);
+   }
   if(ext==='docx')return await openWord(await file.arrayBuffer());
   if(['pptx','pptm','ppsx','potx'].includes(ext))return await openPptx(await file.arrayBuffer());
   if(['xlsx','xls','xlsm','xlsb','ods','csv'].includes(ext))return await openSheet(await file.arrayBuffer());
@@ -256,7 +288,7 @@ async function openFile(file,options={}){
  }catch(err){console.error(err);toast('Could not open this file.');exitMode()}
 }
 
-async function openPdf(data){docKind='pdf';pdfCanvas.style.display='block';await loadScript(PDFJS_URL,'pdfjsLib');if(!window.pdfjsLib)throw new Error('PDF engine unavailable');window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;pdfDoc=await window.pdfjsLib.getDocument({data:new Uint8Array(data)}).promise;totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();await renderPdfPage();loadPageAnnotations();toast(`${docName} opened`)}
+async function openPdf(data){docKind='pdf';pdfCanvas.style.display='block';await preparePdfEngine();if(!window.pdfjsLib)throw new Error('PDF engine unavailable');pdfDoc=await window.pdfjsLib.getDocument({data:new Uint8Array(data)}).promise;totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();await renderPdfPage();loadPageAnnotations();toast(`${docName} opened`)}
 async function renderPdfPage(){if(!pdfDoc||!active)return;const token=++renderToken,page=await pdfDoc.getPage(currentPage);if(token!==renderToken)return;const base=page.getViewport({scale:1}),r=wrap.getBoundingClientRect(),fit=Math.min((r.width-8)/base.width,(r.height-8)/base.height),vp=page.getViewport({scale:Math.max(.1,fit*zoom)}),dpr=Math.min(devicePixelRatio||1,2),tmp=document.createElement('canvas');tmp.width=Math.max(1,Math.round(vp.width*dpr));tmp.height=Math.max(1,Math.round(vp.height*dpr));await page.render({canvasContext:tmp.getContext('2d'),viewport:vp,transform:[dpr,0,0,dpr,0,0]}).promise;if(token!==renderToken)return;pdfCanvas.width=tmp.width;pdfCanvas.height=tmp.height;pdfCanvas.style.width=`${vp.width}px`;pdfCanvas.style.height=`${vp.height}px`;pdfCanvas.getContext('2d').drawImage(tmp,0,0);updateControls()}
 
 async function openWord(data){docKind='word';wordViewport.style.display='block';await loadScript(MAMMOTH_URL,'mammoth');if(!window.mammoth)throw new Error('Word engine unavailable');const result=await window.mammoth.convertToHtml({arrayBuffer:data});wordPaper.innerHTML=result.value||'<p>(Empty document)</p>';requestAnimationFrame(()=>{layoutWord(false);loadPageAnnotations();toast(`${docName} opened`)})}
@@ -339,6 +371,13 @@ body.document-open-mode .shell{padding:2px!important;gap:2px!important}body.docu
 
 window.addEventListener('cc-my-documents-open',e=>{if(e.detail?.file instanceof Blob)openFile(e.detail.file,e.detail)});
 ensureFileInput();ensureOpenButton();ensureLayer();ensureToolbar();updateControls();
+// Background preparation starts only after the board has settled, avoiding
+// competition with the initial whiteboard load.
+setTimeout(()=>{
+ const idle=window.requestIdleCallback;
+ if(typeof idle==='function')idle(()=>{if(!active)warmPdfEngine()},{timeout:10000});
+ else if(!active)warmPdfEngine();
+},3500);
 window.addEventListener('resize',()=>{if(!active)return;changeView(()=>{}).catch(console.error)});
 requestAnimationFrame(watchAnnotations);
 document.addEventListener('keydown',e=>{if(!active||/INPUT|TEXTAREA/.test(document.activeElement?.tagName))return;if(e.key==='PageDown'){e.preventDefault();goToPage(currentPage+1)}else if(e.key==='PageUp'){e.preventDefault();goToPage(currentPage-1)}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='f'){e.preventDefault();showSearch()}else if(e.key==='Escape'&&interactionMode)setInteraction(false)});
