@@ -7,6 +7,7 @@ on:
       - whiteboard-alpha-v2-bootstrap.js
       - scripts/test-alpha-startup-performance.cjs
       - scripts/test-alpha-pdf-open-performance.cjs
+      - scripts/test-alpha-loading-message.cjs
       - scripts/test-alpha-pdf-firstpaint.cjs
       - scripts/test-alpha-v2-promotion.cjs
       - scripts/test-alpha-beautify-select.cjs
@@ -48,6 +49,10 @@ jobs:
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-pdf-firstpaint.cjs
+      - name: Verify startup and PDF Loading...Please wait. feedback
+        env:
+          NODE_PATH: /tmp/alpha-browser/node_modules
+        run: node scripts/test-alpha-loading-message.cjs
       - name: Verify Beautify Apply goes to Select and Undo works
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
