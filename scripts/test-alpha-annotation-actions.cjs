@@ -39,7 +39,15 @@ function ink(y){
   await page.evaluate(fn=>{strokes.push(fn);redraw();syncUi()},ink(.18));
   assert.equal(await page.evaluate(()=>strokes.length),1,'Page 1 annotation created');
   await openMenu();await menu.getByRole('button',{name:'💾 Save this page'}).click();
-  await page.waitForFunction(()=>document.getElementById('ccAnnotationActionStatus')?.textContent.includes('Saved locally'));
+  await page.waitForTimeout(450);
+  console.log('SAVE-DIAGNOSTIC',width,JSON.stringify(await page.evaluate(()=>({
+    status:document.getElementById('ccAnnotationActionStatus')?.textContent,
+    controller:!!window.CCDocumentAnnotations,
+    isOpen:window.CCDocumentAnnotations?.isOpen(),
+    docTitle:document.title,
+    toolbarButton:document.getElementById('ccPermanentSaveBtn')?.textContent
+  }))));
+  await page.waitForFunction(()=>document.getElementById('ccAnnotationActionStatus')?.textContent.includes('Saved locally'),{timeout:4000});
   let docs=await storage(page);
   assert.equal(docs.length,1);
   assert.equal(docs[0].pages['pdf:1']?.length,1);
