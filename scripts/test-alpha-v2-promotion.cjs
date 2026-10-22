@@ -79,6 +79,45 @@ const paint=await page.evaluate(async()=>{
 });
 console.log('PASS',width,'pencil/eraser cursor, visible comparison-bar grip and proportional resize');
 console.log('PERF',width,JSON.stringify({redraw25:paint,baselinePixelWidth:beforeBar.w,resizedPixelWidth:afterBar.w}));
+// Stress scenario: representative multiple bars + pencil marks, then measure
+// canvas redraw and animation frame pacing with all production modules loaded.
+const stress=await page.evaluate(async()=>{
+ const template=strokes.find(s=>s.smartId==='alpha-smoke-bar');
+ const added=[];
+ for(let i=0;i<16;i++){
+  const o={...template,smartId:'alpha-health-copy-'+i,
+   x:.03+(i%4)*.21,y:.07+Math.floor(i/4)*.22,w:.20,h:.18};
+  added.push(o);
+ }
+ for(let i=0;i<140;i++){
+  const y=.025+(i%45)*.021;
+  added.push({colour:i%2?'#17324d':'#2563eb',size:2.5,
+   points:[{x:.03,y},{x:.12,y:y+.015},{x:.18,y:y+.008}]});
+ }
+ strokes.push(...added);
+ redraw();
+ const start=performance.now();
+ for(let i=0;i<30;i++)redraw();
+ const directMs=performance.now()-start;
+ const frames=[];
+ let previous=performance.now();
+ for(let i=0;i<40;i++){
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const now=performance.now();frames.push(now-previous);previous=now;
+ }
+ const ordered=frames.slice().sort((a,b)=>a-b);
+ const p95=ordered[Math.floor((ordered.length-1)*.95)];
+ const hits=document.querySelectorAll('.comparison-segment-hit-zone').length;
+ strokes=strokes.filter(o=>!String(o.smartId||'').startsWith('alpha-health-copy-')&&!added.includes(o));
+ redraw();syncUi();
+ return {directMs:+directMs.toFixed(1),avgRedrawMs:+(directMs/30).toFixed(2),
+ frameP95Ms:+p95.toFixed(1),slowFrames:frames.filter(v=>v>34).length,
+ frames:frames.length,stressObjects:added.length,segmentHitZones:hits};
+});
+assert(stress.stressObjects===156,'Stress inputs must be populated');
+assert(stress.directMs<5000,'Thirty redraws must not hang browser for five seconds');
+assert(stress.segmentHitZones<1000,'Comparison hit zones must not grow without bound');
+console.log('PERF-STRESS',width,JSON.stringify(stress));
 await page.evaluate(()=>{strokes=strokes.filter(s=>s.smartId!=='alpha-smoke-bar');redraw();syncUi()});
 await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'promotion-check.txt',mimeType:'text/plain',buffer:Buffer.from('V2 promotion check')});await page.waitForFunction(()=>document.body.classList.contains('document-open-mode'));await page.locator('#ccPermanentSaveBtn').waitFor({state:'visible'});await page.locator('#ccPermanentExitBtn').waitFor({state:'visible'});assert.equal(await page.locator('#ccPermanentSaveBtn').count(),1);await page.screenshot({path:'/tmp/alpha-v2-'+width+'.png'});await page.locator('#ccPermanentExitBtn').click();await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
 assert.deepEqual(errors,[]);console.log('PASS',width,'V2 loader, shared learning, pen/undo, Settings, document Save/Exit, no script errors');await context.close();}}finally{await browser.close();server.close()}})().catch(e=>{console.error(e);server.close();process.exitCode=1});
