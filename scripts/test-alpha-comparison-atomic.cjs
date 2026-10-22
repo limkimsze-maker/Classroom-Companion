@@ -70,6 +70,17 @@ const fixture=fs.readFileSync(path.join(root,'experimental/math-structure/fixtur
     const history=await page.evaluate(()=>window.__smartBarLastHistory);
     assert(history?.before?.length>=3,'Atomic undo history preserves original drawing');
     assert(history.before.filter(s=>Array.isArray(s.points)).length=== (kind==='fragments'?9:3));
+    await page.locator('#undoBtn').click();
+    const undone=await page.evaluate(()=>({
+      raw:strokes.filter(x=>Array.isArray(x.points)).length,
+      models:strokes.filter(x=>x.smartType==='barModel'&&x.smartBarType==='comparison').length,
+      allOriginals:window.__comparisonExpected.every(x=>strokes.some(y=>JSON.stringify(x)===JSON.stringify(y))),
+      unrelated:strokes.some(y=>JSON.stringify(y)===JSON.stringify(window.__comparisonUnrelated))
+    }));
+    assert.equal(undone.models,0,'Undo removes beautified comparison');
+    assert.equal(undone.raw,kind==='fragments'?9:3,'Undo restores all rough sketch strokes');
+    assert(undone.allOriginals&&undone.unrelated,'Undo restores source ink and leaves unrelated ink');
+    console.log('PASS',width,kind,'single Undo restores all original rough bars');
    }
    // Verify model conversion also cleans strokes drawn over an opened PDF.
    await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'Teaching.pdf',mimeType:'application/pdf',buffer:fixture});
