@@ -22,6 +22,7 @@ let wordMatches=[],wordMatchIndex=-1,wordQuery='';
 
 const clone=v=>{try{return structuredClone(v)}catch{return JSON.parse(JSON.stringify(v))}};
 let documentLoading=null,loadingTimer=0,loadingRevision=0;
+let pickerPending=false,pickerSerial=0;
 function ensureDocumentLoading(){
  if(documentLoading)return documentLoading;
  const overlay=document.createElement('div');overlay.id='ccDocumentLoading';overlay.hidden=true;
@@ -50,6 +51,30 @@ function setDocumentLoadingCopy(file,fromSaved=false){
 // Word/PowerPoint conversion. The message stays visible until content is ready.
 function paintDocumentLoading(){
  return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+}
+// Display the message on the first Open click, before the native file
+// chooser. Two animation frames allow the browser to paint the message;
+ // the brief delay still falls within the browser's transient user activation.
+async function chooseDocumentFile(){
+ if(pickerPending)return;
+ pickerPending=true;
+ const id=++pickerSerial;
+ const overlay=ensureDocumentLoading();
+ const detail=overlay.querySelector('#ccLoadingDetail');
+ const tip=overlay.querySelector('#ccLoadingTip');
+ if(detail)detail.textContent='Choose a PDF, PowerPoint, Word or other file…';
+ if(tip)tip.textContent='Tip: Saving to My Documents lets you reopen a local copy without choosing the original file again. The document still requires processing.';
+ showDocumentLoading();
+ warmPdfEngine();
+ await paintDocumentLoading();
+ if(!pickerPending||id!==pickerSerial)return;
+ try{fileInput.click()}catch(err){pickerPending=false;hideDocumentLoading();console.error(err)}
+}
+function closeFileChooserWithoutSelection(){
+ if(!pickerPending)return;
+ pickerPending=false;
+ ++pickerSerial;
+ hideDocumentLoading();
 }
 function showDocumentLoading(delay=false){
  const overlay=ensureDocumentLoading(),ticket=++loadingRevision;
@@ -293,15 +318,31 @@ function ensureToolbar(){
  pageTotal=document.createElement('span');pageTotal.textContent='/ 1';
  const zOut=smallBtn('−','Zoom out',()=>setZoom(zoom-.15)),zIn=smallBtn('+','Zoom in',()=>setZoom(zoom+.15));zoomLabel=document.createElement('span');zoomLabel.textContent='100%';
  searchBtn=smallBtn('🔎','Search document',toggleSearch);interactBtn=smallBtn('☝','Interact with displayed content',()=>setInteraction(!interactionMode));
- const reopen=smallBtn('📄','Open another file',()=>fileInput?.click()),close=smallBtn('×','Close document',closeDocument);
+ const reopen=smallBtn('📄','Open another file',chooseDocumentFile),close=smallBtn('×','Close document',closeDocument);
  toolbar.append(prevBtn,pageInput,pageTotal,nextBtn,zOut,zoomLabel,zIn,searchBtn,interactBtn,reopen,close);document.body.appendChild(toolbar);ensureSearchPanel();
 }
 function ensureOpenButton(){
  const tools=document.querySelector('.tools');if(!tools||document.getElementById('openDocumentBtn'))return;
  const b=document.createElement('button');b.id='openDocumentBtn';b.type='button';b.className='btn soft';b.textContent='📄 Open';b.title='Open PDF, Word, PowerPoint, spreadsheet, image or other displayable file';
- const ov=document.getElementById('liveOverlayBtn');if(ov)tools.insertBefore(b,ov);else{const grid=document.getElementById('gridBtn');if(grid)tools.insertBefore(b,grid);else tools.appendChild(b)}b.addEventListener('click',()=>fileInput.click());
+ const ov=document.getElementById('liveOverlayBtn');if(ov)tools.insertBefore(b,ov);else{const grid=document.getElementById('gridBtn');if(grid)tools.insertBefore(b,grid);else tools.appendChild(b)}b.addEventListener('click',chooseDocumentFile);
 }
-function ensureFileInput(){if(fileInput)return;fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='*/*';fileInput.style.display='none';fileInput.addEventListener('click',warmPdfEngine);fileInput.addEventListener('change',async()=>{const f=fileInput.files?.[0];fileInput.value='';if(f)await openFile(f)});document.body.appendChild(fileInput)}
+function ensureFileInput(){
+ if(fileInput)return;
+ fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='*/*';fileInput.style.display='none';
+ fileInput.addEventListener('change',async()=>{
+  const f=fileInput.files?.[0];fileInput.value='';
+  pickerPending=false;++pickerSerial;
+  if(f)await openFile(f);
+  else hideDocumentLoading();
+ });
+ // File-input cancel is supported by current Chrome and other modern browsers.
+ fileInput.addEventListener('cancel',closeFileChooserWithoutSelection);
+ // Fallback for older browsers: focus is restored when the system dialog closes.
+ window.addEventListener('focus',()=>setTimeout(()=>{
+  if(pickerPending&&!fileInput.files?.length)closeFileChooserWithoutSelection();
+ },350));
+ document.body.appendChild(fileInput);
+}
 
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=interactionMode?'none':'auto';if(active)toast(interactionMode?'Interact mode — tap the document':'Annotation mode')}
 function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);resetPan();documentSession++;viewSerial++;viewChanging=true;annotationBasis=null;annotationKey='';active=true;setAnnotationContext(contextKey('opening'));pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');showDocumentLoading();redraw();syncUi()}

@@ -39,8 +39,25 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.locator('#ccStartupLoading').evaluate(el=>getComputedStyle(el).display),'none','Startup message must vanish when toolbar ready');
   console.log('PASS',width,'Startup message dismissed when whiteboard is ready');
   const input=page.locator('input[type=file][accept="*/*"]');
-  for(const fixture of fixtures){
-    await input.setInputFiles({name:fixture.name,mimeType:fixture.type,buffer:fixture.content});
+  for(const [index,fixture] of fixtures.entries()){
+    if(index===0){
+      // Click the actual UI control and verify feedback BEFORE a file is selected.
+      const chooserEvent=page.waitForEvent('filechooser');
+      await page.locator('#openDocumentBtn').click();
+      const chooser=await chooserEvent;
+      const immediately=await page.locator('#ccDocumentLoading').evaluate(el=>({
+       visible:!el.hidden&&getComputedStyle(el).display!=='none',
+       text:el.innerText,
+       detail:el.querySelector('#ccLoadingDetail')?.textContent,
+       tip:el.querySelector('#ccLoadingTip')?.textContent
+      }));
+      assert(immediately.visible,'Open File must show loading message before the file is selected');
+      assert(immediately.text.includes('Loading...Please wait.'));
+      assert(immediately.detail.includes('Choose a PDF, PowerPoint, Word or other file'));
+      assert(immediately.tip.includes('reopen a local copy'));
+      console.log('PASS',width,'Open button shows Loading...Please wait. BEFORE selecting a document');
+      await chooser.setFiles({name:fixture.name,mimeType:fixture.type,buffer:fixture.content});
+    }else await input.setInputFiles({name:fixture.name,mimeType:fixture.type,buffer:fixture.content});
     await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('ccDocumentLoading')&&!document.getElementById('ccDocumentLoading').hidden,null,{timeout:6000});
     const visible=await page.locator('#ccDocumentLoading').evaluate(el=>({
       text:el.innerText,detail:el.querySelector('#ccLoadingDetail')?.textContent,tip:el.querySelector('#ccLoadingTip')?.textContent
@@ -67,7 +84,18 @@ const server=http.createServer((req,res)=>{
     await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
     assert.equal(await page.locator('#ccDocumentLoading').isHidden(),true,'Exit must hide document status');
   }
-  await page.getByRole('button',{name:/My Documents/}).first().click();
+  // A cancelled file picker must not leave an overlay blocking the whiteboard.
+  const cancelEvent=page.waitForEvent('filechooser');
+  await page.locator('#openDocumentBtn').click();
+  const cancelledChooser=await cancelEvent;
+  assert.equal(await page.locator('#ccDocumentLoading').isVisible(),true,'Loading feedback visible while file picker is open');
+  await cancelledChooser.setFiles([]);
+  // Simulate a native cancel event for compatibility across automation engines.
+  await input.dispatchEvent('cancel');
+  await page.waitForFunction(()=>document.getElementById('ccDocumentLoading')?.hidden,null,{timeout:4000});
+  assert.equal(await page.locator('#ccDocumentLoading').isHidden(),true,'Cancel must clear the loading overlay');
+  console.log('PASS',width,'Cancel File picker hides loading feedback');
+    await page.getByRole('button',{name:/My Documents/}).first().click();
   await page.locator('#ccDocsDialog').waitFor({state:'visible'});
   await page.locator('#ccDocsDialog').getByRole('button',{name:'Open',exact:true}).first().click();
   await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&!document.getElementById('ccDocumentLoading')?.hidden,null,{timeout:7000});
