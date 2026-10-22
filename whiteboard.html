@@ -124,6 +124,7 @@ body.document-open-mode:has(#documentTouchNavBtn[aria-pressed="true"]) #boardWra
 <button class="btn" id="mainSettingsBtn" type="button" aria-haspopup="dialog" style="margin-left:8px;order:99;white-space:nowrap">⚙ Settings</button>
 <div class="tools" role="toolbar" aria-label="Whiteboard tools">
 <button class="btn active" id="penBtn" type="button">✏️ Pen</button>
+<button class="btn" id="highlighterBtn" type="button" title="Highlight on the whiteboard or document">🖍️ Highlighter</button>
 <button class="btn" id="textBtn" type="button">T Text</button>
 <button class="btn" id="speechToTextBtn" type="button">🎙 Speech to Text</button>
 <button class="btn" id="eraserBtn" type="button">⌫ Eraser</button>
@@ -146,7 +147,7 @@ body.document-open-mode:has(#documentTouchNavBtn[aria-pressed="true"]) #boardWra
 </div>
 <div class="toast" id="toast"></div>
 <script defer src="whiteboard-moe-local-only-guard-v1.js?v=20261017-moesafe2"></script>
-<script defer src="whiteboard-core.js?v=20261011-0534-core1"></script>
+<script defer src="whiteboard-core.js?v=20261022-highlighter-alpha1"></script>
 <script defer src="experimental/math-structure/whiteboard-text-drag-resizable-v2.js?v=20261022-comparison-undo1"></script>
 <script defer src="whiteboard-handwriting-digit-model-beta.js?v=20261018-handwriting1"></script>
 <!-- Letter CNN weights are loaded on-demand by Beautify ensureReader(), not on initial whiteboard startup. -->
