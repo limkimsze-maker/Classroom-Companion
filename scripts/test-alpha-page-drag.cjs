@@ -113,10 +113,13 @@ const server=http.createServer((req,res)=>{
     };
     await swipe(210);
     assert.equal((await state()).page,2,'First touch swipe should pan the zoomed page');
+    const touchStates=[await state()];
     for(let i=0;i<12&&!(await state()).top;i++){
       await swipe(210);
-      assert.equal((await state()).page,2,'Touch can reveal the top before turning');
+      const st=await state();touchStates.push(st);
+      assert.equal(st.page,2,'Touch can reveal the top before turning');
     }
+    console.log('TOUCH-EDGE-DETAIL',width,JSON.stringify(touchStates.map(z=>({page:z.page,pan:+z.pan.toFixed(1),limit:+z.limit.toFixed(1),top:z.top,fullPageFits:z.fullPageFits}))));
     assert((await state()).top,'Touch can reach page top');
     await swipe(210);
     await readyPage(1);
