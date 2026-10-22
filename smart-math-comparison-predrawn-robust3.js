@@ -5,8 +5,7 @@ if(typeof strokes==='undefined'||typeof redraw!=='function')return;
 const clone=v=>JSON.parse(JSON.stringify(v));
 let selectionStrokeCount=0;
 let snapshot=[];
-let injected=null;
-
+let pending=null;
 function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.background&&!s.smartGenerated)}
 function dims(){const c=document.getElementById('board');const r=c?c.getBoundingClientRect():null;return{w:Math.max(1,r?.width||innerWidth||1000),h:Math.max(1,r?.height||innerHeight||700)}}
 function box(s){
@@ -70,37 +69,49 @@ function synthetic(c){
  return{erase:false,colour:'#17324d',size:5,smartGenerated:false,__predrawnComparisonFallback:true,__predrawnPreflightTemp:true,points:[{x:x1,y:y1},{x:x2,y:y1},{x:x2,y:y2},{x:x1,y:y2},{x:x1,y:y1}]}
 }
 function menuButton(el){return!!(el&&el.closest&&el.closest('#smartBarTypeMenu button'))}
-function finishButton(el){const b=el&&el.closest?el.closest('button'):null,smart=document.getElementById('smartMathBtn');return!!(b&&smart&&smart.nextElementSibling===b)}
-
+function finishButton(el){
+ const b=el&&el.closest?el.closest('button'):null,smart=document.getElementById('smartMathBtn');
+ return!!(b&&smart&&smart.nextElementSibling===b);
+}
+function captureInitialInk(){
+ selectionStrokeCount=strokes.length;
+ snapshot=strokes.slice(0,selectionStrokeCount).filter(rawInk);
+ pending=null;
+}
+function prepare(){
+ if(window.__smartBarType!=='comparison')return null;
+ if(pending)return pending;
+ // Keep both teacher workflows: comparison selected before or after drawing.
+ const fresh=strokes.slice(selectionStrokeCount).filter(rawInk);
+ const source=fresh.length?fresh:snapshot;
+ const bars=chooseBars(source);
+ if(bars.length<2)return null;
+ const beforeState=clone(strokes);
+ const originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
+ const temp=bars.map(synthetic);
+ pending={temp,originals,beforeState};
+ // Synthetic bar rectangles are used ONLY for the existing recogniser's
+ // geometry, not as actual saved ink. Finish removes them synchronously.
+ strokes.push(...temp);
+ return pending;
+}
+// Called synchronously by smart-math-bars-v2.finishBar, including keyboard
+// activation that has no pointerdown. No setTimeout or competing cleanup.
+window.__smartComparisonPrepare=prepare;
+window.__smartComparisonRelease=function(){
+ const job=pending;
+ pending=null;
+ return job;
+};
+// Capture click as well as pointerdown: keyboard selection is supported.
 document.addEventListener('pointerdown',e=>{
- const el=e.target instanceof Element?e.target:null;if(!el||!menuButton(el))return;
- selectionStrokeCount=strokes.length;snapshot=strokes.slice(0,selectionStrokeCount).filter(rawInk)
+ const el=e.target instanceof Element?e.target:null;
+ if(el&&menuButton(el))captureInitialInk();
+ if(el&&finishButton(el))prepare();
 },true);
-
-document.addEventListener('pointerdown',e=>{
- const el=e.target instanceof Element?e.target:null;if(!el||!finishButton(el)||window.__smartBarType!=='comparison'||injected)return;
- // Important: recognise BOTH workflows:
- // 1) draw bars first, then choose Comparison; and
- // 2) choose Comparison first, then draw the rough bars.
- // The old fallback handled only (1), which is why normal classroom use failed.
- const freshlyDrawn=strokes.slice(selectionStrokeCount).filter(rawInk),source=freshlyDrawn.length?freshlyDrawn:snapshot;
- const bars=chooseBars(source);if(bars.length<2)return;
- const beforeState=clone(strokes),priorIds=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison').map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
- strokes.push(...temp);injected={temp,originals,beforeState,priorIds}
-},true);
-
 document.addEventListener('click',e=>{
- const el=e.target instanceof Element?e.target:null;if(!el||!finishButton(el)||window.__smartBarType!=='comparison'||!injected)return;
- const job=injected;injected=null;
- setTimeout(()=>{
-  const made=[...strokes].reverse().find(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison'&&!job.priorIds.has(s.smartId)),tempSet=new Set(job.temp);
-  if(made){
-   const originalSet=new Set(job.originals);strokes=strokes.filter(s=>!tempSet.has(s)&&!originalSet.has(s));
-   // Preserve the teacher's actual rough bars for any later intent analysis.
-   made.smartOriginal=clone(job.originals);
-   if(window.__smartBarLastHistory)window.__smartBarLastHistory.before=job.beforeState
-  }else strokes=strokes.filter(s=>!tempSet.has(s));
-  try{redraw();if(typeof syncUi==='function')syncUi()}catch{}
- },160)
+ const el=e.target instanceof Element?e.target:null;
+ // Re-capture source strokes before the chosen comparison handler begins.
+ if(el&&menuButton(el))captureInitialInk();
 },true);
 })();
