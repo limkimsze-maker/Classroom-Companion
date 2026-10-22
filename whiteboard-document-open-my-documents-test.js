@@ -21,6 +21,29 @@ let searchRevision=0,documentRevision=0,sheetQuery='',sheetMatches=[],sheetMatch
 let wordMatches=[],wordMatchIndex=-1,wordQuery='';
 
 const clone=v=>{try{return structuredClone(v)}catch{return JSON.parse(JSON.stringify(v))}};
+let documentLoading=null,loadingTimer=0,loadingRevision=0;
+function ensureDocumentLoading(){
+ if(documentLoading)return documentLoading;
+ const overlay=document.createElement('div');overlay.id='ccDocumentLoading';overlay.hidden=true;
+ overlay.setAttribute('role','status');overlay.setAttribute('aria-live','polite');
+ overlay.setAttribute('aria-label','Loading...Please wait.');
+ const message=document.createElement('div');message.className='cc-loading-message';
+ const spinner=document.createElement('span');spinner.className='cc-loading-spinner';spinner.setAttribute('aria-hidden','true');
+ const words=document.createElement('span');words.textContent='Loading...Please wait.';
+ message.append(spinner,words);overlay.append(message);wrap.appendChild(overlay);
+ documentLoading=overlay;return overlay;
+}
+function showDocumentLoading(delay=false){
+ const overlay=ensureDocumentLoading(),ticket=++loadingRevision;
+ clearTimeout(loadingTimer);loadingTimer=0;
+ if(delay)loadingTimer=setTimeout(()=>{if(ticket===loadingRevision&&active)overlay.hidden=false},180);
+ else overlay.hidden=false;
+}
+function hideDocumentLoading(){
+ loadingRevision++;clearTimeout(loadingTimer);loadingTimer=0;
+ if(documentLoading)documentLoading.hidden=true;
+}
+
 function toast(msg){if(typeof say==='function'){try{say(msg);return}catch{}}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
 // Reuse a single engine request when PDF selection, a saved-document open and
 // idle preparation happen together. Comparing relative src to script.src
@@ -166,7 +189,7 @@ function loadPageAnnotations(){
  historyTransform(saved?.basis,r);
  try{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))}catch{}
  strokes=saved?convertAnnotations(saved.items,pageSpace,r):[];
- annotationBasis=r;annotationKey=key;current=null;drawing=false;redraw();syncUi();
+ annotationBasis=r;annotationKey=key;current=null;drawing=false;redraw();syncUi();hideDocumentLoading();
 }
 function syncAnnotationGeometry(){
  if(!active||viewChanging||!annotationBasis||annotationKey!==pageKey())return;
@@ -183,7 +206,7 @@ function changeView(change){
  if(!active)return Promise.resolve();
  cancelPdfRefinement();
  if(!viewChanging){finishAnnotationEdit();savePage()}
- viewChanging=true;canvas.style.pointerEvents='none';change();updateControls();
+ viewChanging=true;canvas.style.pointerEvents='none';showDocumentLoading(true);change();updateControls();
  const serial=++viewSerial;
  viewQueue=viewQueue.catch(()=>{}).then(async()=>{
   if(serial!==viewSerial||!active)return;
@@ -263,9 +286,9 @@ function ensureOpenButton(){
 function ensureFileInput(){if(fileInput)return;fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='*/*';fileInput.style.display='none';fileInput.addEventListener('click',warmPdfEngine);fileInput.addEventListener('change',async()=>{const f=fileInput.files?.[0];fileInput.value='';if(f)await openFile(f)});document.body.appendChild(fileInput)}
 
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=interactionMode?'none':'auto';if(active)toast(interactionMode?'Interact mode — tap the document':'Annotation mode')}
-function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);resetPan();documentSession++;viewSerial++;viewChanging=true;annotationBasis=null;annotationKey='';active=true;setAnnotationContext(contextKey('opening'));pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');redraw();syncUi()}
+function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);resetPan();documentSession++;viewSerial++;viewChanging=true;annotationBasis=null;annotationKey='';active=true;setAnnotationContext(contextKey('opening'));pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');showDocumentLoading();redraw();syncUi()}
 function destroyPpt(){if(pptViewer){try{pptViewer.destroy()}catch{}pptViewer=null}if(pptViewport)pptViewport.innerHTML=''}
-function exitMode(){window.dispatchEvent(new Event('cc-document-closed'));cancelPdfRefinement();if(pdfLoadingTask){const task=pdfLoadingTask;pdfLoadingTask=null;void task.destroy().catch(()=>{})}resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
+function exitMode(){hideDocumentLoading();window.dispatchEvent(new Event('cc-document-closed'));cancelPdfRefinement();if(pdfLoadingTask){const task=pdfLoadingTask;pdfLoadingTask=null;void task.destroy().catch(()=>{})}resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
 function closeDocument(){if(!active)return;finishAnnotationEdit();savePage();exitMode()}
 const permanentExit=document.getElementById('ccPermanentExitBtn');if(permanentExit)permanentExit.addEventListener('click',closeDocument);
 function updateControls(){if(!toolbar)return;pageInput.value=String(currentPage);pageInput.max=String(Math.max(1,totalPages));pageTotal.textContent=`/ ${Math.max(1,totalPages)}`;zoomLabel.textContent=`${Math.round(zoom*100)}%`;prevBtn.disabled=currentPage<=1;nextBtn.disabled=currentPage>=totalPages;searchBtn.disabled=!['pdf','word','pptx','sheet','text','html'].includes(docKind)}
