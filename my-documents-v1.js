@@ -178,7 +178,8 @@ function makeActions(){
   const exit=document.getElementById('ccPermanentExitBtn');
   slot.insertBefore(launch,exit||null);
  }
- window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!actionsDialog.hidden)actionsDialog.hidden=true});
+ // Ignore synthetic Escape events emitted internally to finish editing.
+ window.addEventListener('keydown',e=>{if(e.isTrusted&&e.key==='Escape'&&!actionsDialog.hidden)actionsDialog.hidden=true});
  window.addEventListener('cc-document-closed',()=>{actionsDialog.hidden=true;currentFile=null;currentId=null;currentName=''});
 }
 function make(){
