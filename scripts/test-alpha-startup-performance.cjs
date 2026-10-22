@@ -38,6 +38,24 @@ const server=http.createServer((req,res)=>{
       documentControls:!!document.getElementById('ccPermanentSaveBtn')
     };
    });
+   // Confirm that the on-demand character model still loads when a teacher
+   // actually opens Beautify and selects handwritten ink.
+   await page.evaluate(()=>{
+    strokes.push({colour:'#17324d',size:4,points:[{x:.12,y:.14},{x:.16,y:.18},{x:.19,y:.23}]});
+    redraw();syncUi();
+   });
+   await page.locator('#handwritingBeautifyBtn').click();
+   const board=await page.locator('#board').boundingBox();
+   await page.mouse.move(board.x+board.width*.07,board.y+board.height*.08);
+   await page.mouse.down();
+   await page.mouse.move(board.x+board.width*.29,board.y+board.height*.31,{steps:6});
+   await page.mouse.up();
+   await page.waitForFunction(()=>!!window.WhiteboardCharacterModels,null,{timeout:20000});
+   console.log('LAZY-MODEL',width,JSON.stringify({
+    initiallyPresent:perf.modelReady,
+    loadedOnBeautify:await page.evaluate(()=>!!window.WhiteboardCharacterModels),
+    recognitionDialog:await page.locator('#handwritingReadText').count()
+   }));
    assert(perf.pen&&perf.documentControls,'core controls ready');
    assert(perf.mathjaxReady,'MathJax available after startup');
    assert.deepEqual(errors,[],'no JavaScript runtime errors');
