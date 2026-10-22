@@ -5,6 +5,7 @@ on:
     paths:
       - whiteboard.html
       - whiteboard-alpha-v2-bootstrap.js
+      - scripts/test-alpha-startup-performance.cjs
       - scripts/test-alpha-v2-promotion.cjs
       - scripts/test-alpha-annotation-actions.cjs
       - whiteboard-document-open-my-documents-test.js
@@ -27,6 +28,10 @@ jobs:
         run: |
           npm install --prefix /tmp/alpha-browser --no-save playwright@1.55.0
           node /tmp/alpha-browser/node_modules/playwright/cli.js install --with-deps chromium --only-shell
+      - name: Measure Alpha startup loading
+        env:
+          NODE_PATH: /tmp/alpha-browser/node_modules
+        run: node scripts/test-alpha-startup-performance.cjs
       - name: Verify Alpha desktop and mobile
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
