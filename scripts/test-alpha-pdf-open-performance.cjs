@@ -54,6 +54,8 @@ const server=http.createServer((req,res)=>{
   await page.locator('#ccPermanentExitBtn').click();
   await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
   assert.equal(requests.filter(s=>s.endsWith('/vendor/moe/pdf.min.js')).length,1,'PDF engine must be requested only once');
+  assert.equal(requests.filter(s=>s.endsWith('/vendor/moe/pdf.worker.min.js')).length,1,'Shared PDF worker must not reload for a second document');
+  assert(warmMs<coldMs,'Reopening should be faster with the same PDF engine and worker');
   assert.deepEqual(errors,[],'No uncaught JavaScript errors');
   console.log('PDF-OPEN',width,JSON.stringify({coldMs,warmMs,engineRequests:requests.filter(s=>s.endsWith('/vendor/moe/pdf.min.js')).length,
     workerRequests:requests.filter(s=>s.endsWith('/vendor/moe/pdf.worker.min.js')).length,
