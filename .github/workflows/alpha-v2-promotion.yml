@@ -20,6 +20,13 @@ jobs:
           node-version: '22'
       - run: node --check whiteboard-alpha-v2-bootstrap.js
       - run: node experimental/math-structure/test-division-grouping-v2.cjs
+      - name: Regression checks for handwriting, letters, signs and symbol learning
+        run: |
+          node experimental/math-structure/test-letter-trainer-v2.cjs
+          node experimental/math-structure/test-shared-letters-v2.cjs
+          node experimental/math-structure/test-lowercase-policy-v2.cjs
+          node experimental/math-structure/test-signs-v2.cjs
+          node experimental/math-structure/test-symbol-learning-v2.cjs
       - name: Install browser
         run: |
           npm install --prefix /tmp/alpha-browser --no-save playwright@1.55.0
