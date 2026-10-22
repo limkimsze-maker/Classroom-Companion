@@ -138,11 +138,24 @@ async function refresh(withCount=true){
 function addActionButton(parent,label,fn,danger=false){
  const b=document.createElement('button');b.type='button';b.textContent=label;b.className='btn'+(danger?' danger':'');
  b.style.cssText='min-height:39px!important;height:auto!important;padding:8px!important;text-align:left;white-space:normal!important;font-size:12px!important';
- b.onclick=async()=>{b.disabled=true;try{await fn()}finally{b.disabled=false}};
+ let pointerAt=-10000;
+ const run=async()=>{if(b.disabled)return;b.disabled=true;try{await fn()}finally{b.disabled=false}};
+ b.dataset.annotationAction='1';
+ b.runAnnotationAction=run;
+ b.onpointerdown=()=>{pointerAt=performance.now();run()};
+ b.onclick=()=>{if(performance.now()-pointerAt>600)run()};
  parent.append(b);return b;
 }
 function makeActions(){
  actionsDialog=document.createElement('section');actionsDialog.id='ccAnnotationActionsDialog';actionsDialog.hidden=true;
+ // Document-level capture ensures annotation actions remain usable even when
+ // whiteboard selection/drag modules consume ordinary click events.
+ window.addEventListener('pointerdown',e=>{
+  const b=e.target?.closest?.('#ccAnnotationActionsDialog [data-annotation-action]');
+  if(!b||actionsDialog.hidden||(e.button!==undefined&&e.button!==0))return;
+  if(b.onpointerdown)b.onpointerdown(e);
+ },true);
+
  actionsDialog.setAttribute('role','dialog');actionsDialog.setAttribute('aria-modal','true');
  actionsDialog.setAttribute('aria-label','Document annotation actions');
  const h=document.createElement('div');h.style.cssText='display:flex;justify-content:space-between;gap:12px;align-items:center';
