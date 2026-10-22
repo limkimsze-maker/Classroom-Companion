@@ -69,12 +69,40 @@ function synthetic(c){
  const x1=Math.max(0,Math.min(1,c.x)),y1=Math.max(0,Math.min(1,c.y)),x2=Math.max(0,Math.min(1,c.x+c.w)),y2=Math.max(0,Math.min(1,c.y+c.h));
  return{erase:false,colour:'#17324d',size:5,smartGenerated:false,__predrawnComparisonFallback:true,__predrawnPreflightTemp:true,points:[{x:x1,y:y1},{x:x2,y:y1},{x:x2,y:y2},{x:x1,y:y2},{x:x1,y:y1}]}
 }
+function captureInitialInk(){
+ selectionStrokeCount=strokes.length;
+ snapshot=strokes.slice(0,selectionStrokeCount).filter(rawInk);
+ injected=null;
+}
+function prepare(){
+ if(window.__smartBarType!=='comparison')return null;
+ if(injected)return injected;
+ const freshlyDrawn=strokes.slice(selectionStrokeCount).filter(rawInk);
+ const source=freshlyDrawn.length?freshlyDrawn:snapshot;
+ const bars=chooseBars(source);if(bars.length<2)return null;
+ const beforeState=clone(strokes);
+ const priorModels=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison'));
+ const priorIds=new Set([...priorModels].map(s=>s.smartId));
+ const temp=bars.map(synthetic);
+ const originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
+ strokes.push(...temp);
+ injected={temp,originals,beforeState,priorIds,priorModels,claimed:false};
+ return injected;
+}
+// The existing synchronous bar converter claims the job. Other recognised
+// conversion paths keep the newer asynchronous fallback below.
+window.__smartComparisonPrepare=prepare;
+window.__smartComparisonRelease=()=>{
+ const job=injected;
+ if(job){job.claimed=true;injected=null}
+ return job;
+};
 function menuButton(el){return!!(el&&el.closest&&el.closest('#smartBarTypeMenu button'))}
 function finishButton(el){const b=el&&el.closest?el.closest('button'):null,smart=document.getElementById('smartMathBtn');return!!(b&&smart&&smart.nextElementSibling===b)}
 
 document.addEventListener('pointerdown',e=>{
  const el=e.target instanceof Element?e.target:null;if(!el||!menuButton(el))return;
- selectionStrokeCount=strokes.length;snapshot=strokes.slice(0,selectionStrokeCount).filter(rawInk)
+ captureInitialInk()
 },true);
 
 document.addEventListener('pointerdown',e=>{
@@ -83,15 +111,14 @@ document.addEventListener('pointerdown',e=>{
  // 1) draw bars first, then choose Comparison; and
  // 2) choose Comparison first, then draw the rough bars.
  // The old fallback handled only (1), which is why normal classroom use failed.
- const freshlyDrawn=strokes.slice(selectionStrokeCount).filter(rawInk),source=freshlyDrawn.length?freshlyDrawn:snapshot;
- const bars=chooseBars(source);if(bars.length<2)return;
- const beforeState=clone(strokes),priorModels=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison')),priorIds=new Set([...priorModels].map(s=>s.smartId)),temp=bars.map(synthetic),originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
- strokes.push(...temp);injected={temp,originals,beforeState,priorIds,priorModels}
+ prepare();
 },true);
 
 document.addEventListener('click',e=>{
- const el=e.target instanceof Element?e.target:null;if(!el||!finishButton(el)||window.__smartBarType!=='comparison'||!injected)return;
- const job=injected;injected=null;
+ const el=e.target instanceof Element?e.target:null;
+ if(el&&menuButton(el)){captureInitialInk();return}
+ if(!el||!finishButton(el)||window.__smartBarType!=='comparison'||!injected)return;
+ const job=injected;
  // Models may be committed after the click handler's own animation frame or
  // asynchronous beautification. Do not abandon the cleanup at 160 ms.
  // Prefer object identity: some model creators reuse a smartId.
@@ -115,6 +142,6 @@ document.addEventListener('click',e=>{
   strokes=strokes.filter(s=>!temporary.has(s));
   try{redraw();if(typeof syncUi==='function')syncUi()}catch{}
  }
- setTimeout(settle,100);
+ setTimeout(()=>{if(job.claimed)return;injected=null;settle()},100);
 },true);
 })();

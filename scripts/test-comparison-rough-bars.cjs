@@ -1,24 +1,43 @@
 'use strict';
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const vm=require('node:vm');
-const source=fs.readFileSync('smart-math-bars-v2.js','utf8');
-function extract(start,end){const a=source.indexOf('function '+start+'('),b=source.indexOf('function '+end+'(',a);assert(a>=0&&b>a,'Missing engine functions');return source.slice(a,b)}
-const implementation=source.slice(source.indexOf('function rawInk('),source.indexOf('function notify('))+
- extract('comparisonCandidateGroup','finishBar');
-const context={cssW:900,cssH:1400,strokes:[],startIndex:0};
-vm.createContext(context);vm.runInContext(implementation,context);
-function bar(x,y,w,h,rough=false){const pts=rough?[[x,y+2],[x+w*.3,y],[x+w,y+2],[x+w+2,y+h],[x+w*.5,y+h+2],[x,y+h],[x,y+2]]:[[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]];return {points:pts.map(([a,b])=>({x:a/900,y:b/1400}))}}
-function select(items,start){context.strokes=items;context.startIndex=start;return Array.from(vm.runInContext('comparisonCandidateGroup()',context))}
-const upper=bar(150,350,410,85,true),lower=bar(150,470,220,76,true),dot={points:[{x:700/900,y:620/1400}]};
-assert.deepEqual(select([upper,lower,dot],0),[upper,lower],'rough bars plus stray dot');
-assert.deepEqual(select([upper,lower,dot],3),[upper,lower],'bars drawn before selecting Comparison');
-assert.deepEqual(select([upper,lower,dot],0),[upper,lower],'bars drawn after selecting Comparison');
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync('smart-math-comparison-predrawn-robust3.js','utf8');
+const a=source.indexOf('function rawInk('),b=source.indexOf('function synthetic(',a);
+assert(a>=0&&b>a,'Comparison recogniser functions missing');
+const recogniser=source.slice(a,b);
+const context={
+ document:{getElementById:()=>({getBoundingClientRect:()=>({width:900,height:1400})})},
+ innerWidth:900,innerHeight:1400
+};
+vm.createContext(context);
+vm.runInContext(recogniser,context);
+const ink=coords=>({points:coords.map(([x,y])=>({x:x/900,y:y/1400}))});
+function bar(x,y,w,h,rough=false){
+ const pts=rough?[[x,y+2],[x+w*.3,y],[x+w,y+2],[x+w+2,y+h],[x+w*.5,y+h+2],[x,y+h],[x,y+2]]:[[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]];
+ return ink(pts);
+}
+function choose(items){
+ context.testSource=items;
+ return vm.runInContext('chooseBars(testSource)',context).map(c=>Array.from(c.items,q=>q.s));
+}
+function check(items,expected,title){
+ const output=choose(items);
+ assert.equal(output.length,expected.length,title+' row count');
+ for(let i=0;i<expected.length;i++)assert.deepEqual(output[i],expected[i],title+' row '+i);
+}
+const upper=bar(150,350,410,85,true),lower=bar(150,470,220,76,true),dot=ink([[700,620]]);
+check([upper,lower,dot],[[upper],[lower]],'rough bars and stray dot');
+check([upper,lower],[[upper],[lower]],'draw-first bar grouping');
 const distant=bar(720,750,150,70);
-assert.deepEqual(select([upper,lower,distant,dot],0),[upper,lower],'unrelated distant bar ignored');
+check([upper,lower,distant,dot],[[upper],[lower]],'ignore unrelated distant bar');
 const equal=bar(150,470,410,76,true);
-assert.deepEqual(select([upper,equal,dot],0),[upper,equal],'equal-length comparison accepted');
+check([upper,equal,dot],[[upper],[equal]],'equal-length comparison');
 const upperShort=bar(150,350,220,85,true),lowerLong=bar(150,470,410,76,true);
-assert.deepEqual(select([upperShort,lowerLong,dot],0),[upperShort,lowerLong],'longer bottom bar accepted');
-assert.equal(select([upper,dot],0).length,1,'stray dot does not create a second bar');
-console.log('PASS: 6 rough comparison candidate-selection regression checks');
+check([upperShort,lowerLong,dot],[[upperShort],[lowerLong]],'longer bottom bar');
+const corners=(x,y,w,h)=>[
+ ink([[x,y],[x+w,y]]),ink([[x+w,y],[x+w,y+h]]),
+ ink([[x+w,y+h],[x,y+h]]),ink([[x,y+h],[x,y]])
+];
+const topParts=corners(150,330,410,50),bottomParts=corners(150,460,220,65);
+check([...topParts,...bottomParts], [topParts,bottomParts], 'multi-stroke rectangular bars');
+assert.equal(choose([upper,dot]).length,0,'A lone bar and stray dot are not a comparison');
+console.log('PASS: 7 rough comparison candidate-grouping regression checks');
