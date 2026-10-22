@@ -45,7 +45,10 @@ function ink(y){
     controller:!!window.CCDocumentAnnotations,
     isOpen:window.CCDocumentAnnotations?.isOpen(),
     docTitle:document.title,
-    toolbarButton:document.getElementById('ccPermanentSaveBtn')?.textContent
+    toolbarButton:document.getElementById('ccPermanentSaveBtn')?.textContent,
+    saveButtonDisabled:[...document.querySelectorAll('#ccAnnotationActionsDialog button')].find(b=>b.textContent.includes('Save this page'))?.disabled,
+    saveHandler:[...document.querySelectorAll('#ccAnnotationActionsDialog button')].find(b=>b.textContent.includes('Save this page'))?.onclick?.toString().slice(0,120),
+    modalHidden:document.getElementById('ccAnnotationActionsDialog')?.hidden
   }))));
   await page.waitForFunction(()=>document.getElementById('ccAnnotationActionStatus')?.textContent.includes('Saved locally'),{timeout:4000});
   let docs=await storage(page);
