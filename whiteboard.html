@@ -34,6 +34,59 @@ body.document-open-mode header.top>a.btn[href="whiteboard.html"]{display:none!im
 #ccSaveSlot #ccPermanentExitBtn{flex:0 0 36px}
 
 #ccSaveSlot{display:none;align-items:center;gap:6px;flex:1 1 100%;order:100;min-width:0;flex-wrap:nowrap;margin:0}body.document-open-mode #ccSaveSlot{display:flex!important}#ccSaveSlot button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;max-width:100%;min-height:36px;padding:7px 9px;border:1px solid #0f766e;border-radius:10px;background:#0f766e;color:white;font:700 12px system-ui;white-space:nowrap;box-shadow:none!important}#ccSaveSlot button:disabled{opacity:.6}#ccSaveSlot #ccPermanentExitBtn{display:inline-flex!important;visibility:visible!important;background:#fff!important;color:#17324d!important;border:1px solid #cbd5df!important;min-width:38px;font-size:19px;padding:4px 10px}#ccSaveSlot #ccPermanentSaveBtn{display:inline-flex!important;visibility:visible!important}#ccSaveSlot button:first-child{flex-shrink:0}#ccSaveSlot #ccPermanentSaveBtn{font-size:11px!important;padding:6px 8px!important}#ccSaveSlot #ccPermanentExitBtn{min-width:34px!important;min-height:34px!important;padding:3px 7px!important}
+
+/* Alpha document workspace: control surfaces must never overlay lesson content.
+   The document area shrinks and rerenders when the right-hand rail is present. */
+body.document-open-mode{--cc-document-rail-gutter:128px}
+body.document-open-mode #boardWrap{
+ margin-right:var(--cc-document-rail-gutter)!important;
+ min-width:0!important;
+}
+/* Settings participates in header layout rather than floating over Grid/tools. */
+.top > #mainSettingsBtn{
+ position:static!important;
+ top:auto!important;
+ right:auto!important;
+ margin:0!important;
+ z-index:auto!important;
+ flex:0 0 auto!important;
+ align-self:center!important;
+ order:2!important;
+}
+.top > .brand{padding-right:0!important}
+body:not(.document-open-mode) .top > .tools{
+ flex:1 1 100%;
+ min-width:0;
+ order:3;
+}
+body.document-open-mode .top{
+ display:flex!important;
+ flex-direction:row!important;
+ flex-wrap:wrap!important;
+ align-items:center!important;
+}
+body.document-open-mode .top > .tools{
+ order:1!important;
+ flex:1 1 0!important;
+ width:0!important;
+ min-width:0!important;
+ max-width:100%!important;
+ padding-right:0!important;
+ overflow-x:auto!important;
+}
+body.document-open-mode .top > #mainSettingsBtn{
+ order:2!important;
+ flex:0 0 auto!important;
+ margin-left:5px!important;
+}
+body.document-open-mode .top > #ccSaveSlot{
+ order:100!important;
+ flex:1 1 100%!important;
+}
+@media(max-width:800px){
+ body.document-open-mode{--cc-document-rail-gutter:112px}
+ body.document-open-mode .top > #mainSettingsBtn{margin-left:3px!important}
+}
 </style>
 </head>
 <body>
