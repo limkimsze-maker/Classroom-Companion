@@ -88,7 +88,7 @@ function ink(y){
   await page.locator('#ccDocsDialog').waitFor({state:'visible'});
   await page.locator('#ccDocsDialog').getByRole('button',{name:'Open'}).first().click();
   await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('documentPdfCanvas')?.width>80);
-  await page.waitForFunction(()=>strokes.length===1,{timeout:5500}).catch(()=>{});
+  await page.waitForFunction(()=>strokes.length===1,null,{timeout:5500}).catch(()=>{});
   console.log('REOPEN-DIAGNOSTIC',width,JSON.stringify(await page.evaluate(async()=>{
     const snap=await window.CCDocumentAnnotations.export('all');
     return {strokeCount:strokes.length,kind:snap.kind,keys:Object.keys(snap.pages),items:Object.fromEntries(Object.entries(snap.pages).map(([k,v])=>[k,v.length])),
