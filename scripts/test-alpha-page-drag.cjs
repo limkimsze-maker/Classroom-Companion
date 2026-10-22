@@ -96,6 +96,7 @@ const server=http.createServer((req,res)=>{
    assert.equal((await state()).ink,inkBefore,'Pen Undo remains functional');
    console.log('PASS',width,'Pen input and Undo remain protected');
    await page.locator('#documentTouchNavBtn').click();
+   assert.equal(await page.locator('#documentTouchNavBtn').getAttribute('aria-pressed'),'true','Hand mode must activate after leaving Pen');
    // Trackpad wheel scroll first pans the current page, without flipping.
    await page.mouse.move(x,upStart);
    for(let i=0;i<3;i++)await page.mouse.wheel(0,115);
@@ -110,6 +111,9 @@ const server=http.createServer((req,res)=>{
    await page.waitForTimeout(360);
    for(let i=0;i<4;i++)await page.mouse.wheel(0,115);
    await readyPage(2);
+   console.log('HAND-AFTER-TRACKPAD',width,JSON.stringify({mode:await page.locator('#documentTouchNavBtn').getAttribute('aria-pressed'),
+    active:await page.locator('#documentTouchNavBtn').evaluate(el=>el.classList.contains('active'))}));
+   assert.equal(await page.locator('#documentTouchNavBtn').getAttribute('aria-pressed'),'true','Hand mode must remain active when turning a page');
    console.log('PASS',width,'Trackpad scroll pans freely and a separate edge gesture navigates');
    if(width===390){
     const cdp=await ctx.newCDPSession(page);
