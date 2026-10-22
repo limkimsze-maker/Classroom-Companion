@@ -320,11 +320,14 @@ async function openPdf(data,worker,timing=null){
  if(!window.pdfjsLib)throw new Error('PDF engine unavailable');
  const t=timing||{start:performance.now(),readMs:0,workerReadyMs:0};
  const startedParsing=performance.now();
+ // PDF.js transfers the bytes to its worker and detaches the ArrayBuffer;
+ // record size *before* passing it to the worker.
+ const heavyDocument=data.byteLength>=400000;
  pdfLoadingTask=window.pdfjsLib.getDocument({data:new Uint8Array(data),worker});
  pdfDoc=await pdfLoadingTask.promise;
  const parseMs=Math.round(performance.now()-startedParsing);
  totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();
- const initial=await renderPdfPage(true,data.byteLength>=400000);
+ const initial=await renderPdfPage(true,heavyDocument);
  if(!active||docKind!=='pdf')return;
  loadPageAnnotations();
  const elapsed=Math.round(performance.now()-t.start);
