@@ -119,7 +119,9 @@ function finishBar(){
  const job=isComparison?window.__smartComparisonRelease?.():null;
  const fresh=strokes.slice(startIndex).filter(rawInk);
  const group=job?.temp?.length?job.temp:fresh;
- const a=analyse(group);
+ // A single long rectangle is not a comparison. The legacy row-count
+ // heuristic clamped even one line to two, which could erase a partial sketch.
+ const a=isComparison&&!job&&fresh.length<2?null:analyse(group);
  if(!a){
   // A failed recognition must never destroy the teacher's rough drawing.
   if(job?.temp?.length){const tempSet=new Set(job.temp);strokes=strokes.filter(s=>!tempSet.has(s));redraw();syncUi()}
