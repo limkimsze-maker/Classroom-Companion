@@ -3,6 +3,27 @@
 'use strict';
 // A fixed package set prevents automatic extension or font downloads.
 window.MathJax={startup:{typeset:false},tex:{packages:['base','ams'],maxBuffer:4096,maxMacros:200},svg:{fontCache:'local'},options:{enableMenu:false,enableAssistiveMml:false,menuOptions:{settings:{assistiveMml:false}}}};
+// The 2.2 MB MathJax runtime is intentionally absent from the startup bundle.
+// Load it only when a teacher opens the Beautify workflow. This stays fully local.
+let loadingMathJax=null;
+function ensure(){
+ if(typeof window.MathJax?.tex2svg==='function')return Promise.resolve(window.MathJax);
+ if(loadingMathJax)return loadingMathJax;
+ loadingMathJax=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='vendor/mathjax/tex-svg-full-3.2.2.js';
+  script.async=true;
+  script.onload=()=>{
+   Promise.resolve(window.MathJax?.startup?.promise).then(()=>{
+    if(typeof window.MathJax?.tex2svg!=='function')throw new Error('Local maths renderer did not initialise');
+    resolve(window.MathJax);
+   },reject).catch(reject);
+  };
+  script.onerror=()=>reject(new Error('Local maths renderer could not load. Try again.'));
+  document.head.appendChild(script);
+ }).catch(err=>{loadingMathJax=null;throw err});
+ return loadingMathJax;
+}
 const aliases={'²':'^{2}','³':'^{3}','⁻':'-','−':'-','×':'\\times ','÷':'\\div ','≤':'\\leq ','≥':'\\geq ','≠':'\\neq ','≈':'\\approx ','±':'\\pm ','∞':'\\infty ','∫':'\\int ','∑':'\\sum ','∏':'\\prod ','√':'\\sqrt ','π':'\\pi ','α':'\\alpha ','β':'\\beta ','θ':'\\theta ','°':'^{\\circ}'};
 const allowed=new Set(('frac dfrac tfrac sqrt int iint iiint oint sum prod lim limits sin cos tan cot sec csc log ln exp min max sup inf det gcd alpha beta gamma Gamma delta Delta epsilon varepsilon zeta eta theta Theta vartheta iota kappa lambda Lambda mu nu xi Xi pi Pi varpi rho varrho sigma Sigma varsigma tau upsilon Upsilon phi Phi varphi chi psi Psi omega Omega times div cdot pm mp le leq ge geq ne neq approx cong equiv propto sim simeq in ni notin subset subseteq subsetneq supset supseteq sqsubseteq emptyset forall exists neg land lor cap cup bigcap bigcup vee wedge bigvee bigwedge oplus ominus otimes odot bigoplus bigcirc leftarrow rightarrow leftrightarrow Leftarrow Rightarrow Leftrightarrow to mapsto uparrow downarrow partial nabla infty angle triangle perpendicular parallel degree circ prime ldots cdots vdots ddots hat widehat tilde widetilde vec overline underline bar dot ddot not mathbb mathrm mathit mathbf mathcal mathsf mathtt operatorname text left right big Big bigg Bigg langle rangle lceil rceil lfloor rfloor lbrace rbrace lvert rvert lVert rVert backslash quad qquad space begin end').split(' '));
 const units='mm|cm|km|m|mg|kg|g|mL|ml|kL|L|l|ms|s|min|h|Hz|kHz|MHz|N|kN|Pa|kPa|MPa|J|kJ|W|kW|MW|V|mV|A|mA|K|mol|rad|°C|°F|%|°';
@@ -43,5 +64,5 @@ function create(text,placement,colour){
   return{type:'image',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(xml),x:placement.x,y:placement.y,w:W/Math.max(1,cssW),h:H/Math.max(1,cssH),smartGenerated:true,smartType:'equation',smartId:'math-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7),smartOriginal:[],equationExpression:String(text),equationLatex:tex,equationLayout:'in-place-math',equationColour:ink};
  }catch{return null}
 }
-window.WhiteboardMathRenderer=Object.freeze({create,normalize,unitText});
+window.WhiteboardMathRenderer=Object.freeze({create,normalize,unitText,ensure});
 })();

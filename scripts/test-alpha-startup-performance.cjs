@@ -31,7 +31,7 @@ const server=http.createServer((req,res)=>{
       resources:resources.length,encodedKB:Math.round(resources.reduce((s,x)=>s+x.encodedBodySize,0)/1024),
       decodedKB:Math.round(resources.reduce((s,x)=>s+x.decodedBodySize,0)/1024),
       documentPreloads:resources.filter(x=>docPaths.some(p=>new URL(x.name).pathname.endsWith('/'+p))).map(x=>new URL(x.name).pathname.split('/').at(-1)),
-      mathjaxReady:typeof window.MathJax?.tex2svg==='function',
+      mathjaxReady:typeof window.MathJax?.tex2svg==='function',wordListReady:!!window.WhiteboardHandwritingWordList?.levels,
       modelReady:!!window.WhiteboardCharacterModels,
       handwritingReaderReady:!!window.WhiteboardHandwritingMath,
       pen:!!document.getElementById('penBtn'),
@@ -51,13 +51,22 @@ const server=http.createServer((req,res)=>{
    await page.mouse.move(board.x+board.width*.29,board.y+board.height*.31,{steps:6});
    await page.mouse.up();
    await page.waitForFunction(()=>!!window.WhiteboardCharacterModels,null,{timeout:20000});
+   await page.waitForFunction(()=>typeof window.MathJax?.tex2svg==='function'&&!!window.WhiteboardHandwritingWordList?.levels&&typeof window.WhiteboardHandwritingWords?.check==='function',null,{timeout:25000});
+   const advanced=await page.evaluate(()=>{
+    const obj=window.WhiteboardMathRenderer.create('\\\\sqrt{9}',{x:.2,y:.2,w:.24,h:.12},'#17324d');
+    return {mathLoaded:typeof window.MathJax?.tex2svg==='function',wordsLoaded:!!window.WhiteboardHandwritingWordList?.levels,
+      lexicalCheckReady:typeof window.WhiteboardHandwritingWords?.check==='function',
+      rendersAdvancedMath:obj?.type==='image'&&obj.src.startsWith('data:image/svg+xml')};
+   });
+   assert(advanced.mathLoaded&&advanced.wordsLoaded&&advanced.lexicalCheckReady&&advanced.rendersAdvancedMath,'On-demand maths and word engines must fully initialise and render');
+   console.log('LAZY-ADVANCED',width,JSON.stringify(advanced));
    console.log('LAZY-MODEL',width,JSON.stringify({
     initiallyPresent:perf.modelReady,
     loadedOnBeautify:await page.evaluate(()=>!!window.WhiteboardCharacterModels),
     recognitionDialog:await page.locator('#handwritingReadText').count()
    }));
    assert(perf.pen&&perf.documentControls,'core controls ready');
-   assert(perf.mathjaxReady,'MathJax available after startup');
+   assert(!perf.mathjaxReady&&!perf.wordListReady,'Advanced maths and English dictionary are deferred until first use');
    assert.deepEqual(errors,[],'no JavaScript runtime errors');
    console.log('STARTUP',width,JSON.stringify({...perf,requestCount:requests.length,errors}));
    await context.close();
