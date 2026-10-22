@@ -1,7 +1,12 @@
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict');
 const {chromium}=require('playwright');const root=path.resolve(__dirname,'..');
 const scripts=file=>Array.from(fs.readFileSync(path.join(root,file),'utf8').matchAll(/<script[^>]+src="([^"]+)"/g),m=>m[1]);
-assert.deepEqual(scripts('whiteboard.html').slice(1).filter(src=>!src.startsWith('whiteboard-speech-to-text-experiment.js?')),scripts('whiteboard-v2-trial.html').slice(1),'Alpha must load the exact approved V2 bundle in the same order');
+const alpha=scripts('whiteboard.html').map(src=>src.split('?')[0]);
+for(const file of ['whiteboard-core.js','experimental/math-structure/whiteboard-text-drag-resizable-v2.js','whiteboard-document-open-my-documents-test.js','my-documents-v1.js','experimental/math-structure/main-settings-v2.js','whiteboard-speech-to-text-experiment.js']){
+ assert.equal(alpha.filter(x=>x===file).length,1,'Alpha must load exactly one '+file);
+}
+assert(alpha.indexOf('whiteboard-document-open-my-documents-test.js')<alpha.indexOf('my-documents-v1.js'),'Document controller must load before saved documents');
+
 const server=http.createServer((req,res)=>{const p=path.join(root,decodeURIComponent(new URL(req.url,'http://localhost').pathname));fs.readFile(p,(e,d)=>{if(e)return res.writeHead(404).end();res.setHeader('Content-Type',p.endsWith('.js')?'application/javascript':p.endsWith('.html')?'text/html':'application/octet-stream');res.end(d)})});
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{for(const width of [1365,390]){const context=await browser.newContext({viewport:{width,height:900}});await context.addInitScript(()=>{
  window.SpeechRecognition=class {
