@@ -34,6 +34,10 @@ body.document-open-mode header.top>a.btn[href="whiteboard.html"]{display:none!im
 #ccSaveSlot #ccPermanentExitBtn{flex:0 0 36px}
 
 #ccSaveSlot{display:none;align-items:center;gap:6px;flex:1 1 100%;order:100;min-width:0;flex-wrap:nowrap;margin:0}body.document-open-mode #ccSaveSlot{display:flex!important}#ccSaveSlot button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;max-width:100%;min-height:36px;padding:7px 9px;border:1px solid #0f766e;border-radius:10px;background:#0f766e;color:white;font:700 12px system-ui;white-space:nowrap;box-shadow:none!important}#ccSaveSlot button:disabled{opacity:.6}#ccSaveSlot #ccPermanentExitBtn{display:inline-flex!important;visibility:visible!important;background:#fff!important;color:#17324d!important;border:1px solid #cbd5df!important;min-width:38px;font-size:19px;padding:4px 10px}#ccSaveSlot #ccPermanentSaveBtn{display:inline-flex!important;visibility:visible!important}#ccSaveSlot button:first-child{flex-shrink:0}#ccSaveSlot #ccPermanentSaveBtn{font-size:11px!important;padding:6px 8px!important}#ccSaveSlot #ccPermanentExitBtn{min-width:34px!important;min-height:34px!important;padding:3px 7px!important}
+/* The annotation menu shares the save/exit header row without overlaying the document. */
+#ccSaveSlot #ccAnnotationActionsBtn{flex:0 0 auto!important;min-width:0;max-width:145px;font-size:11px!important;padding:5px 8px!important}
+@media(max-width:800px){#ccSaveSlot #ccAnnotationActionsBtn{max-width:120px;font-size:10px!important;padding:4px 5px!important}}
+
 
 /* Alpha document workspace: control surfaces must never overlay lesson content.
    The document area shrinks and rerenders when the right-hand rail is present. */
@@ -205,7 +209,7 @@ body.document-open-mode:has(#documentTouchNavBtn[aria-pressed="true"]) #boardWra
 <script src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
 <script src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
 <script src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
-<script src="whiteboard-document-open-my-documents-test.js?v=20261022-no-duplicates18"></script>
+<script src="whiteboard-document-open-my-documents-test.js?v=20261022-annotation-persistence1"></script>
 <script src="whiteboard-document-gestures-v2-trial.js?v=20261021-page-anchor2"></script>
 <script src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
 <script src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>
@@ -214,7 +218,7 @@ body.document-open-mode:has(#documentTouchNavBtn[aria-pressed="true"]) #boardWra
 <script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
 <script src="experimental/math-structure/letter-trainer-v2.js?v=20261021-letter-trainer1"></script>
 <script src="experimental/math-structure/main-settings-v2.js?v=20261022-settings-close-no-trainer1"></script>
-<script src="my-documents-v1.js?v=20261022-no-duplicates18"></script>
+<script src="my-documents-v1.js?v=20261022-annotation-persistence1"></script>
 <script src="whiteboard-speech-to-text-experiment.js?v=20261021-beta-speech-restore1"></script>
 </body>
 </html>
