@@ -27,6 +27,7 @@ function ink(y){
   await page.goto(url,{waitUntil:'load'});await page.waitForFunction(()=>document.body.classList.contains('toolbar-ready'));
   await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'pages.pdf',mimeType:'application/pdf',buffer:fs.readFileSync(fixture)});
   await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('documentPdfCanvas')?.width>80);
+  await page.waitForFunction(()=>window.CCDocumentAnnotations?.ready(),null,{timeout:15000});
   await page.waitForTimeout(220);
   assert.equal(await page.locator('#ccAnnotationActionsBtn').count(),1,'Annotation actions menu exists');
   const menu=page.locator('#ccAnnotationActionsDialog');
@@ -88,6 +89,7 @@ function ink(y){
   await page.locator('#ccDocsDialog').waitFor({state:'visible'});
   await page.locator('#ccDocsDialog').getByRole('button',{name:'Open'}).first().click();
   await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('documentPdfCanvas')?.width>80);
+  await page.waitForFunction(()=>window.CCDocumentAnnotations?.ready(),null,{timeout:15000});
   await page.waitForFunction(()=>strokes.length===1,null,{timeout:5500}).catch(()=>{});
   console.log('REOPEN-DIAGNOSTIC',width,JSON.stringify(await page.evaluate(async()=>{
     const snap=await window.CCDocumentAnnotations.export('all');
