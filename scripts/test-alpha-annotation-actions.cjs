@@ -88,7 +88,12 @@ function ink(y){
   await page.locator('#ccDocsDialog').waitFor({state:'visible'});
   await page.locator('#ccDocsDialog').getByRole('button',{name:'Open'}).first().click();
   await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('documentPdfCanvas')?.width>80);
-  await page.waitForTimeout(220);
+  await page.waitForFunction(()=>strokes.length===1,{timeout:5500}).catch(()=>{});
+  console.log('REOPEN-DIAGNOSTIC',width,JSON.stringify(await page.evaluate(async()=>{
+    const snap=await window.CCDocumentAnnotations.export('all');
+    return {strokeCount:strokes.length,kind:snap.kind,keys:Object.keys(snap.pages),items:Object.fromEntries(Object.entries(snap.pages).map(([k,v])=>[k,v.length])),
+      canvasWidth:document.getElementById('documentPdfCanvas')?.width,documentName:window.CCDocumentAnnotations.name()};
+  })));
   assert.equal(await page.evaluate(()=>strokes.length),1,'Page 1 restored after reopening');
   await goto(2);
   assert.equal(await page.evaluate(()=>strokes.length),0,'Cleared page 2 stays blank after reopening');
