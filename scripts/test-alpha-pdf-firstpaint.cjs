@@ -38,11 +38,23 @@ const server=http.createServer((req,res)=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{for(const density of [1,2]){
   const context=await browser.newContext({viewport:{width:1200,height:900},deviceScaleFactor:density,serviceWorkers:'block'});
-  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const page=await context.newPage(),errors=[],consoleErrors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',msg=>{if(msg.type()==='error')consoleErrors.push(msg.text())});
   await page.goto('http://127.0.0.1:'+server.address().port+'/whiteboard.html',{waitUntil:'load'});
   await page.waitForFunction(()=>document.body.classList.contains('toolbar-ready'));
   await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'Large Scan.pdf',mimeType:'application/pdf',buffer:fixture});
-  await page.waitForFunction(()=>window.CCDocumentAnnotations?.ready()&&window.CCPdfOpenDiagnostics?.preview===true,null,{timeout:22000});
+  await page.waitForFunction(()=>window.CCDocumentAnnotations?.ready()&&window.CCPdfOpenDiagnostics?.preview===true,null,{timeout:9000}).catch(async err=>{
+   const details=await page.evaluate(()=>({
+    mode:document.body.classList.contains('document-open-mode'),
+    kind:window.CCDocumentAnnotations?.isOpen(),
+    ready:window.CCDocumentAnnotations?.ready(),
+    diag:window.CCPdfOpenDiagnostics,
+    canvas:{w:document.getElementById('documentPdfCanvas')?.width,h:document.getElementById('documentPdfCanvas')?.height},
+    toast:document.getElementById('toast')?.textContent,
+    pdfLib:!!window.pdfjsLib
+   }));
+   console.log('PDF-SCAN-DEBUG',density,JSON.stringify({details,errors,consoleErrors}));
+   throw err;
+  });
   const before=await page.evaluate(()=>{
    const c=document.getElementById('documentPdfCanvas'),r=c.getBoundingClientRect();
    strokes.push({colour:'#17324d',size:4,points:[{x:.21,y:.23},{x:.33,y:.38}]});redraw();syncUi();
