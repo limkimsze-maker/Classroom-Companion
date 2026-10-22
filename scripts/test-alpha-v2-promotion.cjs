@@ -120,4 +120,60 @@ assert(stress.segmentHitZones<1000,'Comparison hit zones must not grow without b
 console.log('PERF-STRESS',width,JSON.stringify(stress));
 await page.evaluate(()=>{strokes=strokes.filter(s=>s.smartId!=='alpha-smoke-bar');redraw();syncUi()});
 await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'promotion-check.txt',mimeType:'text/plain',buffer:Buffer.from('V2 promotion check')});await page.waitForFunction(()=>document.body.classList.contains('document-open-mode'));await page.locator('#ccPermanentSaveBtn').waitFor({state:'visible'});await page.locator('#ccPermanentExitBtn').waitFor({state:'visible'});assert.equal(await page.locator('#ccPermanentSaveBtn').count(),1);await page.screenshot({path:'/tmp/alpha-v2-'+width+'.png'});await page.locator('#ccPermanentExitBtn').click();await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
+// Verify saving the document and reopening it from IndexedDB. Report separately
+// whether the document's annotations actually survive reopening.
+await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'health-notes.txt',mimeType:'text/plain',buffer:Buffer.from('Teaching notes persisted')});
+await page.waitForFunction(()=>document.body.classList.contains('document-open-mode'));
+await page.evaluate(()=>{strokes.push({colour:'#17324d',size:3,points:[{x:.15,y:.17},{x:.27,y:.28}]});redraw();syncUi()});
+const annotationBeforeSave=await page.evaluate(()=>strokes.length);
+await page.locator('#ccPermanentSaveBtn').click();
+await page.waitForFunction(async()=>{
+ const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('cc-my-documents-v1');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
+ return await new Promise(resolve=>{const r=db.transaction('files').objectStore('files').getAll();r.onsuccess=()=>resolve(r.result.some(x=>x.name==='health-notes.txt'));r.onerror=()=>resolve(false)});
+});
+await page.locator('#ccPermanentExitBtn').click();
+await page.getByRole('button',{name:/My Documents/}).first().click();
+await page.locator('#ccDocsDialog').waitFor({state:'visible'});
+await page.locator('#ccDocsDialog').getByRole('button',{name:'Open',exact:true}).first().click();
+await page.waitForFunction(()=>document.body.classList.contains('document-open-mode'));
+await page.waitForTimeout(350);
+const annotationAfterReopen=await page.evaluate(()=>strokes.length);
+console.log('CHECK-SAVE',width,JSON.stringify({fileSavedToIndexedDB:true,annotationBeforeSave,annotationAfterReopen,annotationsPersisted:annotationAfterReopen>=annotationBeforeSave}));
+await page.locator('#ccPermanentExitBtn').click();
+await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
+// PDF rendering and geometry: compare relative annotation position/size across zoom.
+const pdfFile=path.join(root,'experimental/math-structure/fixtures/documents/pages.pdf');
+const pdfContent=fs.readFileSync(pdfFile);
+await page.locator('input[type=file][accept="*/*"]').setInputFiles({name:'pages.pdf',mimeType:'application/pdf',buffer:pdfContent});
+await page.waitForFunction(()=>document.body.classList.contains('document-open-mode')&&document.getElementById('documentPdfCanvas')?.width>300,{timeout:15000});
+await page.waitForTimeout(350);
+await page.evaluate(()=>{
+ strokes=[{colour:'#17324d',size:4,points:[{x:.27,y:.28},{x:.37,y:.38}]},
+ {type:'text',text:'Anchor',font:'Arial',bold:false,size:24,colour:'#17324d',x:.27,y:.28,w:.15,h:.08},
+ {type:'image',src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><text y="30">1 + 1 = 2</text></svg>'),x:.27,y:.28,w:.12,h:.06,smartGenerated:true,smartType:'equation'}];
+ redraw();syncUi();
+});
+const getGeometry=()=>page.evaluate(()=>{
+ const r=document.getElementById('documentPdfCanvas').getBoundingClientRect(),b=canvas.getBoundingClientRect();
+ return strokes.map(s=>{const p=s.points?.[0]||s;return {x:(p.x*b.width+b.left-r.left)/r.width,y:(p.y*b.height+b.top-r.top)/r.height,
+ w:s.w==null?null:s.w*b.width/r.width,h:s.h==null?null:s.h*b.height/r.height,size:s.size==null?null:s.size/r.width}});
+});
+const beforeZoom=await getGeometry();
+await page.locator('#documentQuickBar button[title="Zoom in"]').click();
+await page.waitForTimeout(900);
+const afterZoom=await getGeometry();
+const diffs=beforeZoom.flatMap((a,i)=>Object.keys(a).filter(k=>a[k]!=null&&afterZoom[i]?.[k]!=null).map(k=>({object:i,key:k,diff:+Math.abs(a[k]-afterZoom[i][k]).toFixed(5)}))).sort((a,b)=>b.diff-a.diff);
+const pdfAlignment={objects:beforeZoom.length,maxNormalizedDrift:diffs[0],withinTolerance002:!diffs.length||diffs[0].diff<.002};
+console.log('CHECK-PDF-ZOOM',width,JSON.stringify(pdfAlignment));
+await page.locator('#ccPermanentExitBtn').click();
+await page.waitForFunction(()=>!document.body.classList.contains('document-open-mode'));
+// Offline after loading: local pen interaction should work without requests.
+await context.setOffline(true);
+await page.locator('#penBtn').click();
+const offlineStart=await page.evaluate(()=>strokes.length);
+const ob=await page.locator('#board').boundingBox();
+await page.mouse.move(ob.x+24,ob.y+40);await page.mouse.down();await page.mouse.move(ob.x+76,ob.y+84,{steps:6});await page.mouse.up();
+const offlineEnd=await page.evaluate(()=>strokes.length);
+console.log('CHECK-OFFLINE-LOADED',width,JSON.stringify({works:offlineEnd>offlineStart,strokesAdded:offlineEnd-offlineStart}));
+await context.setOffline(false);
 assert.deepEqual(errors,[]);console.log('PASS',width,'V2 loader, shared learning, pen/undo, Settings, document Save/Exit, no script errors');await context.close();}}finally{await browser.close();server.close()}})().catch(e=>{console.error(e);server.close();process.exitCode=1});
