@@ -5,6 +5,7 @@ on:
       - smart-math-bars-v2.js
       - smart-math-comparison-predrawn-robust3.js
       - scripts/test-comparison-rough-bars.cjs
+      - scripts/test-alpha-comparison-atomic.cjs
       - .github/workflows/v2-comparison-regression.yml
   workflow_dispatch:
 jobs:
