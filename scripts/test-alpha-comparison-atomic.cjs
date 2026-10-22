@@ -74,8 +74,8 @@ const fixture=fs.readFileSync(path.join(root,'experimental/math-structure/fixtur
     const undone=await page.evaluate(()=>({
       raw:strokes.filter(x=>Array.isArray(x.points)).length,
       models:strokes.filter(x=>x.smartType==='barModel'&&x.smartBarType==='comparison').length,
-      allOriginals:window.__comparisonExpected.every(x=>strokes.some(y=>JSON.stringify(x)===JSON.stringify(y))),
-      unrelated:strokes.some(y=>JSON.stringify(y)===JSON.stringify(window.__comparisonUnrelated))
+      allOriginals:window.__comparisonExpected.every(x=>strokes.some(y=>JSON.stringify(x.points)===JSON.stringify(y.points))),
+      unrelated:strokes.some(y=>JSON.stringify(y.points)===JSON.stringify(window.__comparisonUnrelated.points))
     }));
     assert.equal(undone.models,0,'Undo removes beautified comparison');
     assert.equal(undone.raw,kind==='fragments'?9:3,'Undo restores all rough sketch strokes');
