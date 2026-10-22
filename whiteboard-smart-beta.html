@@ -25,6 +25,8 @@
 <div class="tools" role="toolbar" aria-label="Whiteboard tools">
 <button class="btn active" id="penBtn" type="button">✏️ Pen</button>
 <button class="btn" id="textBtn" type="button">T Text</button>
+<button class="btn soft" id="speechToTextBtn" type="button" title="Convert speech to text">🎙 Speech to Text</button>
+<button class="btn soft" id="documentAccessBtn" type="button" title="Open a document">📄 Document</button>
 <button class="btn" id="eraserBtn" type="button">⌫ Eraser</button>
 <div class="colors" aria-label="Pen colour">
 <button class="colour active" type="button" data-colour="#17324d" style="background:#17324d" aria-label="Navy"></button>
@@ -123,6 +125,21 @@
 <script src="whiteboard-document-right-rail-v1.js?v=20261018-direct-finger1"></script>
 <script src="whiteboard-contextual-actions-v1.js?v=20261017-down-increases1"></script>
 <script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
-<script src="whiteboard-speech-to-text-experiment.js?v=20261021-beta-speech-restore1"></script>
+<script>
+(function(){
+'use strict';
+const entry=document.getElementById('documentAccessBtn');
+if(!entry)return;
+entry.addEventListener('click',()=>{
+ const existing=document.getElementById('openDocumentBtn');
+ if(existing){existing.click();return;}
+ const input=document.querySelector('input[type="file"]');
+ if(input){input.click();return;}
+ const t=document.getElementById('toast');
+ if(t){t.textContent='Document opener is unavailable';t.classList.add('show');}
+});
+})();
+</script>
+<script src="whiteboard-speech-to-text-experiment.js?v=20261022-visible-speech1"></script>
 </body>
 </html>
