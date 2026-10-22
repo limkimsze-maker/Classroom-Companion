@@ -7,6 +7,7 @@ on:
       - whiteboard-alpha-v2-bootstrap.js
       - scripts/test-alpha-startup-performance.cjs
       - scripts/test-alpha-pdf-open-performance.cjs
+      - scripts/test-alpha-pdf-firstpaint.cjs
       - scripts/test-alpha-v2-promotion.cjs
       - scripts/test-alpha-annotation-actions.cjs
       - scripts/test-alpha-page-drag.cjs
@@ -41,6 +42,10 @@ jobs:
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-pdf-open-performance.cjs
+      - name: Verify scanned PDF fast preview, sharpened detail and annotation stability
+        env:
+          NODE_PATH: /tmp/alpha-browser/node_modules
+        run: node scripts/test-alpha-pdf-firstpaint.cjs
       - name: Verify Alpha desktop and mobile
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
