@@ -112,10 +112,30 @@ function analyse(group){
 }
 function finishBar(){
  if(!active||!barType)return;
- const group=strokes.slice(startIndex).filter(rawInk),a=analyse(group);if(!a){notify(L.no);forcePen();showActive();return}
- const before=clone(strokes),set=new Set(group);strokes=strokes.filter(s=>!set.has(s));
+ // Comparison may have been sketched before selecting Smart Math. Prepare
+ // fallback geometry without relying on a later click/timer to remove ink.
+ const isComparison=barType==='comparison';
+ if(isComparison)window.__smartComparisonPrepare?.();
+ const job=isComparison?window.__smartComparisonRelease?.():null;
+ const fresh=strokes.slice(startIndex).filter(rawInk);
+ const group=job?.temp?.length?job.temp:fresh;
+ const a=analyse(group);
+ if(!a){
+  // A failed recognition must never destroy the teacher's rough drawing.
+  if(job?.temp?.length){const tempSet=new Set(job.temp);strokes=strokes.filter(s=>!tempSet.has(s));redraw();syncUi()}
+  notify(L.no);forcePen();showActive();return;
+ }
+ // Replace selected source strokes and temporary recognition geometry as
+ // ONE synchronous commit. Previously older bars survived for 120–160ms,
+ // and sometimes survived indefinitely when a delayed fallback missed them.
+ const before=job?.beforeState||clone(strokes);
+ const source=isComparison
+  ?[...new Set([...fresh.filter(s=>!s.__predrawnPreflightTemp),...(job?.originals||[])])]
+  :fresh;
+ const remove=new Set([...fresh,...(job?.originals||[]),...(job?.temp||[])]);
+ strokes=strokes.filter(s=>!remove.has(s));
  const b=a.box,fills=barType==='partwhole'?Array(a.count).fill('#ffffff'):null,labels=barType==='partwhole'?Array(a.count).fill(''):null;
- const obj={type:'image',src:buildModel(barType,a.count,a.cuts,fills,labels),x:clamp(b.x,0,.94),y:clamp(b.y,0,.94),w:clamp(b.w,.12,1-b.x),h:clamp(Math.max(b.h,barType==='comparison'?.12:.08),.08,1-b.y),smartGenerated:true,smartType:'barModel',smartBarType:barType,smartId:uid(),barCount:a.count,barCuts:a.cuts?clone(a.cuts):null,barFills:fills,barLabels:labels,smartOriginal:clone(group)};
+ const obj={type:'image',src:buildModel(barType,a.count,a.cuts,fills,labels),x:clamp(b.x,0,.94),y:clamp(b.y,0,.94),w:clamp(b.w,.12,1-b.x),h:clamp(Math.max(b.h,barType==='comparison'?.12:.08),.08,1-b.y),smartGenerated:true,smartType:'barModel',smartBarType:barType,smartId:uid(),barCount:a.count,barCuts:a.cuts?clone(a.cuts):null,barFills:fills,barLabels:labels,smartOriginal:clone(source)};
  strokes.push(obj);window.__smartBarLastHistory={before,afterId:obj.smartId};redraw();syncUi();try{tool='select';syncUi()}catch{};const label=LABEL[barType];deactivate();notify(`${label} ${L.made}`)
 }
 function begin(type){barType=type;window.__smartBarType=type;active=true;startIndex=strokes.length;close();closePartPanel();showActive();forcePen();notify(L.draw)}
