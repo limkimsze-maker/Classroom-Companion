@@ -115,6 +115,20 @@ body.document-open-mode:has(#documentTouchNavBtn[aria-pressed="true"]) #boardWra
  cursor:grab!important;
 }
 </style>
+<style>
+#ccHighlighterHeader{display:inline-flex!important;visibility:visible!important;align-items:center;justify-content:center;min-height:36px;padding:5px 10px;background:#fff3a6;border:2px solid #c9aa00;color:#3c3000;border-radius:9px;font-weight:800;white-space:nowrap;cursor:pointer;flex-shrink:0}
+#ccHighlighterHeader[aria-pressed="true"]{background:#f9df57;box-shadow:inset 0 0 0 2px #8d7500}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const top=document.querySelector('header.top'),original=document.getElementById('highlighterBtn');
+ if(!top||!original||document.getElementById('ccHighlighterHeader'))return;
+ const b=document.createElement('button');b.type='button';b.id='ccHighlighterHeader';b.textContent='🖍️ Highlighter';b.title='Highlight on documents and whiteboard';
+ top.insertBefore(b,top.querySelector('.tools'));
+ b.addEventListener('click',()=>{original.click();b.setAttribute('aria-pressed','true')});
+ document.querySelectorAll('#penBtn,#eraserBtn,#textBtn').forEach(x=>x.addEventListener('click',()=>b.setAttribute('aria-pressed','false')));
+});
+</script>
 </head>
 <body>
 <div id="ccStartupLoading" role="status" aria-live="polite" aria-label="Loading...Please wait."><span class="cc-loading-message"><span class="cc-loading-spinner" aria-hidden="true"></span><span>Loading...Please wait.</span></span></div>
