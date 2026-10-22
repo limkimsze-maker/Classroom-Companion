@@ -34,6 +34,7 @@ const fixture=fs.readFileSync(path.join(root,'experimental/math-structure/fixtur
     },kind);
    };
    const choose=async()=>{
+    await page.locator('#smartMathBtn').click();
     const bar=page.getByRole('button',{name:'Bar Model',exact:true});
     await bar.click();
     await page.locator('#smartBarTypeMenu').getByRole('button',{name:'Comparison',exact:true}).click();
