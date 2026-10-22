@@ -33,7 +33,7 @@ jobs:
       - name: Install browser
         run: |
           npm install --prefix /tmp/alpha-browser --no-save playwright@1.55.0
-          node /tmp/alpha-browser/node_modules/playwright/cli.js install --with-deps chromium --only-shell
+          node /tmp/alpha-browser/node_modules/playwright/cli.js install chromium --only-shell
       - name: Measure Alpha startup loading
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
