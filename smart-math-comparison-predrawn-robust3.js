@@ -36,10 +36,45 @@ function compatible(a,b){
  const dy=Math.abs(a.cy-b.cy),leftDiff=Math.abs(a.l-b.l),leftTol=Math.max(140,Math.min(a.pw,b.pw)*.55);
  return ratio>=.18&&dy>=20&&dy<=720&&leftDiff<=leftTol;
 }
+// Rough comparison bars may have long downward tails or hooked ends.
+// Use their sustained horizontal edge, not the entire stroke bounding box.
+// This also keeps two overlapping hand-drawn rows distinct when their tails
+// intersect: grouping whole-stroke bounding boxes would merge them into one.
+function horizontalEdge(q){
+ const pts=q.s.points||[],d=dims();let best=null,run=null,lastSign=0;
+ const consider=()=>{
+  if(!run)return;
+  const width=run.r-run.l;
+  if(width>=110&&(!best||width>best.pw)){
+   const h=Math.max(30,Math.min(68,Math.max(run.b-run.t+16,width*.14)));
+   const t=Math.max(0,run.t-7),b=t+h;
+   best={items:[q],l:run.l,t,r:run.r,b,pw:width,ph:h,
+    cx:(run.l+run.r)/2,cy:(t+b)/2,last:q.i,
+    x:run.l/d.w,y:t/d.h,w:width/d.w,h:h/d.h};
+  }
+ };
+ for(let i=1;i<pts.length;i++){
+  const a=pts[i-1],b=pts[i],ax=a.x*d.w,ay=a.y*d.h,bx=b.x*d.w,by=b.y*d.h;
+  const dx=bx-ax,dy=by-ay,sign=Math.sign(dx);
+  const horizontal=Math.abs(dx)>=1.5&&Math.abs(dy)<=Math.max(8,Math.abs(dx)*.55);
+  if(!horizontal||lastSign&&sign!==lastSign){consider();run=null;lastSign=0}
+  if(!horizontal)continue;
+  if(!run)run={l:Math.min(ax,bx),r:Math.max(ax,bx),t:Math.min(ay,by),b:Math.max(ay,by)};
+  else{run.l=Math.min(run.l,ax,bx);run.r=Math.max(run.r,ax,bx);run.t=Math.min(run.t,ay,by);run.b=Math.max(run.b,ay,by)}
+  lastSign=sign;
+ }
+ consider();
+ return best;
+}
 function chooseBars(source){
  const entries=(source||[]).map((s,i)=>({s,i})).filter(q=>rawInk(q.s));if(!entries.length)return[];
  let comps=components(entries).filter(barLike);
- if(comps.length<2)comps=entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
+ if(comps.length<2){
+  // Distinct open strokes may overlap vertically without belonging to one
+  // connected bar. Try horizontal-edge geometry before legacy whole-stroke boxes.
+  const edges=entries.map(horizontalEdge).filter(Boolean);
+  comps=edges.length>=2?edges:entries.map(q=>{const b=box(q.s);return{items:[q],...b,last:q.i}}).filter(barLike);
+ }
  if(comps.length<2)return[];
 
  // 3 bars is the maximum comparison model supported by this beta. Start from
