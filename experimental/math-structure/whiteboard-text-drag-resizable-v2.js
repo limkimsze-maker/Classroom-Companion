@@ -18,8 +18,11 @@ let movedDuringGesture=false,editor=null,editSnapshot=null;
 
 const selectBtn=document.createElement('button');selectBtn.className='btn';selectBtn.id='selectBtn';selectBtn.type='button';selectBtn.textContent=X.select;penBtn.parentElement.insertBefore(selectBtn,penBtn);
 textBtn.textContent=X.textBox;
-const editBtn=document.createElement('button');editBtn.className='btn';editBtn.id='editTextBtn';editBtn.type='button';editBtn.textContent=X.editBtn;editBtn.disabled=true;penBtn.parentElement.insertBefore(editBtn,textBtn.nextSibling);
-const imageBtn=document.createElement('button');imageBtn.className='btn';imageBtn.id='imageBtn';imageBtn.type='button';imageBtn.textContent=X.imageBtn;penBtn.parentElement.insertBefore(imageBtn,eraserBtn);
+// Alpha groups Pen and its colours, while the trial uses a flat toolbar.
+// Insert beside each control in its own parent so both layouts finish loading
+// the shared image renderer used by comparison models and other smart objects.
+const editBtn=document.createElement('button');editBtn.className='btn';editBtn.id='editTextBtn';editBtn.type='button';editBtn.textContent=X.editBtn;editBtn.disabled=true;textBtn.parentElement.insertBefore(editBtn,textBtn.nextSibling);
+const imageBtn=document.createElement('button');imageBtn.className='btn';imageBtn.id='imageBtn';imageBtn.type='button';imageBtn.textContent=X.imageBtn;eraserBtn.parentElement.insertBefore(imageBtn,eraserBtn);
 const imageInput=document.createElement('input');imageInput.type='file';imageInput.accept='image/*';imageInput.multiple=true;imageInput.hidden=true;document.body.appendChild(imageInput);
 
 const formatBar=document.createElement('div');formatBar.id='wordTextFormatBar';Object.assign(formatBar.style,{position:'absolute',zIndex:'50',top:'8px',left:'50%',transform:'translateX(-50%)',display:'none',alignItems:'center',gap:'5px',padding:'6px',border:'1px solid #cfd9de',borderRadius:'12px',background:'rgba(255,255,255,.97)',boxShadow:'0 8px 22px rgba(18,32,46,.15)',whiteSpace:'nowrap'});wrap.appendChild(formatBar);
@@ -281,3 +284,4 @@ document.addEventListener('whiteboard-annotation-transform',e=>{
 });
 tool='select';selected=null;redraw();syncUi();
 })();
+

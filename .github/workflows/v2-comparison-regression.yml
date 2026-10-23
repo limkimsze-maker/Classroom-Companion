@@ -4,6 +4,9 @@ on:
     paths:
       - smart-math-bars-v2.js
       - smart-math-comparison-predrawn-robust3.js
+      - experimental/math-structure/whiteboard-text-drag-resizable-v2.js
+      - whiteboard.html
+      - scripts/test-alpha-comparison-render.cjs
       - scripts/test-comparison-rough-bars.cjs
       - scripts/test-alpha-comparison-atomic.cjs
       - .github/workflows/v2-comparison-regression.yml
@@ -18,3 +21,8 @@ jobs:
           node-version: '22'
       - name: Test rough comparison bars
         run: node scripts/test-comparison-rough-bars.cjs
+      - name: Install DOM regression test dependency
+        run: npm install --no-save --package-lock=false --ignore-scripts jsdom@26.1.0
+      - name: Test Alpha and V2 comparison rendering
+        run: node scripts/test-alpha-comparison-render.cjs
+
