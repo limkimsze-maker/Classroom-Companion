@@ -45,7 +45,7 @@ function horizontalEdge(q){
  const consider=()=>{
   if(!run)return;
   const width=run.r-run.l;
-  if(width>=110&&(!best||width>best.pw)){
+  if(width>=Math.max(65,Math.min(110,d.w*.15))&&(!best||width>best.pw)){
    const h=Math.max(30,Math.min(68,Math.max(run.b-run.t+16,width*.14)));
    const t=Math.max(0,run.t-7),b=t+h;
    best={items:[q],l:run.l,t,r:run.r,b,pw:width,ph:h,
