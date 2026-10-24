@@ -1,7 +1,8 @@
 /* Presentation-only toolbar layout for Classroom Companion Alpha and V2 Trial. */
-header.top{min-width:0!important;max-width:100%!important;overflow-x:hidden!important;overflow-y:auto!important;align-content:flex-start!important;max-height:48dvh!important;max-height:48vh!important;scrollbar-width:thin!important;overscroll-behavior:contain}
+header.top{min-width:0!important;max-width:100%!important;overflow-x:hidden!important;overflow-y:auto!important;align-content:flex-start!important;max-height:48vh!important;max-height:48dvh!important;scrollbar-width:thin!important;overscroll-behavior:contain}
 header.top .tools{box-sizing:border-box;display:flex!important;flex:1 1 100%!important;width:100%!important;min-width:0!important;max-width:100%!important;align-items:stretch!important;justify-content:flex-start!important;align-content:flex-start!important;flex-wrap:wrap!important;column-gap:8px!important;row-gap:8px!important;overflow:visible!important;padding:2px!important;scrollbar-width:auto!important}
 header.top .ccToolGroup{box-sizing:border-box;display:flex;flex:0 1 auto;align-items:center;justify-content:flex-start;align-content:center;flex-wrap:wrap;gap:5px;min-width:0;max-width:100%;padding:6px 8px;border:1px solid #d9e5ea;border-radius:13px;background:#f8fafc}
+header.top .ccToolGroup[hidden]{display:none!important}
 header.top .ccToolGroup[data-kind=draw]{background:#f0faf7;border-color:#b8ded5}
 header.top .ccToolGroup[data-kind=create]{background:#f7f8ff;border-color:#dce2f2}
 header.top .ccToolGroup[data-kind=edit]{background:#fafbfc;border-color:#d9e2e9}
@@ -18,14 +19,14 @@ header.top .ccToolGroup .sizeControl{order:initial!important;display:flex;align-
 header.top .ccToolGroup .sizeControl input{width:75px;max-width:100%}
 header.top .ccToolGroup :is(button,input,select):focus-visible{outline:3px solid #f2a93a!important;outline-offset:2px!important}
 header.top .ccToolGroup #clearBtn{border-color:#efb4ad!important;color:#a42417!important;background:#fff4f1!important}
-body.document-open-mode header.top{max-height:52dvh!important;max-height:52vh!important;overflow-x:hidden!important;overflow-y:auto!important}
+body.document-open-mode header.top{max-height:52vh!important;max-height:52dvh!important;overflow-x:hidden!important;overflow-y:auto!important}
 body.document-open-mode header.top .tools{width:100%!important;max-width:100%!important;flex-wrap:wrap!important;overflow:visible!important;gap:6px!important;padding:2px!important}
 body.document-open-mode header.top .ccToolGroup{padding:4px 6px!important;gap:4px!important}
 body.document-open-mode header.top .ccToolGroup>.btn{min-height:32px!important;height:auto!important;padding:5px 8px!important;font-size:11px!important}
 body.document-open-mode header.top .ccToolGroup #ccHighlighterPalette{flex-wrap:wrap!important}
 body.document-open-mode #ccSaveSlot{flex-wrap:wrap!important;min-width:0!important;max-width:100%!important}
 @media(max-width:750px){
- header.top{max-height:55dvh!important;max-height:55vh!important}
+ header.top{max-height:55vh!important;max-height:55dvh!important}
  header.top .tools{gap:6px!important}
  header.top .ccToolGroup{flex:1 1 100%;width:100%;max-width:100%;padding:6px;gap:5px}
  header.top .ccToolGroupLabel{font-size:10px;min-width:38px}
