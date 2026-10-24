@@ -72,18 +72,22 @@ jobs:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-comparison-atomic.cjs
       - name: Verify Word page layout, original files and saved annotations
+        if: ${{ !cancelled() }}
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-word-layout.cjs
       - name: Verify Alpha desktop and mobile
+        if: ${{ !cancelled() }}
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-v2-promotion.cjs
       - name: Verify drag-to-turn document pages and protected pen input
+        if: ${{ !cancelled() }}
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-page-drag.cjs
       - name: Verify annotation save, reopen, delete and rename
+        if: ${{ !cancelled() }}
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-annotation-actions.cjs

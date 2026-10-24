@@ -31,3 +31,11 @@ tabs, hanging indents, positioned shapes, fields, explicit/cached page breaks,
 automatic flowing pages, a long paragraph, a table spanning pages, zoom,
 original file byte preservation, and saved annotation reopening on desktop and
 mobile. Uploaded teacher documents are not included in the repository.
+
+The release run exposed a pre-existing comparison regression assertion:
+`smartOriginal` contains 11 entries instead of 8 for fragmented bars. The same
+assertion fails when rerunning unchanged main commit
+`6c545579b97e42fe82a7e817b7b16b19386b07d2` (workflow run 39889071476,
+rerun job 120766390781). Comparison source files are unchanged by this Word fix.
+Independent Word, speech, document and annotation checks continue after this
+failure; the comparison assertion and overall failed job status are retained.
