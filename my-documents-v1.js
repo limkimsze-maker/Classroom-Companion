@@ -164,7 +164,7 @@ function makeActions(){
   const launch=document.createElement('button');launch.id='ccAnnotationActionsBtn';launch.type='button';launch.textContent='📝 Annotations ▾';launch.title='Save, delete, or rename document annotations';
   launch.onclick=()=>{if(!api()?.isOpen())return;actionsDialog.hidden=false;message.textContent='';close.focus()};
   const exit=document.getElementById('ccPermanentExitBtn');
-  slot.insertBefore(launch,exit||null);
+  slot.insertBefore(launch,exit?.parentElement===slot?exit:null);
  }
  // Ignore synthetic Escape events emitted internally to finish editing.
  window.addEventListener('keydown',e=>{if(e.isTrusted&&e.key==='Escape'&&!actionsDialog.hidden)actionsDialog.hidden=true});
