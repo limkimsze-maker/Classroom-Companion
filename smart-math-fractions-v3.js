@@ -267,7 +267,7 @@ document.addEventListener('click',e=>{
 // Capture the tapped part before the older image-selection toolbar reflows.
 window.addEventListener('pointerdown',e=>{if(e.target===canvas)pointerOrigin={x:e.clientX,y:e.clientY,moved:false,hit:hitFraction(e.clientX,e.clientY)}},true);
 window.addEventListener('pointermove',e=>{if(pointerOrigin&&Math.hypot(e.clientX-pointerOrigin.x,e.clientY-pointerOrigin.y)>4)pointerOrigin.moved=true},true);
-canvas.addEventListener('click',e=>{const origin=pointerOrigin;pointerOrigin=null;if(origin?.moved){closeColourPanel();return}const hit=origin?origin.hit:hitFraction(e.clientX,e.clientY);if(!hit){closeColourPanel();return}e.preventDefault();e.stopImmediatePropagation();showPartColours(hit,e.clientX,e.clientY)},true);
+canvas.addEventListener('click',e=>{if(window.ClassroomFractionSegmentOptions){pointerOrigin=null;closeColourPanel();return}const origin=pointerOrigin;pointerOrigin=null;if(origin?.moved){closeColourPanel();return}const hit=origin?origin.hit:hitFraction(e.clientX,e.clientY);if(!hit){closeColourPanel();return}e.preventDefault();e.stopImmediatePropagation();showPartColours(hit,e.clientX,e.clientY)},true);
 document.addEventListener('pointerdown',e=>{if(colourPanel&&!colourPanel.contains(e.target)&&e.target!==canvas)closeColourPanel()},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeColourPanel();if(active)deactivate()}},true);
 function recordHistory(before,id){
