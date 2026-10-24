@@ -58,10 +58,10 @@ function drawTextBox(s){normaliseText(s);const b=bounds(s),lineH=s.size*1.25,lin
 function point(e){const r=canvas.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}}
 function hitObject(p){const px=p.x*cssW,py=p.y*cssH;for(let i=strokes.length-1;i>=0;i--){const s=strokes[i];if(s?.type!=='text'&&s?.type!=='image')continue;const b=bounds(s),pad=s.type==='image'?5:6;if(px>=b.x-pad&&px<=b.x+b.w+pad&&py>=b.y-pad&&py<=b.y+b.h+pad)return s}return null}
 function handleBox(s){const b=bounds(s);if(!b)return null;return{x:b.x+b.w+7,y:b.y+b.h+7,r:11,b}}
-function hitHandle(p,s){const h=handleBox(s);if(!h)return false;const px=p.x*cssW,py=p.y*cssH;return Math.abs(px-h.x)<=h.r+1&&Math.abs(py-h.y)<=h.r+1}
+function hitHandle(p,s){if(s?.speechSource)return false;const h=handleBox(s);if(!h)return false;const px=p.x*cssW,py=p.y*cssH;return Math.abs(px-h.x)<=h.r+1&&Math.abs(py-h.y)<=h.r+1}
 function getImage(src){let img=imageCache.get(src);if(img)return img;img=new Image();imageCache.set(src,img);img.onload=()=>redraw();img.src=src;return img}
 function drawImageObject(s){const img=getImage(s.src);if(!img.complete||!img.naturalWidth)return;const b=bounds(s);ctx.save();ctx.globalCompositeOperation='source-over';ctx.drawImage(img,b.x,b.y,b.w,b.h);ctx.restore()}
-function drawSelection(){if(!selected||!strokes.includes(selected)||editor)return;const b=bounds(selected);if(!b)return;ctx.save();ctx.strokeStyle='rgba(15,118,110,.98)';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(b.x-6,b.y-5,b.w+12,b.h+10);ctx.setLineDash([]);if(!selected.speechSource){const h=handleBox(selected);ctx.fillStyle='#0f766e';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.fillRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2);ctx.strokeRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2)}ctx.restore()}
+function drawSelection(){if(!selected||!strokes.includes(selected)||editor||selected.speechSource)return;const b=bounds(selected);if(!b)return;ctx.save();ctx.strokeStyle='rgba(15,118,110,.98)';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(b.x-6,b.y-5,b.w+12,b.h+10);ctx.setLineDash([]);if(!selected.speechSource){const h=handleBox(selected);ctx.fillStyle='#0f766e';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.fillRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2);ctx.strokeRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2)}ctx.restore()}
 
 // Clear, touch-friendly grips follow the same four actions as Smart Math:
 // ✥ move, ↔ width, ↕ height, ⤡ resize both/font.
