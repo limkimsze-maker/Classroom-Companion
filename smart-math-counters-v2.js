@@ -148,15 +148,38 @@ function makeFinishButton(){
  },true);
 }
 function recolourCounter(target,fill){
- if(!target)return;const before=snapshot();target.src=dataSvg(fill);target.counterFill=fill;record(before,[target.smartId]);closePanel();redraw();syncUi();showActiveLabel();forcePen()
+ if(!target||!/^#[0-9a-f]{6}$/i.test(fill))return false;
+ const obj=strokes.find(s=>isCounter(s)&&s.smartId===target.smartId);
+ if(!obj)return false;
+ if(obj.counterFill?.toLowerCase()===fill.toLowerCase()){closePanel();return true}
+ const before=snapshot();
+ obj.src=dataSvg(fill);obj.counterFill=fill.toLowerCase();
+ record(before,[obj.smartId]);closePanel();redraw();syncUi();
+ // Outside Counters drawing mode, stay in Select so teachers can
+ // recolour several finished counters without re-entering Pen mode.
+ if(active){showActiveLabel();forcePen()}
+ notify('Counter colour updated');
+ return true;
 }
 function showColours(target){
- closePanel();paletteTarget=target;panel=document.createElement('div');Object.assign(panel.style,{position:'fixed',zIndex:'10050',left:'50%',top:'16%',transform:'translateX(-50%)',background:'#fff',border:'1px solid #cfd9de',borderRadius:'14px',padding:'12px',boxShadow:'0 12px 32px rgba(18,32,46,.2)',minWidth:'250px'});
+ closePanel();paletteTarget=target;panel=document.createElement('div');panel.id='ccCounterColourPalette';panel.setAttribute('role','dialog');panel.setAttribute('aria-label',L.title);Object.assign(panel.style,{position:'fixed',zIndex:'10050',left:'50%',top:'16%',transform:'translateX(-50%)',background:'#fff',border:'1px solid #cfd9de',borderRadius:'14px',padding:'12px',boxShadow:'0 12px 32px rgba(18,32,46,.2)',minWidth:'250px'});
  const h=document.createElement('div');h.textContent=L.title;h.style.cssText='font-weight:950;font-size:14px;margin-bottom:4px;color:#17324d';
  const hint=document.createElement('div');hint.textContent=L.hint;hint.style.cssText='font-size:11px;color:#667085;margin-bottom:10px';panel.append(h,hint);
  const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px';
  for(const [hex,name] of COLOURS){const b=document.createElement('button');b.type='button';b.title=name;b.setAttribute('aria-label',name);Object.assign(b.style,{width:'36px',height:'36px',borderRadius:'50%',background:hex,border:'3px solid #fff',boxShadow:'0 0 0 1px #aab6bf',cursor:'pointer'});b.onclick=()=>recolourCounter(target,hex);row.appendChild(b)}
- panel.appendChild(row);const cancel=document.createElement('button');cancel.className='btn';cancel.textContent=L.cancel;cancel.onclick=()=>{closePanel();showActiveLabel();forcePen()};panel.appendChild(cancel);document.body.appendChild(panel)
+ panel.appendChild(row);
+ const label=document.createElement('label');
+ label.style.cssText='display:flex;align-items:center;gap:9px;margin:4px 0 12px;font:750 12px system-ui;color:#17324d';
+ label.textContent='🎨 Custom colour';
+ const picker=document.createElement('input');picker.type='color';
+ picker.value=/^#[0-9a-f]{6}$/i.test(target.counterFill||'')?target.counterFill:DEFAULT_FILL;
+ picker.setAttribute('aria-label','Choose any counter colour');
+ picker.style.cssText='width:54px;height:38px;padding:2px;border:1px solid #a6b6bf;border-radius:9px;background:white;cursor:pointer';
+ picker.addEventListener('change',()=>recolourCounter(target,picker.value));
+ label.appendChild(picker);panel.appendChild(label);
+ const cancel=document.createElement('button');cancel.className='btn';cancel.textContent=L.cancel;
+ cancel.onclick=()=>{closePanel();if(active){showActiveLabel();forcePen()}};
+ panel.appendChild(cancel);document.body.appendChild(panel)
 }
 // Counters now use the same draw → Finished workflow as bars and fractions.
 // In particular there is no conversion timer on pointerup.
@@ -191,5 +214,19 @@ makeFinishButton();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&active){deactivate()}},true);
 
 undoBtn.addEventListener('click',e=>{if(!lastHistory)return;const ids=new Set(lastHistory.afterIds),present=strokes.some(s=>ids.has(s.smartId));if(!present)return;e.preventDefault();e.stopImmediatePropagation();strokes=clone(lastHistory.before);lastHistory=null;redraw();syncUi();if(active){showActiveLabel();forcePen()}notify('Smart Math counters undone')},true);
-window.ClassroomCountersWorkflow={isActive:()=>active,pending:()=>active?candidateInk().length:0,finish:()=>finishCounters(),getFinishButton:()=>finishBtn};
+window.ClassroomCountersWorkflow={
+ isActive:()=>active,
+ pending:()=>active?candidateInk().length:0,
+ finish:()=>finishCounters(),
+ getFinishButton:()=>finishBtn,
+ openColours:(id)=>{
+  const target=strokes.find(s=>isCounter(s)&&s.smartId===id);
+  if(!target)return false;
+  showColours(target);return true
+ },
+ recolour:(id,fill)=>{
+  const target=strokes.find(s=>isCounter(s)&&s.smartId===id);
+  return recolourCounter(target,fill)
+ }
+};
 })();
