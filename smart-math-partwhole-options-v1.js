@@ -69,12 +69,30 @@ function closePlacement(clearPreview=true){if(placementPanel){placementPanel.rem
 function makeSelect(){const s=document.createElement('select');s.style.cssText='height:34px;border:1px solid #cfd9de;border-radius:9px;background:#fff;color:#17324d;padding:0 8px;font-size:11px;font-weight:800;min-width:0';return s}
 function requestOptions(o,picked,clientX,clientY){
  closePlacement(false);if(!picked.length)return;const start=picked[0].index,end=picked[picked.length-1].index;preview={o,start,end};requestAnimationFrame(drawOverlay);
- placementPanel=document.createElement('div');placementPanel.style.cssText='position:fixed;z-index:13120;width:286px;padding:11px;background:#fff;border:1px solid #cfd9de;border-radius:14px;box-shadow:0 10px 28px rgba(23,50,77,.24)';placementPanel.style.left=Math.min(innerWidth-296,Math.max(8,clientX-135))+'px';placementPanel.style.top=Math.min(innerHeight-286,Math.max(8,clientY+12))+'px';
+ placementPanel=document.createElement('div');
+ placementPanel.id='partWholeKeyboardSafeEditor';
+ placementPanel.setAttribute('role','dialog');
+ placementPanel.setAttribute('aria-label','Part–Whole segment options');
+ placementPanel.style.cssText='position:fixed;z-index:13120;width:286px;padding:11px;background:#fff;border:1px solid #cfd9de;border-radius:14px;box-shadow:0 10px 28px rgba(23,50,77,.24);overflow-y:auto;overscroll-behavior:contain';
+ const coarsePointer=window.matchMedia?.('(pointer: coarse)')?.matches||/Android|iPhone|iPad/i.test(navigator.userAgent||'');
+ const keyboardSafe=!!coarsePointer&&window.innerWidth<=1100;
+ placementPanel.dataset.keyboardSafe=keyboardSafe?'true':'false';
+ if(keyboardSafe){
+  // Fixed near the visible viewport TOP, instead of below the tapped part.
+  // The Android keyboard may halve the viewport height, but cannot move
+  // this editor or force an input to lose focus.
+  placementPanel.style.left='10px';
+  placementPanel.style.width='min(380px, calc(100vw - 20px))';
+  placementPanel.style.top=((window.visualViewport?.offsetTop||0)+8)+'px';
+ }else{
+  placementPanel.style.left=Math.min(innerWidth-296,Math.max(8,clientX-135))+'px';
+  placementPanel.style.top=Math.min(innerHeight-286,Math.max(8,clientY+12))+'px';
+ }
  const title=document.createElement('div');title.textContent='Part options';title.style.cssText='font:900 13px Inter,system-ui,sans-serif;color:#17324d;margin-bottom:2px';
  const desc=document.createElement('div');desc.textContent=picked.length>1?`${picked.length} selected parts`:'1 selected part';desc.style.cssText='font:700 10px Inter,system-ui,sans-serif;color:#667085;margin-bottom:8px';
  const labelRow=document.createElement('div');labelRow.style.cssText='display:grid;grid-template-columns:82px 1fr;gap:7px;align-items:center;margin-bottom:8px';
  const labelTitle=document.createElement('div');labelTitle.textContent='Label';labelTitle.style.cssText='font:900 11px Inter,system-ui,sans-serif;color:#17324d';
- const labelInput=document.createElement('input');labelInput.type='text';labelInput.maxLength=30;labelInput.placeholder='optional';labelInput.value=spanLabel(o,start,end);labelInput.style.cssText='width:100%;height:34px;border:1px solid #cfd9de;border-radius:9px;padding:0 8px;font-size:12px;font-weight:700;color:#17324d';labelRow.append(labelTitle,labelInput);
+ const labelInput=document.createElement('input');labelInput.type='text';labelInput.maxLength=30;labelInput.placeholder='optional';labelInput.value=spanLabel(o,start,end);labelInput.style.cssText='width:100%;height:42px;border:1px solid #cfd9de;border-radius:9px;padding:0 8px;font-size:16px;font-weight:700;color:#17324d';labelInput.setAttribute('autocomplete','off');labelInput.setAttribute('autocapitalize','off');labelRow.append(labelTitle,labelInput);
  const colourRow=document.createElement('div');colourRow.style.cssText='display:grid;grid-template-columns:82px 1fr 1fr;gap:7px;align-items:center;margin-bottom:9px';
  const colourTitle=document.createElement('div');colourTitle.textContent='Colour';colourTitle.style.cssText='font:900 11px Inter,system-ui,sans-serif;color:#17324d';
  const colourSelect=makeSelect();{const op=document.createElement('option');op.value='';op.textContent='Keep';colourSelect.appendChild(op)}for(const c of PALETTE){const op=document.createElement('option');op.value=c.value;op.textContent=c.name;colourSelect.appendChild(op)}
@@ -84,7 +102,7 @@ function requestOptions(o,picked,clientX,clientY){
  const sideRow=document.createElement('div');sideRow.style.cssText='display:flex;gap:8px';const above=document.createElement('button');above.type='button';above.className='btn soft';above.textContent='↑ Above';above.style.flex='1';const below=document.createElement('button');below.type='button';below.className='btn soft';below.textContent='↓ Below';below.style.flex='1';
  const run=side=>{const colour=colourSelect.value||null,target=targetSelect.value||'parts',label=labelInput.value;closePlacement();applyOptions(o,picked,side,colour,target,label)};
  plain.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();run(null)},true);above.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();run('top')},true);below.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();run('bottom')},true);
- sideRow.append(above,below);placementPanel.append(title,desc,labelRow,colourRow,plain,bracketTitle,sideRow);document.body.appendChild(placementPanel)
+ sideRow.append(above,below);placementPanel.append(title,desc,labelRow,colourRow,plain,bracketTitle,sideRow);document.body.appendChild(placementPanel);handleEditorViewportResize()
 }
 let ov=document.getElementById('partWholeCompactOverlay');if(!ov){ov=document.createElement('canvas');ov.id='partWholeCompactOverlay';ov.setAttribute('aria-hidden','true');ov.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:917;pointer-events:none;';wrap.appendChild(ov)}const g=ov.getContext('2d');
 function sizeOverlay(){const r=wrap.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(ov.width!==w)ov.width=w;if(ov.height!==h)ov.height=h;ov.style.width=r.width+'px';ov.style.height=r.height+'px';g.setTransform(d,0,0,d,0,0);return{W:r.width,H:r.height}}
@@ -111,23 +129,30 @@ const prev=redraw;redraw=function(){prep();const r=prev.apply(this,arguments);re
 // mode the compact DOM hit-zones handle the click, but block the legacy palette
 // if a browser delivers the click to canvas at an edge.
 window.addEventListener('click',e=>{if(e.target!==canvas||!selectionMode())return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width),y=(e.clientY-r.top)/Math.max(1,r.height);for(const o of strokes){if(!isPW(o))continue;const y1=o.y+o.h*(Y/VB_H),y2=o.y+o.h*((Y+BAR_H)/VB_H),x1=o.x+o.w*(X/VB_W),x2=o.x+o.w*((X+BAR_W)/VB_W);if(x>=x1&&x<=x2&&y>=y1&&y<=y2){e.preventDefault();e.stopImmediatePropagation();return}}},true);
-document.addEventListener('pointerdown',e=>{if(placementPanel&&!placementPanel.contains(e.target)){closePlacement();rebuildZones()}},true);document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePlacement();cancelDrag();rebuildZones()}},true);// On Android, opening the soft keyboard fires resize events. Never tear
- // down a focused label editor on resize: that would dismiss the keyboard
- // and discard unsubmitted text. This is also safe on rotation and zoom.
+document.addEventListener('pointerdown',e=>{if(placementPanel&&!placementPanel.contains(e.target)){closePlacement();rebuildZones()}},true);document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePlacement();cancelDrag();rebuildZones()}},true);// Android soft keyboards frequently fire a sequence of window/visualViewport
+ // resize events while IME composition is in progress. A floating editor
+ // repositioned on every event visibly jumps and can dismiss the keyboard.
  function handleEditorViewportResize(){
-  if(placementPanel){
+  const p=placementPanel;
+  if(p){
    const viewport=window.visualViewport;
-   const visibleTop=viewport?.offsetTop||0;
    const visibleHeight=Math.max(120,viewport?.height||window.innerHeight);
-   placementPanel.style.maxHeight=Math.max(100,visibleHeight-16)+'px';
-   placementPanel.style.overflowY='auto';
-   const panelHeight=placementPanel.getBoundingClientRect().height;
-   const previousTop=parseFloat(placementPanel.style.top)||8;
-   const maxTop=Math.max(visibleTop+8,visibleTop+visibleHeight-panelHeight-8);
-   const safeTop=Math.max(visibleTop+8,Math.min(previousTop,maxTop));
-   placementPanel.style.top=safeTop+'px';
+   p.style.maxHeight=Math.max(100,visibleHeight-20)+'px';
+   if(p.dataset.keyboardSafe==='true'){
+    // The top of the visual viewport remains a stable anchor while its
+    // height changes; never clamp against the changing bottom edge.
+    p.style.top=Math.round((viewport?.offsetTop||0)+8)+'px';
+   }else{
+    const box=p.getBoundingClientRect();
+    const top=viewport?.offsetTop||0;
+    if(box.bottom>top+visibleHeight-8&&!p.contains(document.activeElement)){
+     p.style.top=Math.max(top+8,top+visibleHeight-box.height-8)+'px';
+    }
+   }
   }
-  requestAnimationFrame(drawOverlay);rebuildZones();
+  requestAnimationFrame(drawOverlay);
+  // An active input has priority over rebuilding the per-segment hit zones.
+  if(!p||!p.contains(document.activeElement))rebuildZones();
  }
  window.addEventListener('resize',handleEditorViewportResize);
  window.visualViewport?.addEventListener('resize',handleEditorViewportResize);new ResizeObserver(()=>{requestAnimationFrame(drawOverlay);rebuildZones()}).observe(wrap);setInterval(()=>{if(!drag){prep();rebuildZones()}},700);setTimeout(()=>{prep();try{redraw()}catch{drawOverlay();rebuildZones()}},0);
