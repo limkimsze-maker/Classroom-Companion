@@ -38,6 +38,7 @@ modelGrip.setAttribute('aria-label','Resize selected bar model proportionally');
 modelGrip.style.cssText='position:absolute;z-index:1350;width:38px;height:38px;display:none;border:3px solid white;border-radius:10px;background:#0f766e;color:white;font:900 23px system-ui;box-shadow:0 2px 9px #0005;padding:0;align-items:center;justify-content:center;touch-action:none;user-select:none;';
 board.appendChild(modelGrip);
 function pointerTip(e){
+ if(window.__ccUnifiedTransformsAlpha){tip.style.display='none';return}
  const r=canvas.getBoundingClientRect(),inside=e.clientX>=r.left&&e.clientX<=r.left+r.width&&e.clientY>=r.top&&e.clientY<=r.top+r.height;
  const show=selectable()&&(drag||inside&&usableTarget(e.target))&&(e.pointerType!=='touch'||!!drag||e.type==='pointerdown');
  tip.style.display=show?'block':'none';
@@ -168,6 +169,7 @@ function modelInVisibleContent(e){
  return null;
 }
 function refreshModelGrip(){
+ if(window.__ccUnifiedTransformsAlpha){selectionOutline.style.display='none';modelGrip.style.display='none';return}
  if(!selectable()||!selectedModel||!strokes.includes(selectedModel)||selectedModel.locked){
   selectionOutline.style.display='none';modelGrip.style.display='none';return;
  }
@@ -208,6 +210,7 @@ function modelAt(e){
  return null;
 }
 function hover(e){
+ if(window.__ccUnifiedTransformsAlpha){tip.style.display='none';cursor('');board.classList.remove('bar-model-resize-ready');return}
  pointerTip(e);
  const resize=!!drag&&drag.kind!=='move'||!drag&&!!handleAt(e);board.classList.toggle('bar-model-resize-ready',resize);
  if(resize){cursor('');return}
@@ -270,6 +273,9 @@ window.addEventListener('pointerdown',e=>{
  const visible=o||modelInVisibleContent(e);
  selectedModel=visible||null;
  schedule();
+ // Alpha uses one shared outer move/resize handler. Keep these legacy
+ // listeners only for internal comparison-row and divider handles.
+ if(window.__ccUnifiedTransformsAlpha&&!handle)return;
  if(!o)return;
  stop(e);lastPointer=e;suppressed=null;
  const r=canvas.getBoundingClientRect();
