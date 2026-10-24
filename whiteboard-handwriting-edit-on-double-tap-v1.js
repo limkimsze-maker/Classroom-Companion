@@ -60,11 +60,12 @@ function open(obj){
  cancel.style.cssText='font:800 13px system-ui;padding:9px 14px;border:1px solid #cbd5df;border-radius:9px;background:white';
  actions.append(cancel,apply);
  panel.append(title,hint,label,input,options,image,status,actions);overlay.appendChild(panel);document.body.appendChild(overlay);dialog=overlay;
- let latest=null,updateSerial=0,working=false;
+ let latest=null,latestKey='',updateSerial=0,working=false;
+ const contentKey=()=>JSON.stringify([String(input.value||'').trim(),mode.value,colour.value]);
  const initial=String(input.value);
  async function render(){
   const text=String(input.value||'').trim(),ticket=++updateSerial;
-  if(!text){latest=null;apply.disabled=true;status.textContent='Enter text before applying.';return}
+  if(!text){latest=null;latestKey='';apply.disabled=true;status.textContent='Enter text before applying.';return}
   apply.disabled=true;status.textContent='Preparing preview…';
   const where={x:obj.x,y:obj.y,w:obj.w,h:obj.h},ink=colour.value;
   let made=null;
@@ -81,13 +82,13 @@ function open(obj){
    }
   }catch(_){}
   if(ticket!==updateSerial||dialog!==overlay)return;
-  latest=made;
+  latest=made;latestKey=made?contentKey():'';
   apply.disabled=!made;
   if(made){image.src=made.src;status.textContent='Ready to apply.'}
   else status.textContent='Unable to preview this notation. Check the text and try again.';
  }
  let debounce=null;
- function queueRender(){clearTimeout(debounce);debounce=setTimeout(render,100)}
+ function queueRender(){clearTimeout(debounce);latest=null;latestKey='';apply.disabled=true;debounce=setTimeout(render,100)}
  input.addEventListener('input',queueRender);
  colour.addEventListener('input',queueRender);
  mode.addEventListener('change',queueRender);
@@ -110,7 +111,9 @@ function open(obj){
   const same=value===initial&&colour.value===(/^#[0-9a-f]{6}$/i.test(obj.equationColour||'')?obj.equationColour:'#17324d')&&
     mode.value===(obj.handwritingReadMode==='math'?'math':'auto');
   if(!same){
-   if(!latest){working=false;apply.disabled=false;return}
+   if(!latest||latestKey!==contentKey())await render();
+   if(dialog!==overlay)return;
+   if(!latest||latestKey!==contentKey()){working=false;return}
    const before=clone(strokes);
    obj.src=latest.src;
    obj.equationExpression=value;obj.handwritingReading=value;
