@@ -25,7 +25,8 @@ function kindOf(el){
  const id=el.id||'',t=textFor(el);
  // File-picker tooltip also mentions "image"; route by exact ID first.
  // This must precede the generic Create & Teach /image/ text match.
- if(id==='openDocumentBtn')return'files';
+ if(['openDocumentBtn','ccPermanentSaveBtn','ccAnnotationActionsBtn'].includes(id))return'files';
+ if(id==='ccHandGrabToolbarBtn')return'draw';
  if(['selectBtn','ccFingerPointerBtn','penBtn','eraserBtn','highlighterBtn','ccHighlighterPalette'].includes(id)||el.classList.contains('colors')||el.classList.contains('sizeControl'))return'draw';
  if(['textBtn','editTextBtn','speechToTextBtn','imageBtn','smartBarFinishBtn','manualComparisonTotalBtn'].includes(id)||/beautify|smart math|shapes|how to use|tutorial|text box|image|speech to text|finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return'create';
  if(['undoBtn','redoBtn','clearBtn','gridBtn','fullBtn'].includes(id)||/duplicate|forward|backward|front|back\b|lock|unlock|redo|undo|grid|clear/.test(t))return'edit';
@@ -36,7 +37,7 @@ function kindOf(el){
 function orderOf(el,kind){
  const id=el.id||'',t=textFor(el);
  if(kind==='draw'){
-  if(id==='selectBtn')return 10;if(id==='ccFingerPointerBtn')return 20;
+  if(id==='selectBtn')return 10;if(id==='ccHandGrabToolbarBtn')return 12;if(id==='ccFingerPointerBtn')return 20;
   if(id==='penBtn')return 30;if(el.classList.contains('colors'))return 35;
   if(id==='highlighterBtn')return 40;if(id==='ccHighlighterPalette')return 45;
   if(id==='eraserBtn')return 50;if(el.classList.contains('sizeControl'))return 60;
@@ -57,15 +58,59 @@ function orderOf(el,kind){
  }
  if(kind==='files'){
   if(id==='openDocumentBtn')return 10;if(/my documents/.test(t))return 20;
+  if(id==='ccPermanentSaveBtn')return 65;if(id==='ccAnnotationActionsBtn')return 70;
   if(/\bsave\b/.test(t))return 30;if(/restore/.test(t))return 40;
   if(/export|png/.test(t))return 50;
  }
  return 90;
 }
 let arranging=false;
+const docSlot=document.getElementById('ccSaveSlot');
+const documentSave=document.getElementById('ccPermanentSaveBtn');
+const documentExit=document.getElementById('ccPermanentExitBtn');
+function positionDocumentActions(){
+ const files=groups.files;
+ if(documentSave&&documentSave.parentElement!==files)files.appendChild(documentSave);
+ const annotation=document.getElementById('ccAnnotationActionsBtn');
+ if(annotation){
+  annotation.textContent='📝 Save Annotations ▾';
+  annotation.setAttribute('aria-label','Save Annotations');
+  annotation.title='Save page or document annotations, rename, or delete saved annotations';
+  if(annotation.parentElement!==files)files.appendChild(annotation);
+ }
+ if(documentExit){
+  documentExit.classList.add('ccStandaloneDocumentExit');
+  if(documentExit.parentElement!==tools||documentExit!==tools.lastElementChild)tools.appendChild(documentExit);
+ }
+}
+const handShortcut=document.createElement('button');
+handShortcut.type='button';handShortcut.id='ccHandGrabToolbarBtn';handShortcut.className='btn soft';
+handShortcut.textContent='✋ Hand';
+handShortcut.title='Grab and pan the opened document';
+handShortcut.setAttribute('aria-label','Hand tool: drag document to pan');
+handShortcut.setAttribute('aria-pressed','false');
+tools.appendChild(handShortcut);
+function syncHand(){
+ const real=document.getElementById('documentTouchNavBtn');
+ const pressed=!!real&&real.classList.contains('active');
+ handShortcut.setAttribute('aria-pressed',String(pressed));
+ handShortcut.classList.toggle('active',pressed);
+}
+handShortcut.addEventListener('click',()=>{
+ if(!document.body.classList.contains('document-open-mode'))return;
+ document.getElementById('documentTouchNavBtn')?.click();
+ syncHand();
+});
+document.addEventListener('click',e=>{
+ if(e.target?.id==='documentTouchNavBtn'||e.target?.id==='documentPenModeBtn')requestAnimationFrame(syncHand);
+},true);
+window.addEventListener('cc-document-opened',()=>requestAnimationFrame(syncHand));
+window.addEventListener('cc-document-closed',()=>requestAnimationFrame(syncHand));
+positionDocumentActions();
 function arrange(){
  if(arranging)return;
- const loose=[...tools.children].filter(el=>!el.classList.contains('ccToolGroup'));
+ positionDocumentActions();
+ const loose=[...tools.children].filter(el=>!el.classList.contains('ccToolGroup')&&el.id!=='ccPermanentExitBtn');
  if(!loose.length)return;
  arranging=true;
  try{
@@ -86,11 +131,16 @@ arrange();
 // Support tools registered on DOMContentLoaded or after delayed initialisation.
 let pending=false;
 const observer=new MutationObserver(()=>{
- if(pending||![...tools.children].some(el=>!el.classList.contains('ccToolGroup')))return;
+ if(pending||![...tools.children].some(el=>!el.classList.contains('ccToolGroup')&&el.id!=='ccPermanentExitBtn'))return;
  pending=true;
  requestAnimationFrame(()=>{pending=false;arrange()});
 });
 observer.observe(tools,{childList:true});
+if(docSlot)new MutationObserver(()=>{
+ requestAnimationFrame(()=>{positionDocumentActions();arrange()});
+}).observe(docSlot,{childList:true});
+document.addEventListener('DOMContentLoaded',()=>{positionDocumentActions();arrange();syncHand()});
+setTimeout(()=>{positionDocumentActions();arrange();syncHand()},0);
 window.ClassroomToolbarGroups={
  refresh:arrange,
  getGroups:()=>headings.map(([kind,name])=>({name,visible:!groups[kind].hidden,controls:[...groups[kind].children].filter(x=>!x.classList.contains('ccToolGroupLabel')).map(x=>x.id||x.textContent?.trim()||x.getAttribute('aria-label'))}))
