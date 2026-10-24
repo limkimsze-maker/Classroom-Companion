@@ -42,6 +42,11 @@ function eraseSelection(){
  if(!handled)return false;
  // Keep the familiar create → edit → point rhythm after removing an object.
  window.ClassroomFingerPointer?.setActive?.(true);
+ // Let the presentation UI offer an Undo for precisely this deletion.
+ // No extra Eraser mode or toolbar button is introduced.
+ document.dispatchEvent(new CustomEvent('classroom-object-erased',{
+  detail:{count:items.length,after:JSON.stringify(strokes)}
+ }));
  return true;
 }
 // Window capture must run before legacy marquee and Beta V2 Eraser handlers,
@@ -51,5 +56,5 @@ window.addEventListener('click',e=>{
  if(!eraseSelection())return;
  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
 },true);
-window.ClassroomSingleEraserSelection={eraseSelection};
+window.ClassroomSingleEraserSelection={eraseSelection,selectedObjects:()=>tool==='select'?chosen():[]};
 })();
