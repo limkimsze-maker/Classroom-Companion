@@ -6,7 +6,7 @@
 // drags, resize handles, or a still-active Smart Math drawing workflow.
 if(typeof canvas==='undefined'||typeof strokes==='undefined'||!window.ClassroomFingerPointer)return;
 if(window.ClassroomFinishSelectionToPoint)return;
-let press=null;
+let press=null,sequence=0;
 const within=(p,b,pad=0)=>p.x>=b.x-pad&&p.x<=b.x+b.w+pad&&p.y>=b.y-pad&&p.y<=b.y+b.h+pad;
 function locationOnCanvas(e){
  const r=canvas.getBoundingClientRect();
@@ -65,21 +65,29 @@ function finish(){
  return !!finger.isActive?.();
 }
 window.addEventListener('pointerdown',e=>{
- press=null;
+ // A new gesture cancels any queued finish; never change tools if the teacher
+ // immediately starts another selection, drag, or freehand stroke.
+ sequence++;press=null;
  if(e.target!==canvas||tool!=='select'||e.button!=null&&e.button!==0)return;
  // Remember the selection BEFORE other modules clear it on this same press.
  if(!hasSelection())return;
- press={id:e.pointerId,x:e.clientX,y:e.clientY,wasBlank:blank(e)};
+ press={id:e.pointerId,x:e.clientX,y:e.clientY,wasBlank:blank(e),sequence};
 },true);
-window.addEventListener('pointercancel',()=>{press=null},true);
-window.addEventListener('pointerup',e=>{
- const p=press;press=null;
+window.addEventListener('pointercancel',()=>{press=null;sequence++},true);
+function completeTap(e){
+ const p=press;
  if(!p||p.id!=null&&e.pointerId!=null&&p.id!==e.pointerId)return;
+ press=null;
  if(!p.wasBlank||tool!=='select'||e.target!==canvas)return;
- if(Math.hypot(e.clientX-p.x,e.clientY-p.y)>8)return; // a gesture is not a tap
- // Let other pointerup/selection handlers finish first.
- setTimeout(()=>{if(tool==='select')finish()},0);
-},true);
-document.addEventListener('whiteboard-annotation-context',()=>{press=null},true);
+ if(Math.hypot(e.clientX-p.x,e.clientY-p.y)>8)return; // drags are not taps
+ if(!blank(e))return; // releasing over a different object must not finish
+ // Let other Select handlers finish clearing the old selection first.
+ // In particular, the marquee controller forwards short taps because it
+ // consumes pointerup before this window listener receives that event.
+ setTimeout(()=>{if(sequence===p.sequence&&tool==='select')finish()},0);
+}
+window.addEventListener('pointerup',completeTap,true);
+document.addEventListener('whiteboard-marquee-blank-tap',e=>completeTap(e.detail||{}),true);
+document.addEventListener('whiteboard-annotation-context',()=>{press=null;sequence++},true);
 window.ClassroomFinishSelectionToPoint={finish,hitBlank:blank,hasSelection};
 })();
