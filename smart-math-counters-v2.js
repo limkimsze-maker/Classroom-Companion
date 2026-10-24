@@ -4,7 +4,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 
 const edition=(new URLSearchParams(location.search).get('edition')||'en').toLowerCase();
 const TXT={
- en:{counters:'Counters',active:'✨ Smart Math · Counters · Pen',title:'Counter colour',hint:'Choose this counter colour:',cancel:'Cancel',none:'No counter-shaped sketch detected yet. Draw a rough circle and press Finished counters?',made:'counter created',finish:'✓ Finished counters?',pen:'Draw rough circles (small gaps are fine), then click “Finished counters?”.'},
+ en:{counters:'Counters',active:'✨ Smart Math · Counters · Pen',title:'Counter colour',hint:'Choose this counter colour:',cancel:'Cancel',none:'No counter-shaped sketch found. Draw a rough circle anytime, then press Finished counters?',made:'counter created',finish:'✓ Finished counters?',pen:'Draw circles anytime—even before choosing Counters—then click “Finished counters?”. Small gaps are fine.'},
  zh:{counters:'计数片',active:'✨ 智能数学 · 计数片 · 画笔',title:'计数片颜色',hint:'选择这个计数片的颜色：',cancel:'取消',none:'该笔画未识别为计数片',made:'已创建计数片',finish:'✓ 计数片画完了吗？',pen:'画好一个或多个封闭圆形后，点击“计数片画完了吗？”。'},
  ms:{counters:'Pembilang',active:'✨ Matematik Pintar · Pembilang · Pen',title:'Warna pembilang',hint:'Pilih warna pembilang ini:',cancel:'Batal',none:'Lakaran itu tidak dikenali sebagai pembilang',made:'pembilang dicipta',finish:'✓ Siap pembilang?',pen:'Lukis satu atau lebih bulatan, kemudian klik “Siap pembilang?”.'},
  ta:{counters:'எண்ணிகள்',active:'✨ நுண்ணறிவு கணிதம் · எண்ணிகள் · பேனா',title:'எண்ணி நிறம்',hint:'இந்த எண்ணியின் நிறத்தைத் தேர்ந்தெடுக்கவும்:',cancel:'ரத்து',none:'அந்த வரைகோடு எண்ணியாக அடையாளம் காணப்படவில்லை',made:'எண்ணி உருவாக்கப்பட்டது',finish:'✓ எண்ணிகள் முடிந்ததா?',pen:'ஒன்று அல்லது பல மூடிய வட்டங்களை வரைந்து, பின்னர் “எண்ணிகள் முடிந்ததா?” என்பதை அழுத்துங்கள்.'}
@@ -16,7 +16,7 @@ const uid=()=>`smc-${Date.now().toString(36)}-${Math.random().toString(36).slice
 const COUNTER_PX=62;
 const DEFAULT_FILL='#ffffff';
 const COLOURS=[['#dc2626','Red'],['#2563eb','Blue'],['#facc15','Yellow'],['#15803d','Green'],['#7c3aed','Purple'],['#f97316','Orange'],['#17324d','Navy'],['#ffffff','White']];
-let active=false,startIndex=0,panel=null,lastHistory=null,baseLabel='',paletteTarget=null,hitCounterOnDown=false,finishBtn=null,sessionInkSignatures=null;
+let active=false,panel=null,lastHistory=null,baseLabel='',paletteTarget=null,hitCounterOnDown=false,finishBtn=null;
 
 function notify(msg){if(typeof say==='function')say(msg);else{const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400)}}}
 function box(s){let minX=1,minY=1,maxX=0,maxY=0;for(const p of s.points||[]){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
@@ -63,27 +63,11 @@ function looksLikeCounter(s){
  // joining with the other arc instead of prematurely making two counters.
  return closure(s)<=diag*.86;
 }
-function inkSignature(s){
- const pts=s.points||[],n=pts.length;
- const at=i=>{const p=pts[i]||{x:0,y:0};return Math.round(p.x*10000)+','+Math.round(p.y*10000)};
- return n+'|'+at(0)+'|'+at(Math.floor(n/2))+'|'+at(Math.max(0,n-1));
-}
-function countInkSignatures(){
- const m=new Map();
- for(const s of strokes)if(rawInk(s)){const k=inkSignature(s);m.set(k,(m.get(k)||0)+1)}
- return m;
-}
-// A different feature may clone or replace the shared strokes array between
-// choosing Counters and pressing Finish. An index alone can then be stale.
-// Snapshot stroke signatures so earlier whiteboard ink is never picked up.
-function pendingInk(){
- const used=new Map(),base=sessionInkSignatures||new Map();
- return strokes.filter(s=>{
-  if(!rawInk(s))return false;
-  const k=inkSignature(s),n=(used.get(k)||0)+1;used.set(k,n);
-  return n>(base.get(k)||0);
- });
-}
+// A teacher may draw circles BEFORE choosing Smart Math → Counters, after
+// choosing it, or in multiple separate drawing sessions. Recognition must
+// examine all currently visible raw ink, rather than only new session strokes.
+// Existing Smart Math objects are excluded by rawInk() and stay untouched.
+function candidateInk(){return strokes.filter(rawInk)}
 function connectedArcs(a,b){
  const x=box(a),y=box(b),padX=12/Math.max(1,cssW),padY=12/Math.max(1,cssH);
  if(x.x>y.x+y.w+padX||y.x>x.x+x.w+padX||
@@ -120,7 +104,7 @@ function smartButton(){return document.getElementById('smartMathBtn')}
 function showActiveLabel(){const sm=smartButton();if(!sm)return;if(!baseLabel)baseLabel=sm.textContent;sm.textContent=L.active;sm.title=L.active;sm.classList.add('active');sm.classList.remove('soft');if(finishBtn)finishBtn.style.display='inline-flex'}
 function restoreLabel(){const sm=smartButton();if(!sm)return;sm.textContent=baseLabel||'✨ Smart Math';sm.title=sm.textContent;sm.classList.remove('active');sm.classList.add('soft');if(finishBtn)finishBtn.style.display='none'}
 function forcePen(){try{tool='pen';syncUi();canvas.style.cursor='crosshair'}catch{}}
-function deactivate(){active=false;closePanel();restoreLabel();startIndex=strokes.length;sessionInkSignatures=null}
+function deactivate(){active=false;closePanel();restoreLabel()}
 function counterDims(){return{w:clamp(COUNTER_PX/Math.max(cssW,1),.025,.14),h:clamp(COUNTER_PX/Math.max(cssH,1),.03,.18)}}
 function isCounter(s){return !!(s&&s.smartGenerated&&s.smartType==='counter'&&s.type==='image')}
 function pointFromEvent(e){const r=canvas.getBoundingClientRect();return{x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)}}
@@ -135,7 +119,7 @@ function counterFromGroup(group){
 }
 function finishCounters(){
  if(!active)return false;
- const sketched=pendingInk(),groups=counterGroups(sketched);
+ const sketched=candidateInk(),groups=counterGroups(sketched);
  if(!groups.length){notify(L.none);showActiveLabel();forcePen();return false}
  const before=snapshot(),converted=new Map(),created=[];
  for(const group of groups){
@@ -193,7 +177,7 @@ document.addEventListener('click',e=>{
   }
   if(!baseLabel)baseLabel=sm.textContent;
   window.ClassroomSmartMath?.setMode('off');
-  active=true;startIndex=strokes.length;sessionInkSignatures=countInkSignatures();closePanel();showActiveLabel();forcePen();notify(L.pen);return
+  active=true;closePanel();showActiveLabel();forcePen();notify(L.pen);return
  }
  if(active&&['Auto Detect','Fraction Bar','Bar Model','Number Line','Equation','3D Solid','Smart Math Off','自动识别','分数条','条形图','数轴','算式','3D 立体图形','关闭智能数学','Kesan Auto','Bar Pecahan','Model Bar','Garis Nombor','Persamaan','Pepejal 3D','Matematik Pintar Mati','தானாக கண்டறி','பின்னப் பட்டை','பார் மாதிரி','எண் கோடு','சமன்பாடு','3D திண்மம்','நுண்ணறிவு கணிதம் நிறுத்து'].includes(label)){deactivate()}
 },true);
@@ -206,6 +190,6 @@ canvas.addEventListener('pointerup',()=>{hitCounterOnDown=false},true);
 makeFinishButton();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&active){deactivate()}},true);
 
-undoBtn.addEventListener('click',e=>{if(!lastHistory)return;const ids=new Set(lastHistory.afterIds),present=strokes.some(s=>ids.has(s.smartId));if(!present)return;e.preventDefault();e.stopImmediatePropagation();strokes=clone(lastHistory.before);lastHistory=null;redraw();syncUi();if(active){startIndex=strokes.length;showActiveLabel();forcePen()}notify('Smart Math counters undone')},true);
-window.ClassroomCountersWorkflow={isActive:()=>active,pending:()=>active?pendingInk().length:0,finish:()=>finishCounters(),getFinishButton:()=>finishBtn};
+undoBtn.addEventListener('click',e=>{if(!lastHistory)return;const ids=new Set(lastHistory.afterIds),present=strokes.some(s=>ids.has(s.smartId));if(!present)return;e.preventDefault();e.stopImmediatePropagation();strokes=clone(lastHistory.before);lastHistory=null;redraw();syncUi();if(active){showActiveLabel();forcePen()}notify('Smart Math counters undone')},true);
+window.ClassroomCountersWorkflow={isActive:()=>active,pending:()=>active?candidateInk().length:0,finish:()=>finishCounters(),getFinishButton:()=>finishBtn};
 })();
