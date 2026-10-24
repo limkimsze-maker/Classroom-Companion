@@ -16,25 +16,97 @@ const uid=()=>`smc-${Date.now().toString(36)}-${Math.random().toString(36).slice
 const COUNTER_PX=62;
 const DEFAULT_FILL='#ffffff';
 const COLOURS=[['#dc2626','Red'],['#2563eb','Blue'],['#facc15','Yellow'],['#15803d','Green'],['#7c3aed','Purple'],['#f97316','Orange'],['#17324d','Navy'],['#ffffff','White']];
-let active=false,startIndex=0,panel=null,lastHistory=null,baseLabel='',paletteTarget=null,hitCounterOnDown=false,finishBtn=null;
+let active=false,startIndex=0,panel=null,lastHistory=null,baseLabel='',paletteTarget=null,hitCounterOnDown=false,finishBtn=null,sessionInkSignatures=null;
 
 function notify(msg){if(typeof say==='function')say(msg);else{const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400)}}}
 function box(s){let minX=1,minY=1,maxX=0,maxY=0;for(const p of s.points||[]){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
 function length(s){let n=0,p=s.points||[];for(let i=1;i<p.length;i++)n+=Math.hypot((p[i].x-p[i-1].x)*cssW,(p[i].y-p[i-1].y)*cssH);return n}
 function closure(s){const p=s.points||[];if(p.length<2)return Infinity;return Math.hypot((p[0].x-p[p.length-1].x)*cssW,(p[0].y-p[p.length-1].y)*cssH)}
 function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.smartGenerated&&!s.background)}
-function looksLikeCounter(s){
- if(!rawInk(s))return false;
- const b=box(s),pw=b.w*cssW,ph=b.h*cssH;
- // In explicit Counters mode, drawn size should not determine counter size.
- // Accept a much larger rough circle, then normalise it to the fixed counter size.
- if(pw<9||ph<9||pw>420||ph>420)return false;
- const aspect=Math.min(pw,ph)/Math.max(pw,ph);
- if(aspect<.30)return false;
- const diag=Math.hypot(pw,ph),close=closure(s),len=length(s);
- if(close>Math.max(32,diag*.68))return false;
- if(len<diag*1.18)return false;
- return true;
+// A Counter is an explicitly requested manipulative, not a handwriting exam.
+// Accept hand-drawn ovals, slightly open loops, and joined partial arcs.
+// Strict enough to ignore dots, straight lines and unrelated marks.
+function groupBox(group){
+ let minX=1,minY=1,maxX=0,maxY=0;
+ for(const s of group)for(const p of s.points||[]){
+  minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);
+  maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);
+ }
+ return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),
+  cx:(minX+maxX)/2,cy:(minY+maxY)/2};
+}
+function looksLikeLoop(group){
+ if(!group.length||group.some(s=>!rawInk(s)))return false;
+ const b=groupBox(group),w=b.w*cssW,h=b.h*cssH,diag=Math.hypot(w,h);
+ // Accept pupil-sized loops up to a generous teaching demonstration size.
+ if(w<13||h<13||w>Math.min(740,cssW*.78)||h>Math.min(740,cssH*.78))return false;
+ if(Math.min(w,h)/Math.max(w,h)<.23)return false;
+ let lengthPx=0,sectors=new Set();
+ for(const stroke of group){
+  const pts=stroke.points||[];
+  lengthPx+=length(stroke);
+  for(const p of pts){
+   const dx=(p.x-b.cx)/Math.max(.0005,b.w/2),dy=(p.y-b.cy)/Math.max(.0005,b.h/2);
+   if(Math.hypot(dx,dy)<.42)continue; // ignore small internal pen marks
+   let angle=Math.atan2(dy,dx);
+   if(angle<0)angle+=2*Math.PI;
+   sectors.add(Math.min(7,Math.floor(angle/(2*Math.PI)*8)));
+  }
+ }
+ // Circumferential coverage tolerates gaps without treating a plain line as a loop.
+ return sectors.size>=5&&lengthPx>=diag*1.10;
+}
+function looksLikeCounter(s){return looksLikeLoop([s])}
+function inkSignature(s){
+ const pts=s.points||[],n=pts.length;
+ const at=i=>{const p=pts[i]||{x:0,y:0};return Math.round(p.x*10000)+','+Math.round(p.y*10000)};
+ return n+'|'+at(0)+'|'+at(Math.floor(n/2))+'|'+at(Math.max(0,n-1));
+}
+function countInkSignatures(){
+ const m=new Map();
+ for(const s of strokes)if(rawInk(s)){const k=inkSignature(s);m.set(k,(m.get(k)||0)+1)}
+ return m;
+}
+// A different feature may clone or replace the shared strokes array between
+// choosing Counters and pressing Finish. An index alone can then be stale.
+// Snapshot stroke signatures so earlier whiteboard ink is never picked up.
+function pendingInk(){
+ const used=new Map(),base=sessionInkSignatures||new Map();
+ return strokes.filter(s=>{
+  if(!rawInk(s))return false;
+  const k=inkSignature(s),n=(used.get(k)||0)+1;used.set(k,n);
+  return n>(base.get(k)||0);
+ });
+}
+function connectedArcs(a,b){
+ const x=box(a),y=box(b),padX=12/Math.max(1,cssW),padY=12/Math.max(1,cssH);
+ if(x.x>y.x+y.w+padX||y.x>x.x+x.w+padX||
+    x.y>y.y+y.h+padY||y.y>x.y+x.h+padY)return false;
+ const ea=[a.points[0],a.points[a.points.length-1]];
+ const eb=[b.points[0],b.points[b.points.length-1]];
+ return ea.some(p=>eb.some(q=>Math.hypot((p.x-q.x)*cssW,(p.y-q.y)*cssH)<=29));
+}
+function counterGroups(ink){
+ const groups=[],remaining=[];
+ for(const s of ink){
+  if(looksLikeCounter(s))groups.push([s]);
+  else remaining.push(s);
+ }
+ // Allow a circle sketched in two or three arcs. Join only nearby endpoints,
+ // never unrelated circles separated on the whiteboard.
+ const visited=new Set();
+ for(const item of remaining){
+  if(visited.has(item))continue;
+  const cluster=[item];visited.add(item);
+  for(let j=0;j<cluster.length&&cluster.length<5;j++){
+   for(const other of remaining){
+    if(visited.has(other)||cluster.length>=5)continue;
+    if(connectedArcs(cluster[j],other)){cluster.push(other);visited.add(other)}
+   }
+  }
+  if(cluster.length>1&&looksLikeLoop(cluster))groups.push(cluster);
+ }
+ return groups;
 }
 function dataSvg(fill){const stroke=fill==='#17324d'?'#0b1f33':'#17324d';const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="${fill}" stroke="${stroke}" stroke-width="7"/></svg>`;return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
 function closePanel(){panel?.remove();panel=null;paletteTarget=null}
@@ -42,7 +114,7 @@ function smartButton(){return document.getElementById('smartMathBtn')}
 function showActiveLabel(){const sm=smartButton();if(!sm)return;if(!baseLabel)baseLabel=sm.textContent;sm.textContent=L.active;sm.title=L.active;sm.classList.add('active');sm.classList.remove('soft');if(finishBtn)finishBtn.style.display='inline-flex'}
 function restoreLabel(){const sm=smartButton();if(!sm)return;sm.textContent=baseLabel||'✨ Smart Math';sm.title=sm.textContent;sm.classList.remove('active');sm.classList.add('soft');if(finishBtn)finishBtn.style.display='none'}
 function forcePen(){try{tool='pen';syncUi();canvas.style.cursor='crosshair'}catch{}}
-function deactivate(){active=false;closePanel();restoreLabel();startIndex=strokes.length}
+function deactivate(){active=false;closePanel();restoreLabel();startIndex=strokes.length;sessionInkSignatures=null}
 function counterDims(){return{w:clamp(COUNTER_PX/Math.max(cssW,1),.025,.14),h:clamp(COUNTER_PX/Math.max(cssH,1),.03,.18)}}
 function isCounter(s){return !!(s&&s.smartGenerated&&s.smartType==='counter'&&s.type==='image')}
 function pointFromEvent(e){const r=canvas.getBoundingClientRect();return{x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)}}
@@ -51,23 +123,26 @@ function snapshot(){return clone(strokes)}
 function record(before,ids){lastHistory={before,afterIds:[...ids]}}
 // Preserve the original counter geometry, SVG, colours and transform contract.
 // Only the commit point changes: all rough circles are processed together.
-function counterFromStroke(s){
- const b=box(s),d=counterDims();
- return{type:'image',src:dataSvg(DEFAULT_FILL),x:clamp(b.cx-d.w/2,0,1-d.w),y:clamp(b.cy-d.h/2,0,1-d.h),w:d.w,h:d.h,smartGenerated:true,smartType:'counter',smartId:uid(),counterFill:DEFAULT_FILL,smartOriginal:clone([s])};
+function counterFromGroup(group){
+ const b=groupBox(group),d=counterDims();
+ return{type:'image',src:dataSvg(DEFAULT_FILL),x:clamp(b.cx-d.w/2,0,1-d.w),y:clamp(b.cy-d.h/2,0,1-d.h),w:d.w,h:d.h,smartGenerated:true,smartType:'counter',smartId:uid(),counterFill:DEFAULT_FILL,smartOriginal:clone(group)};
 }
 function finishCounters(){
  if(!active)return false;
- const sketched=strokes.slice(startIndex).filter(rawInk);
- const valid=sketched.filter(looksLikeCounter);
- if(!valid.length){notify(L.none);showActiveLabel();forcePen();return false}
- const before=snapshot(),converted=new Map(valid.map(s=>[s,counterFromStroke(s)]));
- // Keep everything that isn't a recognisable counter, including pupils'
- // annotations and any rough/unfinished strokes. Never erase failed ink.
- strokes=strokes.map(s=>converted.get(s)||s);
- record(before,[...converted.values()].map(o=>o.smartId));
+ const sketched=pendingInk(),groups=counterGroups(sketched);
+ if(!groups.length){notify(L.none);showActiveLabel();forcePen();return false}
+ const before=snapshot(),converted=new Map(),created=[];
+ for(const group of groups){
+  const obj=counterFromGroup(group);created.push(obj);
+  group.forEach((s,i)=>converted.set(s,i===0?obj:null));
+ }
+ // Commit all counters at once. Ignore isolated dots and preserve every
+ // unrecognised mark exactly as drawn; never delete pre-existing objects.
+ strokes=strokes.flatMap(s=>converted.has(s)?(converted.get(s)?[converted.get(s)]:[]):[s]);
+ record(before,created.map(o=>o.smartId));
  redraw();deactivate();
  try{tool='select';syncUi()}catch{}
- notify(valid.length===1?L.made:(edition==='en'?`${valid.length} counters created`:`${valid.length} ${L.made}`));
+ notify(created.length===1?L.made:(edition==='en'?`${created.length} counters created`:`${created.length} ${L.made}`));
  return true;
 }
 function makeFinishButton(){
@@ -112,7 +187,7 @@ document.addEventListener('click',e=>{
   }
   if(!baseLabel)baseLabel=sm.textContent;
   window.ClassroomSmartMath?.setMode('off');
-  active=true;startIndex=strokes.length;closePanel();showActiveLabel();forcePen();notify(L.pen);return
+  active=true;startIndex=strokes.length;sessionInkSignatures=countInkSignatures();closePanel();showActiveLabel();forcePen();notify(L.pen);return
  }
  if(active&&['Auto Detect','Fraction Bar','Bar Model','Number Line','Equation','3D Solid','Smart Math Off','自动识别','分数条','条形图','数轴','算式','3D 立体图形','关闭智能数学','Kesan Auto','Bar Pecahan','Model Bar','Garis Nombor','Persamaan','Pepejal 3D','Matematik Pintar Mati','தானாக கண்டறி','பின்னப் பட்டை','பார் மாதிரி','எண் கோடு','சமன்பாடு','3D திண்மம்','நுண்ணறிவு கணிதம் நிறுத்து'].includes(label)){deactivate()}
 },true);
@@ -126,5 +201,5 @@ makeFinishButton();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&active){deactivate()}},true);
 
 undoBtn.addEventListener('click',e=>{if(!lastHistory)return;const ids=new Set(lastHistory.afterIds),present=strokes.some(s=>ids.has(s.smartId));if(!present)return;e.preventDefault();e.stopImmediatePropagation();strokes=clone(lastHistory.before);lastHistory=null;redraw();syncUi();if(active){startIndex=strokes.length;showActiveLabel();forcePen()}notify('Smart Math counters undone')},true);
-window.ClassroomCountersWorkflow={isActive:()=>active,pending:()=>active?strokes.slice(startIndex).filter(rawInk).length:0,finish:()=>finishCounters(),getFinishButton:()=>finishBtn};
+window.ClassroomCountersWorkflow={isActive:()=>active,pending:()=>active?pendingInk().length:0,finish:()=>finishCounters(),getFinishButton:()=>finishBtn};
 })();
