@@ -9,8 +9,7 @@ const headings=[
  ['draw','Draw'],
  ['create','Create & teach'],
  ['edit','Edit & arrange'],
- ['files','Files'],
- ['more','Other tools']
+ ['files','Files']
 ];
 const groups={};
 for(const [kind,title] of headings){
@@ -25,10 +24,11 @@ const textFor=el=>[(el.textContent||''),(el.title||''),(el.getAttribute('aria-la
 function kindOf(el){
  const id=el.id||'',t=textFor(el);
  if(['selectBtn','ccFingerPointerBtn','penBtn','eraserBtn','highlighterBtn','ccHighlighterPalette'].includes(id)||el.classList.contains('colors')||el.classList.contains('sizeControl'))return'draw';
- if(['textBtn','editTextBtn','speechToTextBtn','imageBtn'].includes(id)||/beautify|smart math|shapes|how to use|tutorial|text box|image|speech to text/.test(t))return'create';
+ if(['textBtn','editTextBtn','speechToTextBtn','imageBtn','smartBarFinishBtn','manualComparisonTotalBtn'].includes(id)||/beautify|smart math|shapes|how to use|tutorial|text box|image|speech to text|finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return'create';
  if(['undoBtn','redoBtn','clearBtn','gridBtn','fullBtn'].includes(id)||/duplicate|forward|backward|front|back\b|lock|unlock|redo|undo|grid|clear/.test(t))return'edit';
  if(id==='openDocumentBtn'||/save|restore|export|png|my documents|open file|open document|saved board/.test(t))return'files';
- return'more';
+ // Any additional classroom tool now belongs with Create & Teach; no separate Other Tools category.
+ return'create';
 }
 function orderOf(el,kind){
  const id=el.id||'',t=textFor(el);
@@ -42,7 +42,9 @@ function orderOf(el,kind){
   if(id==='textBtn')return 10;if(id==='editTextBtn')return 15;
   if(id==='speechToTextBtn')return 20;if(id==='imageBtn')return 30;
   if(/shapes/.test(t))return 40;if(/smart math/.test(t))return 50;
+  if(id==='smartBarFinishBtn'||/finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return 55;
   if(/beautify/.test(t))return 60;if(/how to use|tutorial/.test(t))return 70;
+  if(id==='manualComparisonTotalBtn'||/\btotal\b/.test(t))return 80;
  }
  if(kind==='edit'){
   if(id==='undoBtn')return 10;if(id==='redoBtn')return 15;
