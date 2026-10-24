@@ -44,7 +44,14 @@ window.addEventListener('pointerdown',e=>{
  picked=[];marquee={a:pt,b:pt};redraw();try{canvas.setPointerCapture?.(e.pointerId)}catch{};e.preventDefault();canvas.style.cursor='crosshair';
 },false);
 window.addEventListener('pointermove',e=>{if(e.target!==canvas)return;if(drag){const pt=p(e);move(drag.items,pt.x-drag.start.x,pt.y-drag.start.y);redraw();e.preventDefault();e.stopImmediatePropagation();return}if(marquee){marquee.b=p(e);redraw();e.preventDefault();e.stopImmediatePropagation()}},true);
-window.addEventListener('pointerup',e=>{if(e.target!==canvas)return;if(drag){drag=null;try{canvas.releasePointerCapture?.(e.pointerId)}catch{};redraw();canvas.style.cursor='grab';e.preventDefault();e.stopImmediatePropagation();return}if(marquee){marquee.b=p(e);const r=rect(marquee.a,marquee.b),px=Math.hypot(r.w*cssW,r.h*cssH);picked=px<8?[]:strokes.filter(s=>intersects(bounds(s),r));marquee=null;try{canvas.releasePointerCapture?.(e.pointerId)}catch{};redraw();canvas.style.cursor=picked.length?'grab':'crosshair';e.preventDefault();e.stopImmediatePropagation()}},true);
+window.addEventListener('pointerup',e=>{if(e.target!==canvas)return;if(drag){drag=null;try{canvas.releasePointerCapture?.(e.pointerId)}catch{};redraw();canvas.style.cursor='grab';e.preventDefault();e.stopImmediatePropagation();return}if(marquee){marquee.b=p(e);const r=rect(marquee.a,marquee.b),px=Math.hypot(r.w*cssW,r.h*cssH);picked=px<8?[]:strokes.filter(s=>intersects(bounds(s),r));marquee=null;try{canvas.releasePointerCapture?.(e.pointerId)}catch{};redraw();canvas.style.cursor=picked.length?'grab':'crosshair';
+ // The marquee owns pointerup and stops later listeners. Forward only a
+ // genuine short TAP on blank canvas to the presentation-finish controller;
+ // dragged marquees remain isolated and Pen is never involved.
+ if(px<8){
+  try{document.dispatchEvent(new CustomEvent('whiteboard-marquee-blank-tap',{detail:{pointerId:e.pointerId,clientX:e.clientX,clientY:e.clientY,target:e.target}}))}catch(_){}
+ }
+ e.preventDefault();e.stopImmediatePropagation()}},true);
 window.addEventListener('keydown',e=>{
  if(e.key==='Escape'&&(picked.length||marquee||drag)){picked=[];marquee=null;drag=null;redraw();return}
  if(tool!=='select'||!picked.length||!['Delete','Backspace'].includes(e.key))return;
