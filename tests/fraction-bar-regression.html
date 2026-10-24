@@ -12,7 +12,7 @@ a{color:#0f766e}button{background:#0f766e;color:white;border:0;border-radius:8px
 <p>This checks the real Beta V2 fraction recognizer on representative stroke geometries. It does not alter or save classroom drawings.</p>
 <button onclick="runTests()">Run checks again</button> <a href="../whiteboard-v2-trial.html">Open Beta V2</a>
 <p id="summary">Loading recognizer…</p><table><thead><tr><th>Scenario</th><th>Expected</th><th>Observed</th><th>Status</th></tr></thead><tbody id="results"></tbody></table>
-<canvas id="board" width="1000" height="600" hidden></canvas><button id="undoBtn" hidden></button>
+<div hidden><button id="smartMathBtn">✨ Smart Math</button><button id="chooseFrac">Fraction Bar</button></div><canvas id="board" width="1000" height="600" hidden></canvas><button id="undoBtn" hidden></button>
 <script>
 const canvas=document.getElementById('board'),undoBtn=document.getElementById('undoBtn');
 let strokes=[],tool='pen';const cssW=1000,cssH=600;
@@ -59,7 +59,37 @@ function runTests(){
    for(let i=0;i<values.length;i++){const td=document.createElement('td');td.textContent=values[i];if(i===3)td.className=ok?'pass':'fail';tr.appendChild(td)}
    tbody.appendChild(tr);
  }
- const summary=document.getElementById('summary');summary.textContent=pass+'/'+scenarios.length+' checks passed';summary.className=pass===scenarios.length?'pass':'fail';
+ 
+ // Exercise the real Finished and Undo controls, not only the geometry function.
+ function record(name,expected,observed,ok){
+   const tr=document.createElement('tr');for(const [i,value] of [name,expected,observed,ok?'PASS':'FAIL'].entries()){
+     const td=document.createElement('td');td.textContent=value;if(i===3)td.className=ok?'pass':'fail';tr.appendChild(td)
+   }tbody.appendChild(tr);if(ok)pass++;
+ }
+ const menu=document.getElementById('chooseFrac'),finish=document.getElementById('smartFractionFinishBtn');
+ if(menu&&finish){
+   const outside=line([30,30],[50,30]);
+   strokes=[outside];
+   menu.click();
+   strokes.push(...bar(4));
+   const rawCount=strokes.length;
+   finish.click();
+   const made=strokes.find(s=>s.smartType==='fractionBar');
+   const converted=!!made&&made.fractionParts===4&&strokes.includes(outside)&&strokes.length<rawCount&&made.smartOriginal.length>0;
+   record('Finished creates editable object and keeps outside ink','4-part object and outside ink',converted?'Created safely':'Not created',converted);
+   undoBtn.disabled=false;undoBtn.click();
+   const undone=!strokes.some(s=>s.smartType==='fractionBar')&&strokes.length===rawCount&&strokes.includes(outside);
+   record('Undo restores original teacher sketch','All rough ink restored',undone?'Restored':'Not restored',undone);
+   strokes=[outside];menu.click();const stray=line([700,400],[830,400]);strokes.push(stray);
+   finish.click();const kept=strokes.includes(outside)&&strokes.includes(stray)&&!strokes.some(s=>s.smartType==='fractionBar');
+   record('Unrecognised sketch must not be deleted','Unchanged original ink',kept?'Preserved':'Changed',kept);
+   document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+ }else{
+   record('Finish control initializes','Controls present','Unavailable',false);
+   record('Undo available','Controls present','Unavailable',false);
+   record('Failure preserves ink','Controls present','Unavailable',false);
+ }
+ const summary=document.getElementById('summary');summary.textContent=pass+'/'+(scenarios.length+3)+' checks passed';summary.className=pass===scenarios.length?'pass':'fail';
 }
 window.addEventListener('load',runTests);
 </script>
