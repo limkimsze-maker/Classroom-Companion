@@ -29,7 +29,7 @@ function findBarButton(){const candidates=[...document.querySelectorAll('body > 
 function close(){if(submenu)submenu.style.display='none'}
 function showActive(){if(!baseLabel)baseLabel=smartBtn.textContent;smartBtn.textContent=`✨ ${L.bar} · ${LABEL[barType]} · Pen`;smartBtn.title=smartBtn.textContent;smartBtn.classList.add('active');smartBtn.classList.remove('soft');if(doneBtn)doneBtn.style.display='inline-flex'}
 function deactivate(){active=false;if(doneBtn)doneBtn.style.display='none';smartBtn.textContent=baseLabel||'✨ Smart Math';smartBtn.title=smartBtn.textContent;smartBtn.classList.remove('active');smartBtn.classList.add('soft')}
-function makeFinishButton(){if(doneBtn)return;doneBtn=document.createElement('button');doneBtn.type='button';doneBtn.className='btn soft';doneBtn.textContent=L.finish;doneBtn.style.cssText='display:none;min-height:32px;padding:5px 9px;font-size:11px;border-style:dashed';smartBtn.insertAdjacentElement('afterend',doneBtn);doneBtn.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();finishBar()},true)}
+function makeFinishButton(){if(doneBtn)return;doneBtn=document.createElement('button');doneBtn.type='button';doneBtn.id='smartBarFinishBtn';doneBtn.className='btn soft';doneBtn.textContent=L.finish;doneBtn.style.cssText='display:none;min-height:32px;padding:5px 9px;font-size:11px;border-style:dashed';smartBtn.insertAdjacentElement('afterend',doneBtn);doneBtn.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();finishBar()},true)}
 
 function dedupe(vals,tol){vals.sort((a,b)=>a-b);const out=[];for(const v of vals)if(!out.length||Math.abs(v-out[out.length-1])>tol)out.push(v);return out}
 function roughPartWholeBox(group,gb){
