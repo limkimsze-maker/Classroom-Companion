@@ -5,11 +5,6 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self' blob:">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
-<link rel="preload" href="vendor/moe/pdf.min.js" as="script">
-<link rel="preload" href="vendor/moe/pdf.worker.min.js" as="script">
-<link rel="preload" href="vendor/moe/mammoth.browser.min.js" as="script">
-<link rel="preload" href="vendor/moe/xlsx.full.min.js" as="script">
-<link rel="modulepreload" href="vendor/moe/pptx-renderer.browser.es.js">
 <title>MOE Safe Beta • Classroom Companion</title>
 <style>
 :root{--teal:#0f766e;--teal2:#e7f7f4;--navy:#17324d;--muted:#667085;--line:#d8e1e8;--red:#b42318}
@@ -96,99 +91,99 @@ body.document-open-mode #ccSaveSlot{display:flex!important;order:-1;position:rel
 <main class="boardWrap grid" id="boardWrap" data-watermark="MOE Safe Beta"><canvas id="board" aria-label="Interactive whiteboard"></canvas><div class="mode" id="modeBadge">Pen · navy · 5 px</div></main>
 </div>
 <div class="toast" id="toast"></div>
-<script src="whiteboard-moe-local-only-guard-v1.js?v=20261017-moesafe2"></script>
-<script src="whiteboard-core.js?v=20261011-0534-core1"></script>
-<script src="whiteboard-highlighter-palette-v1.js?v=20261024-restored-original1"></script>
-<script src="whiteboard-text-drag-beta.js?v=20261024-single-eraser1"></script>
-<script src="whiteboard-handwriting-digit-model-beta.js?v=20261018-handwriting1"></script>
-<script src="whiteboard-handwriting-character-models-beta.js?v=20261018-letters-cnn1"></script>
-<script src="whiteboard-handwriting-character-inference-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-handwriting-character-reader-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-handwriting-learning-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-handwriting-math-render-beta.js?v=20261020-radical-live-test2"></script>
-<script src="vendor/mathjax/tex-svg-full-3.2.2.js"></script>
-<script src="whiteboard-handwriting-math-reader-beta.js?v=20261018-math-units1"></script>
-<script src="vendor/handwriting/uji/reader-weights-beta.js?v=20261018-uji-adultink2"></script>
-<script src="vendor/handwriting/uji/reader-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-primary-grammar-beta.js?v=20261018-uji-adultink2"></script>
-<script src="whiteboard-equal-sign-geometry-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-trained-9gq-equals-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-trained-j-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-trained-remaining-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-teacher-units-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-teacher-confusables-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-unit-exponent-trained-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-handwriting-context-model-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-handwriting-context-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-moe-local-only-guard-v1.js?v=20261017-moesafe2"></script>
+<script defer src="whiteboard-core.js?v=20261011-0534-core1"></script>
+<script defer src="whiteboard-highlighter-palette-v1.js?v=20261024-restored-original1"></script>
+<script defer src="whiteboard-text-drag-beta.js?v=20261024-single-eraser1"></script>
+<script defer src="whiteboard-handwriting-digit-model-beta.js?v=20261018-handwriting1"></script>
+<script defer src="whiteboard-handwriting-character-models-beta.js?v=20261018-letters-cnn1"></script>
+<script defer src="whiteboard-handwriting-character-inference-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-character-reader-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-learning-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-math-render-beta.js?v=20261020-radical-live-test2"></script>
+<script defer src="vendor/mathjax/tex-svg-full-3.2.2.js"></script>
+<script defer src="whiteboard-handwriting-math-reader-beta.js?v=20261018-math-units1"></script>
+<script defer src="vendor/handwriting/uji/reader-weights-beta.js?v=20261018-uji-adultink2"></script>
+<script defer src="vendor/handwriting/uji/reader-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-primary-grammar-beta.js?v=20261018-uji-adultink2"></script>
+<script defer src="whiteboard-equal-sign-geometry-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-trained-9gq-equals-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-trained-j-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-trained-remaining-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-teacher-units-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-teacher-confusables-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-unit-exponent-trained-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-context-model-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-context-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-recognition-beta.js?v=20261020-structural-parser8"></script>
+<script defer src="whiteboard-beta-arithmetic-verifier.js?v=20261020-mathverify1"></script>
+<script defer src="whiteboard-handwriting-beautify-beta.js?v=20261024-handwriting-point-edit1"></script>
+<script defer src="whiteboard-right-click-paste.js?v=20261011-rcpaste-2215"></script>
+<script defer src="whiteboard-classroom-pro.js?v=67565ce9d90f"></script>
+<script defer src="whiteboard-extra-shapes.js?v=20261011-0650-square-triangle1"></script>
+<script defer src="whiteboard-escape-select.js?v=20261011-0645-esc-select1"></script>
+<script defer src="smart-math-unified-alpha-flag-v1.js?v=20261024-unified1"></script>
+<script defer src="whiteboard-bar-move-handle-beta.js?v=20261024-unified1"></script>
+<script defer src="whiteboard-rotate.js?v=20261016-3dguard1"></script>
+<script defer src="smart-math-recognition.js?v=20261011-smartmath-beta1"></script>
+<script defer src="smart-math-no-number-line.js?v=20261016-noauto1"></script>
+<script defer src="smart-math-solids-cad-v1.js?v=20261016-solidcad3"></script>
+<script defer src="smart-math-solid-toolbar-v1.js?v=20261017-solidshortcutremoved1"></script>
+<script defer src="smart-math-equation-pretty-v1.js?v=20261020-radical-live-test2"></script>
+<script defer src="smart-math-counters-v2.js?v=20261024-counter-colours1"></script>
+<script defer src="smart-math-counter-colour-action-v1.js?v=20261024-context-colour1"></script>
+<script defer src="smart-math-fractions-v3.js?v=20261024-alpha-fraction1"></script>
+<script defer src="whiteboard-marquee-select-beta.js?v=20261024-point-empty-tap2"></script>
+<script defer src="smart-math-partwhole-legacy-guard.js?v=20261016-bracketspace1"></script>
+<script defer src="smart-math-bars-v2.js?v=20261024-finish-toolbar-clean1"></script>
+<script defer src="smart-math-partwhole-rough-finish.js?v=20261016-roughfinish2"></script>
+<script defer src="smart-math-bar-colours-noncomparison.js?v=20261016-compactcolour1"></script>
+<script defer src="smart-math-comparison-colour-geometry-fix.js?v=20261016-colourgeometry2"></script>
+<script defer src="smart-math-bar-part-length.js?v=20261011-1058-partheight2"></script>
+<script defer src="smart-math-bar-compare-length.js?v=20261016-compactbars1"></script>
+<script defer src="smart-math-bar-brackets.js?v=20261016-manualonly1"></script>
+<script defer src="smart-math-user-brackets-beta.js?v=20261016-partwhole-screen-gap1"></script>
+<script defer src="smart-math-partwhole-guidance.js?v=20261011-1148-pwrecognition-anchor1"></script>
+<script defer src="smart-math-partwhole-options-v1.js?v=20261024-keyboard-pinned2"></script>
+<script defer src="smart-math-comparison-guidance-beta.js?v=20261014-2bar-preserve-auto-diff2"></script>
+<script defer src="smart-math-equal-groups-auto.js?v=20261016-equalgrouping-nodraw2"></script>
+<script defer src="smart-math-equal-grouping-hide-derived-answer.js?v=20261016-hide-derived1"></script>
+<script defer src="smart-math-equal-sharing-v1.js?v=20261016-equalsharing3"></script>
+<script defer src="smart-math-equal-sharing-menu-fix.js?v=20261016-equalsharing-menu1"></script>
+<script defer src="smart-math-multiplicative-comparison-v1.js?v=20261016-multiplicative1"></script>
+<script defer src="smart-math-multiplicative-divider-overlay.js?v=20261016-multiplicative-dividers2"></script>
+<script defer src="smart-math-multiplicative-menu-fix.js?v=20261016-multiplicative-menu2"></script>
+<script defer src="smart-math-multiplicative-bracket-unified-v2.js?v=20261016-multiplicative-followcomparison1"></script>
+<script defer src="smart-math-comparison-predrawn-robust3.js?v=20261024-finish-toolbar-clean1"></script>
+<script defer src="smart-math-comparison-3bar-count-fix.js?v=20261024-finish-toolbar-clean1"></script>
+<script defer src="smart-math-comparison-dotted-guide.js?v=20261016-compactbars1"></script>
+<script defer src="smart-math-comparison-intuitive-v2.js?v=20261016-manualonly2"></script>
+<script defer src="smart-math-comparison-segment-options-v3.js?v=20261016-compactcolour1"></script>
+<script defer src="smart-math-comparison-bracket-label-safety.js?v=20261016-compactbars1"></script>
+<script defer src="smart-math-comparison-manual-total.js?v=20261016-compactbars1"></script>
+<script defer src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
+<script defer src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
+<script defer src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
+<script defer src="smart-math-fraction-segment-options-v1.js?v=20261024-alpha-fraction1"></script>
+<script defer src="smart-math-unified-transform-alpha-v1.js?v=20261024-finish-on-blank1"></script>
+<script defer src="whiteboard-document-open-my-documents-test.js?v=20261024-pdf-loading-unblock1"></script>
+<script defer src="whiteboard-document-gestures-v2-trial.js?v=20261024-alpha-docs-restore1"></script>
+<script defer src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
+<script defer src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>
+<script defer src="whiteboard-document-right-rail-v1.js?v=20261018-direct-finger1"></script>
+<script defer src="whiteboard-contextual-actions-v1.js?v=20261017-down-increases1"></script>
+<script defer src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
+<script defer src="whiteboard-speech-to-text-experiment.js?v=20261024-speech-compact1"></script>
+<script defer src="whiteboard-finger-pointer-alpha-v1.js?v=20261024-no-spark6"></script>
+<script defer src="whiteboard-pen-highlighter-restore-alpha-v1.js?v=20261024-toolbar-restore1"></script>
+<script defer src="my-documents-v1.js?v=20261024-save-icon2"></script>
+<script defer src="whiteboard-toolbar-groups-shared-v1.js?v=20261024-counter-finish-visible1"></script>
+<script defer src="whiteboard-finish-selection-to-point-v1.js?v=20261024-point-empty-tap2"></script>
+<script defer src="whiteboard-point-tap-reselect-v1.js?v=20261024-tap-reselect1"></script>
+<script defer src="whiteboard-handwriting-edit-on-double-tap-v1.js?v=20261024-handwriting-point-edit1"></script>
+<script defer src="whiteboard-single-eraser-selected-object-v1.js?v=20261024-ux-feedback1"></script>
+<script defer src="whiteboard-selection-ux-feedback-v1.js?v=20261024-ux-feedback1"></script>
 <script defer src="whiteboard-handwriting-word-list-beta.js?v=20261020-words2"></script>
 <script defer src="whiteboard-handwriting-words-beta.js?v=20261020-words2"></script>
-<script src="whiteboard-handwriting-recognition-beta.js?v=20261020-structural-parser8"></script>
-<script src="whiteboard-beta-arithmetic-verifier.js?v=20261020-mathverify1"></script>
-<script src="whiteboard-handwriting-beautify-beta.js?v=20261024-handwriting-point-edit1"></script>
-<script src="whiteboard-right-click-paste.js?v=20261011-rcpaste-2215"></script>
-<script src="whiteboard-classroom-pro.js?v=67565ce9d90f"></script>
-<script src="whiteboard-extra-shapes.js?v=20261011-0650-square-triangle1"></script>
-<script src="whiteboard-escape-select.js?v=20261011-0645-esc-select1"></script>
-<script src="smart-math-unified-alpha-flag-v1.js?v=20261024-unified1"></script>
-<script src="whiteboard-bar-move-handle-beta.js?v=20261024-unified1"></script>
-<script src="whiteboard-rotate.js?v=20261016-3dguard1"></script>
-<script src="smart-math-recognition.js?v=20261011-smartmath-beta1"></script>
-<script src="smart-math-no-number-line.js?v=20261016-noauto1"></script>
-<script src="smart-math-solids-cad-v1.js?v=20261016-solidcad3"></script>
-<script src="smart-math-solid-toolbar-v1.js?v=20261017-solidshortcutremoved1"></script>
-<script src="smart-math-equation-pretty-v1.js?v=20261020-radical-live-test2"></script>
-<script src="smart-math-counters-v2.js?v=20261024-counter-colours1"></script>
-<script src="smart-math-counter-colour-action-v1.js?v=20261024-context-colour1"></script>
-<script src="smart-math-fractions-v3.js?v=20261024-alpha-fraction1"></script>
-<script src="whiteboard-marquee-select-beta.js?v=20261024-point-empty-tap2"></script>
-<script src="smart-math-partwhole-legacy-guard.js?v=20261016-bracketspace1"></script>
-<script src="smart-math-bars-v2.js?v=20261024-finish-toolbar-clean1"></script>
-<script src="smart-math-partwhole-rough-finish.js?v=20261016-roughfinish2"></script>
-<script src="smart-math-bar-colours-noncomparison.js?v=20261016-compactcolour1"></script>
-<script src="smart-math-comparison-colour-geometry-fix.js?v=20261016-colourgeometry2"></script>
-<script src="smart-math-bar-part-length.js?v=20261011-1058-partheight2"></script>
-<script src="smart-math-bar-compare-length.js?v=20261016-compactbars1"></script>
-<script src="smart-math-bar-brackets.js?v=20261016-manualonly1"></script>
-<script src="smart-math-user-brackets-beta.js?v=20261016-partwhole-screen-gap1"></script>
-<script src="smart-math-partwhole-guidance.js?v=20261011-1148-pwrecognition-anchor1"></script>
-<script src="smart-math-partwhole-options-v1.js?v=20261024-keyboard-pinned2"></script>
-<script src="smart-math-comparison-guidance-beta.js?v=20261014-2bar-preserve-auto-diff2"></script>
-<script src="smart-math-equal-groups-auto.js?v=20261016-equalgrouping-nodraw2"></script>
-<script src="smart-math-equal-grouping-hide-derived-answer.js?v=20261016-hide-derived1"></script>
-<script src="smart-math-equal-sharing-v1.js?v=20261016-equalsharing3"></script>
-<script src="smart-math-equal-sharing-menu-fix.js?v=20261016-equalsharing-menu1"></script>
-<script src="smart-math-multiplicative-comparison-v1.js?v=20261016-multiplicative1"></script>
-<script src="smart-math-multiplicative-divider-overlay.js?v=20261016-multiplicative-dividers2"></script>
-<script src="smart-math-multiplicative-menu-fix.js?v=20261016-multiplicative-menu2"></script>
-<script src="smart-math-multiplicative-bracket-unified-v2.js?v=20261016-multiplicative-followcomparison1"></script>
-<script src="smart-math-comparison-predrawn-robust3.js?v=20261024-finish-toolbar-clean1"></script>
-<script src="smart-math-comparison-3bar-count-fix.js?v=20261024-finish-toolbar-clean1"></script>
-<script src="smart-math-comparison-dotted-guide.js?v=20261016-compactbars1"></script>
-<script src="smart-math-comparison-intuitive-v2.js?v=20261016-manualonly2"></script>
-<script src="smart-math-comparison-segment-options-v3.js?v=20261016-compactcolour1"></script>
-<script src="smart-math-comparison-bracket-label-safety.js?v=20261016-compactbars1"></script>
-<script src="smart-math-comparison-manual-total.js?v=20261016-compactbars1"></script>
-<script src="smart-math-selection-hitbox-beta.js?v=20261014-lesssticky1"></script>
-<script src="smart-math-resize-hitbox-beta.js?v=20261014-resizehit1"></script>
-<script src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
-<script src="smart-math-fraction-segment-options-v1.js?v=20261024-alpha-fraction1"></script>
-<script src="smart-math-unified-transform-alpha-v1.js?v=20261024-finish-on-blank1"></script>
-<script src="whiteboard-document-open-my-documents-test.js?v=20261024-pdf-loading-unblock1"></script>
-<script src="whiteboard-document-gestures-v2-trial.js?v=20261024-alpha-docs-restore1"></script>
-<script src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
-<script src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>
-<script src="whiteboard-document-right-rail-v1.js?v=20261018-direct-finger1"></script>
-<script src="whiteboard-contextual-actions-v1.js?v=20261017-down-increases1"></script>
-<script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
-<script src="whiteboard-speech-to-text-experiment.js?v=20261024-speech-compact1"></script>
-<script src="whiteboard-finger-pointer-alpha-v1.js?v=20261024-no-spark6"></script>
-<script src="whiteboard-pen-highlighter-restore-alpha-v1.js?v=20261024-toolbar-restore1"></script>
-<script src="my-documents-v1.js?v=20261024-save-icon2"></script>
-<script src="whiteboard-toolbar-groups-shared-v1.js?v=20261024-counter-finish-visible1"></script>
-<script src="whiteboard-finish-selection-to-point-v1.js?v=20261024-point-empty-tap2"></script>
-<script src="whiteboard-point-tap-reselect-v1.js?v=20261024-tap-reselect1"></script>
-<script src="whiteboard-handwriting-edit-on-double-tap-v1.js?v=20261024-handwriting-point-edit1"></script>
-<script src="whiteboard-single-eraser-selected-object-v1.js?v=20261024-ux-feedback1"></script>
-<script src="whiteboard-selection-ux-feedback-v1.js?v=20261024-ux-feedback1"></script>
 </body>
 </html>
