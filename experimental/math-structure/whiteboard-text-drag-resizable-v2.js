@@ -293,6 +293,30 @@ window.ClassroomObjectSelection={
      (obj.type!=='text'&&obj.type!=='image'))return false;
   choose(obj);return true;
  },
+ // Atomic deletion for the existing one-button Eraser. Reuses text/image
+ // history for Undo, including Counters, bar models and beautified handwriting.
+ selected:()=>selected&&strokes.includes(selected)?selected:null,
+ deleteObjects(objects){
+  if(tool!=='select')return false;
+  const wanted=new Set((Array.isArray(objects)?objects:[objects]).filter(
+   o=>o&&strokes.includes(o)&&!o.locked&&!o.background));
+  if(!wanted.size)return false;
+  if(editor)finishEditing(true);
+  if(dragMode)up();
+  if(!strokes.some(o=>wanted.has(o)))return false;
+  remember(clone(strokes));
+  strokes=strokes.filter(o=>!wanted.has(o));
+  selected=null;current=null;drawing=false;
+  // Let this new deletion be the next Undo, not a stale Smart Math creation.
+  window.__smartBarLastHistory=null;
+  redraw();
+  window.WhiteboardMarqueeSelection?.clear?.();
+  window.ClassroomUnifiedSmartTransforms?.clear?.();
+  window.ClassroomCounterColourAction?.hide?.();
+  syncUi();
+  if(typeof say==='function')say(X.deleted);
+  return true;
+ },
  clear(){
   if(editor)finishEditing(true);
   if(dragMode)up();
