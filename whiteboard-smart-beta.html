@@ -17,6 +17,17 @@
 @media(max-width:800px){.shell{padding:6px;gap:6px}.top{border-radius:14px;padding:7px}.meta span{display:none}.tools{width:100%}.brand{width:100%;margin-right:0}.btn{min-height:36px;padding:6px 8px}.boardWrap{border-radius:14px}.sizeControl{margin-left:auto}.colors{order:10}.colour{width:27px;height:27px}}
 #barModelOverlay{position:fixed;inset:8px;z-index:500;background:white;border:2px solid #0f766e;border-radius:16px;display:none;flex-direction:column;overflow:hidden}#barModelOverlay.open{display:flex}#barModelOverlay iframe{border:0;width:100%;flex:1;min-height:0}#barModelOverlay .overlayHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px;background:#e7f7f4;font-weight:800}#barModelOverlay .overlayHead button{min-height:36px}#fullBtn{display:none!important}.tools{gap:8px}@media(max-width:800px){.tools{justify-content:flex-start}}
 </style>
+<style id="ccRestoredHighlighterPaletteCSS">
+/* Restored six-colour Highlighter palette: independent of Pen colour. */
+#ccHighlighterPalette{display:inline-flex;align-items:center;justify-content:flex-start;gap:5px;padding:4px 7px;background:#fffbed;border:1px solid #e5ca6f;border-radius:12px;max-width:100%;flex-wrap:wrap;flex:0 1 auto}
+#ccHighlighterPalette button[data-highlight-colour]{display:inline-block;box-sizing:border-box;width:26px;height:26px;min-width:26px;min-height:26px;padding:0;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #a4a4a4;cursor:pointer}
+#ccHighlighterPalette button[data-highlight-colour][aria-pressed="true"]{box-shadow:0 0 0 2px #17324d,0 0 0 4px #fff}
+#ccHighlighterPalette #ccCustomHighlighterColour{box-sizing:border-box;width:33px;height:30px;min-width:33px;padding:2px;background:#fff;border:1px solid #b8b3a0;border-radius:7px;cursor:pointer}
+#ccHighlighterPalette :is(button,input):focus-visible{outline:2px solid #0f766e;outline-offset:3px}
+body.document-open-mode #ccHighlighterPalette{padding:2px 4px!important;gap:4px!important}
+body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{width:20px;min-width:20px;height:20px;min-height:20px}
+@media(max-width:700px){#ccHighlighterPalette{gap:5px;flex-wrap:wrap}#ccHighlighterPalette>span{display:none}}
+</style>
 </head>
 <body>
 <div class="shell">
@@ -25,6 +36,16 @@
 <div class="tools" role="toolbar" aria-label="Whiteboard tools">
 <button class="btn active" id="penBtn" type="button">✏️ Pen</button>
 <button class="btn soft" id="highlighterBtn" type="button" title="Draw translucent highlighting strokes" aria-label="Highlighter tool">🖍️ Highlighter</button>
+<div id="ccHighlighterPalette" role="group" aria-label="Highlighter colours" title="Choose your highlighter colour">
+ <span style="font-size:11px;font-weight:850;white-space:nowrap">Highlight:</span>
+ <button type="button" data-highlight-colour="#ffe34f" aria-label="Yellow highlighter" title="Yellow" style="background:#ffe34f"></button>
+ <button type="button" data-highlight-colour="#ff6b9e" aria-label="Pink highlighter" title="Pink" style="background:#ff6b9e"></button>
+ <button type="button" data-highlight-colour="#41cb91" aria-label="Green highlighter" title="Green" style="background:#41cb91"></button>
+ <button type="button" data-highlight-colour="#62b6ff" aria-label="Blue highlighter" title="Blue" style="background:#62b6ff"></button>
+ <button type="button" data-highlight-colour="#b68bfc" aria-label="Purple highlighter" title="Purple" style="background:#b68bfc"></button>
+ <button type="button" data-highlight-colour="#ffa34b" aria-label="Orange highlighter" title="Orange" style="background:#ffa34b"></button>
+ <input type="color" id="ccCustomHighlighterColour" value="#ffe34f" aria-label="Custom highlighter colour" title="Choose any highlighter colour">
+</div>
 <button class="btn" id="textBtn" type="button">T Text</button>
 <button class="btn soft" id="speechToTextBtn" type="button" title="Convert speech to text">🎙 Speech to Text</button>
 <button class="btn soft" id="documentAccessBtn" type="button" title="Open a document">📄 Document</button>
@@ -48,6 +69,7 @@
 <div class="toast" id="toast"></div>
 <script src="whiteboard-moe-local-only-guard-v1.js?v=20261017-moesafe2"></script>
 <script src="whiteboard-core.js?v=20261011-0534-core1"></script>
+<script src="whiteboard-highlighter-palette-v1.js?v=20261024-restored-original1"></script>
 <script src="whiteboard-text-drag-beta.js?v=20261018-selectionrelease1"></script>
 <script src="whiteboard-handwriting-digit-model-beta.js?v=20261018-handwriting1"></script>
 <script src="whiteboard-handwriting-character-models-beta.js?v=20261018-letters-cnn1"></script>
