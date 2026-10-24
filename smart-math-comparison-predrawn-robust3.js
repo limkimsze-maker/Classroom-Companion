@@ -100,6 +100,30 @@ function chooseBars(source){
  if(cluster.length<2)return[];
  return cluster.slice(0,3).sort((a,b)=>a.cy-b.cy)
 }
+// The accepted rough bars may be accompanied by short stray pen marks
+// (open ends, redraws, hooks and dots). For a sketch made BEFORE opening
+// Comparison, clean only neighbouring strokes from the same recent run.
+// Unrelated writing, earlier ink elsewhere, and other generated objects stay.
+function associatedSketchInk(source,bars){
+ const selected=new Set(bars.flatMap(c=>c.items.map(q=>q.s)));
+ if(!selected.size)return[];
+ const all=[...selected].map(box),d=dims();
+ const l=Math.min(...all.map(q=>q.l)),r=Math.max(...all.map(q=>q.r));
+ const t=Math.min(...all.map(q=>q.t)),b=Math.max(...all.map(q=>q.b));
+ const padX=Math.min(65,Math.max(22,(r-l)*.18));
+ const padY=Math.min(46,Math.max(18,(b-t)*.16));
+ const selectedIndices=source.map((s,i)=>selected.has(s)?i:-1).filter(i=>i>=0);
+ const first=Math.min(...selectedIndices),last=Math.max(...selectedIndices);
+ for(let i=Math.max(0,first-4);i<Math.min(source.length,last+5);i++){
+  const stroke=source[i];
+  if(selected.has(stroke)||!rawInk(stroke))continue;
+  const q=box(stroke);
+  // Complete containment + near drawing order avoids deleting adjacent
+  // annotations that happen to touch the comparison model bounds.
+  if(q.l>=l-padX&&q.r<=r+padX&&q.t>=t-padY&&q.b<=b+padY)selected.add(stroke);
+ }
+ return [...selected];
+}
 function synthetic(c){
  const x1=Math.max(0,Math.min(1,c.x)),y1=Math.max(0,Math.min(1,c.y)),x2=Math.max(0,Math.min(1,c.x+c.w)),y2=Math.max(0,Math.min(1,c.y+c.h));
  return{erase:false,colour:'#17324d',size:5,smartGenerated:false,__predrawnComparisonFallback:true,__predrawnPreflightTemp:true,points:[{x:x1,y:y1},{x:x2,y:y1},{x:x2,y:y2},{x:x1,y:y2},{x:x1,y:y1}]}
@@ -119,7 +143,7 @@ function prepare(){
  const priorModels=new Set(strokes.filter(s=>s&&s.smartType==='barModel'&&s.smartBarType==='comparison'));
  const priorIds=new Set([...priorModels].map(s=>s.smartId));
  const temp=bars.map(synthetic);
- const originals=[...new Set(bars.flatMap(c=>c.items.map(q=>q.s)))];
+ const originals=associatedSketchInk(source,bars);
  strokes.push(...temp);
  injected={temp,originals,beforeState,priorIds,priorModels,claimed:false};
  return injected;
