@@ -129,3 +129,87 @@ body.document-open-mode header.top .ccToolGroup #ccUsualWhiteboardInSlot{
   display:flex!important;flex:1 0 auto;margin-left:auto!important
  }
 }
+
+
+/* 2026-10-24: no-horizontal-scroll teacher toolbar.
+   Make the GROUPS occupy two desktop rows, but allow each group's BUTTONS
+   to wrap naturally. At browser zoom/narrow viewports preserve accessibility
+   by stacking groups instead of hiding controls or adding sideways scroll. */
+header.top .ccToolGroup[data-kind=edit]{display:none!important}
+header.top .ccToolGroup{overflow-x:visible!important;overflow-y:visible!important;scrollbar-width:none!important}
+header.top .ccToolGroup>.btn,header.top .ccToolGroup>button.btn{flex-shrink:0!important}
+header.top .ccToolGroup .colors,
+header.top .ccToolGroup #ccHighlighterPalette{min-width:0;max-width:100%;flex-wrap:wrap!important;flex-shrink:1!important}
+header.top .ccToolGroup .colour{width:23px!important;height:23px!important}
+header.top .ccToolGroup #ccHighlighterPalette button[data-highlight-colour]{
+ width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important
+}
+header.top .ccToolGroup #ccCustomHighlighterColour{width:29px!important;min-width:29px!important;height:28px!important}
+header.top .ccToolGroup .sizeControl{flex-shrink:0!important;margin:0!important}
+header.top .ccToolGroup .sizeControl input{width:75px!important}
+@media(min-width:1101px){
+ header.top .tools{
+  display:grid!important;
+  grid-template-columns:repeat(12,minmax(0,1fr))!important;
+  grid-template-rows:auto auto!important;
+  align-items:stretch!important;align-content:start!important;
+  column-gap:7px!important;row-gap:7px!important;
+  width:100%!important;max-width:100%!important
+ }
+ header.top .ccToolGroup,body.document-open-mode header.top .ccToolGroup{
+  box-sizing:border-box;display:flex!important;
+  align-content:center!important;align-items:center!important;
+  justify-content:flex-start!important;flex-wrap:wrap!important;
+  overflow:visible!important;min-width:0!important;max-width:100%!important;
+  min-height:46px!important;height:auto!important;
+  padding:6px 7px!important;gap:5px!important
+ }
+ header.top .ccToolGroup[hidden],body.document-open-mode header.top .ccToolGroup[hidden]{display:none!important}
+ header.top .ccToolGroupLabel{
+  position:static!important;z-index:auto!important;
+  align-self:center!important;flex:0 0 auto!important;
+  background:transparent!important;padding-right:7px!important;margin-right:2px!important;
+  white-space:nowrap!important
+ }
+ header.top .ccToolGroup[data-kind=draw]{grid-column:1/9!important;grid-row:1!important}
+ header.top .ccToolGroup[data-kind=create]{grid-column:9/13!important;grid-row:1!important}
+ header.top .ccToolGroup[data-kind=files]{grid-column:1/12!important;grid-row:2!important}
+ header.top .tools #ccPermanentExitBtn{grid-column:12/13!important;grid-row:2!important}
+ header.top .ccToolGroup>.btn,header.top .ccToolGroup>button.btn,
+ body.document-open-mode header.top .ccToolGroup>.btn{
+  flex-shrink:0!important;
+  white-space:nowrap!important;min-height:34px!important;height:auto!important;
+  padding:5px 7px!important;font-size:11px!important
+ }
+ header.top .ccToolGroup #ccHighlighterPalette>span{display:none!important}
+ header.top .ccToolGroup .colors,
+ header.top .ccToolGroup #ccHighlighterPalette{
+  flex-wrap:wrap!important;flex-shrink:1!important;
+  white-space:normal!important;gap:4px!important
+ }
+ body.document-open-mode header.top .tools{
+  display:grid!important;overflow:visible!important;gap:7px!important
+ }
+ body.document-open-mode header.top .ccToolGroup{
+  flex-wrap:wrap!important;overflow-x:visible!important;overflow-y:visible!important
+ }
+}
+/* Browser zoom may reduce available CSS width dramatically. Below the
+   two-column desktop breakpoint, prioritise ALL visible controls and wrapping
+   rather than enforce two artificial lines or allow sideways scrolling. */
+@media(max-width:1100px){
+ header.top .tools,body.document-open-mode header.top .tools{
+  display:flex!important;flex-wrap:wrap!important;overflow:visible!important;
+  width:100%!important;gap:6px!important
+ }
+ header.top .ccToolGroup,body.document-open-mode header.top .ccToolGroup{
+  box-sizing:border-box;display:flex!important;flex:1 1 100%!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  flex-wrap:wrap!important;overflow:visible!important;
+  height:auto!important;padding:6px!important;gap:5px!important
+ }
+ header.top .ccToolGroup[hidden],body.document-open-mode header.top .ccToolGroup[hidden]{display:none!important}
+ header.top .ccToolGroup>.btn,body.document-open-mode header.top .ccToolGroup>.btn{white-space:normal!important}
+ header.top .ccToolGroup .colors,header.top .ccToolGroup #ccHighlighterPalette{flex-wrap:wrap!important}
+ body.document-open-mode header.top .tools #ccPermanentExitBtn{align-self:flex-start!important;margin-left:0!important}
+}
