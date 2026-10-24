@@ -23,6 +23,9 @@ for(const [kind,title] of headings){
 const textFor=el=>[(el.textContent||''),(el.title||''),(el.getAttribute('aria-label')||'')].join(' ').toLowerCase();
 function kindOf(el){
  const id=el.id||'',t=textFor(el);
+ // File-picker tooltip also mentions "image"; route by exact ID first.
+ // This must precede the generic Create & Teach /image/ text match.
+ if(id==='openDocumentBtn')return'files';
  if(['selectBtn','ccFingerPointerBtn','penBtn','eraserBtn','highlighterBtn','ccHighlighterPalette'].includes(id)||el.classList.contains('colors')||el.classList.contains('sizeControl'))return'draw';
  if(['textBtn','editTextBtn','speechToTextBtn','imageBtn','smartBarFinishBtn','manualComparisonTotalBtn'].includes(id)||/beautify|smart math|shapes|how to use|tutorial|text box|image|speech to text|finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return'create';
  if(['undoBtn','redoBtn','clearBtn','gridBtn','fullBtn'].includes(id)||/duplicate|forward|backward|front|back\b|lock|unlock|redo|undo|grid|clear/.test(t))return'edit';
