@@ -58,9 +58,10 @@ function orderOf(el,kind){
  }
  if(kind==='files'){
   if(id==='openDocumentBtn')return 10;if(/my documents/.test(t))return 20;
+  if(id==='ccUsualWhiteboardInSlot')return 23;
   if(id==='ccSavePageAnnotationsBtn')return 60;if(id==='ccSaveAllAnnotationsBtn')return 65;
   if(id==='ccDeletePageAnnotationsBtn')return 70;if(id==='ccDeleteAllAnnotationsBtn')return 75;
-  if(id==='ccPermanentSaveBtn')return 85;if(id==='ccAnnotationActionsBtn')return 90;
+  if(id==='ccPermanentSaveBtn')return 55;if(id==='ccAnnotationActionsBtn')return 95;
   if(/\bsave\b/.test(t))return 30;if(/restore/.test(t))return 40;
   if(/export|png/.test(t))return 50;
  }
@@ -70,13 +71,15 @@ let arranging=false;
 const docSlot=document.getElementById('ccSaveSlot');
 const documentSave=document.getElementById('ccPermanentSaveBtn');
 const documentExit=document.getElementById('ccPermanentExitBtn');
+if(documentSave){documentSave.textContent='💾 Save to My Documents';documentSave.setAttribute('aria-label','Save to My Documents');}
+
 // Direct access to the four existing annotation operations.
 // Saving page/all also saves the document copy to My Documents.
 const directAnnotations=[
  ['ccSavePageAnnotationsBtn','💾 Save Page',()=>window.ccSaveCurrentPage?.(),false],
- ['ccSaveAllAnnotationsBtn','💾 Save All Annotations',()=>window.ccSaveCurrentDocument?.(),false],
- ['ccDeletePageAnnotationsBtn','🗑 Delete Page Annotations',()=>window.ccDeleteDocumentAnnotations?.('page'),true],
- ['ccDeleteAllAnnotationsBtn','🗑 Delete All Annotations',()=>window.ccDeleteDocumentAnnotations?.('all'),true]
+ ['ccSaveAllAnnotationsBtn','💾 Save All',()=>window.ccSaveCurrentDocument?.(),false],
+ ['ccDeletePageAnnotationsBtn','🗑 Delete Page',()=>window.ccDeleteDocumentAnnotations?.('page'),true],
+ ['ccDeleteAllAnnotationsBtn','🗑 Delete All',()=>window.ccDeleteDocumentAnnotations?.('all'),true]
 ];
 for(const [id,text,run,danger] of directAnnotations){
  let button=document.getElementById(id);
@@ -100,9 +103,12 @@ for(const [id,text,run,danger] of directAnnotations){
 function positionDocumentActions(){
  const files=groups.files;
  if(documentSave&&documentSave.parentElement!==files)files.appendChild(documentSave);
+ const usual=document.getElementById('ccUsualWhiteboardInSlot');
+ if(usual&&usual.parentElement!==files)files.appendChild(usual);
  const annotation=document.getElementById('ccAnnotationActionsBtn');
  if(annotation){
   annotation.textContent='📝 Save Annotations ▾';
+  annotation.hidden=true;
   annotation.setAttribute('aria-label','Save Annotations');
   annotation.title='Save page or document annotations, rename, or delete saved annotations';
   if(annotation.parentElement!==files)files.appendChild(annotation);
