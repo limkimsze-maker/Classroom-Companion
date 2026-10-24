@@ -153,7 +153,8 @@ function recolourCounter(target,fill){
  if(!obj)return false;
  if(obj.counterFill?.toLowerCase()===fill.toLowerCase()){closePanel();return true}
  const before=snapshot();
- obj.src=dataSvg(fill);obj.counterFill=fill.toLowerCase();
+ const colourHex=fill.toLowerCase();
+ obj.src=dataSvg(colourHex);obj.counterFill=colourHex;
  record(before,[obj.smartId]);closePanel();redraw();syncUi();
  // Outside Counters drawing mode, stay in Select so teachers can
  // recolour several finished counters without re-entering Pen mode.
