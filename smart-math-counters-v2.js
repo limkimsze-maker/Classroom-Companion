@@ -56,7 +56,13 @@ function looksLikeLoop(group){
  // Circumferential coverage tolerates gaps without treating a plain line as a loop.
  return sectors.size>=5&&lengthPx>=diag*1.10;
 }
-function looksLikeCounter(s){return looksLikeLoop([s])}
+function looksLikeCounter(s){
+ if(!looksLikeLoop([s]))return false;
+ const b=box(s),diag=Math.hypot(b.w*cssW,b.h*cssH);
+ // A lone semicircle is an incomplete counter. Keep it available for
+ // joining with the other arc instead of prematurely making two counters.
+ return closure(s)<=diag*.86;
+}
 function inkSignature(s){
  const pts=s.points||[],n=pts.length;
  const at=i=>{const p=pts[i]||{x:0,y:0};return Math.round(p.x*10000)+','+Math.round(p.y*10000)};
