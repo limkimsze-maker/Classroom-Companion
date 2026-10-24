@@ -8,7 +8,6 @@ tools.dataset.ccGroupedToolbar='1';
 const headings=[
  ['draw','Draw'],
  ['create','Create & teach'],
- ['edit','Edit & arrange'],
  ['files','Files']
 ];
 const groups={};
@@ -27,9 +26,9 @@ function kindOf(el){
  // This must precede the generic Create & Teach /image/ text match.
  if(['openDocumentBtn','ccPermanentSaveBtn','ccAnnotationActionsBtn','ccSavePageAnnotationsBtn','ccSaveAllAnnotationsBtn','ccDeletePageAnnotationsBtn','ccDeleteAllAnnotationsBtn'].includes(id))return'files';
  if(id==='ccHandGrabToolbarBtn')return'draw';
- if(['selectBtn','ccFingerPointerBtn','penBtn','eraserBtn','highlighterBtn','ccHighlighterPalette'].includes(id)||el.classList.contains('colors')||el.classList.contains('sizeControl'))return'draw';
+ if(['selectBtn','ccFingerPointerBtn','penBtn','eraserBtn','highlighterBtn','ccHighlighterPalette','undoBtn','redoBtn','gridBtn','clearBtn','fullBtn'].includes(id)||el.classList.contains('colors')||el.classList.contains('sizeControl'))return'draw';
  if(['textBtn','editTextBtn','speechToTextBtn','imageBtn','smartBarFinishBtn','manualComparisonTotalBtn'].includes(id)||/beautify|smart math|shapes|how to use|tutorial|text box|image|speech to text|finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return'create';
- if(['undoBtn','redoBtn','clearBtn','gridBtn','fullBtn'].includes(id)||/duplicate|forward|backward|front|back\b|lock|unlock|redo|undo|grid|clear/.test(t))return'edit';
+ if(/duplicate|forward|backward|front|back\b|lock|unlock|redo|undo|grid|clear/.test(t))return'draw';
  if(id==='openDocumentBtn'||/save|restore|export|png|my documents|open file|open document|saved board/.test(t))return'files';
  // Any additional classroom tool now belongs with Create & Teach; no separate Other Tools category.
  return'create';
@@ -41,6 +40,11 @@ function orderOf(el,kind){
   if(id==='penBtn')return 30;if(el.classList.contains('colors'))return 35;
   if(id==='highlighterBtn')return 40;if(id==='ccHighlighterPalette')return 45;
   if(id==='eraserBtn')return 50;if(el.classList.contains('sizeControl'))return 60;
+  if(id==='undoBtn')return 70;if(id==='redoBtn')return 72;
+  if(id==='gridBtn')return 80;if(id==='clearBtn')return 90;
+  if(id==='fullBtn')return 95;
+  if(/duplicate/.test(t))return 73;if(/forward|front/.test(t))return 74;
+  if(/backward|back\b/.test(t))return 75;if(/lock/.test(t))return 76;
  }
  if(kind==='create'){
   if(id==='textBtn')return 10;if(id==='editTextBtn')return 15;
@@ -49,12 +53,6 @@ function orderOf(el,kind){
   if(id==='smartBarFinishBtn'||/finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return 55;
   if(/beautify/.test(t))return 60;if(/how to use|tutorial/.test(t))return 70;
   if(id==='manualComparisonTotalBtn'||/\btotal\b/.test(t))return 80;
- }
- if(kind==='edit'){
-  if(id==='undoBtn')return 10;if(id==='redoBtn')return 15;
-  if(/duplicate/.test(t))return 20;if(/forward|front/.test(t))return 30;
-  if(/backward|back\b/.test(t))return 40;if(/lock/.test(t))return 50;
-  if(id==='gridBtn')return 60;if(id==='clearBtn')return 70;if(id==='fullBtn')return 80;
  }
  if(kind==='files'){
   if(id==='openDocumentBtn')return 10;if(/my documents/.test(t))return 20;
