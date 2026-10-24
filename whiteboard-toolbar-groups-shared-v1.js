@@ -25,7 +25,7 @@ function kindOf(el){
  const id=el.id||'',t=textFor(el);
  // File-picker tooltip also mentions "image"; route by exact ID first.
  // This must precede the generic Create & Teach /image/ text match.
- if(['openDocumentBtn','ccPermanentSaveBtn','ccAnnotationActionsBtn'].includes(id))return'files';
+ if(['openDocumentBtn','ccPermanentSaveBtn','ccAnnotationActionsBtn','ccSavePageAnnotationsBtn','ccSaveAllAnnotationsBtn','ccDeletePageAnnotationsBtn','ccDeleteAllAnnotationsBtn'].includes(id))return'files';
  if(id==='ccHandGrabToolbarBtn')return'draw';
  if(['selectBtn','ccFingerPointerBtn','penBtn','eraserBtn','highlighterBtn','ccHighlighterPalette'].includes(id)||el.classList.contains('colors')||el.classList.contains('sizeControl'))return'draw';
  if(['textBtn','editTextBtn','speechToTextBtn','imageBtn','smartBarFinishBtn','manualComparisonTotalBtn'].includes(id)||/beautify|smart math|shapes|how to use|tutorial|text box|image|speech to text|finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return'create';
@@ -58,7 +58,9 @@ function orderOf(el,kind){
  }
  if(kind==='files'){
   if(id==='openDocumentBtn')return 10;if(/my documents/.test(t))return 20;
-  if(id==='ccPermanentSaveBtn')return 65;if(id==='ccAnnotationActionsBtn')return 70;
+  if(id==='ccSavePageAnnotationsBtn')return 60;if(id==='ccSaveAllAnnotationsBtn')return 65;
+  if(id==='ccDeletePageAnnotationsBtn')return 70;if(id==='ccDeleteAllAnnotationsBtn')return 75;
+  if(id==='ccPermanentSaveBtn')return 85;if(id==='ccAnnotationActionsBtn')return 90;
   if(/\bsave\b/.test(t))return 30;if(/restore/.test(t))return 40;
   if(/export|png/.test(t))return 50;
  }
@@ -68,6 +70,33 @@ let arranging=false;
 const docSlot=document.getElementById('ccSaveSlot');
 const documentSave=document.getElementById('ccPermanentSaveBtn');
 const documentExit=document.getElementById('ccPermanentExitBtn');
+// Direct access to the four existing annotation operations.
+// Saving page/all also saves the document copy to My Documents.
+const directAnnotations=[
+ ['ccSavePageAnnotationsBtn','💾 Save Page',()=>window.ccSaveCurrentPage?.(),false],
+ ['ccSaveAllAnnotationsBtn','💾 Save All Annotations',()=>window.ccSaveCurrentDocument?.(),false],
+ ['ccDeletePageAnnotationsBtn','🗑 Delete Page Annotations',()=>window.ccDeleteDocumentAnnotations?.('page'),true],
+ ['ccDeleteAllAnnotationsBtn','🗑 Delete All Annotations',()=>window.ccDeleteDocumentAnnotations?.('all'),true]
+];
+for(const [id,text,run,danger] of directAnnotations){
+ let button=document.getElementById(id);
+ if(!button){
+  button=document.createElement('button');button.id=id;button.type='button';button.className='btn'+(danger?' danger':' soft');
+  button.textContent=text;button.title=text.replace(/^[^A-Za-z]+/,'')+(danger?' (confirmation required)':' (saves locally to My Documents)');
+  button.setAttribute('aria-label',text.replace(/^[^A-Za-z]+/,''));
+  button.addEventListener('click',async()=>{
+   if(!document.body.classList.contains('document-open-mode'))return;
+   button.disabled=true;
+   try{
+    const success=await run();
+    const toast=document.getElementById('toast');
+    if(toast&&!danger){toast.textContent=success===false?'Document not saved.':'Saved locally to My Documents.';toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1600)}
+   }catch(err){const toast=document.getElementById('toast');if(toast){toast.textContent='Annotation action failed: '+(err?.message||err);toast.classList.add('show')}}
+   finally{button.disabled=false}
+  });
+ }
+ groups.files.appendChild(button);
+}
 function positionDocumentActions(){
  const files=groups.files;
  if(documentSave&&documentSave.parentElement!==files)files.appendChild(documentSave);
@@ -111,7 +140,7 @@ function arrange(){
  if(arranging)return;
  positionDocumentActions();
  const loose=[...tools.children].filter(el=>!el.classList.contains('ccToolGroup')&&el.id!=='ccPermanentExitBtn');
- if(!loose.length)return;
+ // Re-sort existing group content too, including newly inserted document actions.
  arranging=true;
  try{
   // Preserve every control; sort the same physical DOM nodes for easy scanning.
