@@ -124,8 +124,15 @@ handShortcut.setAttribute('aria-label','Hand tool: drag document to pan');
 handShortcut.setAttribute('aria-pressed','false');
 tools.appendChild(handShortcut);
 function syncHand(){
+ const documentOpen=document.body.classList.contains('document-open-mode');
  const real=document.getElementById('documentTouchNavBtn');
- const pressed=!!real&&real.classList.contains('active');
+ const pressed=documentOpen&&!!real&&real.classList.contains('active');
+ // The shortcut is always visible beside Select. It becomes usable as soon
+ // as a document opens; on the plain whiteboard there is no page to pan.
+ handShortcut.disabled=!documentOpen;
+ handShortcut.title=documentOpen
+  ?'Hand: drag to pan the open document; pinch or scroll to zoom'
+  :'Hand: open a document to enable page panning';
  handShortcut.setAttribute('aria-pressed',String(pressed));
  handShortcut.classList.toggle('active',pressed);
 }
