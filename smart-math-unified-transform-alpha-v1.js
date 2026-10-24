@@ -34,8 +34,7 @@ function info(){
 }
 function active(){
  const list=candidates();if(!list.length)return null;
- const fracId=window.ClassroomFractionSegmentOptions?.selected?.();
- return byId(fracId)||byId(selectedId)||list[list.length-1]||null;
+ return byId(selectedId)||list[list.length-1]||null;
 }
 function panelOpen(){return !!document.querySelector('#smartFractionOptionsPanel,#smartBarTypeMenu[style*="display: block"],.comparison-segment-options-popup,#smartFractionColourPanel')}
 function allowed(){return typeof tool==='string'&&tool==='select'&&!panelOpen()&&!document.body.classList.contains('live-overlay-active')}
