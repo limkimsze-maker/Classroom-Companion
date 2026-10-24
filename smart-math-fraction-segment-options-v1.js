@@ -78,7 +78,7 @@ function draw(){
    for(const item of labels(o)){
      if(!item||!item.text)continue;
      const a=clamp(Math.round(Number(item.start)||0),0,count(o)-1),b=clamp(Math.round(Number(item.end)||0),a,count(o)-1),q=span(o,a,b,W,H);
-     fitText(item.text,q.x+q.w/2,q.y+q.h/2,o.fractionHorizontal!==false?q.w:q.h,Math.min(19,q.h*.55));
+     fitText(item.text,q.x+q.w/2,q.y+q.h/2,q.w,Math.min(19,q.h*.55));
    }
    for(const b of brackets(o)){
      if(!b||b.visible===false||!Number.isInteger(b.start)||!Number.isInteger(b.end)||b.start<0||b.end>=count(o)||b.end<b.start)continue;
@@ -203,7 +203,7 @@ function buildZones(){
      const gap=clamp(Math.min(rect.w,rect.h)*.13,4,8);
      z.style.left=(a.left-r.left+rect.x+gap)+'px';z.style.top=(a.top-r.top+rect.y+gap)+'px';
      z.style.width=Math.max(8,rect.w-2*gap)+'px';z.style.height=Math.max(8,rect.h-2*gap)+'px';
-     z.style.display='block';
+     z.style.display='block';z.title='Tap to label or colour; drag across adjacent segments for a grouped bracket';
      z.onpointerdown=e=>{if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
        drag={id:o.smartId,first:i,last:i,pointerId:e.pointerId,zone:z};preview={id:o.smartId,start:i,end:i};
        try{z.setPointerCapture(e.pointerId)}catch(err){}
