@@ -133,7 +133,7 @@ window.__smartComparisonRelease=()=>{
  return job;
 };
 function menuButton(el){return!!(el&&el.closest&&el.closest('#smartBarTypeMenu button'))}
-function finishButton(el){const b=el&&el.closest?el.closest('button'):null,smart=document.getElementById('smartMathBtn');return!!(b&&smart&&smart.nextElementSibling===b)}
+function finishButton(el){const b=el&&el.closest?el.closest('button'):null,smart=document.getElementById('smartMathBtn');return!!(b&&(b.id==='smartBarFinishBtn'||(smart&&smart.nextElementSibling===b)))}
 
 document.addEventListener('pointerdown',e=>{
  const el=e.target instanceof Element?e.target:null;if(!el||!menuButton(el))return;
