@@ -72,7 +72,9 @@ body.document-open-mode header.top .tools #ccPermanentExitBtn{
  background:#fff7f5!important;border-color:#dca8a0!important;color:#a52719!important;
  font-weight:950!important;align-self:stretch;min-width:62px
 }
-header.top #ccHandGrabToolbarBtn{display:none!important}
+/* Hand is always visible beside Select; disabled outside document mode. */
+header.top #ccHandGrabToolbarBtn{display:inline-flex!important;align-items:center;justify-content:center}
+header.top #ccHandGrabToolbarBtn:disabled{opacity:.72!important;cursor:not-allowed!important}
 body.document-open-mode header.top #ccHandGrabToolbarBtn{display:inline-flex!important}
 body.document-open-mode header.top .ccToolGroup #ccUsualWhiteboardInSlot{
  box-sizing:border-box;display:inline-flex!important;align-items:center;
