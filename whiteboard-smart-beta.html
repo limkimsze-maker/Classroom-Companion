@@ -28,6 +28,30 @@ body.document-open-mode #ccHighlighterPalette{padding:2px 4px!important;gap:4px!
 body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{width:20px;min-width:20px;height:20px;min-height:20px}
 @media(max-width:700px){#ccHighlighterPalette{gap:5px;flex-wrap:wrap}#ccHighlighterPalette>span{display:none}}
 </style>
+<style id="ccAlphaResponsiveToolsV1">
+/* Always keep toolbar actions accessible after browser zoom or resize. */
+html,body{min-width:0}
+.shell{min-width:0}
+.top{min-width:0;max-width:100%;flex:0 1 auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;max-height:48vh;max-height:48dvh;align-content:flex-start;scrollbar-width:thin}
+.top .tools{display:flex!important;flex:1 1 100%;width:100%;min-width:0;max-width:100%;flex-wrap:wrap!important;justify-content:flex-start;gap:5px!important;overflow:visible!important;padding:2px!important;scrollbar-width:auto!important}
+.top .tools>.btn,.top .tools>button{flex:0 0 auto;max-width:100%;white-space:normal}
+.top .tools .colors{display:inline-flex;flex-wrap:wrap!important;max-width:100%;order:initial!important}
+.top .tools #ccHighlighterPalette{display:inline-flex!important;flex-wrap:wrap!important;max-width:100%;white-space:normal}
+.top .tools .sizeControl{margin-left:0!important;flex:0 1 auto}
+body.document-open-mode .top{max-height:50vh!important;max-height:50dvh!important;overflow-x:hidden!important;overflow-y:auto!important}
+body.document-open-mode .top .tools{flex-wrap:wrap!important;overflow:visible!important;width:100%!important;max-width:100%!important;gap:5px!important;padding:2px!important}
+body.document-open-mode .top .tools .btn{height:auto!important;min-height:30px!important;max-width:100%;white-space:normal!important;padding:4px 7px!important;font-size:11px!important}
+body.document-open-mode .top .tools #ccHighlighterPalette{flex-wrap:wrap!important}
+#ccSaveSlot{display:none;box-sizing:border-box;align-items:center;justify-content:flex-start;gap:6px;flex:1 1 100%;min-width:0;width:100%;max-width:100%;flex-wrap:wrap;padding:4px 2px;order:0}
+body.document-open-mode #ccSaveSlot{display:flex!important;order:-1;position:relative;z-index:2}
+#ccSaveSlot>button{flex:0 0 auto;min-height:35px;height:auto!important;max-width:100%;padding:7px 10px;border:1px solid #0f766e;border-radius:9px;background:#0f766e;color:white;font:800 12px system-ui;white-space:normal;text-align:center}
+#ccSaveSlot #ccAnnotationActionsBtn{background:#e7f7f4;color:#0a5d57;min-width:0}
+#ccSaveSlot #ccPermanentExitBtn{background:#fff;color:#17324d;border-color:#cbd5df;min-width:64px}
+#ccSaveSlot #ccPermanentSaveBtn{flex:0 1 auto}
+#ccSaveSlot button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+@media(max-width:700px){.top{max-height:52dvh}.top .tools{gap:4px!important}#ccSaveSlot>button{font-size:11px;min-height:34px;padding:5px 7px}}
+@media(max-height:480px){.top{max-height:55dvh}.top .tools{gap:3px!important}}
+</style>
 </head>
 <body>
 <div class="shell">
@@ -48,7 +72,6 @@ body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{widt
 </div>
 <button class="btn" id="textBtn" type="button">T Text</button>
 <button class="btn soft" id="speechToTextBtn" type="button" title="Convert speech to text">🎙 Speech to Text</button>
-<button class="btn soft" id="documentAccessBtn" type="button" title="Open a document">📄 Document</button>
 <button class="btn" id="eraserBtn" type="button">⌫ Eraser</button>
 <div class="colors" aria-label="Pen colour">
 <button class="colour active" type="button" data-colour="#17324d" style="background:#17324d" aria-label="Navy"></button>
@@ -62,6 +85,10 @@ body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{widt
 <button class="btn soft" id="gridBtn" type="button" aria-pressed="true">▦ Grid</button>
 <button class="btn" id="fullBtn" type="button">⛶ Full screen</button>
 <button class="btn danger" id="clearBtn" type="button">Clear</button>
+</div>
+<div id="ccSaveSlot" role="group" aria-label="Document save and annotation controls">
+<button class="btn" type="button" id="ccPermanentSaveBtn" aria-label="Save to My Documents" title="Save a local copy of the file and annotations">💾 Save to My Documents</button>
+<button class="btn soft" type="button" id="ccPermanentExitBtn" aria-label="Exit document" title="Exit document">✕ Exit</button>
 </div>
 </header>
 <main class="boardWrap grid" id="boardWrap" data-watermark="MOE Safe Beta"><canvas id="board" aria-label="Interactive whiteboard"></canvas><div class="mode" id="modeBadge">Pen · navy · 5 px</div></main>
@@ -143,30 +170,16 @@ body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{widt
 <script src="smart-math-border-resize-beta.js?v=20261016-borderresize2"></script>
 <script src="smart-math-fraction-segment-options-v1.js?v=20261024-alpha-fraction1"></script>
 <script src="smart-math-unified-transform-alpha-v1.js?v=20261024-unified1"></script>
-<script src="whiteboard-document-open-moe-v2.js?v=20261018-searchfix1"></script>
-<script src="whiteboard-document-gestures-v4.js?v=20261018-dial-target1"></script>
+<script src="whiteboard-document-open-my-documents-test.js?v=20261024-alpha-docs-restore1"></script>
+<script src="whiteboard-document-gestures-v2-trial.js?v=20261024-alpha-docs-restore1"></script>
 <script src="whiteboard-document-dock-position-v1.js?v=20261017-seamlesspages1"></script>
 <script src="whiteboard-toolbar-clarity-v1.js?v=20261017-toolbarclarity4"></script>
 <script src="whiteboard-document-right-rail-v1.js?v=20261018-direct-finger1"></script>
 <script src="whiteboard-contextual-actions-v1.js?v=20261017-down-increases1"></script>
 <script src="whiteboard-toolbar-startup-stabilizer-v1.js?v=20261017-startup1"></script>
-<script>
-(function(){
-'use strict';
-const entry=document.getElementById('documentAccessBtn');
-if(!entry)return;
-entry.addEventListener('click',()=>{
- const existing=document.getElementById('openDocumentBtn');
- if(existing){existing.click();return;}
- const input=document.querySelector('input[type="file"]');
- if(input){input.click();return;}
- const t=document.getElementById('toast');
- if(t){t.textContent='Document opener is unavailable';t.classList.add('show');}
-});
-})();
-</script>
 <script src="whiteboard-speech-to-text-experiment.js?v=20261022-visible-speech1"></script>
 <script src="whiteboard-finger-pointer-alpha-v1.js?v=20261024-pointer-cursor2"></script>
 <script src="whiteboard-pen-highlighter-restore-alpha-v1.js?v=20261024-toolbar-restore1"></script>
+<script src="my-documents-v1.js?v=20261024-alpha-docs-restore1"></script>
 </body>
 </html>
