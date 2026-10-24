@@ -13,7 +13,7 @@ const kind=o=>o?.smartType==='counter'?'Counter':o?.smartType==='fractionBar'?'F
 const valid=o=>o&&o.type==='image'&&TYPES.has(o.smartType)&&[o.x,o.y,o.w,o.h].every(Number.isFinite)&&o.w>0&&o.h>0;
 const candidates=()=>strokes.filter(valid);
 const byId=id=>candidates().find(o=>o.smartId===id);
-let selectedId='',latest=null,gesture=null,lastTransform=null,raf=0;
+let selectedId='',latest=null,gesture=null,lastTransform=null,raf=0,selectionCleared=false;
 const layer=document.createElement('div');layer.id='ccUnifiedSmartTransformLayer';
 layer.setAttribute('aria-label','Move and resize Smart Math objects');
 layer.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:1460';
@@ -33,7 +33,7 @@ function info(){
  return{W:Math.max(1,c.width),H:Math.max(1,c.height),ox:c.left-w.left,oy:c.top-w.top,wrapW:Math.max(1,w.width),wrapH:Math.max(1,w.height)};
 }
 function active(){
- const list=candidates();if(!list.length)return null;
+ const list=candidates();if(!list.length||selectionCleared)return null;
  return byId(selectedId)||list[list.length-1]||null;
 }
 function panelOpen(){return !!document.querySelector('#smartFractionOptionsPanel,#smartBarTypeMenu[style*="display: block"],.comparison-segment-options-popup,#smartFractionColourPanel')}
@@ -77,7 +77,7 @@ function repaint(){
 function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;repaint()})}
 function select(id){
  if(!byId(id))return false;
- selectedId=id;
+ selectedId=id;selectionCleared=false;
  if(byId(id).smartType==='fractionBar')window.ClassroomFractionSegmentOptions?.select?.(id);
  schedule();return true;
 }
@@ -152,7 +152,7 @@ window.addEventListener('click',e=>{
 const originalRedraw=redraw;
 redraw=function(){const r=originalRedraw.apply(this,arguments);
  const newest=candidates().at(-1)||null;
- if(newest&&newest!==latest){latest=newest;selectedId=newest.smartId}
+ if(newest&&newest!==latest){latest=newest;selectedId=newest.smartId;selectionCleared=false}
  if(selectedId&&!byId(selectedId))selectedId='';
  schedule();return r;
 };
@@ -168,6 +168,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&gesture)finish(gest
 window.addEventListener('blur',()=>{if(gesture)finish(gesture.el,null,true)});
 window.ClassroomUnifiedSmartTransforms={
  enabled:true,
+ clear(){selectedId='';selectionCleared=true;schedule()},
  selected:()=>active()?.smartId||null,
  select,
  refresh:schedule,
