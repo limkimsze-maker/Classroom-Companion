@@ -66,7 +66,7 @@ function rebuild(obj,n,widths){
  obj.src=svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="${H}" viewBox="0 0 900 ${H}">${els.join('')}</svg>`);
  obj.barCompareLayoutVersion=2;
 }
-function isFinishButton(el){const b=el?.closest?.('button'),smart=document.getElementById('smartMathBtn');return !!(b&&smart&&smart.nextElementSibling===b)}
+function isFinishButton(el){const b=el?.closest?.('button'),smart=document.getElementById('smartMathBtn');return !!(b&&(b.id==='smartBarFinishBtn'||(smart&&smart.nextElementSibling===b)))}
 
 document.addEventListener('pointerdown',e=>{
  if(window.__smartBarType!=='comparison'||!isFinishButton(e.target))return;
