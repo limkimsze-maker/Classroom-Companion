@@ -266,5 +266,17 @@ window.ClassroomSpeechTextControls={
  getGrips:()=>speechGrips.map(g=>({mode:g.mode,label:g.text,cursor:g.cursor}))
 };
 
+// Stable selection API for the shared finish-editing gesture. Does not alter
+// drawing, movement, resizing, text entry or Undo history.
+window.ClassroomObjectSelection={
+ hasSelection:()=>!!selected&&strokes.includes(selected),
+ clear(){
+  if(editor)finishEditing(true);
+  if(dragMode)up();
+  if(!selected)return;
+  selected=null;redraw();syncUi();
+ }
+};
+
 tool='select';selected=null;redraw();syncUi();
 })();
