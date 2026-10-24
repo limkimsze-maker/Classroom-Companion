@@ -7,7 +7,7 @@ if(!wrap)return;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const clone=x=>JSON.parse(JSON.stringify(x));
 const palette=[['','Keep existing'],['#ffffff','White'],['#dc2626','Red'],['#2563eb','Blue'],['#facc15','Yellow'],['#15803d','Green'],['#7c3aed','Purple'],['#f97316','Orange'],['#fde68a','Light yellow'],['#93c5fd','Light blue'],['#86efac','Light green']];
-let panel=null,drag=null,preview=null,raf=0;
+let panel=null,drag=null,preview=null,raf=0,selectedId='';
 const zones=new Map();
 const ov=document.createElement('canvas');
 ov.id='smartFractionDecorationOverlay';
@@ -139,36 +139,37 @@ function setBracket(o,start,end,side,label){
 }
 function showPlacement(id,start,end,x,y){
  const o=find(id);if(!o)return;
- const n=count(o),p=makePanel('Fraction bar · segment options',x,y);
- const nums=Array.from({length:n},(_,i)=>[i,'Part '+(i+1)]);
- const from=selectInput(nums,start),to=selectInput(nums,end);
- const scope=document.createElement('div');scope.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:7px';
- const left=document.createElement('label');left.textContent='From';left.style.cssText='font:800 11px system-ui';
- const right=document.createElement('label');right.textContent='To';right.style.cssText='font:800 11px system-ui';
- left.append(from);right.append(to);scope.append(left,right);p.append(scope);
- const setPreview=()=>{const a=Math.min(+from.value,+to.value),b=Math.max(+from.value,+to.value);preview={id,start:a,end:b};schedule()};
- setPreview();from.addEventListener('change',setPreview);to.addEventListener('change',setPreview);
+ selectedId=id;
+ start=clamp(Math.round(start),0,count(o)-1);end=clamp(Math.round(end),start,count(o)-1);
+ const p=makePanel('Fraction bar · segment options',x,y);
+ const selected=document.createElement('div');
+ selected.textContent=start===end?'Part '+(start+1)+' selected':'Parts '+(start+1)+'–'+(end+1)+' selected';
+ selected.style.cssText='font:800 12px system-ui;color:#0f766e;padding:7px 10px;background:#eef8f6;border-radius:8px;margin-bottom:9px';
+ p.append(selected);preview={id,start,end};schedule();
  const group=labels(o).find(a=>a.start===start&&a.end===end);
  const lab=input('Optional text inside bar',group?.text||'');row(p,'Inside label',lab);
- const btext=input('Optional bracket text','');row(p,'Bracket label',btext);
  const col=selectInput(palette,'');row(p,'Colour',col);
- const colourTarget=selectInput([['selected','Selected segments'],['all','Whole fraction bar']],'selected');row(p,'Apply colour to',colourTarget);
- const apply=(side)=>{
-   const a=Math.min(+from.value,+to.value),b=Math.max(+from.value,+to.value),c=col.value;
+ const colourTarget=selectInput([['selected','Selected segments'],['all','Whole fraction bar']],'selected');
+ row(p,'Apply colour to',colourTarget);
+ const apply=side=>{
+   const c=col.value;
    mutate(id,obj=>{
-     if(c){obj.fractionFills=Array.from({length:count(obj)},(_,i)=>obj.fractionFills?.[i]||'#ffffff');
-       for(let i=0;i<count(obj);i++)if(colourTarget.value==='all'||i>=a&&i<=b)obj.fractionFills[i]=c;
-       window.ClassroomFractionBars?.refresh?.(obj)}
-     setLabel(obj,a,b,lab.value);
-     if(side)setBracket(obj,a,b,side,btext.value);
+     if(c){
+       obj.fractionFills=Array.from({length:count(obj)},(_,i)=>obj.fractionFills?.[i]||'#ffffff');
+       for(let i=0;i<count(obj);i++)if(colourTarget.value==='all'||i>=start&&i<=end)obj.fractionFills[i]=c;
+       window.ClassroomFractionBars?.refresh?.(obj);
+     }
+     setLabel(obj,start,end,lab.value);
+     if(side)setBracket(obj,start,end,side,'');
    });
-   close();notify(side?'Fraction bracket and labels applied':'Fraction colour / label applied');
+   close();notify(side?'Bracket added · tap the bracket to label it':'Fraction colour / label applied');
  };
  const only=btn('Apply colour / label','soft');p.append(only);
- only.style.cssText+='width:100%;margin-top:6px';
- only.addEventListener('click',()=>apply(null));
- const t=document.createElement('div');t.textContent='Add a bracket only if needed';t.style.cssText='font:800 11px system-ui;color:#667085;margin:10px 0 5px';p.append(t);
- const above=btn(o.fractionHorizontal!==false?'↑ Above':'← Left','soft'),below=btn(o.fractionHorizontal!==false?'↓ Below':'→ Right','soft');
+ only.style.cssText+='width:100%;margin-top:7px';only.addEventListener('click',()=>apply(null));
+ const t=document.createElement('div');t.textContent='Optional bracket · tap it afterwards to add a label';
+ t.style.cssText='font:800 11px system-ui;color:#667085;margin:11px 0 5px';p.append(t);
+ const above=btn(o.fractionHorizontal!==false?'↑ Above':'← Left','soft'),
+       below=btn(o.fractionHorizontal!==false?'↓ Below':'→ Right','soft');
  bottomActions(p,above,below);
  above.addEventListener('click',()=>apply('top'));below.addEventListener('click',()=>apply('bottom'));
 }
@@ -203,20 +204,20 @@ function buildZones(){
      const gap=clamp(Math.min(rect.w,rect.h)*.13,4,8);
      z.style.left=(a.left-r.left+rect.x+gap)+'px';z.style.top=(a.top-r.top+rect.y+gap)+'px';
      z.style.width=Math.max(8,rect.w-2*gap)+'px';z.style.height=Math.max(8,rect.h-2*gap)+'px';
-     z.style.display='block';z.title='Tap to label or colour; drag across adjacent segments for a grouped bracket';
+     z.style.display='block';z.title='Tap for segment options, or drag over adjacent segments';z.style.cursor='pointer';
      z.onpointerdown=e=>{if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-       drag={id:o.smartId,first:i,last:i,pointerId:e.pointerId,zone:z};preview={id:o.smartId,start:i,end:i};
+       selectedId=o.smartId;drag={kind:'segments',id:o.smartId,first:i,last:i,pointerId:e.pointerId,zone:z};preview={id:o.smartId,start:i,end:i};
        try{z.setPointerCapture(e.pointerId)}catch(err){}
        schedule();
      };
-     z.onpointermove=e=>{if(!drag||drag.zone!==z)return;
+     z.onpointermove=e=>{if(!drag||drag.kind!=='segments'||drag.zone!==z)return;
        const rr=canvas.getBoundingClientRect(),pos=o.fractionHorizontal!==false?(e.clientX-rr.left)/Math.max(1,rr.width):(e.clientY-rr.top)/Math.max(1,rr.height);
        const local=o.fractionHorizontal!==false?(pos-o.x)/o.w:(pos-o.y)/o.h;
        drag.last=clamp(Math.floor(local*count(o)),0,count(o)-1);
        preview={id:drag.id,start:Math.min(drag.first,drag.last),end:Math.max(drag.first,drag.last)};schedule();
        e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
      };
-     z.onpointerup=e=>{if(!drag||drag.zone!==z)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+     z.onpointerup=e=>{if(!drag||drag.kind!=='segments'||drag.zone!==z)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
        const d=drag;drag=null;try{z.releasePointerCapture(e.pointerId)}catch(err){}
        showPlacement(d.id,Math.min(d.first,d.last),Math.max(d.first,d.last),e.clientX,e.clientY);
      };
@@ -241,8 +242,8 @@ const previousRedraw=redraw;
 redraw=function(){previousRedraw();schedule()};
 window.addEventListener('resize',schedule);
 if(typeof ResizeObserver!=='undefined')new ResizeObserver(schedule).observe(wrap);
-document.addEventListener('whiteboard-annotation-context',()=>{close();drag=null;schedule()},true);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){close();drag=null}},true);
+document.addEventListener('whiteboard-annotation-context',()=>{close();drag=null;selectedId='';schedule()},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){close();drag=null;selectedId='';schedule()}},true);
 document.addEventListener('pointerdown',e=>{if(panel&&!panel.contains(e.target)&&!e.target.closest?.('[id="smartFractionDecorationOverlay"]'))close()},true);
 window.ClassroomFractionSegmentOptions={getState:id=>{const o=find(id);return o?{labels:clone(labels(o)),brackets:clone(brackets(o)),fills:clone(o.fractionFills||[])}:null},open:showPlacement};
 schedule();
