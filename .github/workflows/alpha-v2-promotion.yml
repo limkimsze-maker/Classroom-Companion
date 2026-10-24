@@ -4,6 +4,12 @@ on:
     branches: [main, 'promote/v2-alpha-*', 'fix/alpha-word-*']
     paths:
       - whiteboard.html
+      - whiteboard-v2-trial.html
+      - smart-math-fractions-v3.js
+      - smart-math-fraction-height-v2.js
+      - scripts/fraction-bar-fixtures.cjs
+      - scripts/test-fraction-bar-recognition.cjs
+      - scripts/test-fraction-bar-workflow.cjs
       - whiteboard-word-layout-v1.js
       - vendor/moe/docx-layout*
       - vendor/moe/jszip*
@@ -52,6 +58,12 @@ jobs:
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-startup-performance.cjs
+      - name: Verify robust Fraction Bars in Beta V2 and Alpha
+        env:
+          NODE_PATH: /tmp/alpha-browser/node_modules
+        run: |
+          node scripts/test-fraction-bar-recognition.cjs
+          node scripts/test-fraction-bar-workflow.cjs
       - name: Measure PDF opening and repeated PDF open
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
