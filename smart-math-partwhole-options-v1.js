@@ -111,5 +111,24 @@ const prev=redraw;redraw=function(){prep();const r=prev.apply(this,arguments);re
 // mode the compact DOM hit-zones handle the click, but block the legacy palette
 // if a browser delivers the click to canvas at an edge.
 window.addEventListener('click',e=>{if(e.target!==canvas||!selectionMode())return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width),y=(e.clientY-r.top)/Math.max(1,r.height);for(const o of strokes){if(!isPW(o))continue;const y1=o.y+o.h*(Y/VB_H),y2=o.y+o.h*((Y+BAR_H)/VB_H),x1=o.x+o.w*(X/VB_W),x2=o.x+o.w*((X+BAR_W)/VB_W);if(x>=x1&&x<=x2&&y>=y1&&y<=y2){e.preventDefault();e.stopImmediatePropagation();return}}},true);
-document.addEventListener('pointerdown',e=>{if(placementPanel&&!placementPanel.contains(e.target)){closePlacement();rebuildZones()}},true);document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePlacement();cancelDrag();rebuildZones()}},true);window.addEventListener('resize',()=>{closePlacement();requestAnimationFrame(drawOverlay);rebuildZones()});new ResizeObserver(()=>{requestAnimationFrame(drawOverlay);rebuildZones()}).observe(wrap);setInterval(()=>{if(!drag){prep();rebuildZones()}},700);setTimeout(()=>{prep();try{redraw()}catch{drawOverlay();rebuildZones()}},0);
+document.addEventListener('pointerdown',e=>{if(placementPanel&&!placementPanel.contains(e.target)){closePlacement();rebuildZones()}},true);document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePlacement();cancelDrag();rebuildZones()}},true);// On Android, opening the soft keyboard fires resize events. Never tear
+ // down a focused label editor on resize: that would dismiss the keyboard
+ // and discard unsubmitted text. This is also safe on rotation and zoom.
+ function handleEditorViewportResize(){
+  if(placementPanel){
+   const viewport=window.visualViewport;
+   const visibleTop=viewport?.offsetTop||0;
+   const visibleHeight=Math.max(120,viewport?.height||window.innerHeight);
+   placementPanel.style.maxHeight=Math.max(100,visibleHeight-16)+'px';
+   placementPanel.style.overflowY='auto';
+   const panelHeight=placementPanel.getBoundingClientRect().height;
+   const previousTop=parseFloat(placementPanel.style.top)||8;
+   const maxTop=Math.max(visibleTop+8,visibleTop+visibleHeight-panelHeight-8);
+   const safeTop=Math.max(visibleTop+8,Math.min(previousTop,maxTop));
+   placementPanel.style.top=safeTop+'px';
+  }
+  requestAnimationFrame(drawOverlay);rebuildZones();
+ }
+ window.addEventListener('resize',handleEditorViewportResize);
+ window.visualViewport?.addEventListener('resize',handleEditorViewportResize);new ResizeObserver(()=>{requestAnimationFrame(drawOverlay);rebuildZones()}).observe(wrap);setInterval(()=>{if(!drag){prep();rebuildZones()}},700);setTimeout(()=>{prep();try{redraw()}catch{drawOverlay();rebuildZones()}},0);
 })();
