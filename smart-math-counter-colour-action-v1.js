@@ -14,6 +14,7 @@ button.style.cssText='display:none;position:fixed;z-index:10045;box-sizing:borde
  'min-width:99px;min-height:40px;padding:8px 12px;border:2px solid #0f766e;'+
  'border-radius:11px;background:#fff;color:#0f766e;box-shadow:0 3px 15px #17324d44;'+
  'font:800 13px system-ui;cursor:pointer;touch-action:manipulation;';
+button.style.display='none';
 document.body.appendChild(button);
 let selectedId='',press=null;
 const clamp=(x,low,high)=>Math.min(Math.max(low,x),Math.max(low,high));
