@@ -282,6 +282,18 @@ document.addEventListener('whiteboard-annotation-transform',e=>{
  if(editSnapshot)editSnapshot=map(editSnapshot);if(startObject)startObject=map([startObject])[0];
  if(editor)editorStyle();
 });
+// Stable selection API for the shared finish-editing gesture. Does not alter
+// drawing, movement, resizing, text entry or Undo history.
+window.ClassroomObjectSelection={
+ hasSelection:()=>!!selected&&strokes.includes(selected),
+ clear(){
+  if(editor)finishEditing(true);
+  if(dragMode)up();
+  if(!selected)return;
+  selected=null;redraw();syncUi();
+ }
+};
+
 tool='select';selected=null;redraw();syncUi();
 })();
 
