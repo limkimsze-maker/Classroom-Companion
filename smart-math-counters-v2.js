@@ -99,7 +99,21 @@ function showColours(target){
 // Selecting Counters immediately returns the whiteboard to Pen.
 document.addEventListener('click',e=>{
  const b=e.target?.closest?.('button');if(!b)return;const label=b.textContent.trim();
- if(label===L.counters){const sm=smartButton();if(!sm)return;e.preventDefault();e.stopImmediatePropagation();if(!baseLabel)baseLabel=sm.textContent;window.ClassroomSmartMath?.setMode('off');active=true;startIndex=strokes.length;closePanel();showActiveLabel();forcePen();notify(L.pen);return}
+ if(label===L.counters){
+  const sm=smartButton();if(!sm)return;
+  e.preventDefault();e.stopImmediatePropagation();
+  // The menu's native onclick was intentionally intercepted, so dismiss it.
+  if(b.parentElement?.style)b.parentElement.style.display='none';
+  // Bar Models may leave their finish button armed across mode switches.
+  // Release that previous *workflow*, without modifying its recognition code.
+  if(window.__smartBarType){
+   try{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))}catch(_){}
+   window.__smartBarType='';
+  }
+  if(!baseLabel)baseLabel=sm.textContent;
+  window.ClassroomSmartMath?.setMode('off');
+  active=true;startIndex=strokes.length;closePanel();showActiveLabel();forcePen();notify(L.pen);return
+ }
  if(active&&['Auto Detect','Fraction Bar','Bar Model','Number Line','Equation','3D Solid','Smart Math Off','自动识别','分数条','条形图','数轴','算式','3D 立体图形','关闭智能数学','Kesan Auto','Bar Pecahan','Model Bar','Garis Nombor','Persamaan','Pepejal 3D','Matematik Pintar Mati','தானாக கண்டறி','பின்னப் பட்டை','பார் மாதிரி','எண் கோடு','சமன்பாடு','3D திண்மம்','நுண்ணறிவு கணிதம் நிறுத்து'].includes(label)){deactivate()}
 },true);
 
