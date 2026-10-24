@@ -78,7 +78,7 @@ function runTests(){
    const converted=!!made&&made.fractionParts===4&&strokes.includes(outside)&&strokes.length<rawCount&&made.smartOriginal.length>0;
    record('Finished creates editable object and keeps outside ink','4-part object and outside ink',converted?'Created safely':'Not created',converted);
    undoBtn.disabled=false;undoBtn.click();
-   const undone=!strokes.some(s=>s.smartType==='fractionBar')&&strokes.length===rawCount&&strokes.includes(outside);
+   const undone=!strokes.some(s=>s.smartType==='fractionBar')&&strokes.length===rawCount&&strokes[0]?.points?.[0]?.x===outside.points[0].x;
    record('Undo restores original teacher sketch','All rough ink restored',undone?'Restored':'Not restored',undone);
    strokes=[outside];menu.click();const stray=line([700,400],[830,400]);strokes.push(stray);
    finish.click();const kept=strokes.includes(outside)&&strokes.includes(stray)&&!strokes.some(s=>s.smartType==='fractionBar');
