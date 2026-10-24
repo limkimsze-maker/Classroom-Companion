@@ -27,7 +27,7 @@ function kindOf(el){
  if(['openDocumentBtn','ccPermanentSaveBtn','ccAnnotationActionsBtn','ccSavePageAnnotationsBtn','ccSaveAllAnnotationsBtn','ccDeletePageAnnotationsBtn','ccDeleteAllAnnotationsBtn'].includes(id))return'files';
  if(id==='ccHandGrabToolbarBtn')return'draw';
  if(['selectBtn','ccFingerPointerBtn','penBtn','eraserBtn','highlighterBtn','ccHighlighterPalette','undoBtn','redoBtn','gridBtn','clearBtn','fullBtn'].includes(id)||el.classList.contains('colors')||el.classList.contains('sizeControl'))return'draw';
- if(['textBtn','editTextBtn','speechToTextBtn','imageBtn','smartBarFinishBtn','manualComparisonTotalBtn'].includes(id)||/beautify|smart math|shapes|how to use|tutorial|text box|image|speech to text|finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return'create';
+ if(['textBtn','editTextBtn','speechToTextBtn','imageBtn','smartCounterFinishBtn','smartFractionFinishBtn','smartBarFinishBtn','manualComparisonTotalBtn'].includes(id)||/beautify|smart math|shapes|how to use|tutorial|text box|image|speech to text|finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return'create';
  if(/duplicate|forward|backward|front|back\b|lock|unlock|redo|undo|grid|clear/.test(t))return'draw';
  if(id==='openDocumentBtn'||/save|restore|export|png|my documents|open file|open document|saved board/.test(t))return'files';
  // Any additional classroom tool now belongs with Create & Teach; no separate Other Tools category.
@@ -50,6 +50,8 @@ function orderOf(el,kind){
   if(id==='textBtn')return 10;if(id==='editTextBtn')return 15;
   if(id==='speechToTextBtn')return 20;if(id==='imageBtn')return 30;
   if(/shapes/.test(t))return 40;if(/smart math/.test(t))return 50;
+  if(id==='smartCounterFinishBtn')return 52;
+  if(id==='smartFractionFinishBtn')return 54;
   if(id==='smartBarFinishBtn'||/finished bar model|条形图画完|siap model bar|பார் மாதிரி முடிந்ததா/.test(t))return 55;
   if(/beautify/.test(t))return 60;if(/how to use|tutorial/.test(t))return 70;
   if(id==='manualComparisonTotalBtn'||/\btotal\b/.test(t))return 80;
