@@ -4,7 +4,7 @@ if(typeof canvas==='undefined'||typeof strokes==='undefined'||typeof redraw!=='f
 
 const edition=(new URLSearchParams(location.search).get('edition')||'en').toLowerCase();
 const TXT={
- en:{counters:'Counters',active:'✨ Smart Math · Counters · Pen',title:'Counter colour',hint:'Choose this counter colour:',cancel:'Cancel',none:'That stroke was not recognised as a counter',made:'counter created',finish:'✓ Finished counters?',pen:'Draw one or more closed circles, then click “Finished counters?”.'},
+ en:{counters:'Counters',active:'✨ Smart Math · Counters · Pen',title:'Counter colour',hint:'Choose this counter colour:',cancel:'Cancel',none:'No counter-shaped sketch detected yet. Draw a rough circle and press Finished counters?',made:'counter created',finish:'✓ Finished counters?',pen:'Draw rough circles (small gaps are fine), then click “Finished counters?”.'},
  zh:{counters:'计数片',active:'✨ 智能数学 · 计数片 · 画笔',title:'计数片颜色',hint:'选择这个计数片的颜色：',cancel:'取消',none:'该笔画未识别为计数片',made:'已创建计数片',finish:'✓ 计数片画完了吗？',pen:'画好一个或多个封闭圆形后，点击“计数片画完了吗？”。'},
  ms:{counters:'Pembilang',active:'✨ Matematik Pintar · Pembilang · Pen',title:'Warna pembilang',hint:'Pilih warna pembilang ini:',cancel:'Batal',none:'Lakaran itu tidak dikenali sebagai pembilang',made:'pembilang dicipta',finish:'✓ Siap pembilang?',pen:'Lukis satu atau lebih bulatan, kemudian klik “Siap pembilang?”.'},
  ta:{counters:'எண்ணிகள்',active:'✨ நுண்ணறிவு கணிதம் · எண்ணிகள் · பேனா',title:'எண்ணி நிறம்',hint:'இந்த எண்ணியின் நிறத்தைத் தேர்ந்தெடுக்கவும்:',cancel:'ரத்து',none:'அந்த வரைகோடு எண்ணியாக அடையாளம் காணப்படவில்லை',made:'எண்ணி உருவாக்கப்பட்டது',finish:'✓ எண்ணிகள் முடிந்ததா?',pen:'ஒன்று அல்லது பல மூடிய வட்டங்களை வரைந்து, பின்னர் “எண்ணிகள் முடிந்ததா?” என்பதை அழுத்துங்கள்.'}
