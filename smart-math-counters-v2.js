@@ -67,7 +67,7 @@ function finishCounters(){
  record(before,[...converted.values()].map(o=>o.smartId));
  redraw();deactivate();
  try{tool='select';syncUi()}catch{}
- notify(valid.length+' '+L.made+(valid.length===1?'':'s'));
+ notify(valid.length===1?L.made:(edition==='en'?`${valid.length} counters created`:`${valid.length} ${L.made}`));
  return true;
 }
 function makeFinishButton(){
@@ -75,7 +75,7 @@ function makeFinishButton(){
  const sm=smartButton();if(!sm)return;
  finishBtn=document.createElement('button');
  finishBtn.id='smartCounterFinishBtn';finishBtn.type='button';finishBtn.className='btn soft';
- finishBtn.textContent=L.finish;
+ finishBtn.textContent=L.finish;finishBtn.setAttribute('aria-label',L.finish);finishBtn.title=L.finish;
  finishBtn.style.cssText='display:none;min-height:32px;padding:5px 9px;font-size:11px;border-style:dashed';
  sm.insertAdjacentElement('afterend',finishBtn);
  finishBtn.addEventListener('click',e=>{
