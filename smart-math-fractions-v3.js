@@ -298,5 +298,5 @@ document.addEventListener('whiteboard-annotation-context',e=>{
  const key=e.detail?.key;if(!key||key===annotationContext)return;
  annotationContext=key;initialInk.clear();lastHistory=null;selectionGesture=null;pointerOrigin=null;closeColourPanel();if(active)deactivate();
 });
-window.ClassroomFractionBars={analyse:analyseFraction,isActive:()=>active};
+window.ClassroomFractionBars={analyse:analyseFraction,isActive:()=>active,refresh:o=>{if(o&&o.smartType==='fractionBar')o.src=buildFractionSrc(o.fractionParts,o.fractionHorizontal,o.fractionFills)},recordEdit:(before,id)=>recordHistory(before,id)};
 })();
