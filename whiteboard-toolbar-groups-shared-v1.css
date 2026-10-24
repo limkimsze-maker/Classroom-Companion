@@ -131,6 +131,9 @@ body.document-open-mode header.top .ccToolGroup #ccUsualWhiteboardInSlot{
 }
 
 
+/* Desktop two-row layout, requested position swap: Draw + Files above,
+   Create & Teach expanded across the lower row, standalone Exit at its right.
+   Existing group button handlers and document controls remain unchanged. */
 /* 2026-10-24: no-horizontal-scroll teacher toolbar.
    Make the GROUPS occupy two desktop rows, but allow each group's BUTTONS
    to wrap naturally. At browser zoom/narrow viewports preserve accessibility
@@ -172,8 +175,8 @@ header.top .ccToolGroup .sizeControl input{width:75px!important}
   white-space:nowrap!important
  }
  header.top .ccToolGroup[data-kind=draw]{grid-column:1/9!important;grid-row:1!important}
- header.top .ccToolGroup[data-kind=create]{grid-column:9/13!important;grid-row:1!important}
- header.top .ccToolGroup[data-kind=files]{grid-column:1/12!important;grid-row:2!important}
+ header.top .ccToolGroup[data-kind=create]{grid-column:1/12!important;grid-row:2!important}
+ header.top .ccToolGroup[data-kind=files]{grid-column:9/13!important;grid-row:1!important}
  header.top .tools #ccPermanentExitBtn{grid-column:12/13!important;grid-row:2!important}
  header.top .ccToolGroup>.btn,header.top .ccToolGroup>button.btn,
  body.document-open-mode header.top .ccToolGroup>.btn{
