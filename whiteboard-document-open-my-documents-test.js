@@ -62,7 +62,8 @@ function ensureDocumentLoading(){
  copy.append(headline,detail,tip);message.append(spinner,copy);overlay.append(message);document.body.appendChild(overlay);
  // Place above the whiteboard and document underlay even while they re-render.
  // Fixed positioning prevents board layout/transforms from hiding the status.
- Object.assign(overlay.style,{position:'fixed',inset:'0',zIndex:'2147483000',display:'grid',placeItems:'center',background:'rgba(245,249,250,.92)',pointerEvents:'auto'});
+ Object.assign(overlay.style,{position:'fixed',inset:'0',zIndex:'2147483000',display:'none',placeItems:'center',background:'rgba(245,249,250,.92)',pointerEvents:'none'});
+ // Inline display:grid overrides the UA [hidden] rule; start truly hidden.
  documentLoading=overlay;return overlay;
 }
 function setDocumentLoadingCopy(file,fromSaved=false){
@@ -108,13 +109,14 @@ function closeFileChooserWithoutSelection(){
 function showDocumentLoading(delay=false){
  const overlay=ensureDocumentLoading(),ticket=++loadingRevision;
  clearTimeout(loadingTimer);loadingTimer=0;
- if(delay)loadingTimer=setTimeout(()=>{if(ticket===loadingRevision&&active)overlay.hidden=false},180);
- else overlay.hidden=false;
+ const reveal=()=>{if(ticket!==loadingRevision)return;overlay.hidden=false;overlay.style.display='grid';overlay.style.pointerEvents='auto'};
+ if(delay)loadingTimer=setTimeout(()=>{if(active)reveal()},180);
+ else reveal();
 }
 function hideDocumentLoading(){
  if(openingDocument)return;
  loadingRevision++;clearTimeout(loadingTimer);loadingTimer=0;
- if(documentLoading)documentLoading.hidden=true;
+ if(documentLoading){documentLoading.hidden=true;documentLoading.style.display='none';documentLoading.style.pointerEvents='none'}
 }
 
 function toast(msg){if(typeof say==='function'){try{say(msg);return}catch{}}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
@@ -164,7 +166,8 @@ function preparePdfWorker(){
  }).catch(error=>{pdfWorkerPromise=null;throw error});
  return pdfWorkerPromise;
 }
-function warmPdfEngine(){void preparePdfWorker().catch(()=>{});}
+// Warm the API only, not a persistent dedicated worker. PDF.js starts its own worker as needed.
+function warmPdfEngine(){void preparePdfEngine().catch(()=>{});}
 window.CCWarmPdfEngine=warmPdfEngine;
 
 function releaseObjectUrl(){if(objectUrl){try{URL.revokeObjectURL(objectUrl)}catch{}objectUrl=null}}
@@ -418,11 +421,11 @@ async function openFile(file,options={}){
   if(ext==='pdf'||file.type==='application/pdf'){
     // Read the local PDF and load its offline renderer concurrently.
     const timing={start:performance.now(),readMs:0,workerReadyMs:0};
-    const [data,worker]=await Promise.all([
+    const [data]=await Promise.all([
      file.arrayBuffer().then(buf=>{timing.readMs=Math.round(performance.now()-timing.start);return buf}),
-     preparePdfWorker().then(w=>{timing.workerReadyMs=Math.round(performance.now()-timing.start);return w})
+     preparePdfEngine().then(()=>{timing.workerReadyMs=Math.round(performance.now()-timing.start)})
     ]);
-    return await openPdf(data,worker,timing);
+    return await openPdf(data,null,timing);
    }
   if(ext==='docx')return await openWord(await file.arrayBuffer());
   if(['pptx','pptm','ppsx','potx'].includes(ext))return await openPptx(await file.arrayBuffer());
@@ -453,7 +456,8 @@ async function openPdf(data,worker,timing=null){
  // PDF.js transfers the bytes to its worker and detaches the ArrayBuffer;
  // record size *before* passing it to the worker.
  const heavyDocument=data.byteLength>=400000;
- pdfLoadingTask=window.pdfjsLib.getDocument({data:new Uint8Array(data),worker});
+ // Use PDF.js's default per-document worker lifecycle (matching previously working Alpha).
+ pdfLoadingTask=window.pdfjsLib.getDocument({data:new Uint8Array(data)});
  pdfDoc=await pdfLoadingTask.promise;
  const parseMs=Math.round(performance.now()-startedParsing);
  totalPages=pdfDoc.numPages||1;currentPage=1;updateControls();
