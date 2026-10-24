@@ -18,7 +18,7 @@ let workbook=null,sheetNames=[];
 let objectUrl=null,genericEl=null,interactionMode=false;
 let pdfTextCache=new Map(),pdfQuery='',pdfMatches=[],pdfMatchIndex=-1,pdfHasText=true;
 let searchRevision=0,documentRevision=0,sheetQuery='',sheetMatches=[],sheetMatchIndex=-1,genericSearchText='';
-let wordMatches=[],wordMatchIndex=-1,wordQuery='';
+let wordMatches=[],wordMatchIndex=-1,wordQuery='',wordLayout=null;
 
 const clone=v=>{try{return structuredClone(v)}catch{return JSON.parse(JSON.stringify(v))}};
 let documentLoading=null,loadingTimer=0,loadingRevision=0,openingDocument=false;
@@ -169,7 +169,7 @@ window.CCWarmPdfEngine=warmPdfEngine;
 function releaseObjectUrl(){if(objectUrl){try{URL.revokeObjectURL(objectUrl)}catch{}objectUrl=null}}
 // Only the V2 trial loads this controller. Stable V1 source stays unchanged.
 let annotationBasis=null,annotationKey='',viewSerial=0,viewChanging=false,documentSession=0,viewQueue=Promise.resolve();
-function pageKey(p=currentPage){return docKind==='word'?'word:document':`${docKind||'doc'}:${p}`}
+function pageKey(p=currentPage){return docKind==='word'&&!wordLayout?'word:document':`${docKind||'doc'}:${p}`}
 function contextKey(key=annotationKey){return key?`document:${documentSession}:${key}`:'whiteboard'}
 function annotationElement(){
  return docKind==='pdf'?pdfCanvas:docKind==='word'?wordPaper:docKind==='pptx'?pptViewport?.firstElementChild:docKind==='sheet'?sheetPaper:genericEl;
@@ -386,7 +386,7 @@ function ensureFileInput(){
 function setInteraction(on){interactionMode=!!on;if(interactBtn){interactBtn.classList.toggle('active',interactionMode);interactBtn.textContent=interactionMode?'✍':'☝';interactBtn.title=interactionMode?'Return to annotation mode':'Interact with displayed content'}if(layer)layer.style.pointerEvents=interactionMode?'auto':'none';canvas.style.pointerEvents=interactionMode?'none':'auto';if(active)toast(interactionMode?'Interact mode — tap the document':'Annotation mode')}
 function enterMode(){ensureLayer();ensureToolbar();if(!active)preDocumentStrokes=clone(strokes);resetPan();documentSession++;viewSerial++;viewChanging=true;annotationBasis=null;annotationKey='';active=true;setAnnotationContext(contextKey('opening'));pageStore=new Map();strokes=[];current=null;drawing=false;setInteraction(false);layer.style.display='block';toolbar.style.display='flex';document.body.classList.add('document-open-mode');wrap.classList.add('document-open-active');showDocumentLoading();redraw();syncUi()}
 function destroyPpt(){if(pptViewer){try{pptViewer.destroy()}catch{}pptViewer=null}if(pptViewport)pptViewport.innerHTML=''}
-function exitMode(){hideDocumentLoading();window.dispatchEvent(new Event('cc-document-closed'));cancelPdfRefinement();if(pdfLoadingTask){const task=pdfLoadingTask;pdfLoadingTask=null;void task.destroy().catch(()=>{})}resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
+function exitMode(){hideDocumentLoading();window.dispatchEvent(new Event('cc-document-closed'));cancelPdfRefinement();if(pdfLoadingTask){const task=pdfLoadingTask;pdfLoadingTask=null;void task.destroy().catch(()=>{})}resetPan();active=false;viewSerial++;viewChanging=false;annotationBasis=null;annotationKey='';setAnnotationContext('whiteboard');renderToken++;hideSearch();resetSearch(true);interactionMode=false;destroyPpt();pdfDoc=null;workbook=null;sheetNames=[];releaseObjectUrl();docKind=null;docName='';wordLayout=null;pageStore.clear();if(wordPaper)wordPaper.innerHTML='';if(sheetPaper)sheetPaper.innerHTML='';if(genericViewport)genericViewport.innerHTML='';hideViews();if(layer){layer.style.display='none';layer.style.pointerEvents='none'}if(toolbar)toolbar.style.display='none';canvas.style.pointerEvents='auto';document.body.classList.remove('document-open-mode');wrap.classList.remove('document-open-active');restoreBlankBoard();updateControls()}
 function closeDocument(){if(!active)return;finishAnnotationEdit();savePage();exitMode()}
 const permanentExit=document.getElementById('ccPermanentExitBtn');if(permanentExit)permanentExit.addEventListener('click',closeDocument);
 function updateControls(){if(!toolbar)return;pageInput.value=String(currentPage);pageInput.max=String(Math.max(1,totalPages));pageTotal.textContent=`/ ${Math.max(1,totalPages)}`;zoomLabel.textContent=`${Math.round(zoom*100)}%`;prevBtn.disabled=currentPage<=1;nextBtn.disabled=currentPage>=totalPages;searchBtn.disabled=!['pdf','word','pptx','sheet','text','html'].includes(docKind)}
@@ -526,8 +526,44 @@ async function renderPdfPage(firstPaint=false,heavyDocument=false){
   preview,page,vp,token,pdfSource,docSession};
 }
 
-async function openWord(data){docKind='word';wordViewport.style.display='block';await loadScript(MAMMOTH_URL,'mammoth');if(!window.mammoth)throw new Error('Word engine unavailable');const result=await window.mammoth.convertToHtml({arrayBuffer:data});wordPaper.innerHTML=result.value||'<p>(Empty document)</p>';requestAnimationFrame(()=>{layoutWord(false);loadPageAnnotations();toast(`${docName} opened`)})}
-function layoutWord(keep){if(docKind!=='word'||!active)return;const r=wordViewport.getBoundingClientRect(),old=currentPage;wordPaper.style.transform='translateX(-50%)';wordPaper.style.width='794px';const h=Math.max(wordPaper.scrollHeight,1123),visible=Math.max(120,r.height-12);totalPages=Math.max(1,Math.ceil((h*zoom)/visible));currentPage=Math.max(1,Math.min(totalPages,old));const offset=((currentPage-1)*visible)/zoom;wordPaper.style.transform=`translateX(-50%) scale(${zoom}) translateY(${-offset}px)`;updateControls();}
+async function openWord(data){
+ docKind='word';wordLayout=null;wordPaper.classList.remove('cc-word-paged');wordViewport.style.display='block';
+ Object.assign(wordPaper.style,{top:'12px',width:'794px',height:'auto',minHeight:'1123px',padding:'54px 66px',transform:'translateX(-50%)',transformOrigin:'top center',overflow:'visible'});
+ // Older saved Word notes used the continuous HTML surface. Keep that geometry
+ // for those records so upgrading the viewer never relocates existing ink.
+ const legacyInk=pageStore.get('word:document')?.items?.length;
+ if(window.CCWordLayout&&!legacyInk){
+  wordPaper.classList.add('cc-word-paged');
+  Object.assign(wordPaper.style,{padding:'0',minHeight:'0',font:'16px Arial,sans-serif'});
+  const result=await window.CCWordLayout.render(data,wordPaper);
+  wordLayout=result.pages.map(el=>({el,width:el.offsetWidth,height:parseFloat(getComputedStyle(el).minHeight)||el.offsetHeight}));
+  if(!wordLayout.length)throw Error('This Word document contains no pages');
+  for(const page of wordLayout)Object.assign(page.el.style,{position:'absolute',left:'0',top:'0',height:page.height+'px',overflow:'hidden'});
+  totalPages=wordLayout.length;currentPage=1;
+  Object.assign(wordPaper.style,{top:'50%',transformOrigin:'center',overflow:'hidden'});
+  layoutWord(false);loadPageAnnotations();toast(`${docName} opened`);return;
+ }
+ await loadScript(MAMMOTH_URL,'mammoth');
+ if(!window.mammoth)throw new Error('Word engine unavailable');
+ const result=await window.mammoth.convertToHtml({arrayBuffer:data});wordPaper.innerHTML=result.value||'<p>(Empty document)</p>';
+ requestAnimationFrame(()=>{layoutWord(false);loadPageAnnotations();toast(`${docName} opened`)});
+}
+function layoutWord(keep){
+ if(docKind!=='word'||!active)return;
+ const r=wordViewport.getBoundingClientRect(),old=currentPage;
+ if(wordLayout){
+  totalPages=wordLayout.length;currentPage=Math.max(1,Math.min(totalPages,old));
+  wordLayout.forEach((page,i)=>page.el.style.display=i===currentPage-1?'flex':'none');
+  const page=wordLayout[currentPage-1],fit=Math.max(.05,Math.min((r.width-24)/page.width,(r.height-24)/page.height));
+  wordPaper.style.width=page.width+'px';wordPaper.style.height=page.height+'px';
+  wordPaper.style.transform=`translate(-50%,-50%) scale(${fit*zoom})`;updateControls();return;
+ }
+ wordPaper.style.transform='translateX(-50%)';wordPaper.style.width='794px';
+ const h=Math.max(wordPaper.scrollHeight,1123),visible=Math.max(120,r.height-12);
+ totalPages=Math.max(1,Math.ceil((h*zoom)/visible));currentPage=Math.max(1,Math.min(totalPages,old));
+ const offset=((currentPage-1)*visible)/zoom;
+ wordPaper.style.transform=`translateX(-50%) scale(${zoom}) translateY(${-offset}px)`;updateControls();
+}
 
 async function openPptx(data){docKind='pptx';pptViewport.style.display='block';pptViewport.innerHTML='';if(!pptModule)pptModule=await import(PPTX_ESM_URL);const {PptxViewer,RECOMMENDED_ZIP_LIMITS}=pptModule;if(!PptxViewer)throw new Error('PowerPoint engine unavailable');pptViewer=await PptxViewer.open(data,pptViewport,{renderMode:'slide',fitMode:'contain',zoomPercent:100,zipLimits:RECOMMENDED_ZIP_LIMITS,lazyMedia:true,lazySlides:true,pdfjs:false});totalPages=Math.max(1,pptViewer.slideCount||1);currentPage=1;zoom=1;updateControls();loadPageAnnotations();toast(`${docName} opened`)}
 
@@ -563,8 +599,8 @@ async function searchPdf(q,dir,token){
  if(!searchCurrent(token))return;
  const m=pdfMatches[pdfMatchIndex];searchStatus.textContent=`${pdfMatchIndex+1}/${pdfMatches.length} · Page ${m.page}`;await goToPage(m.page);
 }
-function collectWordMatches(q){const out=[],walker=document.createTreeWalker(wordPaper,NodeFilter.SHOW_TEXT);let node;while((node=walker.nextNode())){const raw=node.nodeValue||'',low=raw.toLowerCase();let from=0,idx;while((idx=low.indexOf(q,from))!==-1){out.push({node,start:idx,end:idx+q.length});from=idx+Math.max(1,q.length)}}return out}
-function wordMatchPage(m){const range=document.createRange();range.setStart(m.node,m.start);range.setEnd(m.node,m.end);const rr=range.getBoundingClientRect(),pr=wordPaper.getBoundingClientRect(),y=Math.max(0,(rr.top-pr.top)/Math.max(.01,zoom)),visible=Math.max(120,wordViewport.clientHeight-12);return Math.max(1,Math.min(totalPages,Math.floor((y*zoom)/visible)+1))}
+function collectWordMatches(q){const out=[],walker=document.createTreeWalker(wordPaper,NodeFilter.SHOW_TEXT);let node;while((node=walker.nextNode())){if(node.parentElement?.closest('style,script'))continue;const raw=node.nodeValue||'',low=raw.toLowerCase();let from=0,idx;while((idx=low.indexOf(q,from))!==-1){out.push({node,start:idx,end:idx+q.length});from=idx+Math.max(1,q.length)}}return out}
+function wordMatchPage(m){if(wordLayout)return Number(m.node.parentElement?.closest('[data-word-page]')?.dataset.wordPage)||1;const range=document.createRange();range.setStart(m.node,m.start);range.setEnd(m.node,m.end);const rr=range.getBoundingClientRect(),pr=wordPaper.getBoundingClientRect(),y=Math.max(0,(rr.top-pr.top)/Math.max(.01,zoom)),visible=Math.max(120,wordViewport.clientHeight-12);return Math.max(1,Math.min(totalPages,Math.floor((y*zoom)/visible)+1))}
 async function searchWord(q,dir,token){if(q!==wordQuery||!wordMatches.length){wordMatches=collectWordMatches(q);wordMatchIndex=dir>0?-1:0;wordQuery=q}if(!wordMatches.length){searchStatus.textContent='0 found';return}wordMatchIndex=(wordMatchIndex+dir+wordMatches.length)%wordMatches.length;const m=wordMatches[wordMatchIndex];searchStatus.textContent=`${wordMatchIndex+1}/${wordMatches.length}`;await goToPage(wordMatchPage(m));if(!searchCurrent(token))return;try{const r=document.createRange();r.setStart(m.node,m.start);r.setEnd(m.node,m.end);const sel=getSelection();sel.removeAllRanges();sel.addRange(r)}catch{}}
 async function searchPpt(q,dir,token){if(q!==pptQuery){pptMatches=pptViewer.searchText(q)||[];pptMatchIndex=dir>0?-1:0;pptQuery=q;try{pptViewer.clearSearchHighlights()}catch{}}if(!pptMatches.length){searchStatus.textContent='0 found';return}pptMatchIndex=(pptMatchIndex+dir+pptMatches.length)%pptMatches.length;const m=pptMatches[pptMatchIndex];searchStatus.textContent=`${pptMatchIndex+1}/${pptMatches.length}`;await goToPage((m.slideIndex||0)+1);if(!searchCurrent(token))return;try{pptViewer.clearSearchHighlights();await pptViewer.highlightSearchResult(m)}catch{}}
 async function searchSheet(q,dir,token){
@@ -598,7 +634,7 @@ const style=document.createElement('style');style.textContent=`
 #documentQuickBar input{width:44px;height:26px;padding:1px 3px;border:1px solid #d8e1e8;border-radius:6px;text-align:center;font:900 11px system-ui,sans-serif}#documentQuickBar span{min-width:34px;text-align:center;font:900 10px system-ui,sans-serif;color:#17324d}
 #documentSearchPanel{position:fixed;right:5px;top:35px;z-index:100201;align-items:center;gap:3px;padding:4px;border:1px solid #cfd9de;border-radius:9px;background:#fff;box-shadow:0 4px 16px rgba(18,32,46,.18)}#documentSearchPanel input{width:180px;min-width:0;height:28px;border:1px solid #cfd9de;border-radius:6px;padding:3px 7px;font:700 11px system-ui,sans-serif}#documentSearchPanel button{height:27px;min-width:27px;border:1px solid #d8e1e8;border-radius:6px;background:#fff;font:900 11px system-ui,sans-serif}#documentSearchPanel span{min-width:58px;max-width:180px;overflow-wrap:anywhere;text-align:center;font:800 10px system-ui,sans-serif;color:#667085}
 body.document-open-mode .shell{padding:2px!important;gap:2px!important}body.document-open-mode .top{padding:2px 4px!important;border-radius:7px!important;gap:2px!important}body.document-open-mode .brand{display:none!important}body.document-open-mode .tools{width:100%!important;gap:2px!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none!important;padding-right:310px!important}body.document-open-mode .tools::-webkit-scrollbar{display:none!important}body.document-open-mode .btn{min-height:24px!important;height:24px!important;padding:1px 5px!important;border-radius:6px!important;font-size:10px!important;line-height:1!important;white-space:nowrap!important}body.document-open-mode #modeBadge{display:none!important}body.document-open-mode .boardWrap{border-radius:6px!important;background-image:none!important;background:#e9edf0!important}body.document-open-mode .boardWrap::after{display:none!important}
-#documentWordPaper img{max-width:100%;height:auto}#documentWordPaper table{border-collapse:collapse;max-width:100%}#documentWordPaper td,#documentWordPaper th{border:1px solid #aaa;padding:4px}#documentPptViewport>*{margin:auto!important}
+#documentWordPaper:not(.cc-word-paged) img{max-width:100%;height:auto}#documentWordPaper:not(.cc-word-paged) table{border-collapse:collapse;max-width:100%}#documentWordPaper:not(.cc-word-paged) td,#documentWordPaper:not(.cc-word-paged) th{border:1px solid #aaa;padding:4px}#documentPptViewport>*{margin:auto!important}
 #documentSheetPaper table{border-collapse:collapse;background:#fff;font:13px/1.3 Arial,sans-serif}#documentSheetPaper td,#documentSheetPaper th{border:1px solid #b8c1c8;padding:4px 7px;min-width:54px;height:25px;white-space:nowrap}.docSheetName{font:900 12px system-ui,sans-serif;color:#17324d;margin:0 0 8px}
 .documentGenericImage,.documentGenericMedia{position:absolute;left:50%;top:50%;max-width:96%;max-height:96%;transform-origin:center center;object-fit:contain;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.15)}.documentGenericMedia{width:min(92%,1100px)}.documentGenericText{position:absolute;left:50%;top:10px;transform-origin:top center;min-width:min(900px,94%);max-width:94%;margin:0;padding:22px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.15);white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#111}.documentGenericFrame{position:absolute;left:0;top:0;width:100%;height:100%;border:0;background:#fff;transform-origin:top left}
 @media(max-width:800px){#documentQuickBar{right:2px;top:2px}#documentQuickBar button{padding:0 4px;min-width:24px}#documentQuickBar span{min-width:30px}#documentSearchPanel{right:3px;top:33px}#documentSearchPanel{max-width:calc(100vw - 142px);flex-wrap:wrap}#documentSearchPanel input{width:100%}body.document-open-mode .tools{padding-right:300px!important}}
