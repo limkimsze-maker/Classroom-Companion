@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Fraction Bar Regression • Classroom Companion</title>
+<style>
+body{font-family:system-ui,Arial,sans-serif;background:#f3f8f7;color:#17324d;max-width:850px;margin:36px auto;padding:16px}
+h1{font-size:1.7rem}#summary{font-size:1.2rem;font-weight:800;margin:18px 0}
+table{width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden}td,th{padding:11px 14px;border-bottom:1px solid #e6efed;text-align:left}
+.pass{color:#087d52}.fail{color:#bc261e}
+a{color:#0f766e}button{background:#0f766e;color:white;border:0;border-radius:8px;padding:10px 14px;cursor:pointer}
+</style></head>
+<body><h1>Fraction Bar Recognition — Regression Suite</h1>
+<p>This checks the real Beta V2 fraction recognizer on representative stroke geometries. It does not alter or save classroom drawings.</p>
+<button onclick="runTests()">Run checks again</button> <a href="../whiteboard-v2-trial.html">Open Beta V2</a>
+<p id="summary">Loading recognizer…</p><table><thead><tr><th>Scenario</th><th>Expected</th><th>Observed</th><th>Status</th></tr></thead><tbody id="results"></tbody></table>
+<canvas id="board" width="1000" height="600" hidden></canvas><button id="undoBtn" hidden></button>
+<script>
+const canvas=document.getElementById('board'),undoBtn=document.getElementById('undoBtn');
+let strokes=[],tool='pen';const cssW=1000,cssH=600;
+function redraw(){}function syncUi(){}function say(){}
+</script>
+<script src="../smart-math-fractions-v3.js?v=20261024-fraction-rough2"></script>
+<script>
+function runTests(){
+ const W=1000,H=600, p=(x,y)=>({x:x/W,y:y/H});
+ const line=(...points)=>({points:points.map(v=>p(v[0],v[1]))});
+ const rect=(x1,y1,x2,y2)=>line([x1,y1],[x2,y1],[x2,y2],[x1,y2],[x1,y1]);
+ function bar(n,opt={}){
+   const x=100,y=180,w=480,h=70;
+   const s=opt.openRight?[line([x,y],[x+w,y]),line([x,y+h],[x+w,y+h]),line([x,y],[x,y+h])]:[rect(x,y,x+w,y+h)];
+   if(opt.openBoth)s.splice(0,s.length,line([x,y],[x+w,y]),line([x,y+h],[x+w,y+h]));
+   for(let i=1;i<n;i++){const q=x+w*i/n+(opt.uneven&&i===1?14:0);s.push(line([q-2,y+2],[q+1,y+h-3]))}
+   return s;
+ }
+ function vertical(n){const s=[rect(120,80,200,440)];for(let i=1;i<n;i++){const y=80+i*360/n;s.push(line([122,y-2],[198,y+1]))}return s}
+ const jagged=[line([90,190],[175,195],[260,188],[370,194],[520,191],[523,229],[521,276],[410,279],[250,277],[90,279],[88,235],[90,190]),
+ line([225,194],[223,228],[226,276]),line([388,194],[390,235],[389,276])];
+ const old=bar(3),fresh=line([850,400],[870,400]);
+ const scenarios=[
+  ['Two sections',bar(2),2,true],['Five sections',bar(5),5,true],['Twelve sections',bar(12),12,true],
+  ['Open right edge',bar(4,{openRight:true}),4,true],['Both end edges missing',bar(4,{openBoth:true}),4,true],
+  ['Uneven hand-drawn sections',bar(4,{uneven:true}),4,true],
+  ['Jagged outline',jagged,3,true],['Vertical bar',vertical(4),4,false],
+  ['Plain rectangle is not a fraction bar',[rect(100,180,580,250)],null,null],
+  ['A straight rule is not a fraction bar',[line([100,200],[580,200])],null,null],
+  ['Unrelated vertical strokes',[line([110,160],[110,250]),line([200,160],[200,250]),line([300,160],[300,250])],null,null],
+  ['Ignore bars from earlier work',old,null,null,new Set([fresh])]
+ ];
+ const tbody=document.getElementById('results');tbody.textContent='';
+ let pass=0;
+ for(const [name,ink,count,orient,required] of scenarios){
+   let detected,error='';
+   try{detected=window.ClassroomFractionBars?.analyse(ink,required);if(!window.ClassroomFractionBars)error='Detector not loaded'}
+   catch(e){error=String(e)}
+   const ok=count===null?!detected:!!detected&&detected.parts===count&&detected.horizontal===orient;
+   if(ok)pass++;
+   const tr=document.createElement('tr');
+   const values=[name,count===null?'No conversion':count+(orient?' horizontal':' vertical'),
+     error||(detected?detected.parts+(detected.horizontal?' horizontal':' vertical'):'No conversion'),ok?'PASS':'FAIL'];
+   for(let i=0;i<values.length;i++){const td=document.createElement('td');td.textContent=values[i];if(i===3)td.className=ok?'pass':'fail';tr.appendChild(td)}
+   tbody.appendChild(tr);
+ }
+ const summary=document.getElementById('summary');summary.textContent=pass+'/'+scenarios.length+' checks passed';summary.className=pass===scenarios.length?'pass':'fail';
+}
+window.addEventListener('load',runTests);
+</script>
+</body></html>
