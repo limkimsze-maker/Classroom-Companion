@@ -46,7 +46,20 @@ async function run(){
   check('Panel contains no From / To selectors or bracket label',panel&&ins.length===1&&selects.length===2&&
        !panel.textContent.includes('Bracket label')&&!panel.textContent.includes('From')&&!panel.textContent.includes('To'));
   check('Selection range comes from drag, not menus',panel?.textContent.includes('Parts 2–3 selected'));
-  ins[0].value='3 parts';selects[0].value='#2563eb';clickButton(panel,'Above');
+  // Capture-style direct selection from Part 1 to Part 3, without range dropdowns.
+  panel.querySelector('[aria-label="Close fraction options"]').click();await wait(100);
+  const startZone=document.querySelector('[aria-label="Select fraction segment 1"]');
+  if(!startZone)throw Error('Fraction segment tap zone missing');
+  const rect=canvas.getBoundingClientRect(),endX=rect.left+(.15+.66*2.5/4)*rect.width;
+  const gesture=(type,x)=>startZone.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:37,pointerType:'touch',button:0,clientX:x,clientY:rect.top+.43*rect.height}));
+  gesture('pointerdown',rect.left+(.15+.66*.5/4)*rect.width);
+  gesture('pointermove',endX);gesture('pointerup',endX);
+  panel=document.getElementById('smartFractionOptionsPanel');
+  check('Dragging across three segments selects Parts 1–3',panel?.textContent.includes('Parts 1–3 selected'));
+  panel?.querySelector('[aria-label="Close fraction options"]')?.click();
+  window.ClassroomFractionSegmentOptions.open('test-frac',1,2,400,80);
+  panel=document.getElementById('smartFractionOptionsPanel');
+  panel.querySelector('input').value='3 parts';panel.querySelectorAll('select')[0].value='#2563eb';clickButton(panel,'Above');
   let o=item('test-frac');
   check('Grouped colouring',o.fractionFills[1]==='#2563eb'&&o.fractionFills[2]==='#2563eb'&&o.fractionFills[0]==='#fff');
   check('Inside label by selected range',o.fractionSegmentLabels?.some(t=>t.start===1&&t.end===2&&t.text==='3 parts'));
