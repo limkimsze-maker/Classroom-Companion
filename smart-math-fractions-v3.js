@@ -73,40 +73,127 @@ function sketchLines(group){
  }
  return lines;
 }
-function analyseFraction(group,required){
- group=group.filter(rawInk).slice(-256);if(!group.length)return null;
- const lines=sketchLines(group),candidates=[];
- for(const axis of ['h','v']){
-  const major=lines.filter(l=>l.axis===axis&&l.hi-l.lo>=55).sort((a,b)=>(b.hi-b.lo)-(a.hi-a.lo)).slice(0,96),cross=lines.filter(l=>l.axis!==axis);
-  for(let i=0;i<major.length;i++)for(let j=i+1;j<major.length;j++){
-   let a=major[i],b=major[j];if(a.pos>b.pos)[a,b]=[b,a];
-   const length=Math.max(a.hi-a.lo,b.hi-b.lo),overlap=Math.min(a.hi,b.hi)-Math.max(a.lo,b.lo);
-   if(overlap<length*.72||Math.abs(a.lo-b.lo)>Math.max(24,length*.18)||Math.abs(a.hi-b.hi)>Math.max(24,length*.18))continue;
-   const lo=(a.lo+b.lo)/2,hi=(a.hi+b.hi)/2,span=hi-lo,mid=(lo+hi)/2,short=lineAt(b,mid)-lineAt(a,mid);
-   if(span<60||short<14||span<short*1.2)continue;
-   const edgeTol=Math.max(8,span*.04),cuts=[],caps=[[],[]];
-   for(const c of cross){
-    const u=c.pos;if(u<lo-edgeTol||u>hi+edgeTol)continue;
-    const top=lineAt(a,u),bottom=lineAt(b,u),height=bottom-top,margin=Math.max(10,height*.30),coverage=Math.min(c.hi,bottom)-Math.max(c.lo,top);
-    if(height<10||coverage<height*.55||c.lo>top+margin||c.hi<bottom-margin||c.hi-c.lo>height*2.2+20)continue;
-    if(Math.abs(u-lo)<=edgeTol)caps[0].push(c);
-    else if(Math.abs(u-hi)<=edgeTol)caps[1].push(c);
-    else if(u>lo+span*.025&&u<hi-span*.025)cuts.push(c);
-   }
-   if(!caps[0].length||!caps[1].length||!cuts.length)continue;
-   const unique=[];for(const c of cuts.sort((a,b)=>a.pos-b.pos)){const prev=unique[unique.length-1];if(prev&&c.pos-prev[0].pos<=Math.max(3,Math.min(9,span*.025)))prev.push(c);else unique.push([c])}
-   const parts=unique.length+1;if(parts>12)continue;
-   const refs=new Set();for(const l of [a,b,...caps.flat(),...unique.flat()])for(const s of l.refs)refs.add(s);
-   if(required?.size&&![...refs].some(s=>required.has(s)))continue;
-   const v0=Math.min(...a.points.map(p=>p.v)),v1=Math.max(...b.points.map(p=>p.v));
-   const bounds=axis==='h'?{x:lo/cssW,y:v0/cssH,w:span/cssW,h:(v1-v0)/cssH}:{x:v0/cssW,y:lo/cssH,w:(v1-v0)/cssW,h:span/cssH};
-   // Include incidental ink inside this bar, while preserving marks elsewhere.
-   for(const s of group){const r=box(s);if(r.x>=bounds.x-3/cssW&&r.y>=bounds.y-3/cssH&&r.x+r.w<=bounds.x+bounds.w+3/cssW&&r.y+r.h<=bounds.y+bounds.h+3/cssH)refs.add(s)}
-   const source=group.filter(s=>refs.has(s));candidates.push({box:bounds,horizontal:axis==='h',parts,group:source,last:Math.max(...source.map(s=>group.indexOf(s))),area:bounds.w*bounds.h});
+// Robust detector: accepts irregular edges, a missing end cap and multi-stroke outlines.
+const recognizeFractionInk=function recognizeFractionInk(group, required, W, H) {
+  if(!Number.isFinite(W)||!Number.isFinite(H)||W<1||H<1)return null;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const valid=s=>s&&Array.isArray(s.points)&&s.points.length>1&&!s.erase&&!s.smartGenerated&&!s.background;
+  const entries=group.filter(valid).slice(-256);
+  if(!entries.length)return null;
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  function reduce(ps,tol) {
+    if(ps.length<3)return ps;
+    const out=[ps[0]], stack=[[0,ps.length-1]];
+    const keep=new Uint8Array(ps.length);keep[0]=1;keep[ps.length-1]=1;
+    while(stack.length){
+      const [i,j]=stack.pop(),a=ps[i],b=ps[j],vx=b.x-a.x,vy=b.y-a.y,d=vx*vx+vy*vy;
+      let max=tol*tol,at=-1;
+      for(let k=i+1;k<j;k++){const p=ps[k],t=d?clamp(((p.x-a.x)*vx+(p.y-a.y)*vy)/d,0,1):0,dd=(p.x-a.x-vx*t)**2+(p.y-a.y-vy*t)**2;if(dd>max){max=dd;at=k}}
+      if(at>=0){keep[at]=1;stack.push([i,at],[at,j])}
+    }
+    for(let i=1;i<ps.length-1;i++)if(keep[i])out.push(ps[i]);
+    out.push(ps[ps.length-1]);return out;
   }
- }
- return candidates.sort((a,b)=>b.last-a.last||b.area-a.area)[0]||null;
-}
+  const lines=[];
+  function finalize(l){
+    l.points.sort((a,b)=>a.u-b.u);
+    l.lo=l.points[0].u;l.hi=l.points[l.points.length-1].u;
+    l.pos=l.points.reduce((a,p)=>a+p.v,0)/l.points.length;
+    return l;
+  }
+  function at(l,u){
+    const ps=l.points;if(u<=ps[0].u)return ps[0].v;
+    for(let k=1;k<ps.length;k++)if(u<=ps[k].u){const a=ps[k-1],b=ps[k];return a.v+(b.v-a.v)*(u-a.u)/Math.max(.001,b.u-a.u)}
+    return ps[ps.length-1].v;
+  }
+  for(const s of entries){
+    let ps=s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).map(p=>({x:p.x*W,y:p.y*H}));
+    if(ps.length<2)continue;
+    if(ps.length>1400){const step=Math.ceil(ps.length/1400);ps=ps.filter((p,i)=>i%step===0||i===ps.length-1)}
+    ps=reduce(ps,Math.max(2,Math.min(4,Math.min(W,H)*.005)));
+    let run=null;
+    for(let i=1;i<ps.length;i++){
+      const a=ps[i-1],b=ps[i],dx=b.x-a.x,dy=b.y-a.y;
+      if(dist(a,b)<3)continue;
+      const axis=Math.abs(dx)>Math.abs(dy)*1.12?'h':Math.abs(dy)>Math.abs(dx)*1.12?'v':null;
+      if(!axis){run=null;continue}
+      const p={u:axis==='h'?b.x:b.y,v:axis==='h'?b.y:b.x};
+      const q={u:axis==='h'?a.x:a.y,v:axis==='h'?a.y:a.x};
+      if(run&&run.axis===axis){run.points.push(p)}
+      else{run={axis,points:[q,p],refs:new Set([s])};lines.push(run)}
+    }
+  }
+  lines.forEach(finalize);
+  // Merge broken and retraced lines but never merge two parallel bar edges.
+  const tol=Math.max(5,Math.min(10,Math.min(W,H)*.013));
+  for(let i=0;i<lines.length;i++)for(let j=i+1;j<lines.length;){
+    const a=lines[i],b=lines[j];
+    const gap=Math.max(0,Math.max(a.lo,b.lo)-Math.min(a.hi,b.hi));
+    const u=(Math.max(a.lo,b.lo)+Math.min(a.hi,b.hi))/2;
+    if(a.axis===b.axis&&gap<=Math.max(14,Math.min(a.hi-a.lo,b.hi-b.lo)*.08)&&Math.abs(at(a,u)-at(b,u))<=tol){
+      a.points.push(...b.points);
+      for(const s of b.refs)a.refs.add(s);
+      finalize(a);lines.splice(j,1);j=i+1;
+    } else j++;
+  }
+  const candidates=[];
+  for(const axis of ['h','v']){
+    const major=lines.filter(l=>l.axis===axis&&l.hi-l.lo>=48).sort((a,b)=>(b.hi-b.lo)-(a.hi-a.lo)).slice(0,80);
+    const cross=lines.filter(l=>l.axis!==axis);
+    for(let i=0;i<major.length;i++)for(let j=i+1;j<major.length;j++){
+      let a=major[i],b=major[j];
+      const middle=(Math.max(a.lo,b.lo)+Math.min(a.hi,b.hi))/2;
+      if(at(a,middle)>at(b,middle))[a,b]=[b,a];
+      const length=Math.max(a.hi-a.lo,b.hi-b.lo),overlap=Math.min(a.hi,b.hi)-Math.max(a.lo,b.lo);
+      if(overlap<length*.62||Math.abs(a.lo-b.lo)>Math.max(30,length*.26)||Math.abs(a.hi-b.hi)>Math.max(30,length*.26))continue;
+      const lo=(a.lo+b.lo)/2,hi=(a.hi+b.hi)/2,span=hi-lo,short=at(b,middle)-at(a,middle);
+      if(span<48||short<12||span<short*1.12)continue;
+      const edgeTol=Math.max(9,Math.min(28,span*.065)),caps=[[],[]],cuts=[];
+      for(const c of cross){
+        const u=c.pos;if(u<lo-edgeTol||u>hi+edgeTol)continue;
+        const upper=at(a,u),lower=at(b,u),height=lower-upper;
+        if(height<10)continue;
+        const coverage=Math.min(c.hi,lower)-Math.max(c.lo,upper);
+        if(coverage<Math.max(8,height*.34)||c.hi-c.lo>height*2.5+25)continue;
+        if(Math.abs(u-lo)<=edgeTol)caps[0].push(c);
+        else if(Math.abs(u-hi)<=edgeTol)caps[1].push(c);
+        else if(u>lo+span*.025&&u<hi-span*.025)cuts.push(c);
+      }
+      if(!cuts.length)continue;
+      const uniq=[];
+      const dedup=Math.max(2.5,Math.min(6,span*.009));
+      for(const c of cuts.sort((c,d)=>c.pos-d.pos)){
+        const prev=uniq[uniq.length-1];
+        if(prev&&c.pos-prev[0].pos<=dedup)prev.push(c);
+        else uniq.push([c]);
+      }
+      if(uniq.length>11)continue;
+      const capCount=Number(!!caps[0].length)+Number(!!caps[1].length);
+      // Two missing end-caps are accepted only when at least two internal cuts
+      // supply unambiguous evidence that this is a partitioned fraction bar.
+      if(capCount===0&&uniq.length<2)continue;
+      const pts=[...a.points,...b.points],v0=Math.min(...pts.map(p=>p.v)),v1=Math.max(...pts.map(p=>p.v));
+      const bounds=axis==='h'
+        ?{x:lo/W,y:v0/H,w:span/W,h:(v1-v0)/H}
+        :{x:v0/W,y:lo/H,w:(v1-v0)/W,h:span/H};
+      if(bounds.x<-.03||bounds.y<-.03||bounds.x+bounds.w>1.03||bounds.y+bounds.h>1.03)continue;
+      const refs=new Set();
+      for(const l of [a,b,...caps.flat(),...uniq.flat()])for(const s of l.refs)refs.add(s);
+      if(required&&required.size&&![...refs].some(s=>required.has(s)))continue;
+      // Include colouring strokes wholly inside this bar, not labels/ink elsewhere.
+      for(const s of entries){
+        let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+        for(const p of s.points||[]){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}
+        if(minX>=bounds.x-6/W&&minY>=bounds.y-6/H&&maxX<=bounds.x+bounds.w+6/W&&maxY<=bounds.y+bounds.h+6/H)refs.add(s);
+      }
+      const source=entries.filter(s=>refs.has(s));
+      candidates.push({box:bounds,horizontal:axis==='h',parts:uniq.length+1,group:source,last:Math.max(...source.map(s=>entries.indexOf(s))),area:bounds.w*bounds.h,confidence:capCount*2+Math.min(uniq.length,4)+overlap/length});
+    }
+  }
+  candidates.sort((a,b)=>b.last-a.last||b.confidence-a.confidence||b.area-a.area);
+  return candidates[0]||null;
+};
+function analyseFraction(group,required){return recognizeFractionInk(group,required,cssW,cssH)}
 
 function buildFractionSrc(n,horizontal,fills){
  const svgW=horizontal?900:260,svgH=horizontal?220:900,els=[];
