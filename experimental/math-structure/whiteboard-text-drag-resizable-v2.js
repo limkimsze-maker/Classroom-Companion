@@ -286,6 +286,13 @@ document.addEventListener('whiteboard-annotation-transform',e=>{
 // drawing, movement, resizing, text entry or Undo history.
 window.ClassroomObjectSelection={
  hasSelection:()=>!!selected&&strokes.includes(selected),
+ // Reopen a text or image selection without replaying pointerdown
+ // (which would otherwise start moving or resizing it).
+ select(obj){
+  if(tool!=='select'||!obj||!strokes.includes(obj)||obj.locked||
+     (obj.type!=='text'&&obj.type!=='image'))return false;
+  choose(obj);return true;
+ },
  clear(){
   if(editor)finishEditing(true);
   if(dragMode)up();
