@@ -13,8 +13,8 @@ pages after font and tab measurements settle. Saved Word page annotations use
 the same relative page coordinates as the other document viewers.
 
 Files are read on the device. Rendering uses an in-memory copy of the package;
-My Documents stores the original File bytes. Engines and compatible fallback
-fonts are same-origin assets loaded when a Word file is opened.
+My Documents stores the original File bytes. The adapter, engines and compatible
+fallback fonts are same-origin assets loaded when a Word file is opened.
 
 Previously saved Word files with continuous-surface annotations retain their
 previous viewer geometry so existing notes are not moved. Opening an original

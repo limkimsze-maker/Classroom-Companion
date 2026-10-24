@@ -6,6 +6,7 @@ if(typeof wrap==='undefined'||typeof canvas==='undefined'||typeof redraw!=='func
 const PDFJS_URL='vendor/moe/pdf.min.js';
 const PDFJS_WORKER='vendor/moe/pdf.worker.min.js';
 const MAMMOTH_URL='vendor/moe/mammoth.browser.min.js';
+const WORD_LAYOUT_URL=document.currentScript?.dataset.wordLayout||'';
 const PPTX_ESM_URL='./vendor/moe/pptx-renderer.browser.es.js';
 const XLSX_URL='vendor/moe/xlsx.full.min.js';
 
@@ -532,7 +533,8 @@ async function openWord(data){
  // Older saved Word notes used the continuous HTML surface. Keep that geometry
  // for those records so upgrading the viewer never relocates existing ink.
  const legacyInk=pageStore.get('word:document')?.items?.length;
- if(window.CCWordLayout&&!legacyInk){
+ if((WORD_LAYOUT_URL||window.CCWordLayout)&&!legacyInk){
+  if(!window.CCWordLayout)await loadScript(WORD_LAYOUT_URL,'CCWordLayout');
   wordPaper.classList.add('cc-word-paged');
   Object.assign(wordPaper.style,{padding:'0',minHeight:'0',font:'16px Arial,sans-serif'});
   const result=await window.CCWordLayout.render(data,wordPaper);
