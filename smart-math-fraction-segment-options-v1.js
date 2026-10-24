@@ -174,6 +174,7 @@ function showPlacement(id,start,end,x,y){
  above.addEventListener('click',()=>apply('top'));below.addEventListener('click',()=>apply('bottom'));
 }
 function showBracket(id,bracketId,x,y){
+ selectedId=id;
  const o=find(id),b=brackets(o||{}).find(t=>t.id===bracketId);if(!o||!b)return;
  const p=makePanel('Edit fraction bracket',x,y);
  const lab=input('Bracket label',b.label);row(p,'Bracket label',lab);
@@ -245,6 +246,6 @@ if(typeof ResizeObserver!=='undefined')new ResizeObserver(schedule).observe(wrap
 document.addEventListener('whiteboard-annotation-context',()=>{close();drag=null;selectedId='';schedule()},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){close();drag=null;selectedId='';schedule()}},true);
 document.addEventListener('pointerdown',e=>{if(panel&&!panel.contains(e.target)&&!e.target.closest?.('[id="smartFractionDecorationOverlay"]'))close()},true);
-window.ClassroomFractionSegmentOptions={getState:id=>{const o=find(id);return o?{labels:clone(labels(o)),brackets:clone(brackets(o)),fills:clone(o.fractionFills||[])}:null},open:showPlacement};
+window.ClassroomFractionSegmentOptions={getState:id=>{const o=find(id);return o?{labels:clone(labels(o)),brackets:clone(brackets(o)),fills:clone(o.fractionFills||[])}:null},open:showPlacement,select:id=>{if(find(id)){selectedId=id;schedule()}},selected:()=>selectedId};
 schedule();
 })();
