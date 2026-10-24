@@ -23,7 +23,8 @@ let strokes=[],tool='select',cssW=1000,cssH=360;
 function redraw(){} function syncUi(){} function say(){}
 </script>
 <script src="../smart-math-fractions-v3.js?v=20261024-fraction-segments1"></script>
-<script src="../smart-math-fraction-segment-options-v1.js?v=20261024-fraction-segments2"></script>
+<script src="../smart-math-fraction-segment-options-v1.js?v=20261024-fraction-controls3"></script>
+<script src="../smart-math-fraction-transform-v1.js?v=20261024-fraction-controls3"></script>
 <script>
 const checks=[],wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function check(name,condition,details){checks.push({name,ok:!!condition,details:details||''})}
@@ -33,45 +34,72 @@ function clickButton(panel,label){const b=[...panel.querySelectorAll('button')].
 function makeFraction(id,horizontal=true){return {type:'image',smartType:'fractionBar',smartGenerated:true,smartId:id,x:.15,y:.32,w:horizontal?.66:.16,h:horizontal?.22:.55,fractionHorizontal:horizontal,fractionParts:4,fractionFills:['#fff','#fff','#fff','#fff'],src:'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22/%3E'}}
 async function run(){
  const cmp={smartId:'comparison-protected',smartType:'barModel',smartBarType:'comparison',x:.05,y:.05,w:.3,h:.13,barCount:3};
- strokes=[cmp,makeFraction('test-frac')];
- const cmpSnapshot=JSON.stringify(cmp);
- redraw();await wait(50);
+ strokes=[cmp,makeFraction('test-frac')];const cmpSnapshot=JSON.stringify(cmp);
+ redraw();await wait(100);
  check('Segment editor starts',!!window.ClassroomFractionSegmentOptions);
- check('Editor and original fraction recognizer both load',!!window.ClassroomFractionBars&&typeof window.ClassroomFractionBars.refresh==='function');
+ check('Fraction recognizer remains active',!!window.ClassroomFractionBars&&typeof window.ClassroomFractionBars.refresh==='function');
+ check('Move and resize controls initialize',!!window.ClassroomFractionTransforms);
  try{
   window.ClassroomFractionSegmentOptions.open('test-frac',1,2,400,80);
   let panel=document.getElementById('smartFractionOptionsPanel');
-  let ins=panel?.querySelectorAll('input'),selects=panel?.querySelectorAll('select');
-  if(!panel||ins?.length<2||selects?.length<4)throw Error('Missing editor inputs');
-  ins[0].value='3 parts';ins[1].value='?';
-  selects[2].value='#2563eb';clickButton(panel,'Above');
+  const ins=panel?.querySelectorAll('input'),selects=panel?.querySelectorAll('select');
+  check('Panel contains no From / To selectors or bracket label',panel&&ins.length===1&&selects.length===2&&
+       !panel.textContent.includes('Bracket label')&&!panel.textContent.includes('From')&&!panel.textContent.includes('To'));
+  check('Selection range comes from drag, not menus',panel?.textContent.includes('Parts 2–3 selected'));
+  ins[0].value='3 parts';selects[0].value='#2563eb';clickButton(panel,'Above');
   let o=item('test-frac');
-  check('Contiguous group is coloured',o.fractionFills[1]==='#2563eb'&&o.fractionFills[2]==='#2563eb'&&o.fractionFills[0]==='#fff'&&o.fractionFills[3]==='#fff');
-  check('Inside label is stored by exact selected range',o.fractionSegmentLabels?.some(t=>t.start===1&&t.end===2&&t.text==='3 parts'));
-  check('Group bracket is stored with label and above position',o.fractionBrackets?.some(t=>t.start===1&&t.end===2&&t.side==='top'&&t.label==='?'));
-  check('Comparison object was not changed',JSON.stringify(item('comparison-protected'))===cmpSnapshot);
-  undoBtn.click();await wait(50);o=item('test-frac');
-  check('Undo restores labels, colour and brackets',o&&!o.fractionBrackets&&!o.fractionSegmentLabels&&o.fractionFills?.every(x=>x==='#fff'));
-  window.ClassroomFractionSegmentOptions.open('test-frac',0,3,400,80);
+  check('Grouped colouring',o.fractionFills[1]==='#2563eb'&&o.fractionFills[2]==='#2563eb'&&o.fractionFills[0]==='#fff');
+  check('Inside label by selected range',o.fractionSegmentLabels?.some(t=>t.start===1&&t.end===2&&t.text==='3 parts'));
+  check('Bracket starts unlabeled',o.fractionBrackets?.some(b=>b.start===1&&b.end===2&&b.side==='top'&&b.label===''));
+  await wait(110);
+  const editZone=document.querySelector('[aria-label="Edit fraction bracket"]');
+  if(!editZone)throw Error('Cannot find bracket editor target');
+  editZone.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerId:9,button:0,clientX:470,clientY:190}));
   panel=document.getElementById('smartFractionOptionsPanel');
-  panel.querySelectorAll('input')[0].value='One whole';
-  const ss=panel.querySelectorAll('select');ss[2].value='#facc15';ss[3].value='all';
+  check('Tapping bracket opens its own label editor',panel?.getAttribute('aria-label')==='Edit fraction bracket'&&!!panel.querySelector('input'));
+  panel.querySelector('input').value='?';
+  clickButton(panel,'Apply');
+  check('Bracket label saved only by bracket editor',item('test-frac').fractionBrackets.some(b=>b.label==='?'));
+  check('Comparison model unmodified',JSON.stringify(item('comparison-protected'))===cmpSnapshot);
+  window.ClassroomFractionSegmentOptions.open('test-frac',0,3,410,85);
+  panel=document.getElementById('smartFractionOptionsPanel');
+  panel.querySelector('input').value='whole';
+  let sel=panel.querySelectorAll('select');sel[0].value='#facc15';sel[1].value='all';
   clickButton(panel,'Apply colour / label');
   o=item('test-frac');
-  check('Whole-bar colour and label apply without automatic bracket',
-    o.fractionFills.every(x=>x==='#facc15')&&o.fractionSegmentLabels.some(t=>t.start===0&&t.end===3&&t.text==='One whole')&&(!o.fractionBrackets||o.fractionBrackets.length===0));
-  strokes.push(makeFraction('vertical-frac',false));redraw();await wait(50);
-  window.ClassroomFractionSegmentOptions.open('vertical-frac',1,3,420,80);
+  check('Whole fraction fill and label',o.fractionFills.every(x=>x==='#facc15')&&o.fractionSegmentLabels.some(t=>t.start===0&&t.end===3&&t.text==='whole'));
+  // A second vertical bar must keep segment and bracket orientation intact.
+  strokes.push(makeFraction('vertical-frac',false));redraw();await wait(100);
+  window.ClassroomFractionSegmentOptions.open('vertical-frac',1,3,400,100);
   panel=document.getElementById('smartFractionOptionsPanel');
-  panel.querySelectorAll('input')[1].value='vertical total';
   clickButton(panel,'Left');
-  const v=item('vertical-frac');
-  check('Vertical bars support left-side bracket and span',v.fractionBrackets?.some(t=>t.start===1&&t.end===3&&t.side==='top'&&t.label==='vertical total'));
-  check('Comparison object remains frozen',JSON.stringify(item('comparison-protected'))===cmpSnapshot);
- }catch(e){check('UI integration',false,String(e))}
+  check('Vertical fraction can have a grouped left bracket',item('vertical-frac').fractionBrackets?.some(b=>b.start===1&&b.end===3&&b.side==='top'));
+  window.ClassroomFractionSegmentOptions.select('test-frac');redraw();await wait(110);
+  const controls=Object.fromEntries([...document.querySelectorAll('[data-fraction-handle]')].map(e=>[e.dataset.fractionHandle,e]));
+  check('Visible distinct move / width / height / corner grips',Object.keys(controls).length===4&&
+        controls.move.style.cursor==='grab'&&controls.width.style.cursor==='ew-resize'&&
+        controls.height.style.cursor==='ns-resize'&&controls.both.style.cursor==='nwse-resize');
+  const move=controls.move;
+  const bx=400,by=165;
+  const before=Object.assign({},item('test-frac'));
+  const event=(name,el,cx,cy,id=16)=>el.dispatchEvent(new PointerEvent(name,{bubbles:true,cancelable:true,pointerId:id,pointerType:'mouse',button:0,clientX:cx,clientY:cy}));
+  event('pointerdown',move,bx,by);event('pointermove',move,bx+50,by+18);event('pointerup',move,bx+50,by+18);
+  check('Move grip changes position',item('test-frac').x>before.x&&item('test-frac').y>before.y);
+  await wait(100);
+  const wBefore=item('test-frac').w;
+  event('pointerdown',controls.width,bx,by,17);event('pointermove',controls.width,bx+40,by,17);event('pointerup',controls.width,bx+40,by,17);
+  check('Width grip changes only width',item('test-frac').w>wBefore);
+  await wait(100);
+  const hBefore=item('test-frac').h;
+  event('pointerdown',controls.height,bx,by,18);event('pointermove',controls.height,bx,by+32,18);event('pointerup',controls.height,bx,by+32,18);
+  check('Height grip changes height',item('test-frac').h>hBefore);
+  check('Movement and resizing preserve labels and brackets',item('test-frac').fractionBrackets.some(b=>b.label==='?')&&item('test-frac').fractionSegmentLabels.length>=1);
+  check('Comparison model protected after transforms',JSON.stringify(item('comparison-protected'))===cmpSnapshot);
+ }catch(e){check('Full interaction regression',false,String(e))}
  const tbody=document.getElementById('results');tbody.textContent='';
  for(const c of checks){const tr=document.createElement('tr'),name=document.createElement('td'),status=document.createElement('td');name.textContent=c.name;status.textContent=(c.ok?'PASS':'FAIL')+(c.details?' — '+c.details:'');status.className=c.ok?'pass':'fail';tr.append(name,status);tbody.append(tr)}
  const passed=checks.filter(c=>c.ok).length;const sum=document.getElementById('summary');sum.textContent=passed+'/'+checks.length+' checks passed';sum.className=passed===checks.length?'pass':'fail';
 }
+
 window.addEventListener('load',()=>setTimeout(run,50));
 </script></body></html>
