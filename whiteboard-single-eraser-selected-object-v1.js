@@ -6,7 +6,7 @@ if(window.ClassroomSingleEraserSelection)return;
 const button=document.getElementById('eraserBtn');
 if(!button||typeof strokes==='undefined'||typeof tool==='undefined')return;
 function visible(el){
- return !!(el&&el.style?.display!=='none'&&!el.hidden);
+ return !!(el&&!el.hidden&&el.style?.display&&el.style.display!=='none');
 }
 function chosen(){
  // A deliberate marquee selection is an explicit group, so erase together.
