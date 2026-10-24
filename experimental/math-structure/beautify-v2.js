@@ -113,6 +113,15 @@ function svgInk(group){
  }
  return'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W+20} ${H+20}">${els.join('')}</svg>`);
 }
+// Register an edit of already-beautified handwriting in the SAME undo stack
+// as the original Apply operation; do not touch the recognition model.
+window.ClassroomHandwritingEditHistory={
+ record(before){
+  history.push({before,after:JSON.stringify(strokes),learning:null});
+  if(history.length>30)history.shift();
+  syncUi();
+ }
+};
 function availableUndo(){return history.length&&history[history.length-1].after===JSON.stringify(strokes)}
 function undoBeautify(e){
  if(!availableUndo())return false;
@@ -350,15 +359,17 @@ async function review(group){
   const obj=formatted();if(!obj){updatePreview();return}
   if(!group.every(s=>strokes.includes(s))||JSON.stringify(group)!==original){status.textContent='This handwriting changed. Cancel and select it again.';apply.disabled=true;return}
   const before=clone(strokes),first=Math.min(...group.map(s=>strokes.indexOf(s))),set=new Set(group);
-  obj.smartOriginal=clone(group);obj.handwritingBeautified=true;
+  obj.smartOriginal=clone(group);obj.handwritingBeautified=true;obj.handwritingReading=displayReading();obj.handwritingReadMode=modeSelect.value;
   // Committing the preview transfers provisional learning to Undo history.
   let learning=pendingLearning;pendingLearning=null;
   strokes=strokes.filter(s=>!set.has(s));strokes.splice(first,0,obj);window.WhiteboardMarqueeSelection?.clear();tool='select';closeReview();redraw();
   // Apply never creates a new learning example.
   history.push({before,after:JSON.stringify(strokes),learning});if(history.length>30)history.shift();syncUi();
-  // Return to Select so the teacher can immediately move or resize the result.
-  // Reuse the existing Select handler to keep selection state and toolbar UI in sync.
-  document.getElementById('selectBtn')?.click();
+   // Beautified handwriting is now a selectable object; finish by pointing.
+   // Reset the prior selection, but never start a new drag or pen stroke.
+   window.ClassroomObjectSelection?.clear?.();
+   window.ClassroomUnifiedSmartTransforms?.clear?.();
+   window.ClassroomFingerPointer?.setActive?.(true);
   sayLocal(learning?.symbols?'Handwriting beautified · Reusable '+learning.symbols.char+' example saved':learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
  actions.append(apply,learn,stopRead,retryRead,cancel);const exportInk=document.createElement('button');
