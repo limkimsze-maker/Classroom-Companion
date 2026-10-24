@@ -85,11 +85,13 @@ body.document-open-mode .top > .tools{
  min-width:0!important;
  max-width:100%!important;
  padding-right:0!important;
- overflow-x:auto!important;
+ flex-wrap:wrap!important;
+ overflow:visible!important;
 }
 body.document-open-mode .top > #mainSettingsBtn{
  order:2!important;
  flex:0 0 auto!important;
+ align-self:flex-start!important;
  margin-left:5px!important;
 }
 body.document-open-mode .top > #ccSaveSlot{
@@ -126,14 +128,14 @@ body.document-open-mode #ccHighlighterPalette button[data-highlight-colour]{widt
 </style>
 <style id="ccInkPaletteLayout">
 /* Keep each writing tool immediately adjacent to its own colours. */
-.ccInkCluster{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;min-width:0;padding:4px 6px;border:1px solid #d5e0e7;border-radius:13px;background:#f8fafc;white-space:nowrap}
+.ccInkCluster{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;flex:0 0 auto;min-width:0;max-width:100%;padding:4px 6px;border:1px solid #d5e0e7;border-radius:13px;background:#f8fafc;white-space:nowrap}
 .ccHighlighterCluster{background:#fffcef;border-color:#ead7a0}
 .ccInkCluster .btn{flex-shrink:0}
-.ccInkCluster .colors{order:initial!important;display:inline-flex!important;align-items:center;flex-wrap:nowrap;gap:4px;padding:2px 3px;margin:0;background:transparent;border:0;border-radius:0}
+.ccInkCluster .colors{order:initial!important;display:inline-flex!important;align-items:center;flex-wrap:wrap;max-width:100%;gap:4px;padding:2px 3px;margin:0;background:transparent;border:0;border-radius:0}
 .ccInkCluster .colour{width:25px;height:25px;min-width:25px;min-height:25px;flex-shrink:0}
 .ccHighlighterCluster #highlighterBtn{display:inline-flex!important;align-items:center;flex-shrink:0}
 .ccHighlighterCluster #ccHighlighterHeader{display:inline-flex!important;position:static!important;margin:0!important;min-height:35px!important;border-radius:9px!important;padding:5px 9px!important;flex:0 0 auto}
-.ccHighlighterCluster #ccHighlighterPalette{display:inline-flex!important;flex-wrap:nowrap!important;gap:5px!important;padding:2px 3px!important;margin:0!important;background:transparent!important;border:0!important;border-radius:0!important;white-space:nowrap}
+.ccHighlighterCluster #ccHighlighterPalette{display:inline-flex!important;flex-wrap:wrap!important;max-width:100%;gap:5px!important;padding:2px 3px!important;margin:0!important;background:transparent!important;border:0!important;border-radius:0!important;white-space:nowrap}
 .ccHighlighterCluster #ccHighlighterPalette > span{display:none!important}
 .ccHighlighterCluster #ccHighlighterPalette button[data-highlight-colour]{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;flex-shrink:0}
 .ccHighlighterCluster #ccCustomHighlighterColour{width:29px!important;min-width:29px!important;height:27px!important}

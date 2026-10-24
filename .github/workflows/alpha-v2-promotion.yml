@@ -16,6 +16,7 @@ on:
       - scripts/test-alpha-loading-message.cjs
       - scripts/test-alpha-pdf-firstpaint.cjs
       - scripts/test-alpha-v2-promotion.cjs
+      - scripts/test-alpha-toolbar-visibility.cjs
       - scripts/test-alpha-beautify-select.cjs
       - scripts/test-alpha-comparison-atomic.cjs
       - smart-math-bars-v2.js
@@ -81,6 +82,11 @@ jobs:
         env:
           NODE_PATH: /tmp/alpha-browser/node_modules
         run: node scripts/test-alpha-v2-promotion.cjs
+      - name: Verify every toolbar control stays visible with documents open
+        if: ${{ !cancelled() }}
+        env:
+          NODE_PATH: /tmp/alpha-browser/node_modules
+        run: node scripts/test-alpha-toolbar-visibility.cjs
       - name: Verify drag-to-turn document pages and protected pen input
         if: ${{ !cancelled() }}
         env:
