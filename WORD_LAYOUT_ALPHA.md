@@ -32,10 +32,10 @@ automatic flowing pages, a long paragraph, a table spanning pages, zoom,
 original file byte preservation, and saved annotation reopening on desktop and
 mobile. Uploaded teacher documents are not included in the repository.
 
-The release run exposed a pre-existing comparison regression assertion:
-`smartOriginal` contains 11 entries instead of 8 for fragmented bars. The same
-assertion fails when rerunning unchanged main commit
-`6c545579b97e42fe82a7e817b7b16b19386b07d2` (workflow run 39889071476,
-rerun job 120766390781). Comparison source files are unchanged by this Word fix.
-Independent Word, speech, document and annotation checks continue after this
-failure; the comparison assertion and overall failed job status are retained.
+Release verification passed on desktop and mobile in workflow run 40058560200
+(commit 7f44b587afe3486b5ede21aeaf2ceada8217db5d), including Word layout,
+comparison conversion and Undo, speech-to-text, PDF previews, page dragging,
+and document annotation save/reopen/delete/rename. The adapter loads only
+when a DOCX is selected, preserving the existing whiteboard startup path.
+Independent checks run even after an earlier check fails, while failures still
+fail the overall job.
