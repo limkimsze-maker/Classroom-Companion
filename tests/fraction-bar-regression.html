@@ -89,7 +89,7 @@ function runTests(){
    record('Undo available','Controls present','Unavailable',false);
    record('Failure preserves ink','Controls present','Unavailable',false);
  }
- const summary=document.getElementById('summary');summary.textContent=pass+'/'+(scenarios.length+3)+' checks passed';summary.className=pass===scenarios.length?'pass':'fail';
+ const summary=document.getElementById('summary');summary.textContent=pass+'/'+(scenarios.length+3)+' checks passed';summary.className=pass===scenarios.length+3?'pass':'fail';
 }
 window.addEventListener('load',runTests);
 </script>
