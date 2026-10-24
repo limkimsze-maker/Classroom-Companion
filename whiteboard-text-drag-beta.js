@@ -35,6 +35,24 @@ function restore(snapshot){finishEditing(false);const id=dragPointerId;dragMode=
 function normaliseText(s){if(!s||s.type!=='text')return s;s.size=Math.max(10,Number(s.size)||24);s.font=s.font||'Arial';s.bold=s.bold!==false;s.italic=!!s.italic;s.underline=!!s.underline;s.align=s.align||'left';if(!Number.isFinite(s.w))s.w=Math.min(.55,Math.max(.18,((s.text||'').length*s.size*.55+28)/Math.max(cssW,1)));if(!Number.isFinite(s.h))s.h=Math.min(.45,Math.max(.09,(s.size*1.8)/Math.max(cssH,1)));return s}
 function fontString(s){normaliseText(s);return `${s.italic?'italic ':''}${s.bold?'700':'400'} ${s.size}px ${JSON.stringify(s.font)},Arial,sans-serif`}
 function wrapLines(s,maxW){ctx.save();ctx.font=fontString(s);const paras=String(s.text||'').split('\n'),lines=[];for(const para of paras){if(!para){lines.push('');continue}const words=para.split(/\s+/);let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width<=maxW-12||!line)line=test;else{lines.push(line);line=word}}lines.push(line)}ctx.restore();return lines}
+// Restore compact transcript bounds from the proven V2 text editor.
+// This affects only newly inserted speech text; existing typed text and
+// Smart Math objects retain their geometry.
+function fitSpeechText(s){
+ if(!s||s.type!=='text')return;
+ normaliseText(s);
+ const text=String(s.text||'').replace(/\r/g,'');
+ const capW=Math.max(88,Math.min((1-s.x)*cssW-10,cssW*.58));
+ ctx.save();ctx.font=fontString(s);
+ const widest=Math.max(0,...text.split('\n').map(t=>ctx.measureText(t).width));
+ ctx.restore();
+ const boxW=Math.min(capW,Math.max(80,Math.ceil(widest+20)));
+ const wrapped=wrapLines(s,boxW);
+ const boxH=Math.min(Math.max(45,(1-s.y)*cssH-8),Math.max(46,Math.ceil(wrapped.length*s.size*1.25+13)));
+ s.w=Math.max(.001,boxW/Math.max(1,cssW));
+ s.h=Math.max(.001,boxH/Math.max(1,cssH));
+ s.speechAutoFit=true;
+}
 function bounds(s){if(!s)return null;if(s.type==='text'){normaliseText(s);return{x:s.x*cssW,y:s.y*cssH,w:s.w*cssW,h:s.h*cssH}}if(s.type==='image')return{x:s.x*cssW,y:s.y*cssH,w:s.w*cssW,h:s.h*cssH};return null}
 function drawTextBox(s){normaliseText(s);const b=bounds(s),lineH=s.size*1.25,lines=wrapLines(s,b.w);ctx.save();ctx.globalCompositeOperation='source-over';ctx.fillStyle=s.colour||'#17324d';ctx.font=fontString(s);ctx.textBaseline='top';ctx.textAlign=s.align==='center'?'center':s.align==='right'?'right':'left';const tx=s.align==='center'?b.x+b.w/2:s.align==='right'?b.x+b.w-6:b.x+6;let y=b.y+5;for(const line of lines){if(y+lineH>b.y+b.h+2)break;ctx.fillText(line,tx,y);if(s.underline&&line){const w=ctx.measureText(line).width;let x1=tx,x2=tx+w;if(s.align==='center'){x1=tx-w/2;x2=tx+w/2}else if(s.align==='right'){x1=tx-w;x2=tx}ctx.lineWidth=Math.max(1,s.size/16);ctx.strokeStyle=s.colour||'#17324d';ctx.beginPath();ctx.moveTo(x1,y+s.size+2);ctx.lineTo(x2,y+s.size+2);ctx.stroke()}y+=lineH}ctx.restore()}
 function point(e){const r=canvas.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))}}
@@ -43,8 +61,92 @@ function handleBox(s){const b=bounds(s);if(!b)return null;return{x:b.x+b.w+7,y:b
 function hitHandle(p,s){const h=handleBox(s);if(!h)return false;const px=p.x*cssW,py=p.y*cssH;return Math.abs(px-h.x)<=h.r+1&&Math.abs(py-h.y)<=h.r+1}
 function getImage(src){let img=imageCache.get(src);if(img)return img;img=new Image();imageCache.set(src,img);img.onload=()=>redraw();img.src=src;return img}
 function drawImageObject(s){const img=getImage(s.src);if(!img.complete||!img.naturalWidth)return;const b=bounds(s);ctx.save();ctx.globalCompositeOperation='source-over';ctx.drawImage(img,b.x,b.y,b.w,b.h);ctx.restore()}
-function drawSelection(){if(!selected||!strokes.includes(selected)||editor)return;const b=bounds(selected);if(!b)return;ctx.save();ctx.strokeStyle='rgba(15,118,110,.98)';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(b.x-6,b.y-5,b.w+12,b.h+10);ctx.setLineDash([]);const h=handleBox(selected);ctx.fillStyle='#0f766e';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.fillRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2);ctx.strokeRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2);ctx.restore()}
-redraw=function(){ctx.clearRect(0,0,cssW,cssH);for(const s of strokes){if(s?.type==='image')drawImageObject(s);else if(s?.type==='text'){if(!(editor&&s===selected))drawTextBox(s)}else baseDrawStroke(s)}if(current)baseDrawStroke(current);drawSelection()};
+function drawSelection(){if(!selected||!strokes.includes(selected)||editor)return;const b=bounds(selected);if(!b)return;ctx.save();ctx.strokeStyle='rgba(15,118,110,.98)';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(b.x-6,b.y-5,b.w+12,b.h+10);ctx.setLineDash([]);if(!selected.speechSource){const h=handleBox(selected);ctx.fillStyle='#0f766e';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.fillRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2);ctx.strokeRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2)}ctx.restore()}
+
+// Clear, touch-friendly grips follow the same four actions as Smart Math:
+// ✥ move, ↔ width, ↕ height, ⤡ resize both/font.
+const speechLayer=document.createElement('div');
+speechLayer.id='ccSpeechTextTransformLayer';
+speechLayer.style.cssText='position:absolute;inset:0;z-index:1470;pointer-events:none';
+const speechFrame=document.createElement('div');
+speechFrame.style.cssText='position:absolute;pointer-events:none;box-sizing:border-box;border:2px dashed #0f766e;border-radius:5px;display:none';
+speechLayer.appendChild(speechFrame);wrap.appendChild(speechLayer);
+const speechDefs=[
+ {mode:'move',glyph:'✥',text:'Move',cursor:'grab'},
+ {mode:'width',glyph:'↔',text:'Width',cursor:'ew-resize'},
+ {mode:'height',glyph:'↕',text:'Height',cursor:'ns-resize'},
+ {mode:'both',glyph:'⤡',text:'Resize',cursor:'nwse-resize'}
+];
+const speechGrips=[];
+let speechGesture=null;
+const speechClamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
+function speechSelected(){return selected?.type==='text'&&selected.speechSource===true&&strokes.includes(selected)&&tool==='select'&&!editor&&!selected.locked}
+function placeSpeechGrips(){
+ const visible=speechSelected();
+ if(!visible){speechFrame.style.display='none';for(const g of speechGrips)g.el.style.display='none';return}
+ const cv=canvas.getBoundingClientRect(),parent=wrap.getBoundingClientRect();
+ const ox=cv.left-parent.left,oy=cv.top-parent.top;
+ const b=bounds(selected),left=ox+b.x,top=oy+b.y;
+ speechFrame.style.display='block';speechFrame.style.left=(left-4)+'px';speechFrame.style.top=(top-4)+'px';speechFrame.style.width=(b.w+8)+'px';speechFrame.style.height=(b.h+8)+'px';
+ const pos={move:[left-23,top-25],width:[left+b.w+25,top+b.h/2],height:[left+b.w/2,top+b.h+25],both:[left+b.w+25,top+b.h+25]};
+ for(const g of speechGrips){
+  const p=pos[g.mode];
+  g.el.style.left=(speechClamp(p[0],19,Math.max(19,parent.width-19))-19)+'px';
+  g.el.style.top=(speechClamp(p[1],19,Math.max(19,parent.height-19))-19)+'px';
+  g.el.style.display='flex';
+  g.el.style.cursor=speechGesture?.el===g.el&&g.mode==='move'?'grabbing':g.cursor;
+ }
+}
+function handleSpeechMove(el,e){
+ const g=speechGesture;if(!g||g.el!==el||g.pointer!==e.pointerId||!strokes.includes(g.obj))return;
+ e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+ const dX=(e.clientX-g.px)/Math.max(1,cssW),dY=(e.clientY-g.py)/Math.max(1,cssH),base=g.initial,o=g.obj;
+ if(g.mode==='move'){
+  o.x=speechClamp(base.x+dX,0,Math.max(0,1-base.w));
+  o.y=speechClamp(base.y+dY,0,Math.max(0,1-base.h));
+ }else if(g.mode==='both'){
+  const sx=dX/Math.max(.001,base.w),sy=dY/Math.max(.001,base.h);
+  const factor=speechClamp(1+(Math.abs(sx)>Math.abs(sy)?sx:sy),.3,Math.max(.3,Math.min(5,(1-base.x)/base.w,(1-base.y)/base.h,120/base.size)));
+  o.w=base.w*factor;o.h=base.h*factor;o.size=Math.max(10,base.size*factor);o.speechAutoFit=false;
+ }else{
+  if(g.mode==='width')o.w=speechClamp(base.w+dX,Math.min(base.w,Math.max(.065,70/Math.max(1,cssW))),Math.max(base.w,1-o.x));
+  if(g.mode==='height')o.h=speechClamp(base.h+dY,Math.min(base.h,Math.max(.045,42/Math.max(1,cssH))),Math.max(base.h,1-o.y));
+  o.speechAutoFit=false;
+ }
+ redraw();
+}
+function stopSpeechGrip(el,e,cancel=false){
+ const g=speechGesture;if(!g||g.el!==el||e&&g.pointer!==e.pointerId)return;
+ speechGesture=null;
+ try{if(el.hasPointerCapture?.(g.pointer))el.releasePointerCapture(g.pointer)}catch(_){}
+ if(cancel&&strokes.includes(g.obj))Object.assign(g.obj,g.initial);
+ else if(strokes.includes(g.obj)&&['x','y','w','h','size'].some(k=>Math.abs(g.obj[k]-g.initial[k])>1e-6))remember(g.before);
+ redraw();syncUi();
+ if(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()}
+}
+for(const def of speechDefs){
+ const el=document.createElement('button');el.type='button';el.className='cc-speech-text-grip';
+ el.textContent=def.glyph;el.title=def.text+' speech text';el.setAttribute('aria-label',def.text+' speech text');
+ el.style.cssText='position:absolute;display:none;box-sizing:border-box;width:38px;height:38px;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;user-select:none;padding:0;border:2px solid #0f766e;border-radius:11px;background:#fff;color:#0f766e;box-shadow:0 2px 9px #17324d44;font:900 21px system-ui;cursor:'+def.cursor;
+ el.addEventListener('pointerdown',e=>{
+  if(!speechSelected()||speechGesture||e.button!=null&&e.button!==0)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+  speechGesture={el,mode:def.mode,pointer:e.pointerId,px:e.clientX,py:e.clientY,obj:selected,
+   initial:{x:selected.x,y:selected.y,w:selected.w,h:selected.h,size:selected.size,speechAutoFit:selected.speechAutoFit},before:clone(strokes)};
+  try{el.setPointerCapture?.(e.pointerId)}catch(_){}
+  el.style.cursor=def.mode==='move'?'grabbing':def.cursor;
+ },true);
+ el.addEventListener('pointermove',e=>handleSpeechMove(el,e),true);
+ el.addEventListener('pointerup',e=>stopSpeechGrip(el,e),true);
+ el.addEventListener('pointercancel',e=>stopSpeechGrip(el,e,true),true);
+ el.addEventListener('lostpointercapture',()=>{if(speechGesture?.el===el)stopSpeechGrip(el,null,true)},true);
+ el.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()},true);
+ speechLayer.appendChild(el);speechGrips.push({...def,el});
+}
+window.addEventListener('resize',placeSpeechGrips);
+if(window.ResizeObserver)new ResizeObserver(placeSpeechGrips).observe(wrap);
+document.addEventListener('whiteboard-annotation-context',()=>{if(speechGesture)stopSpeechGrip(speechGesture.el,null,true);},true);
+redraw=function(){ctx.clearRect(0,0,cssW,cssH);for(const s of strokes){if(s?.type==='image')drawImageObject(s);else if(s?.type==='text'){if(!(editor&&s===selected))drawTextBox(s)}else baseDrawStroke(s)}if(current)baseDrawStroke(current);drawSelection();placeSpeechGrips()};
 
 function updateFormatBar(){const on=selected?.type==='text';formatBar.style.display=on?'flex':'none';if(!on)return;normaliseText(selected);fontSel.value=selected.font;fontSizeSel.value=String([12,14,16,18,20,24,28,32,36,44,54,64,72].includes(Math.round(selected.size))?Math.round(selected.size):28);[[boldBtn,selected.bold],[italicBtn,selected.italic],[underlineBtn,selected.underline],[leftBtn,selected.align==='left'],[centreBtn,selected.align==='center'],[rightBtn,selected.align==='right']].forEach(([b,on])=>{b.style.background=on?'#0f766e':'#fff';b.style.color=on?'#fff':'#17324d'})}
 syncUi=function(){baseSync();undoBtn.disabled=history.length===0;selectBtn.classList.toggle('active',tool==='select');editBtn.disabled=!(tool==='select'&&selected?.type==='text');if(tool==='select'){penBtn.classList.remove('active');textBtn.classList.remove('active');eraserBtn.classList.remove('active');if(selected?.type==='text'){normaliseText(selected);sizeLabel.textContent=L?.textSize||X.size;sizeValue.textContent=Math.round(selected.size);modeBadge.textContent=`${X.selectWord} · ${X.textWord}`}else if(selected?.type==='image'){sizeLabel.textContent=X.imageWord;sizeValue.textContent='';modeBadge.textContent=`${X.selectWord} · ${X.imageWord}`}else{sizeLabel.textContent=L?.thickness||'Thickness';sizeValue.textContent=size.value;modeBadge.textContent=X.selectWord}}updateFormatBar();updateCursor()};
@@ -141,6 +243,28 @@ undoBtn.onclick=()=>{if(editor)finishEditing(true);if(!history.length)return;res
 document.addEventListener('paste',e=>{if(editor)return;const items=Array.from(e.clipboardData?.items||[]),files=items.filter(i=>i.type?.startsWith('image/')).map(i=>i.getAsFile()).filter(Boolean);if(files.length){e.preventDefault();addImageFiles(files)}});
 wrap.addEventListener('dragover',e=>{if(Array.from(e.dataTransfer?.items||[]).some(i=>i.kind==='file'&&i.type?.startsWith('image/'))){e.preventDefault();e.dataTransfer.dropEffect='copy'}});wrap.addEventListener('drop',e=>{const files=Array.from(e.dataTransfer?.files||[]).filter(f=>f.type?.startsWith('image/'));if(!files.length)return;e.preventDefault();addImageFiles(files,point(e))});
 document.addEventListener('keydown',e=>{if(editor)return;if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName))return;const k=e.key.toLowerCase();if((e.ctrlKey||e.metaKey)&&k==='d'){if(selected){e.preventDefault();e.stopImmediatePropagation();duplicateSelected()}return}if((e.key==='Delete'||e.key==='Backspace')&&selected){e.preventDefault();e.stopImmediatePropagation();removeSelected();return}if(e.key==='Enter'&&selected?.type==='text'){e.preventDefault();editSelected();return}if(e.key==='Escape'){if(selected){e.preventDefault();selected=null;redraw();syncUi()}return}if(k==='v'&&!e.ctrlKey&&!e.metaKey){switchTool('select');return}if(k==='p'&&!e.ctrlKey&&!e.metaKey){switchTool('pen');return}if(k==='t'&&!e.ctrlKey&&!e.metaKey){switchTool('text');return}if(k==='e'&&!e.ctrlKey&&!e.metaKey){switchTool('eraser');return}},true);
+
+
+// The original V2 speech insertion contract: acknowledgement prevents a
+// duplicate fallback box; a selected text object can be moved/resized immediately.
+document.addEventListener('whiteboard-insert-speech-text',e=>{
+ const detail=e.detail||{};
+ try{
+  const value=String(detail.text||'').trim();
+  if(!value){detail.error='Empty transcript';return}
+  if(editor)finishEditing(true);
+  remember();
+  const obj={type:'text',speechSource:true,x:.06,y:.12,w:.32,h:.08,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
+  fitSpeechText(obj);
+  strokes.push(obj);selected=obj;tool='select';redraw();syncUi();
+  detail.inserted=strokes.includes(obj);detail.insertedText=obj.text;detail.boardSize=Math.round(cssW)+'×'+Math.round(cssH);
+ }catch(err){detail.error=String(err?.message||err);console.error('Speech text insertion failed',err)}
+});
+// Diagnostics are read-only; helpful for checking handle availability.
+window.ClassroomSpeechTextControls={
+ getSelected:()=>speechSelected()?{text:selected.text,w:selected.w,h:selected.h,x:selected.x,y:selected.y}:null,
+ getGrips:()=>speechGrips.map(g=>({mode:g.mode,label:g.text,cursor:g.cursor}))
+};
 
 tool='select';selected=null;redraw();syncUi();
 })();
