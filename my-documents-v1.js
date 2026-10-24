@@ -28,7 +28,7 @@ const byId=async id=>id?request('readonly',s=>s.get(id)):null;
 function say(t){
  if(status)status.textContent=t;
  const b=document.getElementById('ccPermanentSaveBtn');
- if(b&&t.startsWith('Saved locally:'))b.textContent='✓ Saved to My Documents';
+ if(b&&t.startsWith('Saved locally:'))b.textContent='💾 ✓ Saved to My Documents';
  const actionStatus=document.getElementById('ccAnnotationActionStatus');
  if(actionStatus)actionStatus.textContent=t;
 }
