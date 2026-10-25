@@ -3,8 +3,8 @@ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const anchor=document.getElementById('textBtn'),board=document.getElementById('board');
 if(!anchor||!board)return;
 const btn=document.getElementById('speechToTextBtn');if(!btn)return;
-const panel=document.createElement('div');panel.id='ccSpeechToTextPanel';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Speech to Text');panel.style.cssText='display:none;box-sizing:border-box;position:fixed;top:9%;left:50%;transform:translateX(-50%);width:min(92vw,360px);max-height:78dvh;overflow-y:auto;overscroll-behavior:contain;padding:12px;background:white;border:1px solid #cfd9de;border-radius:14px;box-shadow:0 14px 45px #17324d44;z-index:20000';
-panel.innerHTML='<strong>🎙 Speech to Text</strong><p style="font-size:12px">Press Start to dictate, Stop when finished. Pauses will not end your session.</p><textarea aria-label="Speech transcript" rows="6" wrap="soft" spellcheck="true" style="box-sizing:border-box;width:100%;min-height:120px;padding:9px;border:1px solid #cfd9de;border-radius:8px;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word"></textarea><p data-interim aria-live="off" style="font-size:11px;color:#667085;min-height:14px;overflow-wrap:anywhere"></p><label style="display:block;font-size:12px"><input type="checkbox" data-caps checked> Automatically capitalise sentences, days, months and common names</label><label style="display:block;font-size:12px;margin-top:7px">Additional names (comma-separated)<input type="text" data-names placeholder="e.g. John Tan, River Valley High School" style="box-sizing:border-box;display:block;width:100%;margin-top:4px;padding:7px;border:1px solid #cfd9de;border-radius:7px"></label><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px"><button type="button" class="btn soft" data-action="listen" aria-pressed="false">🎙 Start listening</button><button type="button" class="btn" data-action="math">Convert maths</button><button type="button" class="btn soft" data-action="insert">Insert</button><button type="button" class="btn" data-action="clear">Clear panel</button><button type="button" class="btn" data-action="close">Close</button></div><p data-status role="status" aria-live="polite" style="font-size:11px;color:#667085"></p>';
+const panel=document.createElement('div');panel.id='ccSpeechToTextPanel';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Speech to Text');panel.style.cssText='display:none;box-sizing:border-box;position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(96vw,480px);max-height:92dvh;overflow-y:auto;overscroll-behavior:contain;padding:12px;background:white;border:1px solid #cfd9de;border-radius:14px;box-shadow:0 14px 45px #17324d44;z-index:20000';
+panel.innerHTML='<strong style="display:block;margin-bottom:7px;font-size:16px">🎙 Speech to Text</strong><div data-listen-controls role="group" aria-label="Microphone controls" style="position:sticky;top:0;z-index:10;background:#fff;padding:8px 2px;border-bottom:1px solid #dae5ea;display:flex;flex-wrap:nowrap;gap:8px"><button type="button" data-action="start" aria-label="Start listening" style="display:inline-flex!important;justify-content:center;align-items:center;flex:1 1 50%;min-width:0;min-height:44px;padding:9px 12px;background:#087b6d;color:#fff;border:1px solid #087b6d;border-radius:9px;font-size:13px;font-weight:800;cursor:pointer">🎙 Start Listening</button><button type="button" data-action="stop" aria-label="Stop listening" disabled style="display:inline-flex!important;justify-content:center;align-items:center;flex:1 1 50%;min-width:0;min-height:44px;padding:9px 12px;background:#fff1ee;color:#a52719;border:1px solid #dfa49c;border-radius:9px;font-size:13px;font-weight:800;cursor:pointer">■ Stop Listening</button></div><p style="font-size:12px">Press Start to dictate, Stop when finished. Pauses will not end your session.</p><textarea aria-label="Speech transcript" rows="6" wrap="soft" spellcheck="true" style="box-sizing:border-box;width:100%;min-height:120px;padding:9px;border:1px solid #cfd9de;border-radius:8px;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word"></textarea><p data-interim aria-live="off" style="font-size:11px;color:#667085;min-height:14px;overflow-wrap:anywhere"></p><label style="display:block;font-size:12px"><input type="checkbox" data-caps checked> Automatically capitalise sentences, days, months and common names</label><label style="display:block;font-size:12px;margin-top:7px">Additional names (comma-separated)<input type="text" data-names placeholder="e.g. John Tan, River Valley High School" style="box-sizing:border-box;display:block;width:100%;margin-top:4px;padding:7px;border:1px solid #cfd9de;border-radius:7px"></label><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px"><button type="button" class="btn" data-action="math">Convert maths</button><button type="button" class="btn soft" data-action="insert">Insert</button><button type="button" class="btn" data-action="clear">Clear panel</button><button type="button" class="btn" data-action="close">Close</button></div><p data-status role="status" aria-live="polite" style="font-size:11px;color:#667085"></p>';
 document.body.appendChild(panel);
 const ta=panel.querySelector('textarea'),status=panel.querySelector('[data-status]');let rec=null;
 const BUILD='speech-operator-verified-20261021-01';
@@ -31,7 +31,7 @@ function looksLikeMath(t){return /(?:\d\s*(?:[×*÷/+=−-]|\bx\b)|\b(?:times|mu
 // Speech punctuation and capitalisation are kept separate from mathematical
 // conversion, which may lowercase or replace English words.
 const interim=panel.querySelector('[data-interim]'),capToggle=panel.querySelector('[data-caps]'),names=panel.querySelector('[data-names]');
-const listenBtn=panel.querySelector('[data-action=listen]'),insertBtn=panel.querySelector('[data-action=insert]');
+const startBtn=panel.querySelector('[data-action=start]'),stopBtn=panel.querySelector('[data-action=stop]'),insertBtn=panel.querySelector('[data-action=insert]');
 let listening=false,finishing=false,restartTimer=null,baseText='',activeRec=null;
 try{names.value=localStorage.getItem('ccSpeechProperNounsV1')||''}catch{}
 names.addEventListener('change',()=>{try{localStorage.setItem('ccSpeechProperNounsV1',names.value.slice(0,1200))}catch{}});
@@ -77,11 +77,14 @@ function joinSpeech(a,b){
  return !second?first:!first.trim()?second:first+(/\s$/.test(first)?'':' ')+second;
 }
 function syncListenUi(){
- listenBtn.textContent=listening?'■ Stop listening':'🎙 Start listening';
- listenBtn.setAttribute('aria-pressed',String(listening));
- listenBtn.classList.toggle('danger',listening);
- listenBtn.classList.toggle('soft',!listening);
- listenBtn.disabled=finishing;insertBtn.disabled=listening||finishing;ta.readOnly=listening||finishing;
+ startBtn.disabled=listening||finishing;
+ stopBtn.disabled=!listening;
+ startBtn.style.opacity=startBtn.disabled?'.45':'1';
+ stopBtn.style.opacity=stopBtn.disabled?'.45':'1';
+ startBtn.setAttribute('aria-pressed',String(listening));
+ stopBtn.setAttribute('aria-pressed',String(!listening&&!finishing));
+ insertBtn.disabled=listening||finishing;
+ ta.readOnly=listening||finishing;
 }
 function stop(discard=false){
  listening=false;if(restartTimer){clearTimeout(restartTimer);restartTimer=null}
@@ -161,7 +164,8 @@ btn.addEventListener('click',()=>{
 panel.addEventListener('click',e=>{
  const action=e.target.closest('[data-action]')?.dataset.action;
  if(!action)return;
- if(action==='listen'){if(listening)stop();else startListening();return}
+ if(action==='start'){startListening();return}
+ if(action==='stop'){if(listening)stop();return}
  if(action==='close'){stop(true);panel.style.display='none';return}
  if(action==='clear'){stop(true);ta.value='';interim.textContent='';status.textContent='Panel cleared.';ta.focus();return}
  if(action==='math'){if(listening||finishing){status.textContent='Stop listening first.';return}ta.value=mathify(ta.value);status.textContent='Converted maths. Review before inserting.';return}
