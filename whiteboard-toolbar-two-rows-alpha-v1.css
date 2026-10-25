@@ -51,7 +51,7 @@ body.document-open-mode header.top .ccToolGroup {
   flex-wrap:nowrap!important;
   align-items:center!important;
   align-content:center!important;
-  justify-content:space-between!important;
+  justify-content:flex-start!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
