@@ -301,9 +301,13 @@ document.addEventListener('whiteboard-insert-speech-text',e=>{
   const value=String(detail.text||'').trim();
   if(!value){detail.error='Empty transcript';return}
   if(editor)finishEditing(true);
-  remember();
   const obj={type:'text',speechSource:true,x:.06,y:.12,w:.32,h:.08,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
-  fitSpeechText(obj);
+  if(!fitSpeechText(obj)){
+   detail.overflow=true;
+   detail.error='Transcript is too long to fit completely on one whiteboard. Split it into shorter sections; the transcript is still available in Speech to Text.';
+   return;
+  }
+  remember();
   strokes.push(obj);selected=obj;tool='select';redraw();syncUi();
   detail.inserted=strokes.includes(obj);detail.insertedText=obj.text;detail.boardSize=Math.round(cssW)+'×'+Math.round(cssH);
  }catch(err){detail.error=String(err?.message||err);console.error('Speech text insertion failed',err)}
