@@ -13,7 +13,7 @@ const L=TXT[edition]||TXT.en;
 const clone=v=>JSON.parse(JSON.stringify(v));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const uid=()=>`sm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
-const rawInk=s=>!!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.smartGenerated&&!s.background);
+const rawInk=s=>!!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.highlighter&&!s.smartGenerated&&!s.background);
 const tools=document.querySelector('.tools');
 if(!tools)return;
 
@@ -72,7 +72,7 @@ function showEquationPanel(){const startIndex=captureStart;const p=panelBase(L.e
 function showSolidPanel(){const startIndex=captureStart,p=panelBase(L.solidTitle);const mk=(label,type)=>{const b=document.createElement('button');b.className='btn soft';b.textContent=label;b.style.marginRight='6px';b.onclick=()=>{const original=strokes.slice(startIndex).filter(rawInk),before=clone(strokes),cuboid=type==='cuboid',w=cuboid?840:700,h=520,d=120,svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620"><rect width="100%" height="100%" fill="white"/><g fill="none" stroke="#17324d" stroke-width="10" stroke-linejoin="round"><rect x="120" y="170" width="${w-240}" height="300"/><rect x="${120+d}" y="${80}" width="${w-240}" height="300"/><line x1="120" y1="170" x2="${120+d}" y2="80"/><line x1="${w-120}" y1="170" x2="${w-120+d}" y2="80"/><line x1="120" y1="470" x2="${120+d}" y2="380"/><line x1="${w-120}" y1="470" x2="${w-120+d}" y2="380"/></g></svg>`;if(original.length)removeGroup(original);addImageAndSelect(imageObject(svg,{x:.28,y:.2,w:cuboid?.5:.4,h:.42},type,original));smartCommit(before);p.remove();mode='off';smartBtn.classList.remove('active');smartBtn.classList.add('soft');captureStart=strokes.length;notify(L.converted)};return b};p.append(mk(L.cube,'cube'),mk(L.cuboid,'cuboid'));const c=document.createElement('button');c.className='btn';c.textContent=L.cancel;c.onclick=()=>{p.remove();mode='off';smartBtn.classList.remove('active');smartBtn.classList.add('soft')};p.appendChild(c)}
 
 function analyse(){if(mode==='off'||mode==='equation'||mode==='solid')return;const arr=mode==='auto'?tailInk(14):recentInk();const c=bestCandidate(arr,mode!=='auto');if(!c)return;if(mode==='auto')showSuggestion(c);else convertCandidate(c)}
-canvas.addEventListener('pointerup',()=>{if(mode==='off'||mode==='equation'||mode==='solid')return;clearTimeout(idleTimer);idleTimer=setTimeout(analyse,850)});
+canvas.addEventListener('pointerup',()=>{if(mode==='off'||mode==='equation'||mode==='solid')return;if(typeof tool!=='undefined'&&tool==='highlighter')return;clearTimeout(idleTimer);idleTimer=setTimeout(analyse,850)});
 
 undoBtn.addEventListener('click',e=>{const h=smartHistory[smartHistory.length-1];if(!h||signature()!==h.afterSig)return;e.preventDefault();e.stopImmediatePropagation();strokes=clone(h.before);smartHistory.pop();redraw();syncUi();notify('Smart Math undone')},true);
 
