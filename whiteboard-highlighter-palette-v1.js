@@ -45,7 +45,7 @@ function choose(colour){
  // Colour shortcuts start at the teacher's 12 px default; the thickness
  // slider remains available for changes after selecting a colour.
  const size=document.getElementById('size');
- if(size){size.value='12';size.dispatchEvent(new Event('input',{bubbles:true}))}
+ if(size){size.value='24';size.dispatchEvent(new Event('input',{bubbles:true}))}
  api.setColour(colour);
  refresh();
 }
