@@ -1,7 +1,7 @@
 (function(){
 'use strict';
-// Select object(s), then tap an existing Pen colour chip to recolour them.
-// No additional palette, generated shapes, or changes to Pen/Highlighter ink.
+// Select object(s), then tap an existing Pen or Highlighter colour chip.
+// No extra palette, generated shapes, or changes to Pen/Highlighter ink.
 if(window.ClassroomQuickObjectColour)return;
 const palette=document.querySelector('.colors');
 if(!palette||typeof strokes==='undefined'||typeof tool==='undefined')return;
@@ -66,28 +66,62 @@ function colourObject(obj,hex){
 function chosen(){
  return tool==='select'?(window.ClassroomSingleEraserSelection?.selectedObjects?.()||[]):[];
 }
-let pressed=null,pressSelection=null;
+// Both palettes recolour selected objects. Without a selection their
+// original controls are left alone (Pen 4 px; Highlighter 24 px).
+function paletteHit(target){
+ const chip=target?.closest?.('.colors .colour');
+ if(chip)return{control:chip,colour:chip.dataset.colour,isCustom:false};
+ const marker=target?.closest?.('#ccHighlighterPalette button[data-highlight-colour]');
+ if(marker)return{control:marker,colour:marker.dataset.highlightColour,isCustom:false};
+ const custom=target?.closest?.('#ccCustomHighlighterColour');
+ if(custom)return{control:custom,colour:custom.value,isCustom:true};
+ return null;
+}
+let pressed=null;
 window.addEventListener('pointerdown',e=>{
- const chip=e.target?.closest?.('.colors .colour');
- if(!chip||tool!=='select'){pressed=null;pressSelection=null;return}
- pressed=chip;pressSelection=chosen();
+ const hit=paletteHit(e.target);
+ pressed=hit&&tool==='select'?{control:hit.control,items:chosen()}:null;
 },true);
-window.addEventListener('click',e=>{
- const chip=e.target?.closest?.('.colors .colour');
- if(!chip)return;
- const hex=chip.dataset.colour?.toLowerCase();
- if(!hexOK(hex))return;
- const items=(chip===pressed?pressSelection:chosen())||[];
- pressed=null;pressSelection=null;
- const existing=[...new Set(items)].filter(o=>strokes.includes(o)&&!o.locked&&!o.background);
- if(!existing.length||tool!=='select')return; // normal Pen colour shortcut
+function selectedFor(hit){
+ const cached=pressed?.control===hit.control?pressed.items:null;
+ return cached?.length?cached:chosen();
+}
+function applyToSelection(e,hit){
+ const hex=String(hit.colour||'').toLowerCase();
+ if(!hexOK(hex))return false;
+ const existing=[...new Set(selectedFor(hit))].filter(o=>strokes.includes(o)&&!o.locked&&!o.background);
+ if(!existing.length||tool!=='select')return false;
  const controller=window.ClassroomObjectSelection;
- if(typeof controller?.colourObjects!=='function')return;
- // Prevent later Pen handlers switching tools or discarding selection.
+ if(typeof controller?.colourObjects!=='function')return false;
+ // Capture-phase interception prevents Highlighter from switching away
+ // from Select before the chosen item can be recoloured.
  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
  const changed=controller.colourObjects(existing,o=>colourObject(o,hex));
  if(changed)note(existing.length>1?'Selected objects coloured':'Object coloured');
  else note('This selection cannot be recoloured using the colour chips');
+ return true;
+}
+window.addEventListener('click',e=>{
+ const hit=paletteHit(e.target);
+ if(!hit||hit.isCustom)return; // allow native custom colour chooser to open
+ applyToSelection(e,hit);
+ pressed=null;
+},true);
+// The custom colour chooser emits multiple input events while the picker
+// is open. Suppress the Highlighter tool's input handler when an object is
+// selected, and apply only once on change to keep Undo as a single action.
+window.addEventListener('input',e=>{
+ const hit=paletteHit(e.target);
+ if(!hit?.isCustom)return;
+ if(tool==='select'&&selectedFor(hit).length){
+  e.stopPropagation();e.stopImmediatePropagation();
+ }
+},true);
+window.addEventListener('change',e=>{
+ const hit=paletteHit(e.target);
+ if(!hit?.isCustom)return;
+ applyToSelection(e,hit);
+ pressed=null;
 },true);
 window.ClassroomQuickObjectColour={
  supportedTypes:['text','pen-ink','counter','fractionBar','barModel'],
