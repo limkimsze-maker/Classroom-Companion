@@ -11,23 +11,28 @@ const BUILD='speech-operator-verified-20261021-01';
 const units={'zero':'0','one':'1','two':'2','three':'3','four':'4','five':'5','six':'6','seven':'7','eight':'8','nine':'9','ten':'10','eleven':'11','twelve':'12','thirteen':'13','fourteen':'14','fifteen':'15','sixteen':'16','seventeen':'17','eighteen':'18','nineteen':'19'};
 const tens={'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90};
 function numberWords(s){return s.replace(/\b(?:minus\s+)?(?:(?:one|two|three|four|five|six|seven|eight|nine)\s+thousand\s+)?(?:(?:one|two|three|four|five|six|seven|eight|nine)\s+hundred(?:\s+and)?\s+)?(?:(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:[ -](?:one|two|three|four|five|six|seven|eight|nine))?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)\b/gi,m=>{let total=0,cur=0;for(const w of m.toLowerCase().replace(/-/g,' ').split(/\s+/)){if(w==='and')continue;if(w==='thousand'){total+=cur*1000;cur=0}else if(w==='hundred')cur*=100;else if(w in tens)cur+=tens[w];else if(w in units)cur+=+units[w];else return m}return String(total+cur)})}
+// Mathematical notation in a *recognised speech transcript*. Keep sentences,
+// names and spoken punctuation intact; only normalise operators and number words.
 function mathify(t){
  let s=String(t||'').trim();
- if(!/(?:\d|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)\b)/i.test(s))return s;
- s=s.toLowerCase();
- s=s.replace(/[.,!?]+$/,'')
- .replace(/\b(?:is\s+equal\s+to|equals?|equal\s+to)\b/g,' = ')
- .replace(/\b(?:multiplied\s+by|multiply\s+by|times)\b|[×*]|\bx\b/g,' × ')
- .replace(/\b(?:divided\s+by|divide\s+by|over)\b|[÷/]/g,' ÷ ')
- .replace(/\b(?:plus|add)\b|[+]/g,' + ')
- .replace(/\b(?:minus|subtract)\b|[−-]/g,' − ');
+ if(!s)return s;
+ const operator=/\b(?:divided\s+by|divide\s+by|divide|division\s+sign|forward\s+slash|slash|over|multiplied\s+by|multiply\s+by|multiply|multiplication\s+sign|times|times\s+sign|plus\s+sign|plus|add|minus\s+sign|minus|subtract|is\s+equal\s+to|equal\s+to|equals?|equal\s+sign)\b|[×*÷/+−=]/i;
+ const hasNumber=/(?:\d|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)\b)/i.test(s);
+ if(!operator.test(s)||!hasNumber)return s;
+ s=s
+  .replace(/\b(?:is\s+equal\s+to|equal\s+to|equals?|equal\s+sign)\b/gi,' = ')
+  .replace(/\b(?:multiplied\s+by|multiply\s+by|multiplication\s+sign|multiply|times\s+sign|times)\b|[×*]|\bx\b/gi,' × ')
+  .replace(/\b(?:divided\s+by|divide\s+by|division\s+sign|forward\s+slash|slash|divide|over)\b|[÷/]/gi,' ÷ ')
+  .replace(/\b(?:plus\s+sign|plus|add)\b|\+/gi,' + ')
+  .replace(/\b(?:minus\s+sign|minus|subtract)\b|[−-]/gi,' − ');
  s=numberWords(s);
- return s.replace(/\s+/g,' ').trim().replace(/\s*×\s*/g,' × ');
+ // Compact operator spacing without flattening explicit line breaks.
+ return s.split('\n').map(line=>line.replace(/[ \t]{2,}/g,' ').trim()).join('\n').trim();
 }
 const cases=[['80 / 2 = 40','80 ÷ 2 = 40'],['ten times four equals forty','10 × 4 = 40'],['80 divided by 2 equals 40','80 ÷ 2 = 40'],['10 * 4 = 40','10 × 4 = 40']];
 const failed=cases.filter(([input,expected])=>mathify(input)!==expected);
 console.info('[Speech-to-Text]',BUILD,failed.length?'FAIL '+JSON.stringify(failed):'4 conversion cases passed');
-function looksLikeMath(t){return /(?:\d\s*(?:[×*÷/+=−-]|\bx\b)|\b(?:times|multiplied by|divide(?:d)? by|plus|minus|equals?|equal to)\b)/i.test(t)}
+function looksLikeMath(t){return /(?:\d\s*(?:[×*÷/+=−-]|\bx\b)|\b(?:times|multipl(?:y|ied by)|multiplication sign|divide(?:d)?(?: by)?|division sign|forward slash|slash|plus|minus|subtract|equals?|equal to|equal sign|is equal to)\b)/i.test(t)}
 // Speech punctuation and capitalisation are kept separate from mathematical
 // conversion, which may lowercase or replace English words.
 const interim=panel.querySelector('[data-interim]'),capToggle=panel.querySelector('[data-caps]'),names=panel.querySelector('[data-names]');
@@ -112,7 +117,7 @@ function beginSession(){
    if(e.results[i].isFinal)final=joinSpeech(final,chunk);
    else partial=joinSpeech(partial,chunk);
   }
-  if(final)ta.value=formatProse(joinSpeech(baseText,final));
+  if(final){const text=formatProse(joinSpeech(baseText,final));ta.value=looksLikeMath(text)?mathify(text):text;}
   interim.textContent=partial?'Hearing: '+partial:'';
  };
  instance.onerror=e=>{
