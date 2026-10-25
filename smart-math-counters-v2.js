@@ -214,6 +214,8 @@ canvas.addEventListener('pointerup',()=>{hitCounterOnDown=false},true);
 makeFinishButton();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&active){deactivate()}},true);
 
+// An undoable selected-object colour change supersedes older Counter history.
+document.addEventListener('classroom-object-recoloured',()=>{lastHistory=null});
 undoBtn.addEventListener('click',e=>{if(!lastHistory)return;const ids=new Set(lastHistory.afterIds),present=strokes.some(s=>ids.has(s.smartId));if(!present)return;e.preventDefault();e.stopImmediatePropagation();strokes=clone(lastHistory.before);lastHistory=null;redraw();syncUi();if(active){showActiveLabel();forcePen()}notify('Smart Math counters undone')},true);
 window.ClassroomCountersWorkflow={
  isActive:()=>active,
