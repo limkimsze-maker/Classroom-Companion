@@ -1,0 +1,109 @@
+/* Alpha Whiteboard: exactly two toolbar control rows, independent of zoom.
+   Keep the existing actions and frozen V2 Trial stylesheet unchanged.
+   A narrow viewport scrolls within each labelled group instead of wrapping
+   controls onto a third row or shrinking touch targets below usable size. */
+header.top .tools,
+body.document-open-mode header.top .tools {
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,2fr) minmax(0,1fr) max-content!important;
+  grid-template-rows:56px 56px!important;
+  gap:6px!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  flex:1 1 100%!important;
+  flex-wrap:nowrap!important;
+  align-items:stretch!important;
+  align-content:start!important;
+  overflow:visible!important;
+  padding:2px!important;
+}
+header.top .ccToolGroup[data-kind=draw],
+body.document-open-mode header.top .ccToolGroup[data-kind=draw] {
+  grid-column:1 / 2!important;
+  grid-row:1!important;
+}
+header.top .ccToolGroup[data-kind=files],
+body.document-open-mode header.top .ccToolGroup[data-kind=files] {
+  grid-column:2 / 4!important;
+  grid-row:1!important;
+}
+header.top .ccToolGroup[data-kind=create],
+body.document-open-mode header.top .ccToolGroup[data-kind=create] {
+  grid-column:1 / 3!important;
+  grid-row:2!important;
+}
+header.top .tools #ccPermanentExitBtn,
+body.document-open-mode header.top .tools #ccPermanentExitBtn {
+  grid-column:3 / 4!important;
+  grid-row:2!important;
+  align-self:center!important;
+  justify-self:end!important;
+  flex:0 0 auto!important;
+  margin:0!important;
+  white-space:nowrap!important;
+}
+header.top .ccToolGroup,
+body.document-open-mode header.top .ccToolGroup {
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex:0 1 auto!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  align-content:center!important;
+  justify-content:flex-start!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  min-height:0!important;
+  max-height:56px!important;
+  height:56px!important;
+  padding:5px 8px!important;
+  gap:5px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  overscroll-behavior-x:contain;
+  scrollbar-width:thin!important;
+  scrollbar-color:#8fb9bc transparent!important;
+  -webkit-overflow-scrolling:touch;
+}
+header.top .ccToolGroup[hidden],
+body.document-open-mode header.top .ccToolGroup[hidden] {
+  display:none!important;
+}
+/* Retain sticky section labels while their buttons are scrolled sideways. */
+header.top .ccToolGroupLabel {
+  position:sticky!important;
+  left:0!important;
+  z-index:2!important;
+  align-self:center!important;
+  flex:0 0 auto!important;
+  white-space:nowrap!important;
+  background:inherit!important;
+}
+header.top .ccToolGroup>.btn,
+header.top .ccToolGroup>button.btn,
+body.document-open-mode header.top .ccToolGroup>.btn {
+  flex:0 0 auto!important;
+  white-space:nowrap!important;
+  min-height:34px!important;
+  height:34px!important;
+  padding:5px 7px!important;
+}
+header.top .ccToolGroup .colors,
+header.top .ccToolGroup #ccHighlighterPalette,
+body.document-open-mode header.top .ccToolGroup #ccHighlighterPalette {
+  flex:0 0 auto!important;
+  flex-wrap:nowrap!important;
+  white-space:nowrap!important;
+  min-width:max-content!important;
+  max-width:none!important;
+}
+header.top .ccToolGroup .sizeControl {
+  flex:0 0 auto!important;
+  min-width:max-content!important;
+  margin:0!important;
+}
+/* The toolbar itself stays at two rows; accessible groups can scroll at
+   125%, 150%, 200%, mobile widths and any narrower CSS viewport. */
