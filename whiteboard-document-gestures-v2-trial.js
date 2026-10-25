@@ -116,6 +116,12 @@ function highlightAnnotationMode(){
 }
 window.addEventListener('cc-highlighter-tool',highlightAnnotationMode);
 window.addEventListener('cc-highlighter-colour',highlightAnnotationMode);
+// Pen palette uses the same direct-select shortcut. Its programmatic Pen
+// click is untrusted, so explicitly enter annotation mode for opened files.
+window.addEventListener('cc-pen-colour',()=>{
+ if(active()&&document.getElementById('penBtn')?.classList.contains('active'))
+  setHand(false);
+});
 document.addEventListener('whiteboard-document-view-reset',()=>{stop();px=py=0;scale=1;touches.clear();drag=pair=null;draw(false)});
 wire();setTimeout(wire,0);setTimeout(wire,500);watch();
 })();
