@@ -2,6 +2,7 @@
 'use strict';
 // Presentation only: reparent the *existing* buttons without cloning handlers,
 // changing Smart Math code, reading documents, or changing whiteboard state.
+const compactAlpha=/\/whiteboard-smart-beta\.html$/i.test(location.pathname);
 const tools=document.querySelector('header.top .tools');
 if(!tools||tools.dataset.ccGroupedToolbar==='1')return;
 tools.dataset.ccGroupedToolbar='1';
@@ -22,6 +23,9 @@ for(const [kind,title] of headings){
 const textFor=el=>[(el.textContent||''),(el.title||''),(el.getAttribute('aria-label')||'')].join(' ').toLowerCase();
 function kindOf(el){
  const id=el.id||'',t=textFor(el);
+ // Alpha only: distribute smaller Draw actions into the roomy second row.
+ // Move original DOM nodes, keeping their existing click handlers intact.
+ if(compactAlpha&&['undoBtn','redoBtn','gridBtn','clearBtn','fullBtn'].includes(id))return'create';
  // File-picker tooltip also mentions "image"; route by exact ID first.
  // This must precede the generic Create & Teach /image/ text match.
  if(['openDocumentBtn','ccPermanentSaveBtn','ccAnnotationActionsBtn','ccSavePageAnnotationsBtn','ccSaveAllAnnotationsBtn','ccDeletePageAnnotationsBtn','ccDeleteAllAnnotationsBtn'].includes(id))return'files';
@@ -47,7 +51,8 @@ function orderOf(el,kind){
   if(/backward|back\b/.test(t))return 75;if(/lock/.test(t))return 76;
  }
  if(kind==='create'){
-  if(id==='textBtn')return 10;if(id==='editTextBtn')return 15;
+  if(id==='textBtn')return 10;
+  if(compactAlpha){if(id==='undoBtn')return 85;if(id==='redoBtn')return 86;if(id==='gridBtn')return 87;if(id==='clearBtn')return 88;if(id==='fullBtn')return 89;}if(id==='editTextBtn')return 15;
   if(id==='speechToTextBtn')return 20;if(id==='imageBtn')return 30;
   if(/shapes/.test(t))return 40;if(/smart math/.test(t))return 50;
   if(id==='smartCounterFinishBtn')return 52;
