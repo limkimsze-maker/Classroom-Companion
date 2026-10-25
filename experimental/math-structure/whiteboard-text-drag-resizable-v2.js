@@ -302,6 +302,25 @@ window.ClassroomObjectSelection={
      (obj.type!=='text'&&obj.type!=='image'))return false;
   choose(obj);return true;
  },
+ // Recolour selected items as one undoable edit; preserve Select and handles.
+ colourObjects(objects, paint){
+  if(tool!=='select'||typeof paint!=='function')return false;
+  const wanted=[...new Set((Array.isArray(objects)?objects:[objects]).filter(
+   o=>o&&strokes.includes(o)&&!o.locked&&!o.background))];
+  if(!wanted.length)return false;
+  if(editor)finishEditing(true);
+  if(dragMode)up();
+  const before=clone(strokes);
+  let changed=0;
+  for(const obj of wanted){if(paint(obj)===true)changed++}
+  if(!changed)return false;
+  remember(before);
+  // Do not let an older Smart Math conversion consume this Undo.
+  window.__smartBarLastHistory=null;
+  document.dispatchEvent(new Event('classroom-object-recoloured'));
+  redraw();syncUi();
+  return true;
+ },
  // Atomic deletion for the existing one-button Eraser. Reuses text/image
  // history for Undo, including Counters, bar models and beautified handwriting.
  selected:()=>selected&&strokes.includes(selected)?selected:null,
