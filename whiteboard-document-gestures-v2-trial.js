@@ -99,13 +99,23 @@ if(canTurn){
 pan(-dx,-dy);
 clearTimeout(wheel.timer);wheel.timer=setTimeout(()=>{wheel.x=0;wheel.y=0;wheel.edges=null;settle()},TRACKPAD_WINDOW)}
 function styles(){if(document.getElementById('documentGestureStylesV4'))return;const s=document.createElement('style');s.id='documentGestureStylesV4';s.textContent=`#documentUnderlay,#board{will-change:transform,opacity}.doc-turn-next #documentUnderlay,.doc-turn-next #board{animation:dn .17s ease-out}.doc-turn-prev #documentUnderlay,.doc-turn-prev #board{animation:dp .17s ease-out}.doc-edge-next #documentUnderlay,.doc-edge-next #board{animation:en .17s ease-out}.doc-edge-prev #documentUnderlay,.doc-edge-prev #board{animation:ep .17s ease-out}@keyframes dn{from{transform:translateY(12px);opacity:.76}to{transform:none;opacity:1}}@keyframes dp{from{transform:translateY(-12px);opacity:.76}to{transform:none;opacity:1}}@keyframes en{50%{transform:translateY(-5px)}}@keyframes ep{50%{transform:translateY(5px)}}`;document.head.appendChild(s)}
-function toolSwitch(){['penBtn','textBtn','eraserBtn','selectBtn'].forEach(id=>{const b=document.getElementById(id);if(!b||b.dataset.docg4)return;b.dataset.docg4='1';b.addEventListener('click',e=>{
+function toolSwitch(){['penBtn','textBtn','eraserBtn','selectBtn','highlighterBtn'].forEach(id=>{const b=document.getElementById(id);if(!b||b.dataset.docg4)return;b.dataset.docg4='1';b.addEventListener('click',e=>{
  // Page rendering dispatches synthetic Escape, which clicks Select to clear
  // stale selections. Do not let that internal click disable Hand navigation.
  if(active()&&e.isTrusted)setHand(false)
 })})}
 function wire(){if(!find())return false;styles();toolSwitch();if(document.documentElement.dataset.docGesturesV8)return true;document.documentElement.dataset.docGesturesV8='1';window.addEventListener('pointerdown',down,true);window.addEventListener('pointermove',move,true);window.addEventListener('pointerup',end,true);window.addEventListener('pointercancel',end,true);window.addEventListener('wheel',wheelEvt,{passive:false,capture:true});return true}
 function watch(){if(active()&&pageBox){const p=pageBox.value;if(lastPage&&p!==lastPage){px=py=0;scale=1}lastPage=p}else if(!active()){lastPage='';px=py=0;scale=1;stop()}requestAnimationFrame(watch)}
+// A Highlighter swatch activates the tool through a programmatic button click
+// (isTrusted=false). The same intent must leave Hand navigation, otherwise
+// its capture-phase pointer handler swallows every attempted highlight stroke.
+function highlightAnnotationMode(){
+ if(!active())return;
+ if(!window.CCHighlighter?.isActive?.())return;
+ setHand(false);
+}
+window.addEventListener('cc-highlighter-tool',highlightAnnotationMode);
+window.addEventListener('cc-highlighter-colour',highlightAnnotationMode);
 document.addEventListener('whiteboard-document-view-reset',()=>{stop();px=py=0;scale=1;touches.clear();drag=pair=null;draw(false)});
 wire();setTimeout(wire,0);setTimeout(wire,500);watch();
 })();
