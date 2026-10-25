@@ -18,7 +18,7 @@ let active=false,initialInk=new Set(),doneBtn=null,lastHistory=null,baseLabel=''
 let annotationContext='whiteboard',pointerOrigin=null,selectionGesture=null;
 
 function notify(msg){if(typeof say==='function')say(msg);else{const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600)}}}
-function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.smartGenerated&&!s.background)}
+function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.highlighter&&!s.smartGenerated&&!s.background)}
 function box(s){let minX=1,minY=1,maxX=0,maxY=0;for(const p of s.points||[]){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
 function groupBox(arr){let minX=1,minY=1,maxX=0,maxY=0;for(const s of arr){const b=box(s);minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);maxX=Math.max(maxX,b.x+b.w);maxY=Math.max(maxY,b.y+b.h)}return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
 function pathLen(s){let n=0,p=s.points||[];for(let i=1;i<p.length;i++)n+=Math.hypot((p[i].x-p[i-1].x)*cssW,(p[i].y-p[i-1].y)*cssH);return n}
@@ -77,7 +77,7 @@ function sketchLines(group){
 const recognizeFractionInk=function recognizeFractionInk(group, required, W, H) {
   if(!Number.isFinite(W)||!Number.isFinite(H)||W<1||H<1)return null;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  const valid=s=>s&&Array.isArray(s.points)&&s.points.length>1&&!s.erase&&!s.smartGenerated&&!s.background;
+  const valid=s=>s&&Array.isArray(s.points)&&s.points.length>1&&!s.erase&&!s.highlighter&&!s.smartGenerated&&!s.background;
   const entries=group.filter(valid).slice(-256);
   if(!entries.length)return null;
   const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
