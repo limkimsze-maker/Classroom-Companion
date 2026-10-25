@@ -38,7 +38,7 @@ function start(e){if(e.button!==undefined&&e.button!==0)return;if(tool==='text')
 function move(e){if(!drawing||!current)return;const p=pointFromEvent(e),last=current.points.at(-1);if(!last||Math.hypot((p.x-last.x)*cssW,(p.y-last.y)*cssH)>=1.5){current.points.push(p);redraw()}e.preventDefault()}
 function end(e){if(!drawing||!current)return;drawing=false;strokes.push(current);current=null;syncUi();redraw();try{canvas.releasePointerCapture?.(e.pointerId)}catch{}e.preventDefault()}
 canvas.addEventListener('pointerdown',start);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);
-if(highlighterBtn)highlighterBtn.onclick=()=>{tool='highlighter';size.value='12';syncUi();window.dispatchEvent(new Event('cc-highlighter-tool'))};
+if(highlighterBtn)highlighterBtn.onclick=()=>{tool='highlighter';size.value='24';syncUi();window.dispatchEvent(new Event('cc-highlighter-tool'))};
 penBtn.onclick=()=>{tool='pen';size.value='4';syncUi()};
 // The selection extension replaces penBtn.onclick, so the shared default also
 // runs as a separate listener whenever the Pen button is activated.
