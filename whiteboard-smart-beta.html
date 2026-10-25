@@ -48,12 +48,19 @@ body.document-open-mode #ccSaveSlot{display:flex!important;order:-1;position:rel
 @media(max-height:480px){.top{max-height:55dvh}.top .tools{gap:3px!important}}
 </style>
 <style id="ccAlphaPdfLoadingSafety">#ccDocumentLoading[hidden]{display:none!important;pointer-events:none!important}</style>
+<style id="ccAlphaHandwritingSettingsPosition">
+header.top{position:relative;padding-right:120px!important}
+#mainSettingsBtn{position:absolute!important;top:8px!important;right:10px!important;z-index:180!important;margin:0!important;display:inline-flex!important;visibility:visible!important;align-items:center;white-space:nowrap}
+body.document-open-mode #mainSettingsBtn{top:4px!important;right:6px!important}
+@media(max-width:700px){header.top{padding-right:108px!important}#mainSettingsBtn{right:6px!important;padding:6px 8px!important}}
+</style>
 <link rel="stylesheet" href="whiteboard-toolbar-groups-shared-v1.css?v=20261024-hand-visible6">
 </head>
 <body>
 <div class="shell">
 <header class="top">
 <div class="brand"><div class="icon">🔒</div><div class="meta"><strong id="boardTitle">MOE Safe Beta</strong><span id="boardSubtitle">Local PDF/Word/PowerPoint/Excel/media · no document upload · outbound app connections blocked.</span></div></div>
+<button class="btn" id="mainSettingsBtn" type="button" aria-haspopup="dialog" title="Handwriting learning, Import and Export JSON">⚙ Settings</button>
 <div class="tools" role="toolbar" aria-label="Whiteboard tools">
 <button class="btn active" id="penBtn" type="button">✏️ Pen</button>
 <button class="btn soft" id="highlighterBtn" type="button" title="Draw translucent highlighting strokes" aria-label="Highlighter tool">🖍️ Highlighter</button>
@@ -100,6 +107,7 @@ body.document-open-mode #ccSaveSlot{display:flex!important;order:-1;position:rel
 <script defer src="whiteboard-handwriting-character-inference-beta.js?v=20261020-words2"></script>
 <script defer src="whiteboard-handwriting-character-reader-beta.js?v=20261020-words2"></script>
 <script defer src="whiteboard-handwriting-learning-beta.js?v=20261020-words2"></script>
+<script defer src="whiteboard-handwriting-learning-pack-alpha-v1.js?v=20261025-alpha-settings1"></script>
 <script defer src="whiteboard-handwriting-math-render-beta.js?v=20261020-radical-live-test2"></script>
 <script defer src="vendor/mathjax/tex-svg-full-3.2.2.js"></script>
 <script defer src="whiteboard-handwriting-math-reader-beta.js?v=20261018-math-units1"></script>
@@ -184,6 +192,7 @@ body.document-open-mode #ccSaveSlot{display:flex!important;order:-1;position:rel
 <script defer src="whiteboard-single-eraser-selected-object-v1.js?v=20261024-ux-feedback1"></script>
 <script defer src="whiteboard-selection-quick-colour-v1.js?v=20261025-marker-palette-colour1"></script>
 <script defer src="whiteboard-selection-ux-feedback-v1.js?v=20261024-ux-feedback1"></script>
+<script defer src="experimental/math-structure/main-settings-v2.js?v=20261025-alpha-settings1"></script>
 <script defer src="whiteboard-handwriting-word-list-beta.js?v=20261020-words2"></script>
 <script defer src="whiteboard-handwriting-words-beta.js?v=20261020-words2"></script>
 </body>
