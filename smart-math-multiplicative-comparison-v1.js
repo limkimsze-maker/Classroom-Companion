@@ -16,7 +16,7 @@ const X0=180,MAX_W=650,START_Y=60,ROW_GAP=145,BAR_H=58,VB_W=900,VB_H=440,GAP=13;
 let active=false,startIndex=0,doneBtn=null,baseSmartLabel='',placementPanel=null,namePanel=null,drag=null,preview=null,rebuilding=false;
 const uid=()=>`smmc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 function notify(msg){if(typeof say==='function'){try{say(msg);return}catch{}}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1300)}}
-function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.smartGenerated&&!s.background)}
+function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.highlighter&&!s.smartGenerated&&!s.background)}
 function box(s){let minX=1,minY=1,maxX=0,maxY=0;for(const p of s.points||[]){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
 function groupBox(arr){let minX=1,minY=1,maxX=0,maxY=0;for(const s of arr){const b=box(s);minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);maxX=Math.max(maxX,b.x+b.w);maxY=Math.max(maxY,b.y+b.h)}return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
 function dedupe(vals,tol){vals.sort((a,b)=>a-b);const out=[];for(const v of vals)if(!out.length||Math.abs(v-out[out.length-1])>tol)out.push(v);return out}
