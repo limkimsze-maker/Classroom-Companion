@@ -7,7 +7,7 @@ const clone=v=>JSON.parse(JSON.stringify(v));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let startIndex=0,lastType='',pending=null,refreshing=false;
 
-function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.background&&!s.smartGenerated)}
+function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.highlighter&&!s.background&&!s.smartGenerated)}
 function box(s){let minX=1,minY=1,maxX=0,maxY=0;for(const p of s?.points||[]){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
 function pxBox(s){const b=box(s);return{...b,pw:b.w*cssW,ph:b.h*cssH}}
 function closedish(s,b){const pts=s.points||[];if(pts.length<3)return false;const a=pts[0],z=pts[pts.length-1],d=Math.hypot((a.x-z.x)*cssW,(a.y-z.y)*cssH),tol=Math.max(28,Math.min(72,(b.pw+b.ph)*.105));return d<=tol}
