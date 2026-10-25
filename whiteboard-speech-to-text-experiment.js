@@ -32,7 +32,7 @@ function looksLikeMath(t){return /(?:\d\s*(?:[×*÷/+=−-]|\bx\b)|\b(?:times|mu
 // conversion, which may lowercase or replace English words.
 const interim=panel.querySelector('[data-interim]'),capToggle=panel.querySelector('[data-caps]'),names=panel.querySelector('[data-names]');
 const listenBtn=panel.querySelector('[data-action=listen]'),insertBtn=panel.querySelector('[data-action=insert]');
-let listening=false,restartTimer=null,baseText='',activeRec=null;
+let listening=false,finishing=false,restartTimer=null,baseText='',activeRec=null;
 try{names.value=localStorage.getItem('ccSpeechProperNounsV1')||''}catch{}
 names.addEventListener('change',()=>{try{localStorage.setItem('ccSpeechProperNounsV1',names.value.slice(0,1200))}catch{}});
 const punctuationCommands=[
@@ -81,14 +81,19 @@ function syncListenUi(){
  listenBtn.setAttribute('aria-pressed',String(listening));
  listenBtn.classList.toggle('danger',listening);
  listenBtn.classList.toggle('soft',!listening);
- insertBtn.disabled=listening;ta.readOnly=listening;
+ listenBtn.disabled=finishing;insertBtn.disabled=listening||finishing;ta.readOnly=listening||finishing;
 }
-function stop(){
+function stop(discard=false){
  listening=false;if(restartTimer){clearTimeout(restartTimer);restartTimer=null}
- const old=activeRec;activeRec=null;
- try{old?.stop()}catch{}
- interim.textContent='';syncListenUi();
- status.textContent='Stopped. Review the transcript and press Insert.';
+ const old=activeRec;
+ finishing=!!old&&!discard;
+ if(discard)activeRec=null;
+ syncListenUi();
+ if(old){try{discard?old.abort():old.stop()}catch{finishing=false;activeRec=null;syncListenUi()}}
+ if(discard){interim.textContent='';status.textContent='Stopped.'}
+ else status.textContent=finishing?'Finishing the last spoken words…':'Stopped. Review the transcript and press Insert.';
+ // Some browsers never deliver onend after stop(); keep the editor usable.
+ if(finishing)setTimeout(()=>{if(!listening&&finishing&&activeRec===old){activeRec=null;finishing=false;syncListenUi();status.textContent='Stopped. Review the transcript and press Insert.'}},2500);
 }
 function beginSession(){
  if(!listening||!SR)return;
@@ -97,7 +102,7 @@ function beginSession(){
  instance.continuous=true;instance.interimResults=true;instance.maxAlternatives=1;
  instance.onstart=()=>{if(activeRec===instance&&listening)status.textContent='Listening until you press Stop…'};
  instance.onresult=e=>{
-  if(!listening||activeRec!==instance)return;
+  if(activeRec!==instance||(!listening&&!finishing))return;
   let final='',partial='';
   for(let i=0;i<e.results.length;i++){
    const chunk=e.results[i]?.[0]?.transcript||'';
@@ -116,6 +121,7 @@ function beginSession(){
  instance.onend=()=>{
   if(activeRec!==instance)return;
   activeRec=null;interim.textContent='';
+  if(finishing){finishing=false;syncListenUi();status.textContent='Stopped. Review the transcript and press Insert.';return}
   if(!listening)return;
   // Some browsers stop Web Speech after silence even with continuous=true.
   status.textContent='Reconnecting microphone after a pause…';
@@ -126,11 +132,11 @@ function beginSession(){
 }
 function startListening(){
  if(!SR){status.textContent='Speech recognition is not available in this browser. You can type instead.';return}
- if(listening)return;
+ if(listening||finishing)return;
  listening=true;syncListenUi();beginSession();
 }
 function insertTranscript(){
- if(listening){status.textContent='Press Stop before inserting.';return}
+ if(listening||finishing){status.textContent='Finish listening before inserting.';return}
  let value=formatProse(ta.value);
  if(looksLikeMath(value))value=mathify(value);
  if(!value){status.textContent='Nothing to insert.';return}
@@ -156,8 +162,8 @@ panel.addEventListener('click',e=>{
  const action=e.target.closest('[data-action]')?.dataset.action;
  if(!action)return;
  if(action==='listen'){if(listening)stop();else startListening();return}
- if(action==='close'){stop();panel.style.display='none';return}
- if(action==='clear'){stop();ta.value='';interim.textContent='';status.textContent='Panel cleared.';ta.focus();return}
+ if(action==='close'){stop(true);panel.style.display='none';return}
+ if(action==='clear'){stop(true);ta.value='';interim.textContent='';status.textContent='Panel cleared.';ta.focus();return}
  if(action==='math'){if(listening){status.textContent='Stop listening first.';return}ta.value=mathify(ta.value);status.textContent='Converted maths. Review before inserting.';return}
  if(action==='insert')insertTranscript();
 });
