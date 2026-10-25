@@ -28,7 +28,7 @@ function detect(obj){
  if(obj.userDrawnBracketScan)return;
  obj.userDrawnBracketScan=true;
  if(obj.smartType!=='barModel'||obj.smartBarType!=='partwhole'||!Array.isArray(obj.smartOriginal)||!obj.smartOriginal.length)return;
- const ink=obj.smartOriginal.filter(s=>Array.isArray(s?.points)&&s.points.length&&!s.erase),bb=ink.map(s=>({s,b:box(s)}));
+ const ink=obj.smartOriginal.filter(s=>Array.isArray(s?.points)&&s.points.length&&!s.erase&&!s.highlighter),bb=ink.map(s=>({s,b:box(s)}));
  const verts=[];
  for(const q of bb){const pw=q.b.w*cssW,ph=q.b.h*cssH;if(ph>=Math.max(14,pw*1.8))verts.push({y:q.b.y,y2:q.b.y+q.b.h})}
  const rows=mergeRows(verts);if(!rows.length)return;
