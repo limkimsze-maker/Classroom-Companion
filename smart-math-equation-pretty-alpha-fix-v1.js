@@ -254,5 +254,6 @@ document.addEventListener('click',e=>{
  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();parent.style.display='none';openPanel();
 },true);
 
+window.ClassroomEquationFormat=Object.freeze({open:openPanel,parse:parseEquation});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close()},true);
 })();
