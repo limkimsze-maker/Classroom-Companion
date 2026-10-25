@@ -77,7 +77,10 @@ const style=document.createElement('style');style.textContent=`
 .handwriting-review img{display:block;max-width:100%;height:110px;object-fit:contain;object-position:left center;background:#fafcfc;border-radius:8px}
 .handwriting-review .handwriting-clean-preview{height:150px;background:white}
 .handwriting-review .handwriting-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.handwriting-review .handwriting-actions .handwriting-apply{flex:1}
+.handwriting-review .handwriting-actions .handwriting-apply{order:0;flex:1 1 100%}
+.handwriting-review .handwriting-actions .handwriting-learn{order:1;flex:1 1 100%;width:100%;background:#2563eb;color:white;border-color:#1d4ed8;font-weight:850;white-space:normal;text-align:center;min-height:40px}
+.handwriting-review .handwriting-actions .handwriting-learn:hover{background:#1d4ed8;color:white}
+.handwriting-review .handwriting-actions .handwriting-learn:disabled{opacity:.5}
 .handwriting-review .handwriting-appearance{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:7px 0}
 .handwriting-review .handwriting-appearance label{margin:0}
 .handwriting-review .handwriting-appearance select{font:13px Arial,sans-serif;max-width:150px;padding:5px 8px;border:1px solid #cfd9de;border-radius:7px;background:white;color:#17324d}
@@ -131,7 +134,7 @@ async function review(group){
  const backdrop=document.createElement('div');backdrop.className='handwriting-review-backdrop';dialog=backdrop;
  const panel=document.createElement('section');panel.className='handwriting-review';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','handwritingReviewTitle');
  const title=document.createElement('h2');title.id='handwritingReviewTitle';title.textContent='Check your handwriting';
- const help=document.createElement('p');help.textContent='Auto can offer word, letter-case, unit and superscript choices. Type a correction at any time to stop reading and update the preview. Learn & Test Again saves a provisional example on this browser and re-reads the same ink. Draw again to test new handwriting. Cancel discards provisional learning; Apply keeps it and Undo reverses it.';
+ const help=document.createElement('p');help.textContent='Auto can offer word, letter-case, unit and superscript choices. Type a correction at any time to stop reading and update the preview. If the reading is correct, press Apply. If it is wrong, correct the reading to match your handwriting, press Learn, then Apply. Learn saves a local example without retraining the model. Cancel discards learning from this review, and Undo reverses it after Apply.';
  const ink=document.createElement('img');ink.src=svgInk(group);ink.alt='Your original selected handwriting';
  const label=document.createElement('label');label.htmlFor='handwritingReadText';label.textContent='Recognised text';
  const input=document.createElement('input');input.id='handwritingReadText';input.type='text';input.maxLength=600;input.autocomplete='off';input.setAttribute('aria-label','Check or correct recognised numbers, letters, units or mathematical notation');input.style.fontFamily=window.WhiteboardEquationFormatter?.font()||'Arial';
@@ -157,23 +160,23 @@ async function review(group){
  const contextArea=document.createElement('section');contextArea.className='handwriting-context';contextArea.id='handwritingContextChoices';contextArea.setAttribute('aria-label','Possible handwriting readings');contextArea.hidden=true;
  const preview=document.createElement('img');preview.className='handwriting-clean-preview';preview.alt='Beautified preview in the original writing area';preview.hidden=true;
  const actions=document.createElement('div');actions.className='handwriting-actions';
- const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply beautify';apply.disabled=true;
+ const apply=document.createElement('button');apply.type='button';apply.className='btn soft handwriting-apply';apply.textContent='✓ Apply';apply.disabled=true;
  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Cancel';cancel.onclick=closeReview;
  const stopRead=document.createElement('button');stopRead.id='handwritingStopReadBtn';stopRead.type='button';stopRead.className='btn';stopRead.textContent='Stop reading';
  const retryRead=document.createElement('button');retryRead.id='handwritingRetryReadBtn';retryRead.type='button';retryRead.className='btn';retryRead.textContent='Read again';retryRead.hidden=true;
  const feedbackArea=document.createElement('div');feedbackArea.className='handwriting-feedback-controls';
- const test=document.createElement('button');test.type='button';test.className='btn';test.textContent='↻ Learn & Test Again';test.title='Save a confirmed correction locally, then read the SAME original strokes again';
+ const learn=document.createElement('button');learn.type='button';learn.className='btn handwriting-learn';learn.textContent='Learn: If wrong, correct and press here.';learn.title='Save the corrected handwriting example locally; use Apply separately';learn.disabled=true;
  const feedback=document.createElement('p');feedback.className='handwriting-feedback-message';feedback.setAttribute('aria-live','polite');
- feedback.textContent='Correct the reading above, then test the same ink. Draw again afterward to test generalisation.';
- feedbackArea.append(test,feedback);
+ feedback.textContent='If the reading is correct, press Apply. If it is wrong, correct it and press Learn.';
+ feedbackArea.append(feedback);
  function clearProvisional(){
   feedbackStamp++;
   if(pendingLearning){try{window.WhiteboardHandwritingLearning?.undo(pendingLearning)}catch{}pendingLearning=null}
-  feedback.textContent='Edit the reading and test again; earlier provisional learning was discarded.';
+  feedback.textContent='Edit the reading, then press Learn again. Earlier learning from this review was discarded.';
  }
  function updatePreview(){
   const arithmetic=arithmeticResult();
-  const obj=formatted();apply.disabled=!obj||reading||testing;test.disabled=!obj||reading||testing||!!pendingLearning;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
+  const obj=formatted();apply.disabled=!obj||reading||testing;learn.disabled=!obj||reading||testing||!!pendingLearning;preview.hidden=!obj;if(obj)preview.src=obj.src;input.style.color=colourSelect.value;
   stopRead.hidden=!reading&&!testing;retryRead.disabled=reading||testing;
   status.classList.toggle('handwriting-error',!obj&&!!input.value);
   status.textContent=reading?'Reading handwriting on this device…':obj&&correctionToggle.checked&&arithmetic?.supported&&!arithmetic.correct?'Arithmetic correction in preview: '+arithmetic.original+' → '+arithmetic.corrected+'. Untick to keep the written answer.':obj?'Check the reading, then apply. Your handwriting stays until you confirm.':input.value?'Check the notation. Math accepts LaTeX, such as \\frac{1}{2}; units accept cm2 or cm².':'Enter or correct the reading to continue.';
@@ -213,34 +216,17 @@ async function review(group){
  correctionToggle.addEventListener('change',updatePreview);
  colourSelect.addEventListener('change',updatePreview);
  insert.addEventListener('change',()=>{if(!insert.value)return;stopReading(false);clearProvisional();contextArea.hidden=true;const a=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,z=Number.isInteger(input.selectionEnd)?input.selectionEnd:a;input.value=input.value.slice(0,a)+insert.value+input.value.slice(z);insert.value='';input.focus();updatePreview()});
- test.onclick=async()=>{
+ learn.onclick=()=>{
   if(reading||testing||pendingLearning||!formatted())return;
   const learner=window.WhiteboardHandwritingLearning,recogniser=window.WhiteboardHandwritingMath;
-  if(!learner?.confirm||!recogniser?.recognize){feedback.textContent='Local learning is unavailable. Refresh Beta and try again.';return}
-  const answer=input.value,mode=modeSelect.value,ticket=++feedbackStamp;
-  let training=null;
-  try{training=learner.confirm(recognition,answer,recogniser.rasterDigit,group,cssW,cssH,mode)}
-  catch{feedback.textContent='Unable to save a learning example. You can still apply the correction.';return}
-  if(!training?.count){feedback.textContent='No new example was saved. You can still apply the corrected text.';return}
-  pendingLearning=training;testing=true;updatePreview();
-  const controller=new AbortController();activeReviewAbort?.abort();activeReviewAbort=controller;
-  feedback.textContent=training.persistent?'Example saved locally. Re-reading original strokes…':'Example saved for this session. Re-reading original strokes…';
+  if(!learner?.confirm||!recogniser?.rasterDigit){feedback.textContent='Local learning is unavailable. Your handwriting is unchanged.';return}
   try{
-   const again=await boundedRead(()=>recogniser.recognize(group,cssW,cssH,{mode,signal:controller.signal}),controller.signal,mode==='math'?180000:25000);
-   if(session!==id||dialog!==backdrop||ticket!==feedbackStamp)return;
-   if(again.text===answer){
-    feedback.textContent=again.engine==='local-personal-ink'?
-     'Same strokes now match your saved local example. Draw them again to test generalisation.':
-     'Same strokes now read correctly. Draw them again to test generalisation.';
-   }else feedback.textContent='Re-read result: '+again.text+'. Your correction is saved, but this recogniser still disagrees. Apply the correct preview or edit again.';
-  }catch(error){
-   if(activeReviewAbort===controller){controller.abort();stopReaders()}
-   if(session===id&&dialog===backdrop&&ticket===feedbackStamp)
-    feedback.textContent='Example saved, but the re-read could not finish. You may still Apply or Undo.';
-  }finally{
-   if(activeReviewAbort===controller)activeReviewAbort=null;
-   if(session===id&&dialog===backdrop&&ticket===feedbackStamp){testing=false;updatePreview()}
-  }
+   const training=learner.confirm(recognition,input.value,recogniser.rasterDigit,group,cssW,cssH,modeSelect.value);
+   if(!training?.count){feedback.textContent='No new example was saved. You can still Apply the corrected text.';return}
+   pendingLearning=training;
+   feedback.textContent=training.persistent?'Correction learned on this browser. Press Apply to beautify.':'Correction learned for this session. Press Apply to beautify.';
+   updatePreview();
+  }catch{feedback.textContent='Unable to save learning. Your original ink is unchanged.'}
  };
  apply.onclick=()=>{
   if(reading||testing)return;
@@ -251,7 +237,7 @@ async function review(group){
   // Committing the preview transfers provisional learning to Undo history.
   let learning=pendingLearning;pendingLearning=null;
   strokes=strokes.filter(s=>!set.has(s));strokes.splice(first,0,obj);window.WhiteboardMarqueeSelection?.clear();tool='select';closeReview();redraw();
-  if(!learning)try{learning=window.WhiteboardHandwritingLearning?.confirm(recognition,input.value,window.WhiteboardHandwritingMath.rasterDigit,group,cssW,cssH,modeSelect.value)}catch{}
+  // Apply only commits formatted writing. Learning requires an explicit Learn.
   history.push({before,after:JSON.stringify(strokes),learning});if(history.length>30)history.shift();syncUi();
    // Beautified handwriting is now a selectable object; finish by pointing.
    // Reset the prior selection, but never start a new drag or pen stroke.
@@ -260,7 +246,7 @@ async function review(group){
    window.ClassroomFingerPointer?.setActive?.(true);
   sayLocal(learning?.count?(learning.persistent?'Handwriting beautified · Examples saved on this browser':'Handwriting beautified · Examples learned for this session'):'Handwriting beautified · Undo restores the original writing');
  };
- actions.append(apply,stopRead,retryRead,cancel);const exportInk=document.createElement('button');
+ actions.append(apply,learn,stopRead,retryRead,cancel);const exportInk=document.createElement('button');
  exportInk.type='button';exportInk.textContent='Export selected pen strokes (JSON)';
  exportInk.style.cssText='margin-top:8px;font-size:13px;max-width:100%;white-space:normal';
  exportInk.title='Downloads only this selected handwriting and its local recognition feedback. No upload or network request.';
