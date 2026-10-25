@@ -1,14 +1,23 @@
-/* Alpha Whiteboard: exactly two toolbar control rows, independent of zoom.
-   Keep the existing actions and frozen V2 Trial stylesheet unchanged.
-   A narrow viewport scrolls within each labelled group instead of wrapping
-   controls onto a third row or shrinking touch targets below usable size. */
+/* Alpha-only: fill the toolbar with two actual rows and no scrollbars.
+   The JS fit controller scales the existing controls only when necessary.
+   No button is cloned, hidden or replaced. Frozen V2 Trial is unaffected. */
+header.top {
+  padding-right:10px!important;
+  overflow:visible!important;
+}
+header.top .brand {
+  min-width:0!important;
+  max-width:calc(100% - 112px)!important;
+}
 header.top .tools,
 body.document-open-mode header.top .tools {
+  position:relative!important;
   box-sizing:border-box!important;
   display:grid!important;
-  grid-template-columns:minmax(0,3fr) minmax(0,1fr) max-content!important;
-  grid-template-rows:56px 56px!important;
-  gap:6px!important;
+  grid-template-columns:minmax(0,var(--cc-draw-weight,3fr)) minmax(0,var(--cc-files-weight,1fr))!important;
+  grid-template-rows:52px 52px!important;
+  column-gap:7px!important;
+  row-gap:7px!important;
   width:100%!important;
   max-width:100%!important;
   min-width:0!important;
@@ -21,28 +30,18 @@ body.document-open-mode header.top .tools {
 }
 header.top .ccToolGroup[data-kind=draw],
 body.document-open-mode header.top .ccToolGroup[data-kind=draw] {
-  grid-column:1 / 2!important;
+  grid-column:1!important;
   grid-row:1!important;
 }
 header.top .ccToolGroup[data-kind=files],
 body.document-open-mode header.top .ccToolGroup[data-kind=files] {
-  grid-column:2 / 4!important;
+  grid-column:2!important;
   grid-row:1!important;
 }
 header.top .ccToolGroup[data-kind=create],
 body.document-open-mode header.top .ccToolGroup[data-kind=create] {
-  grid-column:1 / 3!important;
+  grid-column:1/3!important;
   grid-row:2!important;
-}
-header.top .tools #ccPermanentExitBtn,
-body.document-open-mode header.top .tools #ccPermanentExitBtn {
-  grid-column:3 / 4!important;
-  grid-row:2!important;
-  align-self:center!important;
-  justify-self:end!important;
-  flex:0 0 auto!important;
-  margin:0!important;
-  white-space:nowrap!important;
 }
 header.top .ccToolGroup,
 body.document-open-mode header.top .ccToolGroup {
@@ -52,35 +51,35 @@ body.document-open-mode header.top .ccToolGroup {
   flex-wrap:nowrap!important;
   align-items:center!important;
   align-content:center!important;
-  justify-content:flex-start!important;
+  justify-content:space-between!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
-  min-height:0!important;
-  max-height:56px!important;
-  height:56px!important;
-  padding:5px 8px!important;
+  height:52px!important;
+  min-height:52px!important;
+  max-height:52px!important;
   gap:5px!important;
-  overflow-x:auto!important;
-  overflow-y:hidden!important;
-  overscroll-behavior-x:contain;
-  scrollbar-width:thin!important;
-  scrollbar-color:#8fb9bc transparent!important;
-  -webkit-overflow-scrolling:touch;
+  padding:5px 8px!important;
+  overflow:visible!important;
+  scrollbar-width:none!important;
 }
 header.top .ccToolGroup[hidden],
 body.document-open-mode header.top .ccToolGroup[hidden] {
   display:none!important;
 }
-/* Retain sticky section labels while their buttons are scrolled sideways. */
 header.top .ccToolGroupLabel {
-  position:sticky!important;
-  left:0!important;
-  z-index:2!important;
-  align-self:center!important;
+  position:static!important;
   flex:0 0 auto!important;
+  align-self:center!important;
   white-space:nowrap!important;
-  background:inherit!important;
+  margin:0!important;
+  padding-right:7px!important;
+  background:transparent!important;
+}
+header.top .ccToolGroup>* {
+  flex-shrink:0!important;
+  max-width:none;
+  transform-origin:left center;
 }
 header.top .ccToolGroup>.btn,
 header.top .ccToolGroup>button.btn,
@@ -90,6 +89,7 @@ body.document-open-mode header.top .ccToolGroup>.btn {
   min-height:34px!important;
   height:34px!important;
   padding:5px 7px!important;
+  font-size:11px!important;
 }
 header.top .ccToolGroup .colors,
 header.top .ccToolGroup #ccHighlighterPalette,
@@ -99,11 +99,51 @@ body.document-open-mode header.top .ccToolGroup #ccHighlighterPalette {
   white-space:nowrap!important;
   min-width:max-content!important;
   max-width:none!important;
+  gap:4px!important;
+  margin:0!important;
 }
-header.top .ccToolGroup .sizeControl {
+header.top .ccToolGroup .sizeControl{
   flex:0 0 auto!important;
   min-width:max-content!important;
   margin:0!important;
 }
-/* The toolbar itself stays at two rows; accessible groups can scroll at
-   125%, 150%, 200%, mobile widths and any narrower CSS viewport. */
+header.top .ccToolGroup .sizeControl input{width:68px!important}
+header.top .ccToolGroup .colour{width:23px!important;height:23px!important}
+header.top .ccToolGroup #ccHighlighterPalette button[data-highlight-colour]{
+  min-width:23px!important;min-height:23px!important;width:23px!important;height:23px!important
+}
+header.top .ccToolGroup #ccCustomHighlighterColour{
+  min-width:29px!important;width:29px!important;height:28px!important
+}
+header.top .ccToolGroup #ccHighlighterPalette>span{display:none!important}
+/* In document mode Exit uses the end of the second row, not its own grid cell. */
+header.top .tools #ccPermanentExitBtn,
+body.document-open-mode header.top .tools #ccPermanentExitBtn {
+  position:absolute!important;
+  right:8px!important;
+  bottom:9px!important;
+  margin:0!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  z-index:4!important;
+  white-space:nowrap!important;
+}
+body.document-open-mode header.top .ccToolGroup[data-kind=create]{
+  padding-right:96px!important;
+}
+@media(max-width:750px){
+  header.top{max-height:none!important}
+  header.top .tools,body.document-open-mode header.top .tools{
+    display:grid!important;
+    grid-template-rows:52px 52px!important;
+    overflow:visible!important;
+  }
+  header.top .ccToolGroup,body.document-open-mode header.top .ccToolGroup{
+    flex:0 1 auto!important;
+    width:100%!important;
+    padding:4px!important;
+    gap:3px!important;
+    flex-wrap:nowrap!important;
+    overflow:visible!important;
+  }
+}
