@@ -143,7 +143,7 @@ function insertTranscript(){
  if(/[0-9]/.test(value)&&/[×*]/.test(value)&&!/[0-9]\s*×\s*[0-9]/.test(value)){status.textContent='Review multiplication before inserting: '+value;return}
  const detail={text:value,inserted:false};
  document.dispatchEvent(new CustomEvent('whiteboard-insert-speech-text',{detail}));
- if(!detail.inserted){
+ if(!detail.inserted&&!detail.overflow){
   try{
    if(typeof strokes!=='undefined'&&typeof redraw==='function'){
     const obj={type:'text',x:.06,y:.12,w:.85,h:.6,text:value,colour:'#17324d',size:22,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
@@ -164,7 +164,7 @@ panel.addEventListener('click',e=>{
  if(action==='listen'){if(listening)stop();else startListening();return}
  if(action==='close'){stop(true);panel.style.display='none';return}
  if(action==='clear'){stop(true);ta.value='';interim.textContent='';status.textContent='Panel cleared.';ta.focus();return}
- if(action==='math'){if(listening){status.textContent='Stop listening first.';return}ta.value=mathify(ta.value);status.textContent='Converted maths. Review before inserting.';return}
+ if(action==='math'){if(listening||finishing){status.textContent='Stop listening first.';return}ta.value=mathify(ta.value);status.textContent='Converted maths. Review before inserting.';return}
  if(action==='insert')insertTranscript();
 });
 window.ClassroomSpeechFormatting={spokenPunctuation,automaticCapitals,formatProse,mathify,looksLikeMath};
