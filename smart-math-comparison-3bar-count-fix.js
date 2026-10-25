@@ -4,7 +4,7 @@ if(typeof strokes==='undefined'||typeof redraw!=='function')return;
 
 let pending=null;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.background&&!s.smartGenerated)}
+function rawInk(s){return !!(s&&Array.isArray(s.points)&&s.points.length&&!s.erase&&!s.highlighter&&!s.background&&!s.smartGenerated)}
 function dims(){const c=document.getElementById('board');const r=c?.getBoundingClientRect();return{w:Math.max(1,r?.width||innerWidth||1000),h:Math.max(1,r?.height||innerHeight||700)}}
 function box(s){let minX=1,minY=1,maxX=0,maxY=0;for(const p of s.points||[]){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)}const d=dims();return{x:minX,y:minY,w:Math.max(.001,maxX-minX),h:Math.max(.001,maxY-minY),l:minX*d.w,t:minY*d.h,r:maxX*d.w,b:maxY*d.h,pw:Math.max(.001,maxX-minX)*d.w,ph:Math.max(.001,maxY-minY)*d.h,cx:(minX+maxX)/2,cy:(minY+maxY)/2}}
 function overlapX(a,b){return Math.max(0,Math.min(a.r,b.r)-Math.max(a.l,b.l))/Math.max(1,Math.min(a.pw,b.pw))}
