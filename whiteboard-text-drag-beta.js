@@ -34,63 +34,24 @@ function remember(snapshot){history.push(snapshot||clone(strokes));if(history.le
 function restore(snapshot){finishEditing(false);const id=dragPointerId;dragMode='';dragPointerId=null;dragPointerType='';startPoint=null;startObject=null;pendingHistory=null;try{if(id!=null)canvas.releasePointerCapture?.(id)}catch{}strokes=clone(snapshot);selected=null;current=null;drawing=false;redraw();syncUi()}
 function normaliseText(s){if(!s||s.type!=='text')return s;s.size=Math.max(10,Number(s.size)||24);s.font=s.font||'Arial';s.bold=s.bold!==false;s.italic=!!s.italic;s.underline=!!s.underline;s.align=s.align||'left';if(!Number.isFinite(s.w))s.w=Math.min(.55,Math.max(.18,((s.text||'').length*s.size*.55+28)/Math.max(cssW,1)));if(!Number.isFinite(s.h))s.h=Math.min(.45,Math.max(.09,(s.size*1.8)/Math.max(cssH,1)));return s}
 function fontString(s){normaliseText(s);return `${s.italic?'italic ':''}${s.bold?'700':'400'} ${s.size}px ${JSON.stringify(s.font)},Arial,sans-serif`}
-function wrapLines(s,maxW){
- ctx.save();ctx.font=fontString(s);
- const width=Math.max(6,maxW-12),lines=[];
- function splitLongWord(word){
-  let part='';
-  for(const char of Array.from(word)){
-   const attempt=part+char;
-   if(part&&ctx.measureText(attempt).width>width){lines.push(part);part=char}
-   else part=attempt;
-  }
-  return part;
- }
- for(const paragraph of String(s.text||'').replace(/\r/g,'').split('\n')){
-  if(!paragraph){lines.push('');continue}
-  let line='';
-  for(const word of paragraph.trim().split(/\s+/)){
-   if(!word)continue;
-   const candidate=line?line+' '+word:word;
-   if(ctx.measureText(candidate).width<=width){line=candidate;continue}
-   if(line){lines.push(line);line=''}
-   if(ctx.measureText(word).width<=width){line=word;continue}
-   line=splitLongWord(word);
-  }
-  lines.push(line);
- }
- ctx.restore();return lines;
-}
+function wrapLines(s,maxW){ctx.save();ctx.font=fontString(s);const paras=String(s.text||'').split('\n'),lines=[];for(const para of paras){if(!para){lines.push('');continue}const words=para.split(/\s+/);let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width<=maxW-12||!line)line=test;else{lines.push(line);line=word}}lines.push(line)}ctx.restore();return lines}
 // Restore compact transcript bounds from the proven V2 text editor.
 // This affects only newly inserted speech text; existing typed text and
 // Smart Math objects retain their geometry.
 function fitSpeechText(s){
- if(!s||s.type!=='text')return false;
+ if(!s||s.type!=='text')return;
  normaliseText(s);
- const originalSize=Math.max(10,Number(s.size)||28);
- const availableW=Math.max(85,(1-s.x)*cssW-12);
- const maxBoxW=Math.min(availableW,Math.max(120,cssW*.86));
- const availableH=Math.max(50,(1-s.y)*cssH-12);
- let chosen=null;
- // Use as much whiteboard width/height as needed, then decrease font size
- // until all wrapped lines fit. Explicit newlines and long unbroken words wrap.
- for(let font=originalSize;font>=10;font--){
-  s.size=font;
-  ctx.save();ctx.font=fontString(s);
-  const widest=Math.max(0,...String(s.text||'').split('\n').map(t=>ctx.measureText(t).width));
-  ctx.restore();
-  const targetW=Math.min(maxBoxW,Math.max(100,Math.ceil(widest+22)));
-  const count=wrapLines(s,targetW).length;
-  const height=Math.ceil(count*font*1.25+16);
-  chosen={font,targetW,height,count};
-  if(height<=availableH)break;
- }
- s.size=chosen.font;
- s.w=Math.max(.001,chosen.targetW/Math.max(1,cssW));
- s.h=Math.max(.001,Math.min(availableH,chosen.height)/Math.max(1,cssH));
+ const text=String(s.text||'').replace(/\r/g,'');
+ const capW=Math.max(88,Math.min((1-s.x)*cssW-10,cssW*.58));
+ ctx.save();ctx.font=fontString(s);
+ const widest=Math.max(0,...text.split('\n').map(t=>ctx.measureText(t).width));
+ ctx.restore();
+ const boxW=Math.min(capW,Math.max(80,Math.ceil(widest+20)));
+ const wrapped=wrapLines(s,boxW);
+ const boxH=Math.min(Math.max(45,(1-s.y)*cssH-8),Math.max(46,Math.ceil(wrapped.length*s.size*1.25+13)));
+ s.w=Math.max(.001,boxW/Math.max(1,cssW));
+ s.h=Math.max(.001,boxH/Math.max(1,cssH));
  s.speechAutoFit=true;
- s.speechOverflow=chosen.height>availableH;
- return !s.speechOverflow;
 }
 function bounds(s){if(!s)return null;if(s.type==='text'){normaliseText(s);return{x:s.x*cssW,y:s.y*cssH,w:s.w*cssW,h:s.h*cssH}}if(s.type==='image')return{x:s.x*cssW,y:s.y*cssH,w:s.w*cssW,h:s.h*cssH};return null}
 function drawTextBox(s){normaliseText(s);const b=bounds(s),lineH=s.size*1.25,lines=wrapLines(s,b.w);ctx.save();ctx.globalCompositeOperation='source-over';ctx.fillStyle=s.colour||'#17324d';ctx.font=fontString(s);ctx.textBaseline='top';ctx.textAlign=s.align==='center'?'center':s.align==='right'?'right':'left';const tx=s.align==='center'?b.x+b.w/2:s.align==='right'?b.x+b.w-6:b.x+6;let y=b.y+5;for(const line of lines){if(y+lineH>b.y+b.h+2)break;ctx.fillText(line,tx,y);if(s.underline&&line){const w=ctx.measureText(line).width;let x1=tx,x2=tx+w;if(s.align==='center'){x1=tx-w/2;x2=tx+w/2}else if(s.align==='right'){x1=tx-w;x2=tx}ctx.lineWidth=Math.max(1,s.size/16);ctx.strokeStyle=s.colour||'#17324d';ctx.beginPath();ctx.moveTo(x1,y+s.size+2);ctx.lineTo(x2,y+s.size+2);ctx.stroke()}y+=lineH}ctx.restore()}
@@ -301,13 +262,9 @@ document.addEventListener('whiteboard-insert-speech-text',e=>{
   const value=String(detail.text||'').trim();
   if(!value){detail.error='Empty transcript';return}
   if(editor)finishEditing(true);
-  const obj={type:'text',speechSource:true,x:.06,y:.12,w:.32,h:.08,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
-  if(!fitSpeechText(obj)){
-   detail.overflow=true;
-   detail.error='Transcript is too long to fit completely on one whiteboard. Split it into shorter sections; the transcript is still available in Speech to Text.';
-   return;
-  }
   remember();
+  const obj={type:'text',speechSource:true,x:.06,y:.12,w:.32,h:.08,text:value,colour:'#17324d',size:28,font:'Arial',bold:false,italic:false,underline:false,align:'left'};
+  fitSpeechText(obj);
   strokes.push(obj);selected=obj;tool='select';redraw();syncUi();
   detail.inserted=strokes.includes(obj);detail.insertedText=obj.text;detail.boardSize=Math.round(cssW)+'×'+Math.round(cssH);
  }catch(err){detail.error=String(err?.message||err);console.error('Speech text insertion failed',err)}
