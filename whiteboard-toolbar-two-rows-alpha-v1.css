@@ -6,7 +6,7 @@ header.top .tools,
 body.document-open-mode header.top .tools {
   box-sizing:border-box!important;
   display:grid!important;
-  grid-template-columns:minmax(0,2fr) minmax(0,1fr) max-content!important;
+  grid-template-columns:minmax(0,3fr) minmax(0,1fr) max-content!important;
   grid-template-rows:56px 56px!important;
   gap:6px!important;
   width:100%!important;
