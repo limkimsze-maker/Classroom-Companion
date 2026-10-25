@@ -227,7 +227,16 @@ canvas.addEventListener('pointerdown',e=>{
 canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',drag);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('dblclick',e=>{if(tool!=='select'||editor)return;const hit=hitObject(point(e));if(hit?.type==='text'){selected=hit;beginEditing(hit,false);e.preventDefault();e.stopPropagation()}});
 selectBtn.onclick=()=>switchTool('select');editBtn.onclick=()=>editSelected();imageBtn.onclick=()=>imageInput.click();imageInput.onchange=()=>{addImageFiles(imageInput.files);imageInput.value=''};penBtn.onclick=()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));window.WhiteboardMarqueeSelection?.clear();switchTool('pen');canvas.style.cursor='crosshair'};textBtn.onclick=()=>switchTool('text');eraserBtn.onclick=()=>switchTool('eraser');
 fontSel.onchange=()=>applyFormat('font',fontSel.value);fontSizeSel.onchange=()=>applyFontSize(fontSizeSel.value);boldBtn.onclick=()=>applyFormat('bold',!selected?.bold);italicBtn.onclick=()=>applyFormat('italic',!selected?.italic);underlineBtn.onclick=()=>applyFormat('underline',!selected?.underline);leftBtn.onclick=()=>applyFormat('align','left');centreBtn.onclick=()=>applyFormat('align','center');rightBtn.onclick=()=>applyFormat('align','right');
-document.querySelectorAll('.colour').forEach(b=>{b.onclick=()=>{const next=b.dataset.colour;if(tool==='select'&&selected?.type==='text'){applyFormat('colour',next);colour=next;return}colour=next;if(tool==='eraser')tool='pen';syncUi()}});
+// Pen colour chips are tool shortcuts, not just palette changes. The previous
+// selection override accidentally kept Highlighter/Select active and suppressed
+// the document-mode notification. Text object colours use their own format bar.
+document.querySelectorAll('.colour').forEach(b=>{b.onclick=()=>{
+ const next=b.dataset.colour;
+ if(!/^#[0-9a-f]{6}$/i.test(next||''))return;
+ if(tool!=='pen')penBtn.click(); // preserve each version's existing tool reset
+ colour=next;size.value='4';syncUi();
+ window.dispatchEvent(new Event('cc-pen-colour')); // leave document Hand mode
+}});
 size.oninput=()=>{if(tool==='select'&&selected?.type==='text'){applyFontSize(fontSize());return}syncUi()};
 undoBtn.onclick=()=>{if(editor)finishEditing(true);if(!history.length)return;restore(history.pop());say(L.undoDone)};clearBtn.onclick=()=>{if(!strokes.length)return;if(confirm(L.clearAsk)){finishEditing(false);remember();strokes=[];selected=null;current=null;redraw();syncUi();say(L.cleared)}};
 // Eraser deletes the current selection before it can switch tools.
