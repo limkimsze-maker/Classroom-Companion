@@ -11,6 +11,8 @@ let pipSlug=null;
 let pipButton=null;
 let opening=false;
 let fullscreenWindow=null;
+// Remember the user's actual floating-window viewport before maximising.
+const originalCompactViewport=new Map();
 
 function toolName(button){
   const label=(button.getAttribute('aria-label')||'').trim();
@@ -168,15 +170,22 @@ function buildFullscreenWindow(win,slug,title){
       if(win.closed)return;
       setLayout(true);
       const s=screenSize();
-      // Standard pop-ups need room for the browser title bar; keep the iframe alive
-      // so a running timer or transition continues rather than starting over.
-      // Restore the ORIGINAL tuned PiP content size, not a generic mini popup:
-      // 344 × 256 for Timer / Transition, 430 × 320 for the other mini tools.
-      // Compensate for any Chrome popup title bar so the *content area* matches.
-      const original=pipSize(slug);
+      // Keep the existing iframe alive, so countdowns do not reset.
+      // Transition's previous working compact popup was 500 x 365; do not
+      // shrink it to the 344 x 256 PiP request size, which clips the marching
+      // band, countdown ring and controls in Chrome's regular popup.
+      // If the user had enlarged the original floating window, restore that
+      // actual measured content size instead of guessing from requestWindow().
+      const requested=pipSize(slug);
+      const measured=originalCompactViewport.get(slug);
+      const transition=slug==='transition-countdown';
+      const desiredW=Math.max(transition?500:requested.width,measured?.width||0);
+      const desiredH=Math.max(transition?365:requested.height,measured?.height||0);
+      const contentW=Math.min(s.width-20,desiredW);
+      const contentH=Math.min(s.height-70,desiredH);
       const extraW=Math.max(0,(win.outerWidth||0)-(win.innerWidth||0));
       const extraH=Math.max(0,(win.outerHeight||0)-(win.innerHeight||0));
-      const outerW=original.width+extraW,outerH=original.height+extraH;
+      const outerW=contentW+extraW,outerH=contentH+extraH;
       try{win.resizeTo(outerW,outerH)}catch(e){}
       try{win.moveTo(s.left+Math.max(0,s.width-outerW-12),s.top+12)}catch(e){}
       d.title=title+' • Mini window';
@@ -221,6 +230,15 @@ function buildFullscreenWindow(win,slug,title){
   return fs;
 }
 function openTrueFullscreen(slug,title){
+  // The initial PiP window can be larger than its requested dimensions
+  // (Chrome enforces its own minimums and teachers may resize it).
+  if(pipWindow&&!pipWindow.closed&&pipSlug===slug){
+    try{
+      const width=Math.round(pipWindow.innerWidth);
+      const height=Math.round(pipWindow.innerHeight);
+      if(width>=200&&height>=150)originalCompactViewport.set(slug,{width,height});
+    }catch(e){}
+  }
   const s=screenSize();
   const name='ClassroomCompanionFull_'+slug.replace(/[^a-z0-9_-]/gi,'_');
   const features=[
