@@ -105,6 +105,7 @@ function buildFullscreenWindow(win,slug,title){
   frame.allow='autoplay; fullscreen';
   frame.setAttribute('allowfullscreen','');
   frame.style.cssText='position:absolute;inset:0;display:block;width:100%;height:100%;border:0;margin:0;padding:0;background:#fff;';
+  if(slug==='noise-level')frame.setAttribute('scrolling','yes');
   if(isCompactShowcase(slug)||slug==='noise-level'){
     frame.addEventListener('load',()=>{
       if(isCompactShowcase(slug))injectFullscreenLayout(frame);
@@ -142,7 +143,11 @@ function buildFullscreenWindow(win,slug,title){
   function setLayout(isMini){
     try{
       const body=frame.contentDocument&&frame.contentDocument.body;
-      if(body)body.classList.toggle('ccTrueFullscreenLayout',!isMini);
+      if(body){
+        body.classList.toggle('ccTrueFullscreenLayout',!isMini);
+        // Noise Level needs its complete options and detector reachable when small.
+        body.classList.toggle('ccNoiseMinimised',slug==='noise-level'&&isMini);
+      }
     }catch(e){}
   }
   function adjustControls(){
@@ -168,7 +173,7 @@ function buildFullscreenWindow(win,slug,title){
   // calculation inaccurate. Recheck the viewport after each resize.
   let restoreJob=0;
   function restoreMeasuredMiniSize(){
-    if(!['transition-countdown','attention-signal'].includes(slug)||!minimised||win.closed)return;
+    if(!['transition-countdown','attention-signal','noise-level'].includes(slug)||!minimised||win.closed)return;
     const requested=pipSize(slug);
     const remembered=originalCompactViewport.get(slug);
     const targetW=Math.round(remembered?.width||requested.width);
@@ -190,7 +195,12 @@ function buildFullscreenWindow(win,slug,title){
       const actualW=win.innerWidth||d.documentElement.clientWidth||0;
       const actualH=win.innerHeight||d.documentElement.clientHeight||0;
       const diffW=targetWidth-actualW,diffH=targetHeight-actualH;
-      if(Math.abs(diffW)<=2&&Math.abs(diffH)<=2)return;
+      if(Math.abs(diffW)<=2&&Math.abs(diffH)<=2){
+        // On the FIRST restore Chrome can change the non-client height
+        // after fullscreen exits. Check again once its toolbar has settled.
+        if(slug==='noise-level'&&attempt<8)setTimeout(()=>fit(attempt+1),180);
+        return;
+      }
       const outerW=Math.max(250,Math.round((win.outerWidth||actualW)+diffW));
       const outerH=Math.max(200,Math.round((win.outerHeight||actualH)+diffH));
       try{win.resizeTo(outerW,outerH)}catch(e){}
@@ -216,7 +226,7 @@ function buildFullscreenWindow(win,slug,title){
       if(win.closed)return;
       setLayout(true);
       const s=screenSize();
-      if(slug==='transition-countdown'||slug==='attention-signal'){
+      if(slug==='transition-countdown'||slug==='attention-signal'||slug==='noise-level'){
         // Restore the actual content dimensions measured from this tool's
         // original floating Picture-in-Picture window, including any
         // teacher-resized dimensions. Neither tool should use a guessed size.
