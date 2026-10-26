@@ -114,13 +114,19 @@ function buildFullscreenWindow(win,slug,title){
   const controls=d.createElement('div');
   controls.style.cssText='position:fixed;top:10px;right:12px;z-index:2147483647;display:flex;gap:8px;align-items:center;';
 
+  const minimise=d.createElement('button');
+  minimise.type='button';
+  styleButton(minimise,false);
+  minimise.textContent='− Minimise';
+  minimise.title='Return to small window without resetting this tool';
+  minimise.setAttribute('aria-label','Minimise '+title);
+
   const fs=d.createElement('button');
   fs.type='button';
   styleButton(fs,true);
   fs.textContent='⛶ Full screen';
   fs.title='Enter full screen';
   fs.setAttribute('aria-label','Enter full screen');
-  fs.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleRealFullscreen(win,fs)});
 
   const close=d.createElement('button');
   close.type='button';
@@ -130,8 +136,70 @@ function buildFullscreenWindow(win,slug,title){
   close.setAttribute('aria-label','Close full screen tool');
   close.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();try{win.close()}catch(err){}});
 
-  controls.append(fs,close);
+  let minimised=false;
+  function setLayout(isMini){
+    try{
+      const body=frame.contentDocument&&frame.contentDocument.body;
+      if(body)body.classList.toggle('ccTrueFullscreenLayout',!isMini);
+    }catch(e){}
+  }
+  function adjustControls(){
+    minimise.style.display=minimised?'none':'flex';
+    controls.style.top=minimised?'5px':'10px';
+    controls.style.right=minimised?'5px':'12px';
+    controls.style.gap=minimised?'5px':'8px';
+    styleButton(fs,true);
+    styleButton(close,false);
+    if(minimised){
+      fs.style.cssText+=';width:32px;height:32px;min-width:32px;padding:0;border-radius:9px;';
+      close.style.cssText+=';width:32px;height:32px;min-width:32px;padding:0;border-radius:9px;';
+      fs.textContent='⛶';
+      fs.title='Maximise';
+      fs.setAttribute('aria-label','Maximise '+title);
+    }else{
+      updateFullscreenButton(win,fs);
+    }
+  }
+  function minimiseWindow(){
+    if(minimised)return;
+    minimised=true;
+    const apply=()=>{
+      if(win.closed)return;
+      setLayout(true);
+      const s=screenSize();
+      // Standard pop-ups need room for the browser title bar; keep the iframe alive
+      // so a running timer or transition continues rather than starting over.
+      const contentW=Math.min(500,Math.max(340,s.width-24));
+      const contentH=Math.min(365,Math.max(240,s.height-110));
+      const extraW=Math.max(0,(win.outerWidth||0)-(win.innerWidth||0));
+      const extraH=Math.max(0,(win.outerHeight||0)-(win.innerHeight||0));
+      const outerW=contentW+extraW,outerH=contentH+extraH;
+      try{win.resizeTo(outerW,outerH)}catch(e){}
+      try{win.moveTo(s.left+Math.max(0,s.width-outerW-12),s.top+12)}catch(e){}
+      d.title=title+' • Mini window';
+      adjustControls();
+    };
+    if(d.fullscreenElement&&d.exitFullscreen){
+      try{Promise.resolve(d.exitFullscreen()).then(apply,apply)}catch(e){apply()}
+    }else apply();
+  }
+  function maximiseWindow(){
+    if(minimised){
+      minimised=false;
+      setLayout(false);
+      const s=screenSize();
+      try{win.resizeTo(s.width,s.height)}catch(e){}
+      try{win.moveTo(s.left,s.top)}catch(e){}
+      d.title=title+' • Full screen';
+      adjustControls();
+    }
+    toggleRealFullscreen(win,fs);
+  }
+  minimise.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();minimiseWindow()});
+  fs.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();maximiseWindow()});
+  controls.append(minimise,fs,close);
   d.body.appendChild(controls);
+  frame.addEventListener('load',()=>{if(minimised)setLayout(true)});
 
   const hint=d.createElement('div');
   hint.textContent='If Chrome keeps its bars visible, click “⛶ Full screen” once.';
@@ -139,12 +207,12 @@ function buildFullscreenWindow(win,slug,title){
   d.body.appendChild(hint);
 
   d.addEventListener('fullscreenchange',()=>{
-    updateFullscreenButton(win,fs);
+    if(!minimised)updateFullscreenButton(win,fs);
     if(d.fullscreenElement)hint.style.opacity='0';
   });
 
   setTimeout(()=>{
-    if(!win.closed&&!d.fullscreenElement){hint.style.opacity='1';setTimeout(()=>{hint.style.opacity='0'},3500);}
+    if(!win.closed&&!d.fullscreenElement&&!minimised){hint.style.opacity='1';setTimeout(()=>{hint.style.opacity='0'},3500);}
   },500);
 
   return fs;
