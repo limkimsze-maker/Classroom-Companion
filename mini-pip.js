@@ -167,8 +167,8 @@ function buildFullscreenWindow(win,slug,title){
   // and fullscreen exit transitions make an early outerWidth-innerWidth
   // calculation inaccurate. Recheck the viewport after each resize.
   let restoreJob=0;
-  function restoreOriginalTransitionSize(){
-    if(slug!=='transition-countdown'||!minimised||win.closed)return;
+  function restoreMeasuredMiniSize(){
+    if(!['transition-countdown','attention-signal'].includes(slug)||!minimised||win.closed)return;
     const requested=pipSize(slug);
     const remembered=originalCompactViewport.get(slug);
     const targetW=Math.round(remembered?.width||requested.width);
@@ -216,12 +216,13 @@ function buildFullscreenWindow(win,slug,title){
       if(win.closed)return;
       setLayout(true);
       const s=screenSize();
-      if(slug==='transition-countdown'){
-        // Do not force a guessed 500 x 365 size. Restore the exact content
-        // dimensions measured from this teacher's original floating window.
+      if(slug==='transition-countdown'||slug==='attention-signal'){
+        // Restore the actual content dimensions measured from this tool's
+        // original floating Picture-in-Picture window, including any
+        // teacher-resized dimensions. Neither tool should use a guessed size.
         d.title=title+' • Mini window';
         adjustControls();
-        restoreOriginalTransitionSize();
+        restoreMeasuredMiniSize();
       }else{
         // Preserve the already working sizing of all other mini tools.
         const original=pipSize(slug);
