@@ -145,14 +145,15 @@ function buildFullscreenWindow(win,slug,title){
   }
   function adjustControls(){
     minimise.style.display=minimised?'none':'flex';
-    controls.style.top=minimised?'5px':'10px';
-    controls.style.right=minimised?'5px':'12px';
+    controls.style.top=minimised?'7px':'10px';
+    controls.style.right=minimised?'7px':'12px';
     controls.style.gap=minimised?'5px':'8px';
     styleButton(fs,true);
     styleButton(close,false);
     if(minimised){
-      fs.style.cssText+=';width:32px;height:32px;min-width:32px;padding:0;border-radius:9px;';
-      close.style.cssText+=';width:32px;height:32px;min-width:32px;padding:0;border-radius:9px;';
+      // Match the original compact window's 31px maximise and close controls.
+      fs.style.cssText+=';width:31px;height:31px;min-width:31px;padding:0;border-radius:9px;font-size:17px;';
+      close.style.cssText+=';width:31px;height:31px;min-width:31px;padding:0;border-radius:9px;font-size:17px;';
       fs.textContent='⛶';
       fs.title='Maximise';
       fs.setAttribute('aria-label','Maximise '+title);
@@ -169,11 +170,13 @@ function buildFullscreenWindow(win,slug,title){
       const s=screenSize();
       // Standard pop-ups need room for the browser title bar; keep the iframe alive
       // so a running timer or transition continues rather than starting over.
-      const contentW=Math.min(500,Math.max(340,s.width-24));
-      const contentH=Math.min(365,Math.max(240,s.height-110));
+      // Restore the ORIGINAL tuned PiP content size, not a generic mini popup:
+      // 344 × 256 for Timer / Transition, 430 × 320 for the other mini tools.
+      // Compensate for any Chrome popup title bar so the *content area* matches.
+      const original=pipSize(slug);
       const extraW=Math.max(0,(win.outerWidth||0)-(win.innerWidth||0));
       const extraH=Math.max(0,(win.outerHeight||0)-(win.innerHeight||0));
-      const outerW=contentW+extraW,outerH=contentH+extraH;
+      const outerW=original.width+extraW,outerH=original.height+extraH;
       try{win.resizeTo(outerW,outerH)}catch(e){}
       try{win.moveTo(s.left+Math.max(0,s.width-outerW-12),s.top+12)}catch(e){}
       d.title=title+' • Mini window';
