@@ -163,33 +163,76 @@ function buildFullscreenWindow(win,slug,title){
       updateFullscreenButton(win,fs);
     }
   }
+  // Match the original PiP's *usable content area*. Chrome's toolbar sizes
+  // and fullscreen exit transitions make an early outerWidth-innerWidth
+  // calculation inaccurate. Recheck the viewport after each resize.
+  let restoreJob=0;
+  function restoreOriginalTransitionSize(){
+    if(slug!=='transition-countdown'||!minimised||win.closed)return;
+    const requested=pipSize(slug);
+    const remembered=originalCompactViewport.get(slug);
+    const targetW=Math.round(remembered?.width||requested.width);
+    const targetH=Math.round(remembered?.height||requested.height);
+    const job=++restoreJob;
+    const s=screenSize();
+    const maxW=Math.max(260,s.width-20),maxH=Math.max(200,s.height-45);
+    const targetWidth=Math.min(maxW,targetW);
+    const targetHeight=Math.min(maxH,targetH);
+
+    function fit(attempt){
+      if(job!==restoreJob||!minimised||win.closed)return;
+      // Wait for Chrome's fullscreen exit to complete before measuring its
+      // browser chrome. The inner size is the size that matters to the layout.
+      if(d.fullscreenElement){
+        if(attempt<18)setTimeout(()=>fit(attempt+1),100);
+        return;
+      }
+      const actualW=win.innerWidth||d.documentElement.clientWidth||0;
+      const actualH=win.innerHeight||d.documentElement.clientHeight||0;
+      const diffW=targetWidth-actualW,diffH=targetHeight-actualH;
+      if(Math.abs(diffW)<=2&&Math.abs(diffH)<=2)return;
+      const outerW=Math.max(250,Math.round((win.outerWidth||actualW)+diffW));
+      const outerH=Math.max(200,Math.round((win.outerHeight||actualH)+diffH));
+      try{win.resizeTo(outerW,outerH)}catch(e){}
+      if(attempt<18){
+        // First frames may race Chrome's own restore from fullscreen.
+        setTimeout(()=>fit(attempt+1),attempt<4?100:200);
+      }
+    }
+
+    // Let the browser complete the fullscreen exit and recalculate toolbar size.
+    setTimeout(()=>fit(0),80);
+    setTimeout(()=>{
+      if(job!==restoreJob||!minimised||win.closed)return;
+      const outerW=win.outerWidth||targetWidth;
+      try{win.moveTo(s.left+Math.max(0,s.width-outerW-12),s.top+12)}catch(e){}
+    },450);
+  }
   function minimiseWindow(){
     if(minimised)return;
     minimised=true;
+    restoreJob++;
     const apply=()=>{
       if(win.closed)return;
       setLayout(true);
       const s=screenSize();
-      // Keep the existing iframe alive, so countdowns do not reset.
-      // Transition's previous working compact popup was 500 x 365; do not
-      // shrink it to the 344 x 256 PiP request size, which clips the marching
-      // band, countdown ring and controls in Chrome's regular popup.
-      // If the user had enlarged the original floating window, restore that
-      // actual measured content size instead of guessing from requestWindow().
-      const requested=pipSize(slug);
-      const measured=originalCompactViewport.get(slug);
-      const transition=slug==='transition-countdown';
-      const desiredW=Math.max(transition?500:requested.width,measured?.width||0);
-      const desiredH=Math.max(transition?365:requested.height,measured?.height||0);
-      const contentW=Math.min(s.width-20,desiredW);
-      const contentH=Math.min(s.height-70,desiredH);
-      const extraW=Math.max(0,(win.outerWidth||0)-(win.innerWidth||0));
-      const extraH=Math.max(0,(win.outerHeight||0)-(win.innerHeight||0));
-      const outerW=contentW+extraW,outerH=contentH+extraH;
-      try{win.resizeTo(outerW,outerH)}catch(e){}
-      try{win.moveTo(s.left+Math.max(0,s.width-outerW-12),s.top+12)}catch(e){}
-      d.title=title+' • Mini window';
-      adjustControls();
+      if(slug==='transition-countdown'){
+        // Do not force a guessed 500 x 365 size. Restore the exact content
+        // dimensions measured from this teacher's original floating window.
+        d.title=title+' • Mini window';
+        adjustControls();
+        restoreOriginalTransitionSize();
+      }else{
+        // Preserve the already working sizing of all other mini tools.
+        const original=pipSize(slug);
+        const extraW=Math.max(0,(win.outerWidth||0)-(win.innerWidth||0));
+        const extraH=Math.max(0,(win.outerHeight||0)-(win.innerHeight||0));
+        const outerW=original.width+extraW,outerH=original.height+extraH;
+        try{win.resizeTo(outerW,outerH)}catch(e){}
+        try{win.moveTo(s.left+Math.max(0,s.width-outerW-12),s.top+12)}catch(e){}
+        d.title=title+' • Mini window';
+        adjustControls();
+      }
     };
     if(d.fullscreenElement&&d.exitFullscreen){
       try{Promise.resolve(d.exitFullscreen()).then(apply,apply)}catch(e){apply()}
@@ -197,6 +240,7 @@ function buildFullscreenWindow(win,slug,title){
   }
   function maximiseWindow(){
     if(minimised){
+      ++restoreJob; // Cancel delayed resize retries when maximising.
       minimised=false;
       setLayout(false);
       const s=screenSize();
@@ -234,8 +278,8 @@ function openTrueFullscreen(slug,title){
   // (Chrome enforces its own minimums and teachers may resize it).
   if(pipWindow&&!pipWindow.closed&&pipSlug===slug){
     try{
-      const width=Math.round(pipWindow.innerWidth);
-      const height=Math.round(pipWindow.innerHeight);
+      const width=Math.round(pipWindow.document?.documentElement?.clientWidth||pipWindow.innerWidth);
+      const height=Math.round(pipWindow.document?.documentElement?.clientHeight||pipWindow.innerHeight);
       if(width>=200&&height>=150)originalCompactViewport.set(slug,{width,height});
     }catch(e){}
   }
