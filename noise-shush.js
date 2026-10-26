@@ -110,6 +110,43 @@ function install(){
       #noiseShushBtn:hover{transform:translateY(-1px);border-color:#63c8b9;background:#eefbf8}
       #noiseShushBtn.playing{background:#17324d;border-color:#17324d;color:#fff;box-shadow:0 8px 20px rgba(23,50,77,.18)}
       #noiseShushBtn.soundOff{background:#fff3f1;border-color:#f0b1a9;color:#b42318;box-shadow:none}
+      /* Noise Level only: the minimised popup scrolls through every control,
+         without changing the original PiP appearance or maximised layout. */
+      body.ccNoiseMinimised{
+        height:auto!important;min-height:100%!important;
+        overflow-x:hidden!important;overflow-y:auto!important;
+        overscroll-behavior-y:contain;scrollbar-width:thin;
+        scrollbar-color:#a8c9c3 transparent
+      }
+      body.ccNoiseMinimised .shell{
+        height:auto!important;min-height:100%!important;
+        padding:9px!important;overflow:visible!important;display:block!important
+      }
+      body.ccNoiseMinimised .top{
+        max-width:none!important;margin:0 auto 10px!important
+      }
+      body.ccNoiseMinimised .stage{
+        display:block!important;flex:none!important;
+        max-width:none!important;width:100%!important;
+        margin:0 auto!important;overflow:visible!important
+      }
+      body.ccNoiseMinimised .panel{
+        width:100%!important;max-width:none!important;min-height:0!important;
+        padding:14px!important;overflow:visible!important
+      }
+      body.ccNoiseMinimised .noiseBadge{width:100%!important}
+      body.ccNoiseMinimised .choiceGrid{
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:8px!important
+      }
+      body.ccNoiseMinimised .choice{min-width:0!important}
+      body.ccNoiseMinimised #noiseDetectorControls{max-width:100%!important}
+      body.ccNoiseMinimised .noiseLimitBox{min-width:0!important}
+      body.ccNoiseMinimised::-webkit-scrollbar{width:9px}
+      body.ccNoiseMinimised::-webkit-scrollbar-thumb{
+        border:2px solid transparent;background:#a8c9c3;
+        border-radius:20px;background-clip:padding-box
+      }
       @media(min-width:1200px) and (min-height:700px){
         #noiseSilentEmoji{font-size:clamp(96px,8vw,132px)}
         .noiseMainContent{column-gap:26px}
