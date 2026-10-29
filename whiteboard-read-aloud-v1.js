@@ -3,6 +3,10 @@
 (function(){
 'use strict';
 if(!/\/whiteboard-smart-beta\.html$/i.test(location.pathname)||window.CCReadAloud)return;
+// Tamil edition: Read Aloud is intentionally disabled. Do not create its
+// toolbar button, speed selector, document-rail button, panel or voice engine.
+// Other whiteboard features, including Speech to Text, are unchanged.
+if(new URLSearchParams(location.search).get('edition')==='ta')return;
 const LANGS={en:{tag:'en-SG',name:'English'},zh:{tag:'zh-CN',name:'中文'},ms:{tag:'ms-MY',name:'Bahasa Melayu'},ta:{tag:'ta-SG',name:'தமிழ்'}};
 const edition=new URLSearchParams(location.search).get('edition')||'en',ui=LANGS[edition]?edition:'en';
 const COPY={
@@ -377,7 +381,7 @@ function boot(){
  const controls=document.createElement('div');controls.className='cc-reader-controls';read=button('▶ '+L.read,'read','cc-reader-primary');stopButton=button('■ '+L.stop,'stop');repeat=button('↻ '+L.repeat,'repeat');controls.append(read,stopButton,repeat);
  const options=document.createElement('div');options.className='cc-reader-options';
  function select(label,items,id){const wrap=document.createElement('label');wrap.textContent=label;const sel=document.createElement('select');sel.id=id;sel.setAttribute('aria-label',label);for(const [value,text] of items){const option=document.createElement('option');option.value=value;option.textContent=text;sel.append(option)}wrap.append(sel);return [wrap,sel]}
- const [languageLabel,languageSelect]=select(L.language,Object.entries(LANGS).map(([key,value])=>[key,value.name]),'ccReadAloudLanguage');language=languageSelect;language.value=ui;
+ const [languageLabel,languageSelect]=select(L.language,Object.entries(LANGS).filter(([key])=>key!=='ta').map(([key,value])=>[key,value.name]),'ccReadAloudLanguage');language=languageSelect;language.value=ui;
  const [speedLabel,speedSelect]=select(L.speed,[.7,.85,1,1.15,1.3].map(value=>[String(value),value+'×']),'ccReadAloudSpeed');speed=speedSelect;speed.value=ui==='zh'?'0.85':'1';options.append(languageLabel,speedLabel);
  const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent=L.voice;const [voiceLabel,voiceSelect]=select(L.voice,[],'ccReadAloudVoice');voice=voiceSelect;voiceHint=document.createElement('p');voiceHint.className='cc-reader-hint';details.append(summary,voiceLabel,voiceHint);
  status=document.createElement('p');status.id='ccReadAloudStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
