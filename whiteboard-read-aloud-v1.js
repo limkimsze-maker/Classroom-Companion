@@ -58,31 +58,31 @@ function matches(v,code){
  * speechSynthesis are usable. Cloud TTS voices are not automatically browser voices. */
 function preferred(list,code){
  const candidates=list.filter(v=>matches(v,code)),norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,' ').trim();
- if(code==='en'){
-  const uk=candidates.find(v=>/^google\s+uk\s+english\s+female$/i.test(norm(v.name))&&/^en-gb$/i.test(v.lang));
-  if(uk)return uk;
- }
- const isMale=v=>/\b(?:male|man|boy|osman|valluvar|surya|anbu|kumar)\b|男声|男聲/i.test(norm(v.name));
- const isFemale=v=>{
-  if(isMale(v))return false;
-  const n=norm(v.name);
-  if(/\b(?:female|woman|lady)\b|女声|女聲/.test(n))return true;
-  if(code==='en')return /\b(?:sonia|hazel|libby|olivia|aria|jenny|natasha|susan|zira|samantha|serena|kate|heather)\b/.test(n);
-  if(code==='ms')return /\b(?:yasmin)\b/.test(n);
-  if(code==='ta')return /\b(?:venba|pallavi|kani|saranya)\b/.test(n);
-  return false;
- };
- if(code==='ms'||code==='ta'){
-  // Only claim Google if a correctly language-tagged Google voice exists.
-  const google=candidates.find(v=>!isMale(v)&&/\bgoogle\b/.test(norm(v.name)+' '+norm(v.voiceURI)));
-  if(google)return google;
- }
+ const name=v=>norm(v.name)+' '+norm(v.voiceURI);
+ const rank=(v,patterns)=>patterns.findIndex(p=>p.test(name(v)));
+ const genderMale=/\b(?:male|man|boy|osman|valluvar|surya|anbu|kumar)\b|男声|男聲/i;
+ const genderFemale=/\b(?:female|woman|lady)\b|女声|女聲/i;
+ const known={
+  en:[/\bgoogle\s+uk\s+english\s+female\b/i,/\b(?:microsoft\s+)?(?:sonia|libby|hazel)\b/i,/\b(?:serena|kate|heather|olivia|susan|zira|samantha|jenny|aria|natasha)\b/i],
+  ms:[/\b(?:microsoft\s+)?yasmin\b/i],
+  ta:[/\b(?:microsoft\s+)?venba\b/i,/\b(?:microsoft\s+)?kani\b/i,/\b(?:microsoft\s+)?pallavi\b/i,/\b(?:microsoft\s+)?saranya\b/i]
+ }[code]||[];
+ const female=candidates.filter(v=>{
+  if(genderMale.test(name(v)))return false;
+  return genderFemale.test(name(v))||rank(v,known)>=0;
+ });
  const locales=code==='en'?['en-gb','en-sg','en-au','en-us']:code==='ms'?['ms-my','ms-sg']:['ta-sg','ta-my','ta-in','ta-lk'];
  const score=v=>{
-  const i=locales.indexOf(norm(v.lang).replace(/_/g,'-')),n=norm(v.name);
-  return (i<0?60:i*8)-(/\b(?:natural|neural|premium|enhanced)\b/.test(n)?3:0);
+  const match=rank(v,known),i=locales.indexOf(norm(v.lang).replace(/_/g,'-'));
+  // Prioritise named high-quality female voices, then accent, then neural.
+  return (match<0?100:match*15)+(i<0?50:i*4)-
+   (/\b(?:natural|neural|premium|enhanced)\b/i.test(name(v))?2:0);
  };
- return candidates.filter(isFemale).sort((a,b)=>score(a)-score(b))[0]||null;
+ const chosen=female.sort((a,b)=>score(a)-score(b))[0];
+ if(chosen)return chosen;
+ // Google voice names may only say "Google Bahasa Melayu" or "Google Tamil"
+ // without a gender. Do not promise female; use it only if tagged with female.
+ return null;
 }
 
 function refreshVoices(){
