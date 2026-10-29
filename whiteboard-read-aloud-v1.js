@@ -60,7 +60,7 @@ function femaleMalay(v){
  if(!v||!matches(v,'ms'))return false;
  const id=(String(v.name||'')+' '+String(v.voiceURI||'')).normalize('NFKC').toLowerCase();
  if(/\b(?:osman|male|man)\b/i.test(id))return false;
- if(/\byasmin\b/i.test(id))return true; // Microsoft Yasmin (female)
+ if(/\byasmin(?:neural)?\b/i.test(id))return true; // Microsoft Yasmin (female)
  if(/\b(?:female|woman|lady)\b/i.test(id))return true;
  // Accept explicitly named Google Cloud female voice identifiers only when
  // the browser itself advertises them; do not call any cloud API.
@@ -78,7 +78,7 @@ function preferred(list,code){
   const female=candidates.filter(femaleMalay);
   const quality=v=>{
    const id=name(v),tag=norm(v.lang).replace(/_/g,'-');
-   return (/\byasmin\b/i.test(id)?0:/\bgoogle\b/i.test(id)?10:20)
+   return (/\byasmin(?:neural)?\b/i.test(id)?0:/\bgoogle\b/i.test(id)?10:20)
      +(tag==='ms-my'?0:tag==='ms-sg'?2:4)
      -(/\b(?:natural|neural|enhanced|wavenet)\b/i.test(id)?1:0);
   };
