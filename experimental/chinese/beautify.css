@@ -1,0 +1,32 @@
+@font-face{font-family:CCWenKai;src:url('./fonts/LXGWWenKaiGB-Regular.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
+html,body{font-family:Inter,ui-sans-serif,system-ui,"Microsoft YaHei","PingFang SC",CCWenKai,sans-serif}
+header.top .tools,header.top .tools *{font-family:Inter,ui-sans-serif,system-ui,"Microsoft YaHei","PingFang SC",CCWenKai,sans-serif!important}
+body header.top .tools .ccToolGroup .btn,body header.top .tools .ccToolGroup span,body header.top .tools .ccToolGroup label{font-family:Inter,ui-sans-serif,system-ui,"Microsoft YaHei","PingFang SC",CCWenKai,sans-serif!important}
+#ccChineseBeautifyBtn{background:#0f766e;color:#fff;border-color:#0f766e;white-space:nowrap}
+.ccChinesePicker{position:absolute;inset:0;z-index:25000;touch-action:none;cursor:crosshair;background:rgba(15,118,110,.025)}
+.ccChinesePickerHelp{position:absolute;top:12px;left:50%;transform:translateX(-50%);max-width:calc(100% - 24px);padding:10px 14px;border:1px solid #9dd9d0;border-radius:12px;background:#f0fdfa;box-shadow:0 3px 12px #17324d18;font-size:14px;line-height:1.6;pointer-events:none}
+.ccChinesePickerBox{position:absolute;border:2px dashed #0f766e;background:#0f766e12;pointer-events:none}
+.ccChineseBackdrop{position:fixed;inset:0;z-index:30000;display:grid;place-items:center;padding:16px;background:#17324d66}
+.ccChineseReview{width:min(680px,100%);max-height:94dvh;overflow:auto;padding:22px;border-radius:20px;background:#fff;color:#17324d;box-shadow:0 18px 65px #17324d55}
+.ccChineseReview h2{margin:0 0 7px;font-size:22px}.ccChineseReview p{font-size:14px;line-height:1.6;margin:8px 0}
+.ccChineseReview label{display:block;font-weight:750;font-size:14px;margin:12px 0 6px}
+.ccChineseOriginal{display:block;max-width:100%;max-height:110px;border:1px solid #d8e1e8;border-radius:10px;object-fit:contain;object-position:left;background:#fff}
+.ccChineseReview textarea{display:block;resize:vertical;width:100%;min-height:100px;max-height:260px;padding:10px 12px;border:1px solid #8cc9be;border-radius:10px;font:24px/1.6 CCWenKai,KaiTi,serif;color:#17324d;background:#fff}
+.ccChinesePreview{padding:14px;border:1px solid #c7e7de;border-radius:12px;background:#f6fcfa;font:36px/1.35 CCWenKai,KaiTi,serif;white-space:pre-wrap;overflow-wrap:anywhere;min-height:76px;max-height:190px;overflow:auto}
+.ccChineseOptions{display:flex;flex-wrap:wrap;gap:16px;align-items:center}.ccChineseOptions label{display:flex;align-items:center;gap:7px;font-weight:600}
+.ccChineseOptions input[type=range]{width:140px;accent-color:#0f766e}.ccChineseOptions input[type=color]{width:36px;height:32px;border:0;background:transparent}
+.ccChineseStatus{min-height:24px;color:#526b74}.ccChineseStatus.error{color:#b42318}
+.ccChineseActions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.ccChineseActions button{min-height:43px;padding:9px 15px;border:1px solid #ccd9df;border-radius:10px;background:#fff;color:#17324d;font-weight:750}
+.ccChineseActions .primary{margin-left:auto;background:#0f766e;color:#fff;border-color:#0f766e}.ccChineseActions button:disabled{opacity:.45;cursor:not-allowed}
+.ccChineseReview :focus-visible{outline:3px solid #e9ab2e;outline-offset:3px}
+/* This trial keeps all existing controls reachable at narrow widths. */
+@media(max-width:700px){.ccChineseReview{padding:16px}.ccChineseBackdrop{padding:8px}.ccChinesePreview{font-size:30px}.ccChineseActions .primary{flex:1}.ccChineseReview h2{font-size:20px}}
+@media(max-width:700px){
+ body header.top{max-height:45dvh!important;overflow-y:auto!important;overflow-x:hidden!important}
+ body header.top .tools{display:flex!important;flex-direction:column!important;gap:5px!important}
+ body header.top .tools .ccToolGroup{display:flex!important;flex-wrap:wrap!important;height:auto!important;min-height:44px!important;max-height:none!important;gap:4px!important;padding:5px!important}
+ body header.top .tools .ccToolGroup>*{zoom:1!important;max-width:100%!important}
+ body header.top .tools .ccToolGroup>.btn{min-height:36px!important;font-size:12px!important}
+ body header.top .tools .ccToolGroupLabel{width:100%;font-size:11px!important}
+ body header.top .tools #ccHighlighterPalette{flex-wrap:wrap!important;max-width:100%!important}
+}
