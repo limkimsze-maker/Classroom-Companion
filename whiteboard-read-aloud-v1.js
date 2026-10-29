@@ -242,6 +242,11 @@ function systemChunk(chunk,job,chosen){
  return new Promise((resolve,reject)=>{
   if(job.id!==run){resolve();return}
   const utterance=new Utterance(chunk.text);let settled=false,timer=null;
+  // Edge's Online (Natural) voices can take several seconds to connect,
+  // especially on the first sentence in a school network. Four seconds
+  // incorrectly marked these voices as failed before audio had started.
+  const online=/\bonline\b/i.test(String(chosen.name||''))&&!chosen.localService;
+  const startupMs=online?15000:4000;
   function finish(error){
    if(settled)return;settled=true;clearTimeout(timer);
    if(cancelNative===cancel)cancelNative=null;if(activeUtterance===utterance)activeUtterance=null;
@@ -249,12 +254,21 @@ function systemChunk(chunk,job,chosen){
   }
   const cancel=()=>finish();cancelNative=cancel;activeUtterance=utterance;
   utterance.lang=chosen.lang||LANGS[job.code].tag;utterance.voice=chosen;utterance.rate=job.rate;utterance.pitch=1;utterance.volume=1;
-  utterance.onstart=()=>{clearTimeout(timer);if(job.id===run){say('reading');if(job.code==='ta'&&status)status.textContent='குரல் / Voice: '+chosen.name}};utterance.onend=()=>finish();utterance.onerror=event=>finish(Error(event.error||'Speech failed'));
+  utterance.onstart=()=>{
+   clearTimeout(timer);
+   if(job.id===run){say('reading');if(job.code==='ta'&&status)status.textContent='குரல் / Voice: '+chosen.name}
+  };
+  utterance.onend=()=>finish();
+  utterance.onerror=event=>finish(Error('Speech engine: '+String(event?.error||'unknown error')));
   timer=setTimeout(()=>{
    if(job.id!==run){finish();return}
-   finish(Error('Device voice did not start'));try{synth.cancel()}catch{}
-  },4000);
-  try{synth.resume();synth.speak(utterance)}catch(error){finish(error)}
+   finish(Error('Voice startup timed out ('+Math.round(startupMs/1000)+'s)'));
+   try{synth.cancel()}catch{}
+  },startupMs);
+  try{
+   if(job.code==='ta'&&online&&status)status.textContent='வெண்பா குரல் இணைக்கப்படுகிறது… / Connecting to '+chosen.name;
+   synth.resume();synth.speak(utterance);
+  }catch(error){finish(error)}
  });
 }
 async function play(text){
@@ -299,7 +313,11 @@ async function play(text){
    if(chosen&&synth&&Utterance){try{await systemChunk(chunk,job,chosen)}catch(error){if(job.id!==run)return;if(job.code==='ms'||job.code==='ta'||job.code==='zh'&&chineseReaderVoice)throw error;chosen=null;say('fallback');await localChunk(chunk,job)}}else await localChunk(chunk,job);
   }
   if(job.id===run){setState('idle');say('finished')}
- }catch(error){if(job.id===run){stop('failed');if(job.code==='zh'){chineseReaderVoice?.failed();notice(status.textContent)}else if(job.code==='ms'){const msg=L.femaleFailed;if(status)status.textContent=msg;notice(msg)}else if(job.code==='ta'){const msg=ui==='ta'?'தமிழ் பெண் குரல் இயக்கப்படவில்லை. Edge-இல் மீண்டும் முயலவும்.':'Tamil female voice could not play. Try again in Edge.';if(status)status.textContent=msg;notice(msg)}console.warn('[Read Aloud]',error.message)}}
+ }catch(error){if(job.id===run){stop('failed');if(job.code==='zh'){chineseReaderVoice?.failed();notice(status.textContent)}else if(job.code==='ms'){const msg=L.femaleFailed;if(status)status.textContent=msg;notice(msg)}else if(job.code==='ta'){
+   const reason=String(error?.message||'unknown').slice(0,100);
+   const msg=(ui==='ta'?'தமிழ்ப் பெண் குரல் இயங்கவில்லை.':'Tamil female voice could not play.')+' ('+reason+')';
+   if(status)status.textContent=msg;notice(msg);
+  }console.warn('[Read Aloud]',error.message)}}
 }
 function readPreview(){
  const start=preview.selectionStart,end=preview.selectionEnd;
