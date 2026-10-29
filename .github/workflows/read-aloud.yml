@@ -1,0 +1,36 @@
+name: Read Selected in four languages
+on:
+  push:
+    branches: [main]
+    paths:
+      - whiteboard-read-aloud-v1.js
+      - whiteboard-read-aloud-v1.css
+      - vendor/read-aloud/**
+      - scripts/test-read-aloud.cjs
+      - scripts/fixtures/read-aloud/**
+      - .github/workflows/read-aloud.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  read-aloud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check reader and read-only bridges
+        run: |
+          node --check whiteboard-read-aloud-v1.js
+          node --check whiteboard-document-open-my-documents-test.js
+          node --check whiteboard-text-drag-alpha-speech-wrap-v1.js
+      - name: Install browser
+        run: |
+          npm install --prefix /tmp/reader-browser --no-save playwright@1.55.0
+          node /tmp/reader-browser/node_modules/playwright/cli.js install chromium --only-shell
+      - name: Verify four languages, Word, PDF, selection, Stop, Repeat and local audio
+        env:
+          NODE_PATH: /tmp/reader-browser/node_modules
+        run: node scripts/test-read-aloud.cjs

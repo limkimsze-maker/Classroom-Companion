@@ -249,6 +249,42 @@ function importDocumentAnnotations(snapshot){
   pageStore.set(key,{relative:true,items:clone(items)});
  }
 }
+// Read-only text access for the shared reader. No file, layout, ink or save
+// operations take place here. Scanned/image-only pages deliberately return no text.
+function readingSnapshot(){return {session:documentSession,revision:viewSerial,open:active,ready:active&&!openingDocument&&!viewChanging&&!!annotationBasis,kind:docKind,name:docName,page:currentPage,pages:totalPages}}
+function readableDomText(element){
+ if(!element)return '';
+ const visible=element.innerText;if(visible?.trim())return visible;
+ const copy=element.cloneNode(true);copy.querySelectorAll('script,style,template,noscript').forEach(el=>el.remove());
+ copy.querySelectorAll('br').forEach(el=>el.replaceWith('\n'));
+ copy.querySelectorAll('p,div,tr,li,section,h1,h2,h3,h4').forEach(el=>el.append('\n'));
+ return copy.textContent||'';
+}
+async function readDocumentText(){
+ const source=readingSnapshot();if(!source.ready)return {...source,text:'',scope:'page'};
+ let text='',scope='page';
+ if(source.kind==='pdf'&&pdfDoc){
+  const document=pdfDoc,page=await document.getPage(source.page),content=await page.getTextContent();let previous=null;
+  for(const item of content.items||[]){
+   if(typeof item.str!=='string')continue;
+   if(previous&&!text.endsWith('\n')){
+    const line=Math.abs((item.transform?.[5]||0)-(previous.transform?.[5]||0))>Math.max(2,(item.height||10)*.4);
+    const gap=(item.transform?.[4]||0)-((previous.transform?.[4]||0)+(previous.width||0));
+    if(line)text+='\n';else if(gap>Math.max(1,(item.height||10)*.12)&&!/[\s]$/.test(text)&&!/^\s/.test(item.str))text+=' ';
+   }
+   text+=item.str;if(item.hasEOL)text+='\n';previous=item;
+  }
+ }else if(source.kind==='word'){
+  text=readableDomText(wordLayout?.[source.page-1]?.el||wordPaper);scope=wordLayout?'page':'document';
+ }else if(source.kind==='pptx')text=readableDomText(pptViewport);
+ else if(source.kind==='sheet')text=readableDomText(sheetPaper);
+ else if(source.kind==='text'){text=genericEl?.textContent||'';scope='document'}
+ else if(source.kind==='html'){try{text=readableDomText(genericEl?.contentDocument?.body)}catch{}scope='document'}
+ const now=readingSnapshot();
+ if(!now.ready||source.session!==now.session||source.revision!==now.revision||source.page!==now.page)throw Error('Document changed while extracting text');
+ return {...source,scope,text:String(text).replace(/\r\n?/g,'\n').replace(/\u0000/g,'').trim()};
+}
+window.CCDocumentText=Object.freeze({snapshot:readingSnapshot,read:readDocumentText});
 window.CCDocumentAnnotations={
  isOpen:()=>active,
  ready:()=>active&&!viewChanging&&!!annotationBasis&&annotationKey===pageKey(),
@@ -280,9 +316,11 @@ function finishAnnotationEdit(){window.WhiteboardAnnotationHistory?.finish();win
 // Render one view at a time, discarding requests superseded before they start.
 function changeView(change){
  if(!active)return Promise.resolve();
+ const previousReadingPage=currentPage;
  cancelPdfRefinement();
  if(!viewChanging){finishAnnotationEdit();savePage()}
  viewChanging=true;canvas.style.pointerEvents='none';showDocumentLoading(true);change();updateControls();
+ if(currentPage!==previousReadingPage)window.dispatchEvent(new Event('cc-document-page-changing'));
  const serial=++viewSerial;
  viewQueue=viewQueue.catch(()=>{}).then(async()=>{
   if(serial!==viewSerial||!active)return;

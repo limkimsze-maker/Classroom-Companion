@@ -321,6 +321,8 @@ window.ClassroomSpeechTextControls={
 // Stable selection API for the shared finish-editing gesture. Does not alter
 // drawing, movement, resizing, text entry or Undo history.
 window.ClassroomObjectSelection={
+ // Read-only access for Read Selected; never changes selection or Undo history.
+ getSelectedText:()=>selected&&strokes.includes(selected)?String(selected.type==='text'?selected.text||'':selected.handwritingBeautified?selected.handwritingReading||'':''):'',
  hasSelection:()=>!!selected&&strokes.includes(selected),
  // Reopen a text or image selection without replaying pointerdown
  // (which would otherwise start moving or resizing it).
