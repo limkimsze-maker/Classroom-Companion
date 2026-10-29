@@ -25,6 +25,7 @@
 <div class="quickbar" id="quickbar"><span class="quick-title" id="quickTitle">Options</span><div class="quick-scroll" id="quickScroll"></div><button class="quick-close" id="quickClose" type="button">Ã—</button></div></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="ambient-engine.js?v=20261003i"></script>
+<script src="timer-end-beep.js?v=20261029-alarm2"></script>
 <script>
 'use strict';
 try{window.opener=null}catch(e){}
@@ -63,7 +64,7 @@ function setMusicButton(){const b=$('#timerMusic');b.textContent=timer.music?'â™
 async function syncMusic(){if(timer.running&&timer.music)await window.ClassroomAmbient?.start();else window.ClassroomAmbient?.stop(.65);setMusicButton()}
 function renderTimer(){$('#time').textContent=format(timer.sec);$('#timerStart').textContent=timer.running?'Pause':'Start'}
 function stopTimer(){clearInterval(timer.id);timer.id=null;timer.running=false;window.ClassroomAmbient?.stop(.65);renderTimer()}
-async function startTimer(){if(timer.running){stopTimer();return}timer.running=true;renderTimer();await syncMusic();clearInterval(timer.id);timer.id=setInterval(()=>{if(timer.mode==='stopwatch')timer.sec++;else timer.sec--;renderTimer();if(timer.mode==='countdown'&&timer.sec<=0){clearInterval(timer.id);timer.id=null;timer.running=false;window.ClassroomAmbient?.stop(.7);renderTimer();toast('Time is up')}},1000)}
+async function startTimer(){if(timer.running){stopTimer();return}void window.ClassroomTimerAlarm?.prime();if(timer.mode==='countdown'&&timer.sec<=0)timer.sec=timer.base;timer.running=true;renderTimer();await syncMusic();clearInterval(timer.id);timer.id=setInterval(()=>{if(timer.mode==='stopwatch')timer.sec++;else timer.sec--;renderTimer();if(timer.mode==='countdown'&&timer.sec<=0){clearInterval(timer.id);timer.id=null;timer.running=false;window.ClassroomAmbient?.stop(.7);renderTimer();void window.ClassroomTimerAlarm?.play();toast('Time is up')}},1000)}
 async function startPreset(sec,music=timer.music){clearInterval(timer.id);timer.mode='countdown';timer.base=sec;timer.sec=sec;timer.music=music;timer.running=false;setMusicButton();renderTimer();closeQuick();await startTimer()}
 async function startStopwatch(music=timer.music){clearInterval(timer.id);timer.mode='stopwatch';timer.base=0;timer.sec=0;timer.music=music;timer.running=false;setMusicButton();renderTimer();closeQuick();await startTimer()}
 function resetTimer(){clearInterval(timer.id);timer.id=null;timer.running=false;timer.sec=timer.mode==='stopwatch'?0:timer.base;window.ClassroomAmbient?.stop(.65);renderTimer()}

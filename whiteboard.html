@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="0;url=whiteboard-smart-beta.html">
+<script>
+// Keep edition, other launch options and the fragment through the Alpha redirect.
+const target=new URL('whiteboard-smart-beta.html',location.href);
+target.search=location.search;
+target.hash=location.hash;
+location.replace(target.href);
+</script>
 <meta name="theme-color" content="#0f766e">
 <title>Opening Classroom Companion Whiteboard</title>
 <style>

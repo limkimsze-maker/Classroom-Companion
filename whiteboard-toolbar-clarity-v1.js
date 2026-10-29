@@ -5,8 +5,8 @@ const restoreLabels={en:'Restore',zh:'恢复',ms:'Pulihkan',ta:'மீட்ட�
 const restoreTitles={en:'Restore saved whiteboard',zh:'恢复已保存的白板',ms:'Pulihkan papan putih yang disimpan',ta:'சேமித்த வெண்பலகையை மீட்டமை'};
 const exportLabels={en:'Export PNG',zh:'导出 PNG',ms:'Eksport PNG',ta:'PNG ஏற்றுமதி'};
 let queued=false;
-function setText(el,text){if(el&&el.textContent!==text)el.textContent=text}
-function setAttr(el,name,value){if(el&&el.getAttribute(name)!==value)el.setAttribute(name,value)}
+function setText(el,text){text=window.CCWhiteboardLabels?.translate(text)||text;if(el&&el.textContent!==text)el.textContent=text}
+function setAttr(el,name,value){value=window.CCWhiteboardLabels?.translate(value)||value;if(el&&el.getAttribute(name)!==value)el.setAttribute(name,value)}
 function removeLegacyOverlay(){
  const video=document.getElementById('liveOverlayVideo');
  if(video?.srcObject){try{for(const t of video.srcObject.getTracks())t.stop()}catch{}}
@@ -47,7 +47,7 @@ function tidyToolbar(){
   }
  }
  if(docOpen){
-  setText(docOpen,edition==='zh'?'📂 打开文件':'📄 Open File');
+  setText(docOpen,({zh:'📂 打开文件',ms:'📂 Buka Fail',ta:'📂 கோப்பைத் திற'})[edition]||'📄 Open File');
   setAttr(docOpen,'title','Open a PDF, Word, PowerPoint, spreadsheet, image or other displayable file');
   setAttr(docOpen,'aria-label','Open teaching file');
   const wanted=document.body.classList.contains('document-open-mode')?'none':'';

@@ -4,6 +4,7 @@ const S=window.Support;
 if(!S||S.slug!=='timer-calm-music'||window.__timerCalmV10)return;
 
 function install(){
+  if(window.__timerCalmV10)return true;
   const panel=S.panel||document.getElementById('panel');
   const ambient=window.TimerCalmAmbient;
   if(!panel||!ambient)return false;
@@ -133,6 +134,7 @@ function install(){
   async function go(){
     if(running){stop(false);return;}
     if(sec<=0)sec=base;
+    void window.ClassroomTimerAlarm?.prime();
     running=true;draw();
     if(music)await startMusic();
     timerId=setInterval(()=>{sec--;draw();if(sec<=0){stop(true);S.chime();S.toast('Time is up');}},1000);
