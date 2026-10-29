@@ -8,7 +8,7 @@ function audioObserver(){
 function mockVoices(){
  window.__spoken=[];window.__cancelled=0;window.__nativeSilent=false;window.__nativeDelay=15;let active=null;
  Object.defineProperty(window,'SpeechSynthesisUtterance',{value:class {constructor(text){this.text=text}}});
- window.__voiceData=[{name:'English device',lang:'en-GB',localService:true},{name:'Microsoft Kangkang',lang:'zh-SG',localService:true},{name:'Chinese device',lang:'zh-CN',localService:true},{name:'Google 普通话（中国大陆）',lang:'zh-CN',localService:false},{name:'Microsoft Xiaoxiao Online (Natural)',lang:'zh-CN',localService:false},{name:'Microsoft Huihui Desktop',lang:'zh-CN',localService:true},{name:'Microsoft Xiaoxiao Natural',lang:'zh-CN',localService:true},{name:'Cantonese female',lang:'zh-HK',localService:true},{name:'Malay device',lang:'ms-MY',localService:true},{name:'Tamil device',lang:'ta-SG',localService:true}];
+ window.__voiceData=[{name:'Microsoft Sonia Online (Natural)',lang:'en-GB',localService:false},{name:'Microsoft Kangkang',lang:'zh-SG',localService:true},{name:'Chinese device',lang:'zh-CN',localService:true},{name:'Google 普通话（中国大陆）',lang:'zh-CN',localService:false},{name:'Microsoft Xiaoxiao Online (Natural)',lang:'zh-CN',localService:false},{name:'Microsoft Huihui Desktop',lang:'zh-CN',localService:true},{name:'Microsoft Xiaoxiao Natural',lang:'zh-CN',localService:true},{name:'Cantonese female',lang:'zh-HK',localService:true},{name:'Microsoft Yasmin Online (Natural)',lang:'ms-MY',localService:false},{name:'Microsoft Venba Online (Natural)',lang:'ta-SG',localService:false}];
  Object.defineProperty(window,'speechSynthesis',{value:{getVoices:()=>__voiceData,resume(){},cancel(){window.__cancelled++;if(active){clearTimeout(active);active=null}},speak(u){__spoken.push({text:u.text,lang:u.lang,rate:u.rate,voice:u.voice?.name});if(window.__nativeSilent)return;u.onstart?.();active=setTimeout(()=>{active=null;u.onend?.()},window.__nativeDelay)},addEventListener(){}}});
 }
 (async()=>{
@@ -27,6 +27,13 @@ function mockVoices(){
   await page.getByRole('button',{name:label,exact:true}).first().click();assert.equal(await page.locator('#ccReadAloudText').inputValue(),sample);assert.equal(await page.locator('#ccReadAloudLanguage').inputValue(),code);await page.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);assert.equal(await page.evaluate(()=>__spoken.map(x=>x.text).join('')),sample);
   assert.equal(await page.evaluate(()=>__spoken[0].rate),code==='zh'?.85:1);
   if(code==='zh'){assert.equal(await page.evaluate(()=>__spoken[0].voice),'Google 普通话（中国大陆）');assert.equal(await page.locator('#ccReadAloudVoice').inputValue(),'google-mandarin');assert.equal(await page.locator('#ccChineseTryVoices').count(),0);console.log('GOOGLE_MANDARIN_DEFAULT_OK')}
+  assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);
+  if(code!=='zh')assert.equal(await page.evaluate(()=>__spoken[0].voice),({en:'Microsoft Sonia Online (Natural)',ms:'Microsoft Yasmin Online (Natural)',ta:'Microsoft Venba Online (Natural)'})[code]);
+  const pdfSamples={en:['The teacher began read\ning to the children.','The teacher began reading to the children.'],ms:['Cikgu membaca cerita ke\npada murid di kelas.','Cikgu membaca cerita kepada murid di kelas.'],ta:['ஆசிரியர் மாணவர்\nகளுக்கு கதை வாசித்தார்.','ஆசிரியர் மாணவர் களுக்கு கதை வாசித்தார்.']};
+  if(code!=='zh'){
+   const [input,expected]=pdfSamples[code];const reflowed=await page.evaluate(([source,locale])=>CCReadAloud.reflowPdfForSpeech(source,locale),[input,code]);assert.equal(reflowed,expected);
+   assert.equal(await page.evaluate(text=>CCReadAloud.splitText(text,document.getElementById('ccReadAloudLanguage').value).length,expected),1);
+  }
   await page.evaluate(()=>{__spoken=[]});
   if(code==='zh'){
    assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);
@@ -41,6 +48,8 @@ function mockVoices(){
    assert.equal(await page.locator('#ccReadAloudBtn').getAttribute('aria-pressed'),'false');
    assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);await page.evaluate(()=>{window.__nativeDelay=15});
   }else{
+   // The full reader is retained for advanced/internal tests, but hidden from ordinary users.
+   await page.evaluate(()=>CCReadAloud.open());
    await page.locator('#ccReadAloudSpeed').selectOption('0.85');await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);
    let spoken=await page.evaluate(()=>__spoken);assert.equal(spoken[0].text,sample);assert.equal(spoken[0].rate,.85);assert.ok(spoken[0].lang.startsWith(code));
    const target=sample.slice(0,code==='ta'?5:4);await page.locator('#ccReadAloudText').evaluate((el,n)=>{el.focus();el.setSelectionRange(0,n)},target.length);await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle');spoken=await page.evaluate(()=>__spoken);assert.equal(spoken.at(-1).text,target);
@@ -51,17 +60,17 @@ function mockVoices(){
   if(code!=='zh')await page.locator('#ccReadAloudText').press('Escape');assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);assert.equal(await page.evaluate(()=>tool),'finger');
   // Speech-to-text output uses the same read-only selection bridge and stays undoable.
   const inserted=sample+'\n'+sample;await page.evaluate(text=>{const detail={text};document.dispatchEvent(new CustomEvent('whiteboard-insert-speech-text',{detail}));if(!detail.inserted)throw Error('Speech insertion failed')},inserted);
-  await page.locator('#ccReadAloudBtn').click();assert.ok((await page.locator('#ccReadAloudText').inputValue()).includes(inserted));if(code!=='zh')await page.locator('#ccReadAloudPanel [data-read-action=close]').click();else await page.waitForFunction(()=>CCReadAloud.state().state==='idle');await page.locator('#undoBtn').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
+  await page.locator('#ccReadAloudBtn').click();assert.ok((await page.locator('#ccReadAloudText').inputValue()).includes(inserted));await page.waitForFunction(()=>CCReadAloud.state().state==='idle');assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);await page.locator('#undoBtn').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
   // Open actual Word files, then select passages in the extracted original text.
   await page.locator('input[type=file][accept="*/*"]').setInputFiles(path.join(fixtures,code+'.docx'));await page.waitForFunction(()=>CCDocumentText.snapshot().ready);
   await page.evaluate(()=>{strokes.push({colour:'#2563eb',size:4,erase:false,points:[{x:.2,y:.2},{x:.35,y:.3}]});redraw();syncUi()});const before=await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export()));
   await page.locator('#ccDocumentReadBtn').click();await page.waitForFunction(()=>document.getElementById('ccReadAloudText').value.length>0);
   assert.equal((await page.locator('#ccReadAloudText').inputValue()).trim(),fs.readFileSync(path.join(fixtures,code+'.txt'),'utf8'));
-  if(code!=='zh')await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle');assert.equal(await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export())),before);
-  if(code!=='zh')await page.locator('#ccReadAloudPanel [data-read-action=close]').click();await page.locator('#ccPermanentExitBtn').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
+  await page.waitForFunction(()=>CCReadAloud.state().state==='idle');assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);assert.equal(await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export())),before);
+  await page.locator('#ccPermanentExitBtn').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
   console.log('NATIVE_VOICE_AND_WORD_OK',code,label);
   if(code==='en'){
-   await page.locator('input[type=file][accept="*/*"]').setInputFiles(path.join(fixtures,'text.pdf'));await page.waitForFunction(()=>CCDocumentText.snapshot().ready);await page.locator('#ccDocumentReadBtn').click();await page.waitForFunction(()=>document.getElementById('ccReadAloudText').value.includes('first page'));
+   await page.locator('input[type=file][accept="*/*"]').setInputFiles(path.join(fixtures,'text.pdf'));await page.waitForFunction(()=>CCDocumentText.snapshot().ready);await page.locator('#ccDocumentReadBtn').click();await page.waitForFunction(()=>document.getElementById('ccReadAloudText').value.includes('first page')&&CCReadAloud.state().state==='idle');await page.evaluate(()=>CCReadAloud.open());await page.waitForFunction(()=>!document.getElementById('ccReadAloudPanel').hidden&&document.getElementById('ccReadAloudText').value.includes('first page'));
    assert.ok(!(await page.locator('#ccReadAloudText').inputValue()).includes('Second'));
    await page.evaluate(()=>{window.__nativeDelay=5000});await page.locator('#ccReadAloudPanel [data-read-action=read]').click();assert.equal(await page.evaluate(()=>CCReadAloud.state().state),'reading');
    await page.locator('#documentRailZoomRow').getByRole('button',{name:'+',exact:true}).click();await page.waitForFunction(()=>CCDocumentText.snapshot().ready);assert.equal(await page.evaluate(()=>CCReadAloud.state().state),'reading');
@@ -79,9 +88,9 @@ function mockVoices(){
   await board.locator('#textBtn').click();const box=await board.locator('#board').boundingBox();await board.mouse.click(box.x+x,box.y+y);const editor=board.locator('#boardWrap>textarea');await editor.fill(text);await editor.press('Escape');
  }
  await board.locator('#ccFingerPointerBtn').click();assert.equal(await board.evaluate(()=>ClassroomObjectSelection.hasSelection()),false);const signature=await board.evaluate(()=>JSON.stringify(strokes));
- await board.locator('#ccReadAloudBtn').click();await board.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length===3);assert.deepEqual(await board.evaluate(()=>__spoken.map(x=>x.text)),['Top left.','Top right.','Bottom sentence.']);assert.equal(await board.evaluate(()=>JSON.stringify(strokes)),signature);
- await board.locator('#ccReadAloudPanel [data-read-action=close]').click();await board.locator('#ccReadAloudBtn').focus();await board.locator('#ccReadAloudBtn').press('Enter');await board.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length===6);assert.equal(await board.evaluate(()=>tool),'finger');
- await board.locator('#ccReadAloudPanel [data-read-action=close]').click();await board.evaluate(()=>{__nativeSilent=true});await board.locator('#ccReadAloudBtn').click();await board.waitForFunction(()=>__audioOutputs.length>=3&&CCReadAloud.state().state==='idle',null,{timeout:25000});assert.equal(await board.evaluate(()=>__spoken.length),7,'A stalled device voice should be attempted only once before local fallback');assert.equal(await board.evaluate(()=>JSON.stringify(strokes)),signature);console.log('READ_WHOLE_BOARD_WITHOUT_SELECTION_OK');console.log('STALLED_DEVICE_VOICE_FALLBACK_OK');await board.close();
+ await board.locator('#ccReadAloudBtn').click();await board.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length===1);assert.deepEqual(await board.evaluate(()=>__spoken.map(x=>x.text).join('')),'Top left.\nTop right.\nBottom sentence.');assert.equal(await board.evaluate(()=>JSON.stringify(strokes)),signature);
+ assert.equal(await board.locator('#ccReadAloudPanel').isVisible(),false);await board.locator('#ccReadAloudBtn').focus();await board.locator('#ccReadAloudBtn').press('Enter');await board.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length===2);assert.equal(await board.evaluate(()=>tool),'finger');
+ await board.evaluate(()=>{__nativeSilent=true});await board.locator('#ccReadAloudBtn').click();await board.waitForFunction(()=>__audioOutputs.length>=1&&CCReadAloud.state().state==='idle',null,{timeout:25000});assert.equal(await board.evaluate(()=>__spoken.length),3,'A stalled device voice should be attempted only once before local fallback');assert.equal(await board.evaluate(()=>JSON.stringify(strokes)),signature);console.log('READ_WHOLE_BOARD_WITHOUT_SELECTION_OK');console.log('STALLED_DEVICE_VOICE_FALLBACK_OK');await board.close();
  // A missing Google voice stays unavailable rather than substituting another speaker.
  const mandarin=await context.newPage();await mandarin.addInitScript(mockVoices);await mandarin.addInitScript(audioObserver);await mandarin.goto(base+'/Classroom-Companion/whiteboard-smart-beta.html?edition=zh');await mandarin.waitForSelector('#ccReadAloudBtn');
  await mandarin.evaluate(()=>{__voiceData=__voiceData.filter(v=>!v.name.startsWith('Google'));strokes.push({type:'text',text:'同学们，请慢慢地读。',x:.1,y:.1,w:.5,h:.2,size:24,font:'Arial',colour:'#111'});redraw();syncUi()});
@@ -89,7 +98,7 @@ function mockVoices(){
  await mandarin.evaluate(()=>{__voiceData.push({name:'Google 普通话（中国大陆）',lang:'zh-CN',localService:false})});await mandarin.locator('#ccReadAloudBtn').click();await mandarin.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);assert.equal(await mandarin.evaluate(()=>__spoken.at(-1).voice),'Google 普通话（中国大陆）');console.log('GOOGLE_MANDARIN_MISSING_AND_LATE_VOICE_OK');await mandarin.close();
  // Real local synthesis and playback, without any installed/system voice.
  const local=await context.newPage();local.on('console',m=>{if(m.type()==='warning')console.log('LOCAL_WARNING',m.text())});await local.addInitScript(audioObserver);await local.goto(base+'/Classroom-Companion/whiteboard-smart-beta.html?edition=en');await local.waitForSelector('#ccReadAloudBtn');
- await local.evaluate(()=>{const obj={type:'text',text:'Hello.',x:.1,y:.1,w:.5,h:.2,size:24,font:'Arial',colour:'#111'};strokes.push(obj);tool='select';syncUi();ClassroomObjectSelection.select(obj)});await local.locator('#ccReadAloudBtn').click();await local.locator('#ccReadAloudPanel summary').click();
+ await local.evaluate(()=>{const obj={type:'text',text:'Hello.',x:.1,y:.1,w:.5,h:.2,size:24,font:'Arial',colour:'#111'};strokes.push(obj);tool='select';syncUi();ClassroomObjectSelection.select(obj)});await local.evaluate(()=>CCReadAloud.open());await local.locator('#ccReadAloudPanel summary').click();
  const unsupportedRequests=[];local.on('request',r=>{if(!new URL(r.url()).hostname.match(/127\.0\.0\.1|counter\.dev/))unsupportedRequests.push(r.url())});
  for(const [code,text] of [['en','Hello, class.'],['ms','Selamat pagi.'],['ta','வணக்கம்.']]){
   await local.evaluate(text=>{document.getElementById('ccReadAloudText').value=text},text);await local.locator('#ccReadAloudLanguage').selectOption(code);await local.locator('#ccReadAloudVoice').selectOption('builtin');await local.locator('#ccReadAloudSpeed').selectOption('1.3');
