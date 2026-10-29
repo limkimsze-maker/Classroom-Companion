@@ -245,7 +245,7 @@ function systemChunk(chunk,job,chosen){
   // Edge's Online (Natural) voices can take several seconds to connect,
   // especially on the first sentence in a school network. Four seconds
   // incorrectly marked these voices as failed before audio had started.
-  const online=/\bonline\b/i.test(String(chosen.name||''))&&!chosen.localService;
+  const online=/\bonline\b/i.test(String(chosen.name||''));
   const startupMs=online?15000:4000;
   function finish(error){
    if(settled)return;settled=true;clearTimeout(timer);
