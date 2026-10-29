@@ -41,7 +41,7 @@ footer{font-size:12px;color:#71808b;margin-top:22px}
 <header><div class="symbol" aria-hidden="true">♫</div><div><h1>Tamil Voice Check</h1><p class="sub">Classroom Companion · Test this browser, not the cloud catalogue</p></div></header>
 <section>
 <div id="result" class="status" aria-live="polite">Checking your Tamil voices…</div>
-<p id="detail" class="hint">The list may take a moment to load in Chrome or Edge. Press Listen on Venba first to test the speech engine independently.</p>
+<p id="detail" class="hint">The list may take a moment to load. In Edge, test Venba first and wait for a final result before testing Pallavi.</p>
 <div class="actions"><button id="refresh" type="button">Check again</button><button id="copy" class="secondary" type="button">Copy voice report</button><button id="stop" class="secondary" type="button">Stop sound</button></div>
 </section>
 <section>
@@ -62,7 +62,7 @@ footer{font-size:12px;color:#71808b;margin-top:22px}
 const synth=window.speechSynthesis;
 const list=document.getElementById('voices'),result=document.getElementById('result'),detail=document.getElementById('detail');
 const sample='வணக்கம். இன்று நாம் ஒரு கதை படிப்போம்.';
-let shown=[];
+let shown=[], activeTest=null;
 const playbackResults=new Map();
 let playSerial=0;
 const isTamil=v=>/^ta(?:-|$)/i.test(String(v.lang||'').replace(/_/g,'-'));
@@ -79,6 +79,7 @@ function type(v){
 }
 function isFemale(v){return /female voice|labeled female/i.test(type(v))}
 function refresh(){
+ if(activeTest)return; // Keep controls intact while the test runs.
  if(!synth){result.textContent='Speech synthesis is unavailable';detail.textContent='Try Chrome or Microsoft Edge.';list.textContent='This browser does not support the required API.';return}
  shown=synth.getVoices().filter(isTamil);
  list.replaceChildren();
@@ -95,41 +96,74 @@ function refresh(){
   const test=document.createElement('button');test.type='button';test.textContent='Listen';
   test.setAttribute('aria-label','Listen to '+v.name);
   test.onclick=()=>{
-   // Unlike the Whiteboard, this runs directly on a click with a short sentence
-   // and the voice's default rate. It isolates Edge's online speech engine.
+   if(activeTest){
+    detail.textContent='A Tamil voice test is already running. Let it finish, or press Stop sound.';
+    return;
+   }
+   const serial=++playSerial;
+   let settled=false,heardStart=false,startupTimer=null;
+   const finish=(outcome,message)=>{
+    if(settled)return;
+    settled=true;clearTimeout(startupTimer);
+    if(activeTest?.serial===serial)activeTest=null;
+    playbackResults.set(v.name,outcome);
+    test.textContent='Listen again';
+    list.querySelectorAll('button').forEach(b=>b.disabled=false);
+    result.textContent=outcome.startsWith('SUCCESS')?'Playback succeeded':
+      outcome.startsWith('FAILED')?'Playback failed':
+      outcome.startsWith('TIMED OUT')?'Playback timed out':
+      outcome.startsWith('STOPPED')?'Test stopped':'Test result';
+    detail.textContent=message;
+   };
+   const u=new SpeechSynthesisUtterance(sample);
+   u.voice=v;u.lang=v.lang||'ta-SG';u.rate=1;u.pitch=1;u.volume=1;
+   activeTest={serial,finish};
+   playbackResults.set(v.name,'IN PROGRESS (not a result yet)');
+   list.querySelectorAll('button').forEach(b=>b.disabled=true);
+   test.textContent='Connecting…';
+   result.textContent='Testing: '+v.name;
+   detail.textContent='Please wait until playback succeeds, fails, or times out. Do not test another voice yet.';
+   u.onstart=()=>{
+    if(settled||serial!==playSerial)return;
+    heardStart=true;clearTimeout(startupTimer);
+    test.textContent='Speaking…';
+    playbackResults.set(v.name,'AUDIO STARTED (in progress)');
+    detail.textContent='Audio started for '+v.name+'. Waiting for the sentence to finish…';
+   };
+   u.onend=()=>{
+    if(serial!==playSerial||settled)return;
+    finish('SUCCESS',v.name+' completed the short Tamil sentence. Did you hear it clearly?');
+   };
+   u.onerror=event=>{
+    if(serial!==playSerial||settled)return;
+    const error=String(event?.error||'unknown error');
+    finish('FAILED ('+error+')',v.name+' failed with '+error+'. This is an error from the Edge browser speech engine.');
+   };
+   startupTimer=setTimeout(()=>{
+    if(settled||serial!==playSerial||heardStart)return;
+    finish('TIMED OUT (no start or error event after 20 seconds)',v.name+' did not start or report an error within 20 seconds.');
+    try{synth.cancel()}catch{}
+   },20000);
    try{
-    const serial=++playSerial;
-    synth.cancel();
-    const u=new SpeechSynthesisUtterance(sample);
-    u.voice=v;u.lang=v.lang||'ta-SG';
-    test.textContent='Connecting…';
-    playbackResults.set(v.name,'STARTING');
-    result.textContent='Testing: '+v.name;
-    detail.textContent='Waiting for the browser to start speaking a short Tamil sentence…';
-    u.onstart=()=>{if(serial!==playSerial)return;test.textContent='Speaking…';playbackResults.set(v.name,'AUDIO STARTED');detail.textContent='Audio started: '+v.name};
-    u.onend=()=>{if(serial!==playSerial)return;test.textContent='Listen again';playbackResults.set(v.name,'SUCCESS');result.textContent='Playback succeeded';detail.textContent=v.name+' played the short Tamil sentence successfully.'};
-    u.onerror=event=>{
-     if(serial!==playSerial)return;
-     const error=String(event?.error||'unknown error');
-     playbackResults.set(v.name,'FAILED ('+error+')');
-     test.textContent='Try again';
-     result.textContent='Playback failed: '+error;
-     detail.textContent=v.name+' could not play in this browser (error: '+error+'). If several voices fail here too, the cause is probably Edge speech synthesis or network settings, rather than the Whiteboard.';
-    };
+    if(synth.paused)synth.resume();
+    // No automatic cancel before speaking: avoids cancel/speak timing races.
     synth.speak(u);
-   }catch(e){
-    playbackResults.set(v.name,'FAILED ('+e.message+')');
-    test.textContent='Try again';result.textContent='Playback failed';detail.textContent='Could not start '+v.name+': '+e.message;
+   }catch(error){
+    finish('FAILED ('+String(error?.message||error)+')','Could not start '+v.name+': '+String(error?.message||error));
    }
   };
   item.append(meta,test);list.append(item);
  });
 }
 document.getElementById('refresh').onclick=refresh;
-document.getElementById('stop').onclick=()=>{++playSerial;try{synth?.cancel()}catch{};list.querySelectorAll('button').forEach(b=>b.textContent='Listen')};
+document.getElementById('stop').onclick=()=>{
+ ++playSerial;
+ if(activeTest)activeTest.finish('STOPPED manually','You stopped the voice test before it completed.');
+ try{synth?.cancel()}catch{}
+};
 document.getElementById('copy').onclick=async()=>{
  const attempts=[...playbackResults.entries()].map(([name,status])=>name+' | '+status);
- const lines=['Tamil Voice Check',navigator.userAgent,'Detected voices: '+shown.length,...shown.map(v=>v.name+' | '+v.lang+' | '+type(v)),'','PLAYBACK TEST RESULTS:',...(attempts.length?attempts:['No Listen tests performed yet. Click Listen beside Venba and Pallavi first.'])];
+ const lines=['Tamil Voice Check',navigator.userAgent,'Detected voices: '+shown.length,...shown.map(v=>v.name+' | '+v.lang+' | '+type(v)),'','PLAYBACK TEST RESULTS:',...(attempts.length?attempts:['No Listen tests performed yet. Please click Listen beside Venba, wait for the result, then test Pallavi.'])];
  const value=lines.join('\n');
  try{await navigator.clipboard.writeText(value);detail.textContent='Voice report copied. Paste it into ChatGPT.'}
  catch{const box=document.createElement('textarea');box.value=value;box.style.width='100%';box.rows=5;list.prepend(box);box.focus();box.select();detail.textContent='Copy the selected report and paste it into ChatGPT.'}
