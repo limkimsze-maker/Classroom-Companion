@@ -1,7 +1,7 @@
 /* Adapter for the pinned PaddleOCR.js 0.4.2 worker transport. */
 (function () {
   'use strict';
-  if (!window.__CC_CHINESE_TRIAL__) return;
+  if (!window.__CC_CHINESE_TRIAL__ && !window.__CC_CHINESE_ALPHA__) return;
   const base = new URL('./', document.currentScript.src);
   let worker = null, ready = null, sequence = 0, queue = Promise.resolve();
   const pending = new Map();

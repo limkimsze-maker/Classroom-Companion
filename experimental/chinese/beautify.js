@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  if (!window.__CC_CHINESE_TRIAL__ || typeof strokes === 'undefined') return;
+  if ((!window.__CC_CHINESE_TRIAL__ && !window.__CC_CHINESE_ALPHA__) || typeof strokes === 'undefined') return;
   const clone = value => JSON.parse(JSON.stringify(value));
   const eligible = s => s && !s.erase && !s.highlighter && !s.locked && !s.background &&
     !s.smartGenerated && !s.shape && Array.isArray(s.points) && s.points.length > 0;
@@ -195,7 +195,9 @@
       const heading = group?.querySelector('.ccToolGroupLabel'); if (heading) heading.textContent = label;
     }
   }
-  document.addEventListener('DOMContentLoaded', localise, { once: true });
-  localise(); setTimeout(localise, 1100);
+  if (window.__CC_CHINESE_TRIAL__) {
+    document.addEventListener('DOMContentLoaded', localise, { once: true });
+    localise(); setTimeout(localise, 1100);
+  }
   window.CCChineseBeautify = { begin, close };
 })();

@@ -2,9 +2,15 @@
 
 Entry point: `../../whiteboard-chinese-trial.html`. This separate page copies the
 current Alpha shell at commit `2dfaf0b679dd5004cc82370a14cd8dd484a003c3`.
-No existing production file is changed. Do not promote until Lim Kim Sze confirms.
-The Chinese feature is loaded only by this trial, with a filename guard in the
-bootstrap. `edition=zh` alone on an existing whiteboard does not load the feature.
+Lim Kim Sze confirmed promotion on 29 October 2026. Alpha now loads this
+handwriting feature only at `whiteboard-smart-beta.html?edition=zh`, through
+`alpha-integration.js`. English and other editions do not load the feature.
+The separate trial remains available with its own storage namespace.
+
+The Alpha integration preserves its original editor, toolbar, speech-to-text,
+document tools and saved-data handling. Chinese replacements use Alpha's
+existing handwriting edit history for one-step Undo. The Alpha stylesheet
+styles only the new Chinese handwriting button, picker and review dialog.
 
 Write in Pen, press **美化汉字**, enclose complete characters, check the editable
 recognition result and press **应用到白板**. Cancel retains the ink. Apply creates
