@@ -80,7 +80,7 @@
   (async () => {
     await loadScript('alpha-labels.js?v=20261029-cn-alpha-route2');
     if (!window.OpenCC) await loadScript('vendor/opencc-t2cn.js');
-    await loadScript('recognizer.js?v=20261029-promotion1');
-    await loadScript('beautify.js?v=20261029-promotion1');
+    await loadScript('recognizer.js?v=20261029-coverage1');
+    await loadScript('beautify.js?v=20261029-coverage1');
   })().catch(error => console.warn('[Chinese handwriting]', error));
 })();

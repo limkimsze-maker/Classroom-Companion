@@ -1,0 +1,32 @@
+name: Chinese handwriting coverage
+on:
+  push:
+    branches: [main]
+    paths:
+      - experimental/chinese/recognizer.js
+      - experimental/chinese/beautify.js
+      - scripts/test-chinese-handwriting-coverage.cjs
+      - scripts/fixtures/chinese-handwriting/**
+      - .github/workflows/chinese-handwriting.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chinese-handwriting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check recogniser
+        run: node --check experimental/chinese/recognizer.js
+      - name: Install browser
+        run: |
+          npm install --prefix /tmp/reader-browser --no-save playwright@1.55.0
+          node /tmp/reader-browser/node_modules/playwright/cli.js install chromium --only-shell
+      - name: Verify handwritten text across sizes, padding, lines and existing controls
+        env:
+          NODE_PATH: /tmp/reader-browser/node_modules
+        run: node scripts/test-chinese-handwriting-coverage.cjs

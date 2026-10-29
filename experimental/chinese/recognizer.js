@@ -69,6 +69,62 @@
     }
     return output.map(row => row.text).join('\n');
   }
+  // A detector can return a confident radical or punctuation mark while
+  // missing the rest of a handwritten line. A nonempty result is not proof
+  // that the selected ink was read. Check coverage against the actual pixels.
+  function inkMap(canvas) {
+    const w = canvas.width, h = canvas.height;
+    const pixels = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+    const rows = new Uint32Array(h), points = [];
+    let left = w, top = h, right = -1, bottom = -1;
+    for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) {
+      const i = (y * w + x) * 4;
+      if (pixels[i + 3] < 128 || pixels[i] + pixels[i + 1] + pixels[i + 2] > 480) continue;
+      points.push([x, y]); rows[y]++;
+      left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y);
+    }
+    return { points, rows, left, top, right: right + 2, bottom: bottom + 2 };
+  }
+  function coverage(ink, items) {
+    if (!ink.points.length) return 1;
+    const boxes = items.map(item => {
+      const poly = item.poly || [], xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
+      return { l: Math.min(...xs) - 3, r: Math.max(...xs) + 3, t: Math.min(...ys) - 3, b: Math.max(...ys) + 3 };
+    });
+    return ink.points.filter(([x, y]) => boxes.some(b => x >= b.l && x <= b.r && y >= b.t && y <= b.b)).length / ink.points.length;
+  }
+  function lineCrops(canvas, ink) {
+    if (!ink.points.length) return [];
+    const runs = [];
+    for (let y = ink.top; y < ink.bottom; y += 2) {
+      if (!ink.rows[y]) continue;
+      const previous = runs.at(-1);
+      if (previous && y - previous.bottom <= 10) previous.bottom = y + 2;
+      else runs.push({ top: y, bottom: y + 2 });
+    }
+    // Thin horizontal strokes/radicals are not separate lines of writing.
+    const bands = [];
+    for (const row of runs) {
+      const previous = bands.at(-1), height = row.bottom - row.top;
+      if (previous && (height < 14 || previous.bottom - previous.top < 14 ||
+          row.top - previous.bottom < Math.max(14, Math.min(height, previous.bottom - previous.top) * .3))) previous.bottom = row.bottom;
+      else bands.push({ ...row });
+    }
+    if (bands.length > 12) return [];
+    return bands.map(band => {
+      const points = ink.points.filter(p => p[1] >= band.top && p[1] < band.bottom);
+      let left = canvas.width, right = 0;
+      for (const point of points) { left = Math.min(left, point[0]); right = Math.max(right, point[0] + 2); }
+      const height = Math.max(2, band.bottom - band.top), width = Math.max(2, right - left);
+      // Canonical line height avoids detector sensitivity to board zoom/DPI.
+      const scale = Math.min(96 / height, 1600 / width), padding = 14;
+      const crop = document.createElement('canvas');
+      crop.width = Math.max(48, Math.ceil(width * scale) + padding * 2); crop.height = Math.ceil(height * scale) + padding * 2;
+      const c = crop.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, crop.width, crop.height);
+      c.drawImage(canvas, left, band.top, width, height, padding, padding, width * scale, height * scale);
+      return { canvas: crop, band, left, right };
+    });
+  }
   window.CCChineseRecognizer = {
     load,
     simplify(value) { convert ||= simplify(); return convert(value); },
@@ -78,17 +134,31 @@
         const bitmap = await createImageBitmap(canvas);
         let results = await request('predict', { sources: [{ kind: 'imageBitmap', imageBitmap: bitmap }],
           params: { textDetLimitSideLen: 1280, textRecScoreThresh: 0 } }, [bitmap], 45000);
-        let cropFallback = false;
-        // A line detector can miss a single isolated character. Read the selected
-        // crop directly with the same recognition model in that case.
-        if (!results[0]?.items?.length) {
-          const crop = await createImageBitmap(canvas);
-          results = await request('recognize-crop', { sources: [{ kind: 'imageBitmap', imageBitmap: crop }] }, [crop], 45000);
-          cropFallback = true;
+        const detected = results[0]?.items || [], ink = inkMap(canvas);
+        const covered = coverage(ink, detected);
+        const weak = !detected.length || covered < .85 ||
+          detected.some(item => !Number.isFinite(item.score) || item.score < .8) ||
+          !/\p{Script=Han}/u.test(lines(detected));
+        let items = detected, cropFallback = false;
+        if (weak && ink.points.length) {
+          const crops = lineCrops(canvas, ink), readings = [];
+          for (const crop of crops) {
+            const bitmap = await createImageBitmap(crop.canvas);
+            const result = await request('recognize-crop', { sources: [{ kind: 'imageBitmap', imageBitmap: bitmap }] }, [bitmap], 45000);
+            const reading = result[0]?.items?.[0];
+            if (reading?.text?.trim()) readings.push({ text: reading.text, score: reading.score,
+              poly: [[crop.left, crop.band.top], [crop.right, crop.band.top], [crop.right, crop.band.bottom], [crop.left, crop.band.bottom]] });
+          }
+          const average = list => list.reduce((sum, item) => sum + (Number(item.score) || 0), 0) / Math.max(1, list.length);
+          // Prefer a full-line reading when the detector omitted ink; otherwise
+          // require a stronger recognition score before replacing its output.
+          if (readings.length && (!detected.length || covered < .85 || average(readings) > average(detected) + .03)) {
+            items = readings; cropFallback = true;
+          }
         }
-        const items = results[0]?.items || [];
-        return { text: this.simplify(lines(items)), items,
-          uncertain: cropFallback || items.some(item => item.score < .85), metrics: results[0]?.metrics };
+        const text = this.simplify(lines(items));
+        return { text, items, uncertain: cropFallback || covered < .85 || items.some(item => item.score < .85),
+          metrics: { ...results[0]?.metrics, inkCoverage: covered, lineFallback: cropFallback } };
       });
       queue = task; return task;
     }

@@ -142,7 +142,7 @@
         const result = await window.CCChineseRecognizer.recognize(image);
         if (id !== generation) return;
         if (revision === startedRevision) input.value = result.text;
-        status.textContent = result.text ? (result.uncertain ? '部分文字不太确定，请逐字核对识别结果。' : '识别完成，请核对后应用。') : '未能识别这段笔迹。可以重新识别或手动输入。';
+        status.textContent = result.text ? (result.metrics?.lineFallback ? '已按整行重新识别，请核对文字后应用。' : result.uncertain ? '部分文字不太确定，请逐字核对识别结果。' : '识别完成，请核对后应用。') : '未能识别这段笔迹。可以重新识别或手动输入。';
         update();
       } catch (error) { if (id === generation) { console.warn('[Chinese trial]', error); status.classList.add('error');
         status.textContent = '本次识别未完成，原笔迹保留。可以重试或手动输入。'; } }

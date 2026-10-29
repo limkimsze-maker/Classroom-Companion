@@ -17,7 +17,7 @@ function mockVoices(){
  const base='http://127.0.0.1:'+server.address().port;
  const errors=[];
  try{
- const context=await browser.newContext({viewport:{width:1440,height:1000}});context.on('page',p=>p.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message)}));
+ const context=await browser.newContext({viewport:{width:1440,height:1000}});await context.route('https://cdn.counter.dev/**',route=>route.abort());await context.route('https://t.counter.dev/**',route=>route.abort());context.on('page',p=>p.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message)}));
  for(const [code,label,sample] of [['en','Read selected text','Today we learn together.'],['zh','朗读所选文字','今天我们一起学习。'],['ms','Baca teks terpilih','Hari ini kita belajar bersama.'],['ta','தேர்ந்தெடுத்த உரையை வாசி','இன்று நாம் ஒன்றாகக் கற்கிறோம்.']]){
   const page=await context.newPage();await page.addInitScript(mockVoices);await page.goto(base+'/Classroom-Companion/whiteboard-smart-beta.html?edition='+code);await page.waitForFunction(()=>!!CCReadAloud&&!!document.getElementById('ccReadAloudBtn'));
   await page.evaluate(text=>{const obj={type:'text',text,x:.1,y:.15,w:.6,h:.2,colour:'#17324d',size:28,font:'Arial',bold:false};strokes.push(obj);tool='select';syncUi();ClassroomObjectSelection.select(obj)},sample);
