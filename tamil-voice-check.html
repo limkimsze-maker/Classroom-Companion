@@ -50,7 +50,7 @@ footer{font-size:12px;color:#71808b;margin-top:22px}
 </section>
 <section>
 <h2 style="font-size:17px;margin:0">How to interpret the result</h2>
-<p class="hint">Venba (Singapore), Kani (Tamilsia), Pallavi (India) and Saranya (Sri Lanka) are known female Tamil voices. A generic Google Tamil voice may not identify its gender. Only voices listed by your browser can be selected by a webpage using the Web Speech API.</p>
+<p class="hint">Venba (Singapore), Kani (Malaysia), Pallavi (India) and Saranya (Sri Lanka) are known female Tamil voices. A generic Google Tamil voice may not identify its gender. Only voices listed by your browser can be selected by a webpage using the Web Speech API.</p>
 <p class="hint">If no female Tamil voice appears, try this page in <b>Microsoft Edge</b>. Its voice list may differ from Chrome's. The test uses your browser's speech synthesis and does not upload text to Classroom Companion.</p>
 <p style="margin-bottom:0"><a href="whiteboard-smart-beta.html?edition=ms">Return to Tamil Whiteboard</a></p>
 </section>
@@ -68,7 +68,7 @@ function type(v){
  const n=(v.name+' '+v.voiceURI).toLowerCase();
  if(/\b(?:anbu|surya|valluvar|kumar|male)\b/.test(n))return 'Known male voice';
  if(/\bvenba(?:neural)?\b/.test(n))return 'Known female voice (Venba, Singapore)';
- if(/\bkani(?:neural)?\b/.test(n))return 'Known female voice (Kani, Tamilsia)';
+ if(/\bkani(?:neural)?\b/.test(n))return 'Known female voice (Kani, Malaysia)';
  if(/\bpallavi(?:neural)?\b/.test(n))return 'Known female voice (Pallavi, India)';
  if(/\bsaranya(?:neural)?\b/.test(n))return 'Known female voice (Saranya, Sri Lanka)';
  if(/\b(?:female|woman|lady)\b/.test(n))return 'Labeled female';
