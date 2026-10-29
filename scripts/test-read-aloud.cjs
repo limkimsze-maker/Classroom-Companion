@@ -26,7 +26,8 @@ function mockVoices(){
   const original=await page.evaluate(()=>JSON.stringify(strokes));
   await page.getByRole('button',{name:label,exact:true}).first().click();assert.equal(await page.locator('#ccReadAloudText').inputValue(),sample);assert.equal(await page.locator('#ccReadAloudLanguage').inputValue(),code);await page.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);assert.equal(await page.evaluate(()=>__spoken.map(x=>x.text).join('')),sample);
   assert.equal(await page.evaluate(()=>__spoken[0].rate),code==='zh'?.85:1);
-  if(code==='zh'){assert.equal(await page.evaluate(()=>__spoken[0].voice),'Microsoft Xiaoxiao Natural');assert.equal(await page.locator('#ccReadAloudVoice option[value=auto]').textContent(),'温柔女声（自动）');assert.ok(!(await page.locator('#ccReadAloudVoice').textContent()).includes('Online'));console.log('CHINESE_ADULT_FEMALE_DEFAULT_OK')}
+  if(code==='zh'){assert.equal(await page.evaluate(()=>__spoken[0].voice),'Microsoft Xiaoxiao Natural');assert.equal(await page.locator('#ccReadAloudVoice option[value=auto]').textContent(),'自动选择本机女声');assert.ok((await page.locator('#ccReadAloudVoice').textContent()).includes('在线'));console.log('CHINESE_ADULT_FEMALE_DEFAULT_OK')}
+  else assert.equal(await page.locator('#ccChineseTryVoices').isVisible(),false);
   await page.evaluate(()=>{__spoken=[]});
   await page.locator('#ccReadAloudSpeed').selectOption('0.85');await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);
   let spoken=await page.evaluate(()=>__spoken);assert.equal(spoken[0].text,sample);assert.equal(spoken[0].rate,.85);assert.ok(spoken[0].lang.startsWith(code==='zh'?'zh':code));

@@ -21,6 +21,7 @@ const CHINESE_VOICE_COPY={
 let panel,preview,status,sourceLabel,language,voice,voiceHint,speed,read,stopButton,repeat,mainButton,railButton;
 let voices=[],run=0,extract=0,state='idle',last=null,source=null,activeUtterance=null,cancelNative=null;
 let audio=null,audioSource=null,worker=null,workerSerial=0,pending=new Map();
+let chineseVoicePicker=null;
 const workerUrl=new URL('vendor/read-aloud/worker.js?v=20261029-zh-female1',document.currentScript.src);
 function say(key){if(status)status.textContent=L[key]||key}
 function setState(value){state=value;if(stopButton)stopButton.disabled=value==='idle';if(repeat)repeat.disabled=!last;if(read)read.disabled=value==='loading'||!preview?.value.trim();if(panel)panel.dataset.state=value}
@@ -30,16 +31,16 @@ function stop(message='stopped'){
  if(synth)try{synth.cancel()}catch{}
  if(audioSource){audioSource.onended=null;try{audioSource.stop();audioSource.disconnect()}catch{}audioSource=null}
  setState('idle');if(message)say(message);
+ chineseVoicePicker?.stopped();
 }
 function primeAudio(){
  try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!audio||audio.state==='closed')audio=new C();if(audio.state!=='running')audio.resume().catch(()=>{});return audio}catch{return null}
 }
-function nativeVoices(){
- try{return (synth?.getVoices()||[]).filter(v=>v.localService===true)}catch{return []}
-}
+function browserVoices(){try{return synth?.getVoices()||[]}catch{return []}}
+function nativeVoices(){return browserVoices().filter(v=>v.localService===true)}
 function matches(v,code){
  const tag=String(v.lang||'').toLowerCase().replace(/_/g,'-');
- if(code==='zh')return /^(?:zh-(?:cn|sg|tw)|cmn(?:-|$))/.test(tag)||tag==='zh';
+ if(code==='zh')return /^(?:zh-(?:cn|sg|tw)(?:-|$)|zh-(?:hans|hant)(?:-(?:cn|sg|tw))?$|cmn(?:-|$))/.test(tag)||tag==='zh';
  return tag===code||tag.startsWith(code+'-');
 }
 function preferred(list,code){
@@ -55,6 +56,8 @@ function preferred(list,code){
  return [...candidates].sort((a,b)=>{const score=v=>{const i=tags.indexOf(String(v.lang).toLowerCase().replace(/_/g,'-')),locale=i<0?99:i;return code==='zh'?locale*2-(/natural|neural|premium|enhanced|自然|增强|增強/i.test(v.name)?30:0):locale};return score(a)-score(b)})[0];
 }
 function refreshVoices(){
+ if(voice&&language.value==='zh'&&chineseVoicePicker){voices=browserVoices().filter(v=>matches(v,'zh'));chineseVoicePicker.refresh(voices);return}
+ chineseVoicePicker?.hide();
  if(!voice)return;const previous=voice.value;voices=nativeVoices().filter(v=>matches(v,language.value));voice.replaceChildren();
  const chinese=language.value==='zh';
  for(const [value,label] of [['auto',chinese?CHINESE_VOICE_COPY.automatic:L.automatic],['builtin',chinese?CHINESE_VOICE_COPY.builtin:L.builtin],...voices.map((v,i)=>['voice-'+i,v.name+' · '+v.lang])]){const option=document.createElement('option');option.value=value;option.textContent=label;voice.append(option)}
@@ -91,15 +94,15 @@ async function localChunk(chunk,job){
 function systemChunk(chunk,job,chosen){
  return new Promise((resolve,reject)=>{
   if(job.id!==run){resolve();return}
-  const utterance=new Utterance(chunk.text);let settled=false,timer=null;
+  const utterance=new Utterance(chunk.text),requestedAt=performance.now();let settled=false,timer=null;
   function finish(error){
    if(settled)return;settled=true;clearTimeout(timer);
    if(cancelNative===cancel)cancelNative=null;if(activeUtterance===utterance)activeUtterance=null;
-   error&&job.id===run?reject(error):resolve();
+   if(error&&job.id===run){job.onVoiceFailure?.();reject(error)}else resolve();
   }
   const cancel=()=>finish();cancelNative=cancel;activeUtterance=utterance;
   utterance.lang=chosen.lang||LANGS[job.code].tag;utterance.voice=chosen;utterance.rate=job.rate;utterance.pitch=1;utterance.volume=1;
-  utterance.onstart=()=>{clearTimeout(timer);if(job.id===run)say('reading')};utterance.onend=()=>finish();utterance.onerror=event=>finish(Error(event.error||'Speech failed'));
+  utterance.onstart=()=>{clearTimeout(timer);if(job.id===run){say('reading');job.onVoiceStart?.(performance.now()-requestedAt)}};utterance.onend=()=>finish();utterance.onerror=event=>finish(Error(event.error||'Speech failed'));
   timer=setTimeout(()=>{
    if(job.id!==run){finish();return}
    finish(Error('Device voice did not start'));try{synth.cancel()}catch{}
@@ -110,21 +113,37 @@ function systemChunk(chunk,job,chosen){
 async function play(text){
  const value=String(text||'').trim();if(!value){say('choose');return}
  if(source?.document&&!sameDocument(source.document,window.CCDocumentText?.snapshot())){invalidate();return}
+ if(language.value==='zh'&&chineseVoicePicker)refreshVoices();
  stop('');primeAudio();
  // Prevent the dictation microphone from transcribing the reader's own voice.
  const micStop=document.querySelector('#ccSpeechToTextPanel [data-action=stop]');if(micStop&&!micStop.disabled)micStop.click();
  const job={id:run,code:language.value,rate:Number(speed.value)||1},selected=voice.value;
- let chosen=selected==='builtin'?null:selected.startsWith('voice-')?voices[Number(selected.slice(6))]:preferred(nativeVoices().filter(v=>matches(v,job.code)),job.code);
+ const choice=job.code==='zh'?chineseVoicePicker?.resolve():null;
+ if(choice?.missing){chineseVoicePicker.missing();return}
+ let chosen=choice?choice.voice:selected==='builtin'?null:selected.startsWith('voice-')?voices[Number(selected.slice(6))]:preferred(nativeVoices().filter(v=>matches(v,job.code)),job.code);
+ if(job.code==='zh'){
+  chineseVoicePicker?.using(chosen);let measured=false;
+  job.onVoiceStart=delay=>{if(!measured){measured=true;chineseVoicePicker?.record(chosen,delay)}};
+  job.onVoiceFailure=()=>chineseVoicePicker?.record(chosen,undefined,true);
+ }
  last={text:value,code:job.code};setState('reading');say('reading');
  try{
   const chunks=splitText(value,job.code);
   for(const chunk of chunks){
    if(job.id!==run)return;
    if(source?.document&&!sameDocument(source.document,window.CCDocumentText?.snapshot())){invalidate();return}
-   if(chosen&&synth&&Utterance){try{await systemChunk(chunk,job,chosen)}catch{if(job.id!==run)return;chosen=null;say('fallback');await localChunk(chunk,job)}}else await localChunk(chunk,job);
+   if(chosen&&synth&&Utterance){try{await systemChunk(chunk,job,chosen)}catch{if(job.id!==run)return;chosen=null;say('fallback');if(job.code==='zh')chineseVoicePicker?.using(null,true);await localChunk(chunk,job)}}else await localChunk(chunk,job);
   }
   if(job.id===run){setState('idle');say('finished')}
  }catch(error){if(job.id===run){stop('failed');console.warn('[Read Aloud]',error.message)}}
+}
+async function auditionChineseVoice(chosen,text,callbacks){
+ primeAudio();const micStop=document.querySelector('#ccSpeechToTextPanel [data-action=stop]');if(micStop&&!micStop.disabled)micStop.click();
+ const job={id:run,code:'zh',rate:Number(speed.value)||.85,onVoiceStart:callbacks.start};setState('reading');say('reading');
+ try{
+  if(chosen&&synth&&Utterance)await systemChunk({text},job,chosen);else await localChunk({text},job);
+  if(job.id===run){setState('idle');say('ready');callbacks.end()}
+ }catch{if(job.id===run){setState('idle');callbacks.error()}}
 }
 function readPreview(){
  const start=preview.selectionStart,end=preview.selectionEnd;
@@ -155,7 +174,7 @@ async function loadDocument(autoRead=false,annotations=''){
  }catch{if(ticket===extract&&expectedRun===run){setState('idle');say('changed')}}
 }
 function invalidate(){++extract;stop('changed');last=null;source=null;if(preview){preview.value='';sourceLabel.textContent='';setState('idle')}}
-function close(){++extract;stop('');panel.hidden=true;mainButton?.setAttribute('aria-expanded','false');mainButton?.focus({preventScroll:true})}
+function close(){++extract;stop('');chineseVoicePicker?.collapse();panel.hidden=true;mainButton?.setAttribute('aria-expanded','false');mainButton?.focus({preventScroll:true})}
 function open(autoRead=false){
  panel.hidden=false;mainButton.setAttribute('aria-expanded','true');refreshVoices();
  const text=boardText();if(autoRead)primeAudio();
@@ -180,10 +199,12 @@ function boot(){
  const [speedLabel,speedSelect]=select(L.speed,[.7,.85,1,1.15,1.3].map(value=>[String(value),value+'×']),'ccReadAloudSpeed');speed=speedSelect;speed.value=ui==='zh'?'0.85':'1';options.append(languageLabel,speedLabel);
  const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent=L.voice;const [voiceLabel,voiceSelect]=select(L.voice,[],'ccReadAloudVoice');voice=voiceSelect;voiceHint=document.createElement('p');voiceHint.className='cc-reader-hint';details.append(summary,voiceLabel,voiceHint);
  status=document.createElement('p');status.id='ccReadAloudStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
- panel.append(head,sources,sourceLabel,hint,preview,controls,options,details,status);document.body.append(panel);refreshVoices();setState('idle');say('empty');
+ panel.append(head,sources,sourceLabel,hint,preview,controls,options,details,status);document.body.append(panel);
+ if(window.CCChineseVoicePicker)chineseVoicePicker=window.CCChineseVoicePicker.create({ui,host:panel,details,language,voice,speed,voiceHint,status,onStop:()=>stop('ready'),onAudition:auditionChineseVoice,onRefresh:refreshVoices,autoVoice:list=>preferred(list,'zh')});
+ refreshVoices();setState('idle');say('empty');
  mainButton.addEventListener('click',()=>open(true));
  panel.addEventListener('click',event=>{const action=event.target.closest('[data-read-action]')?.dataset.readAction;if(!action)return;if(action==='close'){close();return}if(action==='read'){readPreview();return}if(action==='stop'){stop();return}if(action==='repeat'){if(last){language.value=last.code;refreshVoices();void play(last.text)}return}if(action==='document'){void loadDocument();return}if(action==='selection'){const text=boardText();if(text)fill(text,L.board);else say('choose')}});
- for(const option of [language,speed,voice])option.addEventListener('change',()=>{stop('ready');if(option===language)refreshVoices()});
+ for(const option of [language,speed,voice])option.addEventListener('change',()=>{stop('ready');if(option===language)refreshVoices();else if(language.value==='zh')chineseVoicePicker?.changed()});
  synth?.addEventListener?.('voiceschanged',refreshVoices);
  const toolbar=document.getElementById('documentQuickBar');
  function rail(){const top=document.getElementById('documentRailTop');if(!top||document.getElementById('ccDocumentReadBtn'))return;const search=top.querySelector('.doc-search-main');const row=document.createElement('div');row.className='cc-reader-rail-row';railButton=button('🔊','open','doc-search-main');railButton.id='ccDocumentReadBtn';railButton.title=L.title;railButton.setAttribute('aria-label',L.title);railButton.addEventListener('click',()=>open(true));if(search)row.append(search);row.append(railButton);top.append(row)}

@@ -1,8 +1,8 @@
 # Local Read Aloud voices
 
 This directory contains the standalone fallback speech engine used by Classroom
-Companion's Read Selected feature. It synthesises PCM audio in a Web Worker and
-loads only same-origin files. Document text is never sent to an upload service.
+Companion's Read Board feature. It synthesises PCM audio in a Web Worker and
+loads only same-origin files. The built-in engine never uploads document text.
 The reader prefers a matching local device voice when one is available; these
 built-in formant voices ensure English, Mandarin Chinese, Malay and Tamil still
 work when the device has no matching voice installed. Formant speech sounds more
@@ -10,12 +10,24 @@ synthetic than the device's natural voices.
 
 Mandarin automatic mode prefers recognised adult female device voices (such as
 Huihui, Yaoyao, Xiaoxiao or Tingting), with natural/enhanced versions ranked first.
-Only local device voices are eligible. If no recognised female voice is exposed,
+Automatic mode uses only local device voices. If no recognised female voice is exposed,
 it uses the bundled `cmn+f2` female variant at pitch 48 and volume 92, instead of
 guessing that an unnamed Mandarin voice is female. The Chinese edition defaults
 to 0.85× speed; teachers can still change the speed and choose another voice.
 This calmer female preset retains the synthetic sound of eSpeak. Other languages keep their existing
 voice and speed defaults.
+
+The Chinese voice chooser also lists Mandarin voices exposed by the browser,
+including online voices. Online voices are labelled and used for board/document
+reading only after the teacher explicitly selects one. Previews always use the
+same fixed example sentence, never the document or board text. A versioned local
+preference stores only voice identity and pace, not reading text. Stable voice
+identity avoids switching speakers when the browser reorders its voice list.
+If a saved voice is missing, the reader asks for another choice. A failed sample
+does not substitute another speaker; a failed normal read has a visibly labelled
+built-in backup. Preview response times identify slow voices for automatic mode.
+Availability and sound depend on voices provided by the browser/device. This
+chooser adds no neural model, API credentials, or app-hosted speech endpoint.
 
 ## Pinned source and licence
 
