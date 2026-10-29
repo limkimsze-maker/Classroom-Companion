@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f766e">
+<title>Tamil Voice Check • Classroom Companion</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#163047;background:#f2f8f7}
+*{box-sizing:border-box}
+body{margin:0;padding:24px 16px;min-height:100vh}
+main{width:min(760px,100%);margin:0 auto}
+header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.symbol{width:48px;height:48px;display:grid;place-items:center;border-radius:16px;background:#d8f1ed;color:#08776c;font-size:25px}
+h1{font-size:clamp(23px,4vw,33px);letter-spacing:-.035em;margin:0 0 3px}
+p{line-height:1.6}
+.sub{margin:0;color:#667884}
+section{background:white;border:1px solid #d9e8e6;border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 8px 30px #0e49440a}
+.status{font-size:18px;font-weight:800;line-height:1.5;margin-bottom:4px}
+.hint{color:#627784;font-size:14px;margin:6px 0 0}
+ul{padding-left:19px}
+li{padding:6px 0}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+button{padding:11px 14px;border:1px solid #0f766e;border-radius:12px;color:#fff;background:#0f766e;font-size:14px;font-weight:750;cursor:pointer}
+button.secondary{color:#0f766e;background:white}
+button:disabled{opacity:.45;cursor:not-allowed}
+.voices{display:grid;gap:10px}
+.voice{border:1px solid #d8e8e7;border-radius:14px;padding:13px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.voice strong{display:block;font-size:15px;overflow-wrap:anywhere}
+.voice small{color:#647783;display:block;margin-top:4px;line-height:1.5}
+.voice button{white-space:nowrap}
+.tag{font-size:12px;font-weight:750;color:#13695d;background:#e3f7f2;padding:3px 8px;border-radius:7px}
+.result{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font-size:13px}
+a{color:#0b776b;font-weight:700}
+footer{font-size:12px;color:#71808b;margin-top:22px}
+@media(max-width:480px){.voice{align-items:stretch;flex-direction:column}.voice button{width:100%}body{padding:16px 10px}section{padding:16px}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="symbol" aria-hidden="true">♫</div><div><h1>Tamil Voice Check</h1><p class="sub">Classroom Companion · Test this browser, not the cloud catalogue</p></div></header>
+<section>
+<div id="result" class="status" aria-live="polite">Checking your Tamil voices…</div>
+<p id="detail" class="hint">The list may take a moment to load in Chrome or Edge.</p>
+<div class="actions"><button id="refresh" type="button">Check again</button><button id="copy" class="secondary" type="button">Copy voice report</button><button id="stop" class="secondary" type="button">Stop sound</button></div>
+</section>
+<section>
+<h2 style="font-size:18px;margin:0 0 14px">Tamil voices reported by your browser</h2>
+<div class="voices" id="voices" aria-live="polite"></div>
+</section>
+<section>
+<h2 style="font-size:17px;margin:0">How to interpret the result</h2>
+<p class="hint">Venba (Singapore), Kani (Tamilsia), Pallavi (India) and Saranya (Sri Lanka) are known female Tamil voices. A generic Google Tamil voice may not identify its gender. Only voices listed by your browser can be selected by a webpage using the Web Speech API.</p>
+<p class="hint">If no female Tamil voice appears, try this page in <b>Microsoft Edge</b>. Its voice list may differ from Chrome's. The test uses your browser's speech synthesis and does not upload text to Classroom Companion.</p>
+<p style="margin-bottom:0"><a href="whiteboard-smart-beta.html?edition=ms">Return to Tamil Whiteboard</a></p>
+</section>
+<footer>Created for Classroom Companion · Local browser voice diagnostic</footer>
+</main>
+<script>
+(()=>{
+'use strict';
+const synth=window.speechSynthesis;
+const list=document.getElementById('voices'),result=document.getElementById('result'),detail=document.getElementById('detail');
+const sample='ஒரு நாள் காலை, மீனா பள்ளிக்குச் சென்றாள். அங்கே அவள் ஒரு சிறிய பறவையைப் பார்த்தாள்.';
+let shown=[];
+const isTamil=v=>/^ta(?:-|$)/i.test(String(v.lang||'').replace(/_/g,'-'));
+function type(v){
+ const n=(v.name+' '+v.voiceURI).toLowerCase();
+ if(/\b(?:anbu|surya|valluvar|kumar|male)\b/.test(n))return 'Known male voice';
+ if(/\bvenba(?:neural)?\b/.test(n))return 'Known female voice (Venba, Singapore)';
+ if(/\bkani(?:neural)?\b/.test(n))return 'Known female voice (Kani, Tamilsia)';
+ if(/\bpallavi(?:neural)?\b/.test(n))return 'Known female voice (Pallavi, India)';
+ if(/\bsaranya(?:neural)?\b/.test(n))return 'Known female voice (Saranya, Sri Lanka)';
+ if(/\b(?:female|woman|lady)\b/.test(n))return 'Labeled female';
+ if(/\bgoogle\b/.test(n))return 'Google voice — gender not specified';
+ return 'Gender not specified';
+}
+function isFemale(v){return /female voice|labeled female/i.test(type(v))}
+function refresh(){
+ if(!synth){result.textContent='Speech synthesis is unavailable';detail.textContent='Try Chrome or Microsoft Edge.';list.textContent='This browser does not support the required API.';return}
+ shown=synth.getVoices().filter(isTamil);
+ list.replaceChildren();
+ if(!shown.length){result.textContent='No Tamil browser voices detected';detail.textContent='Try Microsoft Edge, or check again after the page finishes loading.';list.textContent='No Tamil (ta-*) voice was reported.';return}
+ const women=shown.filter(isFemale);
+ result.textContent=women.length?women.length+' identifiable female Tamil voice'+(women.length>1?'s':'')+' found':'No identifiable female Tamil voice found';
+ detail.textContent=shown.length+' total Tamil browser voice'+(shown.length>1?'s':'')+' detected. The voice name and language are shown below.';
+ shown.forEach((v)=>{
+  const item=document.createElement('div');item.className='voice';
+  const meta=document.createElement('div');
+  const name=document.createElement('strong');name.textContent=v.name;
+  const info=document.createElement('small');info.textContent=v.lang+' · '+type(v)+(v.localService?' · On device':' · May use network');
+  meta.append(name,info);
+  const test=document.createElement('button');test.type='button';test.textContent='Listen';
+  test.setAttribute('aria-label','Listen to '+v.name);
+  test.onclick=()=>{
+   try{
+    synth.cancel();
+    const u=new SpeechSynthesisUtterance(sample);u.voice=v;u.lang=v.lang||'ta-SG';u.rate=.94;u.pitch=1;
+    test.textContent='Playing…';
+    u.onend=()=>test.textContent='Listen';
+    u.onerror=()=>{test.textContent='Listen';detail.textContent='This voice could not play here. Try another browser.'};
+    synth.speak(u);
+   }catch(e){test.textContent='Listen';detail.textContent='Could not play voice: '+e.message}
+  };
+  item.append(meta,test);list.append(item);
+ });
+}
+document.getElementById('refresh').onclick=refresh;
+document.getElementById('stop').onclick=()=>{try{synth?.cancel()}catch{};list.querySelectorAll('button').forEach(b=>b.textContent='Listen')};
+document.getElementById('copy').onclick=async()=>{
+ const lines=['Tamil Voice Check',navigator.userAgent,'Detected voices: '+shown.length,...shown.map(v=>v.name+' | '+v.lang+' | '+type(v))];
+ const value=lines.join('\n');
+ try{await navigator.clipboard.writeText(value);detail.textContent='Voice report copied. Paste it into ChatGPT.'}
+ catch{const box=document.createElement('textarea');box.value=value;box.style.width='100%';box.rows=5;list.prepend(box);box.focus();box.select();detail.textContent='Copy the selected report and paste it into ChatGPT.'}
+};
+refresh();
+synth?.addEventListener?.('voiceschanged',refresh);
+setTimeout(refresh,600);setTimeout(refresh,1600);setTimeout(refresh,3500);
+})();
+</script>
+</body></html>
