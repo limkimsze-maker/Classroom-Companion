@@ -29,7 +29,11 @@ function mockVoices(){
   if(code==='zh'){assert.equal(await page.evaluate(()=>__spoken[0].voice),'Google 普通话（中国大陆）');assert.equal(await page.locator('#ccReadAloudVoice').inputValue(),'google-mandarin');assert.equal(await page.locator('#ccChineseTryVoices').count(),0);console.log('GOOGLE_MANDARIN_DEFAULT_OK')}
   assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);
   if(code!=='zh')assert.equal(await page.evaluate(()=>__spoken[0].voice),({en:'Microsoft Sonia Online (Natural)',ms:'Microsoft Yasmin Online (Natural)',ta:'Microsoft Venba Online (Natural)'})[code]);
-  const pdfSamples={en:['The teacher began read\ning to the children.','The teacher began reading to the children.'],ms:['Cikgu membaca cerita ke\npada murid di kelas.','Cikgu membaca cerita kepada murid di kelas.'],ta:['ஆசிரியர் மாணவர்\nகளுக்கு கதை வாசித்தார்.','ஆசிரியர் மாணவர் களுக்கு கதை வாசித்தார்.']};
+  const pdfSamples={
+   en:['The teacher began\nreading to the children.','The teacher began reading to the children.'],
+   ms:['Cikgu membaca cerita\nkepada murid di kelas.','Cikgu membaca cerita kepada murid di kelas.'],
+   ta:['ஆசிரியர் மாணவர்களுக்கு\nகதை வாசித்தார்.','ஆசிரியர் மாணவர்களுக்கு கதை வாசித்தார்.']
+  };
   if(code!=='zh'){
    const [input,expected]=pdfSamples[code];const reflowed=await page.evaluate(([source,locale])=>CCReadAloud.reflowPdfForSpeech(source,locale),[input,code]);assert.equal(reflowed,expected);
    assert.equal(await page.evaluate(text=>CCReadAloud.splitText(text,document.getElementById('ccReadAloudLanguage').value).length,expected),1);
