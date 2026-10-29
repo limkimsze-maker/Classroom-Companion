@@ -18,13 +18,25 @@ const CHINESE_VOICE_COPY={
  ms:{automatic:'Suara wanita lembut (automatik)',builtin:'Suara wanita terbina dalam',hint:'Mengutamakan suara wanita Mandarin pada peranti. Kelajuan lalai bahasa Cina ialah 0.85×. Suara wanita terbina dalam juga tersedia, tetapi bunyinya lebih sintetik.'},
  ta:{automatic:'மென்மையான பெண் குரல் (தானாக)',builtin:'உள்ளமைந்த பெண் குரல்',hint:'சாதனத்தில் உள்ள மாண்டரின் பெண் குரலுக்கு முன்னுரிமை அளிக்கப்படும். சீன மொழியின் இயல்புநிலை வேகம் 0.85×. உள்ளமைந்த பெண் குரலும் கிடைக்கும்; அதன் ஒலி செயற்கையாக இருக்கும்.'}
 }[ui];
-let panel,preview,status,sourceLabel,language,voice,voiceHint,speed,read,stopButton,repeat,mainButton,railButton;
+let panel,preview,status,sourceLabel,language,voice,voiceHint,speed,quickSpeed,read,stopButton,repeat,mainButton,railButton;
+let quickMode=false;
 let voices=[],run=0,extract=0,state='idle',last=null,source=null,activeUtterance=null,cancelNative=null;
 let audio=null,audioSource=null,worker=null,workerSerial=0,pending=new Map();
 let chineseReaderVoice=null;
 const workerUrl=new URL('vendor/read-aloud/worker.js?v=20261029-zh-female1',document.currentScript.src);
-function say(key){if(status)status.textContent=L[key]||key}
-function setState(value){state=value;if(stopButton)stopButton.disabled=value==='idle';if(repeat)repeat.disabled=!last;if(read)read.disabled=value==='loading'||!preview?.value.trim();if(panel)panel.dataset.state=value}
+function notice(message){
+ if(!quickMode||!message)return;
+ const toast=document.getElementById('toast');if(!toast)return;
+ toast.textContent=message;toast.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>toast.classList.remove('show'),2700);
+}
+function say(key){if(status)status.textContent=L[key]||key;if(['empty','busy','noText','changed','failed','unavailable','choose'].includes(key))notice(L[key]||key)}
+function setState(value){
+ state=value;if(stopButton)stopButton.disabled=value==='idle';if(repeat)repeat.disabled=!last;if(read)read.disabled=value==='loading'||!preview?.value.trim();if(panel)panel.dataset.state=value;
+ if(ui==='zh')for(const button of [mainButton,railButton]){
+  if(!button)continue;const active=value!=='idle';button.textContent=button===railButton?(active?'■':'🔊'):(active?'■ '+L.stop:'🔊 '+L.short);
+  button.title=active?L.stop:L.title;button.setAttribute('aria-label',active?L.stop:L.title);button.setAttribute('aria-pressed',String(active));
+ }
+}
 function sameDocument(a,b){return !!a&&!!b&&a.open&&b.open&&a.session===b.session&&a.page===b.page}
 function stop(message='stopped'){
  ++run;if(cancelNative){const cancel=cancelNative;cancelNative=null;cancel()}activeUtterance=null;
@@ -122,7 +134,7 @@ async function play(text){
   if(job.code==='zh'&&!chineseReaderVoice){setState('idle');say('failed');return}
   const choice=job.code==='zh'?await chineseReaderVoice.ready(()=>job.id!==run):null;
   if(job.id!==run)return;
-  if(choice?.missing){setState('idle');chineseReaderVoice.missing();return}
+  if(choice?.missing){setState('idle');chineseReaderVoice.missing();notice(status.textContent);return}
   let chosen=choice?choice.voice:selected==='builtin'?null:selected.startsWith('voice-')?voices[Number(selected.slice(6))]:preferred(nativeVoices().filter(v=>matches(v,job.code)),job.code);
   const chunks=splitText(value,job.code);
   for(const chunk of chunks){
@@ -131,7 +143,7 @@ async function play(text){
    if(chosen&&synth&&Utterance){try{await systemChunk(chunk,job,chosen)}catch(error){if(job.id!==run)return;if(job.code==='zh'&&chineseReaderVoice)throw error;chosen=null;say('fallback');await localChunk(chunk,job)}}else await localChunk(chunk,job);
   }
   if(job.id===run){setState('idle');say('finished')}
- }catch(error){if(job.id===run){stop('failed');if(job.code==='zh')chineseReaderVoice?.failed();console.warn('[Read Aloud]',error.message)}}
+ }catch(error){if(job.id===run){stop('failed');if(job.code==='zh'){chineseReaderVoice?.failed();notice(status.textContent)}console.warn('[Read Aloud]',error.message)}}
 }
 function readPreview(){
  const start=preview.selectionStart,end=preview.selectionEnd;
@@ -156,24 +168,32 @@ function fill(text,label,documentSource=null){
 async function loadDocument(autoRead=false,annotations=''){
  const ticket=++extract,snapshot=window.CCDocumentText?.snapshot();
  stop('');const expectedRun=run;if(!snapshot?.open){say('noDocument');return}if(!snapshot.ready){say('busy');return}say('loading');setState('loading');
- try{const result=await window.CCDocumentText.read();if(ticket!==extract||expectedRun!==run||panel.hidden)return;if(!sameDocument(result,window.CCDocumentText.snapshot())){invalidate();return}
+ try{const result=await window.CCDocumentText.read();if(ticket!==extract||expectedRun!==run||(panel.hidden&&!quickMode))return;if(!sameDocument(result,window.CCDocumentText.snapshot())){invalidate();return}
   const text=[result.text,annotations].filter(value=>value?.trim()).join('\n\n');
   fill(text,result.name+(result.scope==='page'?' · '+L.page+' '+result.page+'/'+result.pages:''),result);if(!text)say('noText');else if(autoRead)void play(preview.value);
  }catch{if(ticket===extract&&expectedRun===run){setState('idle');say('changed')}}
 }
 function invalidate(){++extract;stop('changed');last=null;source=null;if(preview){preview.value='';sourceLabel.textContent='';setState('idle')}}
-function close(){++extract;stop('');panel.hidden=true;mainButton?.setAttribute('aria-expanded','false');mainButton?.focus({preventScroll:true})}
-function open(autoRead=false){
- panel.hidden=false;mainButton.setAttribute('aria-expanded','true');refreshVoices();
+function close(){++extract;stop('');quickMode=false;panel.hidden=true;mainButton?.setAttribute('aria-expanded','false');mainButton?.focus({preventScroll:true})}
+function open(autoRead=false,quick=false){
+ quickMode=quick;panel.hidden=quick;if(!quick)mainButton.setAttribute('aria-expanded','true');refreshVoices();
  const text=boardText();if(autoRead)primeAudio();
  if(window.CCDocumentText?.snapshot().open)void loadDocument(autoRead,text);
  else{fill(text,L.board);if(text&&autoRead)void play(preview.value);else if(!text)say('empty')}
- preview.focus({preventScroll:true});
+ if(!quick)preview.focus({preventScroll:true});
 }
 function button(text,action,cls=''){const b=document.createElement('button');b.type='button';b.textContent=text;b.dataset.readAction=action;if(cls)b.className=cls;return b}
 function boot(){
  const anchor=document.getElementById('speechToTextBtn');if(!anchor)return;
  mainButton=button('🔊 '+L.short,'open','btn soft');mainButton.id='ccReadAloudBtn';mainButton.title=L.title;mainButton.setAttribute('aria-label',L.title);mainButton.setAttribute('aria-expanded','false');mainButton.setAttribute('aria-controls','ccReadAloudPanel');anchor.insertAdjacentElement('afterend',mainButton);
+ if(ui==='zh'){
+  mainButton.removeAttribute('aria-controls');mainButton.removeAttribute('aria-expanded');mainButton.setAttribute('aria-pressed','false');
+  const quickLabel=document.createElement('label');quickLabel.className='cc-reader-inline-speed';quickLabel.htmlFor='ccReadAloudQuickSpeed';
+  const caption=document.createElement('span');caption.textContent=L.speed;
+  quickSpeed=document.createElement('select');quickSpeed.id='ccReadAloudQuickSpeed';quickSpeed.setAttribute('aria-label',L.speed);
+  for(const rate of [.7,.85,1,1.15,1.3]){const opt=document.createElement('option');opt.value=String(rate);opt.textContent=rate+'×';quickSpeed.append(opt)}
+  quickLabel.append(caption,quickSpeed);mainButton.insertAdjacentElement('afterend',quickLabel);
+ }
  panel=document.createElement('section');panel.id='ccReadAloudPanel';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-label',L.title);panel.setAttribute('lang',LANGS[ui].tag);
  const head=document.createElement('div');head.className='cc-reader-head';const heading=document.createElement('strong');heading.textContent='🔊 '+L.title;const x=button('×','close');x.setAttribute('aria-label',L.close);head.append(heading,x);
  const sources=document.createElement('div');sources.className='cc-reader-sources';sources.append(button(L.selection,'selection'),button(L.document,'document'));
@@ -189,13 +209,17 @@ function boot(){
  status=document.createElement('p');status.id='ccReadAloudStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
  panel.append(head,sources,sourceLabel,hint,preview,controls,options,details,status);document.body.append(panel);
  if(window.CCChineseReaderVoice)chineseReaderVoice=window.CCChineseReaderVoice.create({ui,host:panel,details,voice,speed,status,onRefresh:refreshVoices});
- refreshVoices();setState('idle');say('empty');
- mainButton.addEventListener('click',()=>open(true));
+ refreshVoices();if(quickSpeed)quickSpeed.value=speed.value;setState('idle');say('empty');
+ mainButton.addEventListener('click',()=>{if(ui==='zh'){if(state!=='idle')stop();else open(true,true)}else open(true)});
+ if(quickSpeed)quickSpeed.addEventListener('change',()=>{
+  const wasReading=state!=='idle';if(wasReading)stop('');speed.value=quickSpeed.value;chineseReaderVoice?.changed();
+  if(wasReading)open(true,true);
+ });
  panel.addEventListener('click',event=>{const action=event.target.closest('[data-read-action]')?.dataset.readAction;if(!action)return;if(action==='close'){close();return}if(action==='read'){readPreview();return}if(action==='stop'){stop();return}if(action==='repeat'){if(last){language.value=last.code;refreshVoices();void play(last.text)}return}if(action==='document'){void loadDocument();return}if(action==='selection'){const text=boardText();if(text)fill(text,L.board);else say('choose')}});
- for(const option of [language,speed,voice])option.addEventListener('change',()=>{stop('ready');if(option===language)refreshVoices();else if(language.value==='zh')chineseReaderVoice?.changed()});
+ for(const option of [language,speed,voice])option.addEventListener('change',()=>{stop('ready');if(option===language)refreshVoices();else if(language.value==='zh')chineseReaderVoice?.changed();if(quickSpeed)quickSpeed.value=speed.value});
  synth?.addEventListener?.('voiceschanged',refreshVoices);
  const toolbar=document.getElementById('documentQuickBar');
- function rail(){const top=document.getElementById('documentRailTop');if(!top||document.getElementById('ccDocumentReadBtn'))return;const search=top.querySelector('.doc-search-main');const row=document.createElement('div');row.className='cc-reader-rail-row';railButton=button('🔊','open','doc-search-main');railButton.id='ccDocumentReadBtn';railButton.title=L.title;railButton.setAttribute('aria-label',L.title);railButton.addEventListener('click',()=>open(true));if(search)row.append(search);row.append(railButton);top.append(row)}
+ function rail(){const top=document.getElementById('documentRailTop');if(!top||document.getElementById('ccDocumentReadBtn'))return;const search=top.querySelector('.doc-search-main');const row=document.createElement('div');row.className='cc-reader-rail-row';railButton=button('🔊','open','doc-search-main');railButton.id='ccDocumentReadBtn';railButton.title=L.title;railButton.setAttribute('aria-label',L.title);railButton.addEventListener('click',()=>{if(ui==='zh'){if(state!=='idle')stop();else open(true,true)}else open(true)});if(search)row.append(search);row.append(railButton);top.append(row)}
  if(toolbar){rail();new MutationObserver(rail).observe(toolbar,{childList:true,subtree:true})}
  for(const event of ['cc-document-opened','cc-document-closed','cc-document-page-changing'])window.addEventListener(event,()=>{if(source?.document||state!=='idle')invalidate()});
  window.addEventListener('pagehide',()=>{stop('');resetWorker(Error('Page closed'));audio?.close().catch(()=>{})});
