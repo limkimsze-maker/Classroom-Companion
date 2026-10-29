@@ -106,6 +106,35 @@ function preferred(list,code){
  return null;
 }
 
+/* Some Edge voices arrive after the first getVoices() call. Allow the
+ * voice list to populate before declaring the female Malay voice unavailable.
+ * Chrome cannot borrow voices that Edge alone exposes. */
+async function readyFemaleMalay(job){
+ let found=preferred(browserVoices(),'ms');
+ if(found||job.id!==run||!synth)return found;
+ return await new Promise(resolve=>{
+  let complete=false;
+  const done=()=>{
+   if(complete)return;complete=true;
+   clearTimeout(timeout);
+   synth.removeEventListener?.('voiceschanged',check);
+   resolve(job.id===run?preferred(browserVoices(),'ms'):null);
+  };
+  const check=()=>{if(preferred(browserVoices(),'ms')||job.id!==run)done()};
+  const timeout=setTimeout(done,1600);
+  synth.addEventListener?.('voiceschanged',check);
+  check();
+ });
+}
+function missingFemaleMalayMessage(){
+ const edge=/\bEdg\//i.test(navigator.userAgent);
+ if(edge)return ui==='ms'
+  ?'Suara Yasmin belum muncul dalam senarai suara Edge. Muat semula halaman dan cuba lagi.'
+  :'Yasmin is not currently available to this Edge page. Reload and try again.';
+ return ui==='ms'
+  ?'Tiada suara wanita Bahasa Melayu dalam Chrome ini. Buka laman yang sama dalam Microsoft Edge untuk menggunakan Yasmin.'
+  :'No female Malay voice is exposed in this Chrome browser. Open the same page in Microsoft Edge for Yasmin.';
+}
 function refreshVoices(){
  if(voice&&language.value==='zh'&&chineseReaderVoice){voices=browserVoices().filter(v=>matches(v,'zh'));chineseReaderVoice.refresh(voices);return}
  chineseReaderVoice?.hide();
@@ -214,11 +243,13 @@ async function play(text){
   if(job.code==='ms'){
    // A stale selection, unnamed generic Google voice or absent Web Speech
    // voice must never silently fall back to the synthetic male voice.
-   if(!femaleMalay(chosen))chosen=preferred(browserVoices(),'ms');
+   if(!femaleMalay(chosen))chosen=await readyFemaleMalay(job);
+   if(job.id!==run)return;
    if(!chosen||!synth||!Utterance){
-    stop('');const msg=L.femaleMissing;if(status)status.textContent=msg;notice(msg);return;
+    stop('');const msg=missingFemaleMalayMessage();if(status)status.textContent=msg;notice(msg);return;
    }
   }
+  if(job.code==='ms'&&status)status.textContent='Suara / Voice: '+chosen.name;
   const speechCopy=source?.document?.kind==='pdf'?reflowPdfForSpeech(value,job.code):value;
   const chunks=splitText(speechCopy,job.code);
   for(const chunk of chunks){
