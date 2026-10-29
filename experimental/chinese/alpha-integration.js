@@ -78,6 +78,7 @@
   stylesheet.href = new URL('alpha-beautify.css?v=20261029-promotion1', base).href;
   document.head.appendChild(stylesheet);
   (async () => {
+    await loadScript('alpha-labels.js?v=20261029-cn-alpha-route2');
     if (!window.OpenCC) await loadScript('vendor/opencc-t2cn.js');
     await loadScript('recognizer.js?v=20261029-promotion1');
     await loadScript('beautify.js?v=20261029-promotion1');

@@ -47,7 +47,7 @@ function tidyToolbar(){
   }
  }
  if(docOpen){
-  setText(docOpen,'📄 Open File');
+  setText(docOpen,edition==='zh'?'📂 打开文件':'📄 Open File');
   setAttr(docOpen,'title','Open a PDF, Word, PowerPoint, spreadsheet, image or other displayable file');
   setAttr(docOpen,'aria-label','Open teaching file');
   const wanted=document.body.classList.contains('document-open-mode')?'none':'';
