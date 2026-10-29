@@ -66,6 +66,17 @@ function femaleMalay(v){
  // the browser itself advertises them; do not call any cloud API.
  return /\bgoogle\b/i.test(id)&&/\b(?:wavenet|standard)[-_ ]?[ac]\b/i.test(id);
 }
+/* Microsoft Edge advertises Singapore Tamil voices using Tamil-script names.
+ * Recognize those real names; do not infer gender from locale alone. */
+function femaleTamil(v){
+ if(!v||!matches(v,'ta'))return false;
+ const id=(String(v.name||'')+' '+String(v.voiceURI||'')).normalize('NFKC').toLowerCase();
+ if(/(?:வள்ளுவர்|குமார்|சூர்யா|அன்பு)/u.test(id)||
+    /\b(?:valluvar|kumar|surya|anbu|male|man)\b/i.test(id))return false;
+ return /(?:வெண்பா|கனி|பல்லவி|சரண்யா)/u.test(id)||
+   /\b(?:venba|kani|pallavi|saranya)(?:neural)?\b/i.test(id)||
+   /\b(?:female|woman|lady)\b/i.test(id);
+}
 function preferred(list,code){
  const candidates=list.filter(v=>matches(v,code)),norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,' ').trim();
  const name=v=>norm(v.name)+' '+norm(v.voiceURI);
@@ -83,6 +94,18 @@ function preferred(list,code){
      -(/\b(?:natural|neural|enhanced|wavenet)\b/i.test(id)?1:0);
   };
   return female.sort((a,b)=>quality(a)-quality(b))[0]||null;
+ }
+ if(code==='ta'){
+  const options=candidates.filter(femaleTamil);
+  const quality=v=>{
+   const id=name(v),lang=norm(v.lang).replace(/_/g,'-');
+   if(/வெண்பா|\bvenba(?:neural)?\b/iu.test(id))return 0; // Singapore female
+   if(/கனி|\bkani(?:neural)?\b/iu.test(id))return 10;
+   if(/பல்லவி|\bpallavi(?:neural)?\b/iu.test(id))return 20;
+   if(/சரண்யா|\bsaranya(?:neural)?\b/iu.test(id))return 30;
+   return 100+(lang==='ta-sg'?0:lang==='ta-my'?2:lang==='ta-in'?4:6);
+  };
+  return options.sort((a,b)=>quality(a)-quality(b))[0]||null;
  }
  const known={
   en:[/\bgoogle\s+uk\s+english\s+female\b/i,/\b(?:microsoft\s+)?(?:sonia|libby|hazel)\b/i,/\b(?:serena|kate|heather|olivia|susan|zira|samantha|jenny|aria|natasha)\b/i],
@@ -106,11 +129,11 @@ function preferred(list,code){
  return null;
 }
 
-/* Some Edge voices arrive after the first getVoices() call. Allow the
- * voice list to populate before declaring the female Malay voice unavailable.
- * Chrome cannot borrow voices that Edge alone exposes. */
-async function readyFemaleMalay(job){
- let found=preferred(browserVoices(),'ms');
+/* Edge online voices may become available after initial page load.
+ * Wait for the browser's voice list rather than switching to synthetic audio. */
+async function readyFemaleVoice(job){
+ const code=job.code;
+ let found=preferred(browserVoices(),code);
  if(found||job.id!==run||!synth)return found;
  return await new Promise(resolve=>{
   let complete=false;
@@ -118,10 +141,10 @@ async function readyFemaleMalay(job){
    if(complete)return;complete=true;
    clearTimeout(timeout);
    synth.removeEventListener?.('voiceschanged',check);
-   resolve(job.id===run?preferred(browserVoices(),'ms'):null);
+   resolve(job.id===run?preferred(browserVoices(),code):null);
   };
-  const check=()=>{if(preferred(browserVoices(),'ms')||job.id!==run)done()};
-  const timeout=setTimeout(done,1600);
+  const check=()=>{if(preferred(browserVoices(),code)||job.id!==run)done()};
+  const timeout=setTimeout(done,1800);
   synth.addEventListener?.('voiceschanged',check);
   check();
  });
@@ -135,14 +158,23 @@ function missingFemaleMalayMessage(){
   ?'Tiada suara wanita Bahasa Melayu dalam Chrome ini. Buka laman yang sama dalam Microsoft Edge untuk menggunakan Yasmin.'
   :'No female Malay voice is exposed in this Chrome browser. Open the same page in Microsoft Edge for Yasmin.';
 }
+function missingFemaleTamilMessage(){
+ const edge=/\bEdg\//i.test(navigator.userAgent);
+ if(edge)return ui==='ta'
+  ?'தமிழ்ப் பெண் குரல் இன்னும் கிடைக்கவில்லை. Microsoft Edge பக்கத்தைப் புதுப்பிக்கவும்.'
+  :'The Tamil female voice is not ready in Edge. Reload the page and retry.';
+ return ui==='ta'
+  ?'Chrome-இல் தமிழ்ப் பெண் குரல் இல்லை. Microsoft Edge-ஐப் பயன்படுத்தவும்.'
+  :'No female Tamil voice is exposed in Chrome. Open this page in Microsoft Edge for Venba.';
+}
 function refreshVoices(){
  if(voice&&language.value==='zh'&&chineseReaderVoice){voices=browserVoices().filter(v=>matches(v,'zh'));chineseReaderVoice.refresh(voices);return}
  chineseReaderVoice?.hide();
- if(!voice)return;const previous=voice.value;voices=browserVoices().filter(v=>matches(v,language.value)&& (language.value!=='ms'||femaleMalay(v)));voice.replaceChildren();
+ if(!voice)return;const previous=voice.value;voices=browserVoices().filter(v=>matches(v,language.value)&& (language.value!=='ms'||femaleMalay(v))&& (language.value!=='ta'||femaleTamil(v)));voice.replaceChildren();
  const chinese=language.value==='zh';
- for(const [value,label] of [['auto',language.value==='ms'?(ui==='ms'?'Suara wanita (automatik)':'Female Malay (automatic)'):chinese?CHINESE_VOICE_COPY.automatic:L.automatic],...(language.value==='ms'?[]:[['builtin',chinese?CHINESE_VOICE_COPY.builtin:L.builtin]]),...voices.map((v,i)=>['voice-'+i,v.name+' · '+v.lang])]){const option=document.createElement('option');option.value=value;option.textContent=label;voice.append(option)}
+ for(const [value,label] of [['auto',language.value==='ms'?(ui==='ms'?'Suara wanita (automatik)':'Female Malay (automatic)'):language.value==='ta'?(ui==='ta'?'பெண் குரல் (தானியங்கி)':'Female Tamil (automatic)'):chinese?CHINESE_VOICE_COPY.automatic:L.automatic],...(['ms','ta'].includes(language.value)?[]:[['builtin',chinese?CHINESE_VOICE_COPY.builtin:L.builtin]]),...voices.map((v,i)=>['voice-'+i,v.name+' · '+v.lang])]){const option=document.createElement('option');option.value=value;option.textContent=label;voice.append(option)}
  voice.value=[...voice.options].some(o=>o.value===previous)?previous:'auto';
- if(voiceHint)voiceHint.textContent=language.value==='ms'?(ui==='ms'?'Hanya suara wanita Bahasa Melayu disenaraikan. Yasmin diutamakan jika tersedia.':'Only verified female Malay voices are listed. Yasmin is preferred when available.'):chinese?CHINESE_VOICE_COPY.hint:L.local;
+ if(voiceHint)voiceHint.textContent=language.value==='ms'?(ui==='ms'?'Hanya suara wanita Bahasa Melayu disenaraikan. Yasmin diutamakan jika tersedia.':'Only verified female Malay voices are listed. Yasmin is preferred when available.'):language.value==='ta'?(ui==='ta'?'சிங்கப்பூர் தமிழ் பெண் குரல் வெண்பாவுக்கு முன்னுரிமை அளிக்கப்படும்.':'Venba (Singapore Tamil) is preferred when Edge provides it. Only identifiable female Tamil voices are listed.'):chinese?CHINESE_VOICE_COPY.hint:L.local;
 }
 /* Reflow the narration copy only: original PDF, layout, annotations and
  * extracted preview are untouched. Blank lines remain paragraph boundaries. */
@@ -217,7 +249,7 @@ function systemChunk(chunk,job,chosen){
   }
   const cancel=()=>finish();cancelNative=cancel;activeUtterance=utterance;
   utterance.lang=chosen.lang||LANGS[job.code].tag;utterance.voice=chosen;utterance.rate=job.rate;utterance.pitch=1;utterance.volume=1;
-  utterance.onstart=()=>{clearTimeout(timer);if(job.id===run)say('reading')};utterance.onend=()=>finish();utterance.onerror=event=>finish(Error(event.error||'Speech failed'));
+  utterance.onstart=()=>{clearTimeout(timer);if(job.id===run){say('reading');if(job.code==='ta'&&status)status.textContent='குரல் / Voice: '+chosen.name}};utterance.onend=()=>finish();utterance.onerror=event=>finish(Error(event.error||'Speech failed'));
   timer=setTimeout(()=>{
    if(job.id!==run){finish();return}
    finish(Error('Device voice did not start'));try{synth.cancel()}catch{}
@@ -243,22 +275,31 @@ async function play(text){
   if(job.code==='ms'){
    // A stale selection, unnamed generic Google voice or absent Web Speech
    // voice must never silently fall back to the synthetic male voice.
-   if(!femaleMalay(chosen))chosen=await readyFemaleMalay(job);
+   if(!femaleMalay(chosen))chosen=await readyFemaleVoice(job);
    if(job.id!==run)return;
    if(!chosen||!synth||!Utterance){
     stop('');const msg=missingFemaleMalayMessage();if(status)status.textContent=msg;notice(msg);return;
    }
   }
+  if(job.code==='ta'){
+   // Never let the built-in synthetic / potentially male voice replace Venba.
+   if(!femaleTamil(chosen))chosen=await readyFemaleVoice(job);
+   if(job.id!==run)return;
+   if(!chosen||!synth||!Utterance){
+    stop('');const msg=missingFemaleTamilMessage();if(status)status.textContent=msg;notice(msg);return;
+   }
+  }
   if(job.code==='ms'&&status)status.textContent='Suara / Voice: '+chosen.name;
+  if(job.code==='ta'&&status)status.textContent='குரல் / Voice: '+chosen.name;
   const speechCopy=source?.document?.kind==='pdf'?reflowPdfForSpeech(value,job.code):value;
   const chunks=splitText(speechCopy,job.code);
   for(const chunk of chunks){
    if(job.id!==run)return;
    if(source?.document&&!sameDocument(source.document,window.CCDocumentText?.snapshot())){invalidate();return}
-   if(chosen&&synth&&Utterance){try{await systemChunk(chunk,job,chosen)}catch(error){if(job.id!==run)return;if(job.code==='ms'||job.code==='zh'&&chineseReaderVoice)throw error;chosen=null;say('fallback');await localChunk(chunk,job)}}else await localChunk(chunk,job);
+   if(chosen&&synth&&Utterance){try{await systemChunk(chunk,job,chosen)}catch(error){if(job.id!==run)return;if(job.code==='ms'||job.code==='ta'||job.code==='zh'&&chineseReaderVoice)throw error;chosen=null;say('fallback');await localChunk(chunk,job)}}else await localChunk(chunk,job);
   }
   if(job.id===run){setState('idle');say('finished')}
- }catch(error){if(job.id===run){stop('failed');if(job.code==='zh'){chineseReaderVoice?.failed();notice(status.textContent)}else if(job.code==='ms'){const msg=L.femaleFailed;if(status)status.textContent=msg;notice(msg)}console.warn('[Read Aloud]',error.message)}}
+ }catch(error){if(job.id===run){stop('failed');if(job.code==='zh'){chineseReaderVoice?.failed();notice(status.textContent)}else if(job.code==='ms'){const msg=L.femaleFailed;if(status)status.textContent=msg;notice(msg)}else if(job.code==='ta'){const msg=ui==='ta'?'தமிழ் பெண் குரல் இயக்கப்படவில்லை. Edge-இல் மீண்டும் முயலவும்.':'Tamil female voice could not play. Try again in Edge.';if(status)status.textContent=msg;notice(msg)}console.warn('[Read Aloud]',error.message)}}
 }
 function readPreview(){
  const start=preview.selectionStart,end=preview.selectionEnd;
