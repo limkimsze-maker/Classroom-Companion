@@ -62,6 +62,26 @@ function preferred(list,code){
  const rank=(v,patterns)=>patterns.findIndex(p=>p.test(name(v)));
  const genderMale=/\b(?:male|man|boy|osman|valluvar|surya|anbu|kumar)\b|男声|男聲/i;
  const genderFemale=/\b(?:female|woman|lady)\b|女声|女聲/i;
+ // For Malay, prefer the Google voice exposed by this browser. No Cloud TTS
+ // API or billed service is used. Some browsers do not expose a Google Malay voice.
+ if(code==='ms'){
+  const google=candidates.filter(v=>/\bgoogle\b/i.test(name(v)));
+  if(google.length){
+   // Keep Malaysian/Singaporean Malay ahead of other regional variants.
+   const scoreGoogle=v=>{
+    const locale=norm(v.lang).replace(/_/g,'-'),label=name(v);
+    return (locale==='ms-my'?0:locale==='ms-sg'?10:20)
+      +(/\b(?:female|woman|lady)\b/i.test(label)?0:2)
+      -(/\b(?:natural|neural|enhanced)\b/i.test(label)?1:0);
+   };
+   return google.sort((a,b)=>scoreGoogle(a)-scoreGoogle(b))[0];
+  }
+  // If Google Malay is not offered, use a real Malay browser voice rather
+  // than dropping straight into the more synthetic built-in reader.
+  return candidates.find(v=>/\b(?:microsoft\s+)?yasmin\b/i.test(name(v)))
+    ||candidates.find(v=>/\b(?:female|woman|lady)\b/i.test(name(v)))
+    ||candidates[0]||null;
+ }
  const known={
   en:[/\bgoogle\s+uk\s+english\s+female\b/i,/\b(?:microsoft\s+)?(?:sonia|libby|hazel)\b/i,/\b(?:serena|kate|heather|olivia|susan|zira|samantha|jenny|aria|natasha)\b/i],
   ms:[/\b(?:microsoft\s+)?yasmin\b/i],
@@ -80,8 +100,7 @@ function preferred(list,code){
  };
  const chosen=female.sort((a,b)=>score(a)-score(b))[0];
  if(chosen)return chosen;
- // Google voice names may only say "Google Bahasa Melayu" or "Google Tamil"
- // without a gender. Do not promise female; use it only if tagged with female.
+ // A voice without a verified female label is not auto-picked for English or Tamil.
  return null;
 }
 
