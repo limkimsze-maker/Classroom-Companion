@@ -65,12 +65,12 @@ const sample='ஒரு நாள் காலை, மீனா பள்ளி�
 let shown=[];
 const isTamil=v=>/^ta(?:-|$)/i.test(String(v.lang||'').replace(/_/g,'-'));
 function type(v){
- const n=(v.name+' '+v.voiceURI).toLowerCase();
- if(/\b(?:anbu|surya|valluvar|kumar|male)\b/.test(n))return 'Known male voice';
- if(/\bvenba(?:neural)?\b/.test(n))return 'Known female voice (Venba, Singapore)';
- if(/\bkani(?:neural)?\b/.test(n))return 'Known female voice (Kani, Malaysia)';
- if(/\bpallavi(?:neural)?\b/.test(n))return 'Known female voice (Pallavi, India)';
- if(/\bsaranya(?:neural)?\b/.test(n))return 'Known female voice (Saranya, Sri Lanka)';
+ const n=(String(v.name||'')+' '+String(v.voiceURI||'')).normalize('NFKC').toLowerCase();
+ if(/(?:வள்ளுவர்|குமார்|சூர்யா|அன்பு)/u.test(n)||/\b(?:anbu|surya|valluvar|kumar|male)\b/.test(n))return 'Known male voice';
+ if(/வெண்பா|\bvenba(?:neural)?\b/u.test(n))return 'Known female voice (Venba, Singapore)';
+ if(/கனி|\bkani(?:neural)?\b/u.test(n))return 'Known female voice (Kani, Malaysia)';
+ if(/பல்லவி|\bpallavi(?:neural)?\b/u.test(n))return 'Known female voice (Pallavi, India)';
+ if(/சரண்யா|\bsaranya(?:neural)?\b/u.test(n))return 'Known female voice (Saranya, Sri Lanka)';
  if(/\b(?:female|woman|lady)\b/.test(n))return 'Labeled female';
  if(/\bgoogle\b/.test(n))return 'Google voice — gender not specified';
  return 'Gender not specified';
