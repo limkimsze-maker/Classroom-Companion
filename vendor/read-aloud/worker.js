@@ -14,8 +14,10 @@ self.addEventListener('message',event=>{
  queue=queue.catch(()=>{}).then(async()=>{
   try{
    if(!Number.isSafeInteger(data.id)||!['en','zh','ms','ta'].includes(data.language)||typeof data.text!=='string'||data.text.length>1200)throw Error('Invalid speech request');
-   const espeak=await ready();await espeak.loadVoice(({en:'en-gb',zh:'cmn',ms:'ms',ta:'ta'})[data.language]);
-   const result=espeak.synthesize(data.text,{rate:Math.round(165*Math.max(.6,Math.min(1.4,Number(data.rate)||1))),ssml:false,phonemes:false});
+   // Mandarin uses the bundled female timbre with a slightly softer level.
+   // The variant is already included in the pinned core data.
+   const chinese=data.language==='zh',espeak=await ready();await espeak.loadVoice(({en:'en-gb',zh:'cmn+f2',ms:'ms',ta:'ta'})[data.language]);
+   const result=espeak.synthesize(data.text,{rate:Math.round(165*Math.max(.6,Math.min(1.4,Number(data.rate)||1))),...(chinese?{pitch:48,volume:92}:{}),ssml:false,phonemes:false});
    self.postMessage({id:data.id,samples:result.samples,sampleRate:result.sampleRate},[result.samples.buffer]);
   }catch(error){self.postMessage({id:data.id,error:String(error?.message||error)})}
  });

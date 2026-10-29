@@ -8,6 +8,15 @@ built-in formant voices ensure English, Mandarin Chinese, Malay and Tamil still
 work when the device has no matching voice installed. Formant speech sounds more
 synthetic than the device's natural voices.
 
+Mandarin automatic mode prefers recognised adult female device voices (such as
+Huihui, Yaoyao, Xiaoxiao or Tingting), with natural/enhanced versions ranked first.
+Only local device voices are eligible. If no recognised female voice is exposed,
+it uses the bundled `cmn+f2` female variant at pitch 48 and volume 92, instead of
+guessing that an unnamed Mandarin voice is female. The Chinese edition defaults
+to 0.85× speed; teachers can still change the speed and choose another voice.
+This calmer female preset retains the synthetic sound of eSpeak. Other languages keep their existing
+voice and speed defaults.
+
 ## Pinned source and licence
 
 - Spellophone: `@spelling-creator/spellophone` **0.2.1**, GPL-3.0-or-later.

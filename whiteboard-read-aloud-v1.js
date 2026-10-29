@@ -12,10 +12,16 @@ const COPY={
  ta:{short:'வாசி',title:'வெண்பலகையின் முழு உரையையும் வாசி',close:'மூடு',read:'வாசி',stop:'நிறுத்து',repeat:'மீண்டும் வாசி',speed:'வேகம்',language:'மொழி',voice:'குரல்',automatic:'தானாகத் தேர்வு',builtin:'உள்ளமைந்த குரல்',selection:'வெண்பலகை உரையைப் பயன்படுத்து',document:'ஆவண உரையை ஏற்று',preview:'வாசிப்பதற்கான உரை',hint:'இந்தப் பெட்டியில் சொற்களைத் தேர்ந்தெடுத்து வாசி என்பதை அழுத்தவும். தேர்வு இல்லாவிட்டால், காட்டப்படும் முழு உரையும் வாசிக்கப்படும்.',empty:'வெண்பலகையில் உரையைச் சேர்த்து வாசி என்பதை அழுத்தவும். பொருளைத் தேர்ந்தெடுக்கத் தேவையில்லை.',loading:'ஆவண உரையைப் பெறுகிறது…',ready:'வாசிக்கத் தயார்.',reading:'வாசிக்கிறது…',stopped:'நிறுத்தப்பட்டது.',finished:'வாசித்து முடிந்தது.',choose:'வெண்பலகையில் வாசிக்கக்கூடிய உரையைச் சேர்க்கவும் அல்லது ஆவண உரையை ஏற்றவும்.',noDocument:'முதலில் ஆவணத்தைத் திறக்கவும்.',busy:'ஆவணம் ஏற்றப்படுகிறது. சிறிது நேரத்தில் முயலவும்.',noText:'வாசிக்கக்கூடிய உரை இல்லை. வருடப்பட்ட PDF கோப்புகளுக்கும் படங்களுக்கும் OCR தேவை.',changed:'ஆவணம் அல்லது பக்கம் மாறிவிட்டது. உரையை மீண்டும் ஏற்றவும்.',failed:'வாசிக்க முடியவில்லை. உள்ளமைந்த குரலை முயலவும்.',preparing:'உள்ளமைந்த குரலைத் தயார் செய்கிறது…',fallback:'உள்ளமைந்த குரலைப் பயன்படுத்துகிறது.',page:'பக்கம்',board:'வெண்பலகையின் முழு உரை',local:'குரலை நிறுவாமல் உள்ளமைந்த குரல் இயங்கும். அதன் ஒலி செயற்கையாக இருக்கும்.',unavailable:'இந்த உலாவியில் ஒலி கிடைக்கவில்லை.',long:'முதல் 200,000 எழுத்துகள் காட்டப்படுகின்றன. வாசிக்கச் சிறிய பகுதியைத் தேர்ந்தெடுக்கவும்.'}
 };
 const L=COPY[ui],synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance;
-let panel,preview,status,sourceLabel,language,voice,speed,read,stopButton,repeat,mainButton,railButton;
+const CHINESE_VOICE_COPY={
+ en:{automatic:'Gentle female (automatic)',builtin:'Built-in female voice',hint:'Prefers an available female Mandarin device voice. The default Chinese pace is 0.85×. The built-in female voice works on this device too, but sounds more synthetic.'},
+ zh:{automatic:'温柔女声（自动）',builtin:'内置女声',hint:'优先使用设备上的普通话女声。中文默认语速为 0.85×，较为舒缓。没有合适的女声时使用内置女声，音色仍较为机械。'},
+ ms:{automatic:'Suara wanita lembut (automatik)',builtin:'Suara wanita terbina dalam',hint:'Mengutamakan suara wanita Mandarin pada peranti. Kelajuan lalai bahasa Cina ialah 0.85×. Suara wanita terbina dalam juga tersedia, tetapi bunyinya lebih sintetik.'},
+ ta:{automatic:'மென்மையான பெண் குரல் (தானாக)',builtin:'உள்ளமைந்த பெண் குரல்',hint:'சாதனத்தில் உள்ள மாண்டரின் பெண் குரலுக்கு முன்னுரிமை அளிக்கப்படும். சீன மொழியின் இயல்புநிலை வேகம் 0.85×. உள்ளமைந்த பெண் குரலும் கிடைக்கும்; அதன் ஒலி செயற்கையாக இருக்கும்.'}
+}[ui];
+let panel,preview,status,sourceLabel,language,voice,voiceHint,speed,read,stopButton,repeat,mainButton,railButton;
 let voices=[],run=0,extract=0,state='idle',last=null,source=null,activeUtterance=null,cancelNative=null;
 let audio=null,audioSource=null,worker=null,workerSerial=0,pending=new Map();
-const workerUrl=new URL('vendor/read-aloud/worker.js?v=20261029-read1',document.currentScript.src);
+const workerUrl=new URL('vendor/read-aloud/worker.js?v=20261029-zh-female1',document.currentScript.src);
 function say(key){if(status)status.textContent=L[key]||key}
 function setState(value){state=value;if(stopButton)stopButton.disabled=value==='idle';if(repeat)repeat.disabled=!last;if(read)read.disabled=value==='loading'||!preview?.value.trim();if(panel)panel.dataset.state=value}
 function sameDocument(a,b){return !!a&&!!b&&a.open&&b.open&&a.session===b.session&&a.page===b.page}
@@ -38,12 +44,22 @@ function matches(v,code){
 }
 function preferred(list,code){
  const tags=code==='en'?['en-sg','en-gb','en-us']:code==='zh'?['zh-sg','zh-cn','cmn-hans-cn','zh-tw']:code==='ms'?['ms-sg','ms-my']:['ta-sg','ta-in','ta-lk'];
- return [...list].sort((a,b)=>{const score=v=>{const i=tags.indexOf(String(v.lang).toLowerCase());return i<0?99:i};return score(a)-score(b)})[0];
+ // Web Speech voices have no standard gender field. Use recognised adult female
+ // names or an explicit female label; never guess from list order or pitch.
+ const female=v=>{
+  const name=String(v.name||'').toLowerCase();
+  if(/\b(?:male|child|girl|boy|kid)\b|童声|儿童|女孩|男声|男聲|xiaoshuang|xiaoyou/.test(name))return false;
+  return /xiaoxiao|晓晓|曉曉|huihui|慧慧|yaoyao|瑶瑶|瑤瑤|ting[- ]?ting|婷婷|hanhan|涵涵|yating|雅婷|\bfemale\b|女声|女聲/.test(name);
+ };
+ const candidates=code==='zh'?list.filter(female):list;
+ return [...candidates].sort((a,b)=>{const score=v=>{const i=tags.indexOf(String(v.lang).toLowerCase().replace(/_/g,'-')),locale=i<0?99:i;return code==='zh'?locale*2-(/natural|neural|premium|enhanced|自然|增强|增強/i.test(v.name)?30:0):locale};return score(a)-score(b)})[0];
 }
 function refreshVoices(){
  if(!voice)return;const previous=voice.value;voices=nativeVoices().filter(v=>matches(v,language.value));voice.replaceChildren();
- for(const [value,label] of [['auto',L.automatic],['builtin',L.builtin],...voices.map((v,i)=>['voice-'+i,v.name+' · '+v.lang])]){const option=document.createElement('option');option.value=value;option.textContent=label;voice.append(option)}
+ const chinese=language.value==='zh';
+ for(const [value,label] of [['auto',chinese?CHINESE_VOICE_COPY.automatic:L.automatic],['builtin',chinese?CHINESE_VOICE_COPY.builtin:L.builtin],...voices.map((v,i)=>['voice-'+i,v.name+' · '+v.lang])]){const option=document.createElement('option');option.value=value;option.textContent=label;voice.append(option)}
  voice.value=[...voice.options].some(o=>o.value===previous)?previous:'auto';
+ if(voiceHint)voiceHint.textContent=chinese?CHINESE_VOICE_COPY.hint:L.local;
 }
 function splitText(text,code){
  const sentences=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter(LANGS[code]?.tag||'en',{granularity:'sentence'}).segment(text)].map(x=>({text:x.segment,start:x.index})):[{text,start:0}];
@@ -161,8 +177,8 @@ function boot(){
  const options=document.createElement('div');options.className='cc-reader-options';
  function select(label,items,id){const wrap=document.createElement('label');wrap.textContent=label;const sel=document.createElement('select');sel.id=id;sel.setAttribute('aria-label',label);for(const [value,text] of items){const option=document.createElement('option');option.value=value;option.textContent=text;sel.append(option)}wrap.append(sel);return [wrap,sel]}
  const [languageLabel,languageSelect]=select(L.language,Object.entries(LANGS).map(([key,value])=>[key,value.name]),'ccReadAloudLanguage');language=languageSelect;language.value=ui;
- const [speedLabel,speedSelect]=select(L.speed,[.7,.85,1,1.15,1.3].map(value=>[String(value),value+'×']),'ccReadAloudSpeed');speed=speedSelect;speed.value='1';options.append(languageLabel,speedLabel);
- const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent=L.voice;const [voiceLabel,voiceSelect]=select(L.voice,[],'ccReadAloudVoice');voice=voiceSelect;const note=document.createElement('p');note.textContent=L.local;note.className='cc-reader-hint';details.append(summary,voiceLabel,note);
+ const [speedLabel,speedSelect]=select(L.speed,[.7,.85,1,1.15,1.3].map(value=>[String(value),value+'×']),'ccReadAloudSpeed');speed=speedSelect;speed.value=ui==='zh'?'0.85':'1';options.append(languageLabel,speedLabel);
+ const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent=L.voice;const [voiceLabel,voiceSelect]=select(L.voice,[],'ccReadAloudVoice');voice=voiceSelect;voiceHint=document.createElement('p');voiceHint.className='cc-reader-hint';details.append(summary,voiceLabel,voiceHint);
  status=document.createElement('p');status.id='ccReadAloudStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
  panel.append(head,sources,sourceLabel,hint,preview,controls,options,details,status);document.body.append(panel);refreshVoices();setState('idle');say('empty');
  mainButton.addEventListener('click',()=>open(true));
