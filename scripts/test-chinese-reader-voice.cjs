@@ -34,6 +34,35 @@ async function idle(page){await page.waitForFunction(()=>CCReadAloud.state().sta
   /* No reading window in Chinese edition. */await page.locator('input[type=file][accept="*/*"]').setInputFiles(path.join(fixtures,'zh.docx'));await page.waitForFunction(()=>CCDocumentText.snapshot().ready);
   await page.evaluate(()=>{strokes.push({colour:'#2563eb',size:4,erase:false,points:[{x:.2,y:.2},{x:.35,y:.3}]});redraw();syncUi()});const annotation=await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export()));
   await page.locator('#ccDocumentReadBtn').click();await page.waitForFunction(()=>document.getElementById('ccReadAloudText').value.length>0);await idle(page);assert.equal(await page.locator('#ccReadAloudText').inputValue(),fs.readFileSync(path.join(fixtures,'zh.txt'),'utf8'));assert.equal(await page.evaluate(()=>__spoken.at(-1).uri),'google-mandarin');assert.equal(await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export())),annotation);console.log('GOOGLE_MANDARIN_DOCUMENT_AND_PACE_OK');
+  // A searchable Chinese PDF wraps visually mid-sentence. Its original
+  // extracted text and annotations stay intact; only the spoken text is reflowed.
+  await page.locator('#ccPermanentExitBtn').click();
+  await page.locator('input[type=file][accept="*/*"]').setInputFiles(path.join(fixtures,'text.pdf'));
+  await page.waitForFunction(()=>CCDocumentText.snapshot().ready&&CCDocumentText.snapshot().kind==='pdf');
+  const rawPdf='小明走到河\n边，看见一条\n漂亮的小鱼。\n他高兴地笑\n了。';
+  const reflowedPdf='小明走到河边，看见一条漂亮的小鱼。他高兴地笑了。';
+  await page.evaluate(source=>{
+   const original=window.CCDocumentText;
+   window.CCDocumentText=Object.freeze({
+    snapshot:original.snapshot,
+    read:async()=>({...await original.read(),text:source})
+   });
+  },rawPdf);
+  const beforePdf=await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export()));
+  const beforeSpeech=await page.evaluate(()=>__spoken.length);
+  await page.locator('#ccDocumentReadBtn').click();
+  await page.waitForFunction(n=>CCReadAloud.state().state==='idle'&&__spoken.length>n,beforeSpeech);
+  assert.equal(await page.locator('#ccReadAloudText').inputValue(),rawPdf);
+  assert.equal(await page.evaluate(()=>__spoken.at(-1).text),reflowedPdf);
+  assert.equal(await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export())),beforePdf);
+  assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);
+  const natural=await page.evaluate(()=>CCReadAloud.splitText('春天到了。小鸟唱歌。小朋友们一起去公园玩。','zh'));
+  assert.equal(natural.length,1,'Short Chinese sentences should be read in one continuous utterance');
+  const longSentence='这是一个带有逗号、并且很长很长的中文句子，'.repeat(8)+'最后我们结束。';
+  const longParts=await page.evaluate(text=>CCReadAloud.splitText(text,'zh').map(part=>part.text),longSentence);
+  assert.ok(longParts.every(part=>Array.from(part).length<=72));
+  assert.equal(longParts.join(''),longSentence);
+  console.log('CHINESE_PDF_NO_VISUAL_LINE_PAUSES_AND_NATURAL_CHUNKS_OK');
   await page.evaluate(()=>{__behavior.fail=true});const count=await page.evaluate(()=>__spoken.length);await page.locator('#ccReadAloudBtn').click();await idle(page);assert.equal(await page.evaluate(()=>__spoken.length),count+1);assert.equal(await page.evaluate(()=>__audioOutputs),0);assert.ok((await page.locator('#ccReadAloudStatus').textContent()).includes('检查网络'));console.log('GOOGLE_FAILURE_NEVER_SUBSTITUTES_A_VOICE_OK');
   await page.goto(base+'&late=1');await page.waitForSelector('#ccReadAloudBtn');await writeText(page,'声音载入后自动朗读。');
   await page.evaluate(()=>setTimeout(()=>{__voiceData=[...__allVoices];__emitVoices()},400));await page.locator('#ccReadAloudBtn').click();await page.waitForFunction(()=>__spoken.length>0&&CCReadAloud.state().state==='idle');assert.equal(await page.evaluate(()=>__spoken.at(-1).uri),'google-mandarin');assert.equal(await page.evaluate(()=>__spoken.at(-1).rate),1);console.log('LATE_GOOGLE_VOICE_AUTOMATIC_START_OK');
