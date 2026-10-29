@@ -63,6 +63,8 @@ const synth=window.speechSynthesis;
 const list=document.getElementById('voices'),result=document.getElementById('result'),detail=document.getElementById('detail');
 const sample='வணக்கம். இன்று நாம் ஒரு கதை படிப்போம்.';
 let shown=[];
+const playbackResults=new Map();
+let playSerial=0;
 const isTamil=v=>/^ta(?:-|$)/i.test(String(v.lang||'').replace(/_/g,'-'));
 function type(v){
  const n=(String(v.name||'')+' '+String(v.voiceURI||'')).normalize('NFKC').toLowerCase();
@@ -96,22 +98,27 @@ function refresh(){
    // Unlike the Whiteboard, this runs directly on a click with a short sentence
    // and the voice's default rate. It isolates Edge's online speech engine.
    try{
+    const serial=++playSerial;
     synth.cancel();
     const u=new SpeechSynthesisUtterance(sample);
     u.voice=v;u.lang=v.lang||'ta-SG';
     test.textContent='Connecting…';
+    playbackResults.set(v.name,'STARTING');
     result.textContent='Testing: '+v.name;
     detail.textContent='Waiting for the browser to start speaking a short Tamil sentence…';
-    u.onstart=()=>{test.textContent='Speaking…';detail.textContent='Audio started: '+v.name};
-    u.onend=()=>{test.textContent='Listen again';result.textContent='Playback succeeded';detail.textContent=v.name+' played the short Tamil sentence successfully.'};
+    u.onstart=()=>{if(serial!==playSerial)return;test.textContent='Speaking…';playbackResults.set(v.name,'AUDIO STARTED');detail.textContent='Audio started: '+v.name};
+    u.onend=()=>{if(serial!==playSerial)return;test.textContent='Listen again';playbackResults.set(v.name,'SUCCESS');result.textContent='Playback succeeded';detail.textContent=v.name+' played the short Tamil sentence successfully.'};
     u.onerror=event=>{
+     if(serial!==playSerial)return;
      const error=String(event?.error||'unknown error');
+     playbackResults.set(v.name,'FAILED ('+error+')');
      test.textContent='Try again';
      result.textContent='Playback failed: '+error;
      detail.textContent=v.name+' could not play in this browser (error: '+error+'). If several voices fail here too, the cause is probably Edge speech synthesis or network settings, rather than the Whiteboard.';
     };
     synth.speak(u);
    }catch(e){
+    playbackResults.set(v.name,'FAILED ('+e.message+')');
     test.textContent='Try again';result.textContent='Playback failed';detail.textContent='Could not start '+v.name+': '+e.message;
    }
   };
@@ -119,9 +126,10 @@ function refresh(){
  });
 }
 document.getElementById('refresh').onclick=refresh;
-document.getElementById('stop').onclick=()=>{try{synth?.cancel()}catch{};list.querySelectorAll('button').forEach(b=>b.textContent='Listen')};
+document.getElementById('stop').onclick=()=>{++playSerial;try{synth?.cancel()}catch{};list.querySelectorAll('button').forEach(b=>b.textContent='Listen')};
 document.getElementById('copy').onclick=async()=>{
- const lines=['Tamil Voice Check',navigator.userAgent,'Detected voices: '+shown.length,...shown.map(v=>v.name+' | '+v.lang+' | '+type(v))];
+ const attempts=[...playbackResults.entries()].map(([name,status])=>name+' | '+status);
+ const lines=['Tamil Voice Check',navigator.userAgent,'Detected voices: '+shown.length,...shown.map(v=>v.name+' | '+v.lang+' | '+type(v)),'','PLAYBACK TEST RESULTS:',...(attempts.length?attempts:['No Listen tests performed yet. Click Listen beside Venba and Pallavi first.'])];
  const value=lines.join('\n');
  try{await navigator.clipboard.writeText(value);detail.textContent='Voice report copied. Paste it into ChatGPT.'}
  catch{const box=document.createElement('textarea');box.value=value;box.style.width='100%';box.rows=5;list.prepend(box);box.focus();box.select();detail.textContent='Copy the selected report and paste it into ChatGPT.'}
