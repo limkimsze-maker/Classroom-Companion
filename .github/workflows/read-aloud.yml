@@ -5,10 +5,10 @@ on:
     paths:
       - whiteboard-read-aloud-v1.js
       - whiteboard-read-aloud-v1.css
-      - whiteboard-chinese-voice-picker-v1.js
+      - whiteboard-chinese-reader-voice-v1.js
       - vendor/read-aloud/**
       - scripts/test-read-aloud.cjs
-      - scripts/test-chinese-voice-chooser.cjs
+      - scripts/test-chinese-reader-voice.cjs
       - scripts/fixtures/read-aloud/**
       - .github/workflows/read-aloud.yml
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
       - name: Check reader and read-only bridges
         run: |
           node --check whiteboard-read-aloud-v1.js
-          node --check whiteboard-chinese-voice-picker-v1.js
+          node --check whiteboard-chinese-reader-voice-v1.js
           node --check whiteboard-document-open-my-documents-test.js
           node --check whiteboard-text-drag-alpha-speech-wrap-v1.js
       - name: Install browser
@@ -38,4 +38,4 @@ jobs:
           NODE_PATH: /tmp/reader-browser/node_modules
         run: |
           node scripts/test-read-aloud.cjs
-          node scripts/test-chinese-voice-chooser.cjs
+          node scripts/test-chinese-reader-voice.cjs

@@ -22,20 +22,9 @@
 #ccReadAloudPanel details{margin-top:9px;font-size:12px}
 #ccReadAloudPanel summary{cursor:pointer;font-weight:750;padding:3px 0}
 #ccReadAloudStatus{min-height:18px;margin:9px 0 0;font-size:12px;color:#315d53}
-#ccReadAloudPanel .cc-reader-chinese-voices[hidden],#ccReadAloudPanel .cc-reader-voice-picker[hidden]{display:none!important}
-#ccReadAloudPanel .cc-reader-voice-current{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
-#ccChineseCurrentVoice{min-width:0;font-size:12px;overflow-wrap:anywhere}
-#ccChineseTryVoices{flex:0 0 auto;font-size:12px}
-#ccReadAloudPanel .cc-reader-voice-picker{margin-top:9px;padding:10px;background:#f3faf8;border:1px solid #d0e5df;border-radius:10px}
-#ccReadAloudPanel .cc-reader-voice-sample{margin:8px 0;padding:7px 9px;border-left:3px solid #4b9e90;background:white;font-size:15px;line-height:1.6}
-#ccReadAloudPanel .cc-reader-voice-card{display:grid;gap:4px;padding:10px 0;border-top:1px solid #d4e5e0}
-#ccReadAloudPanel .cc-reader-voice-card>strong{overflow-wrap:anywhere;font-size:13px}
-#ccReadAloudPanel .cc-reader-voice-tag,#ccReadAloudPanel .cc-reader-voice-feedback{font-size:11px;color:#526775}
-#ccReadAloudPanel .cc-reader-voice-feedback:empty{display:none}
-#ccReadAloudPanel .cc-reader-voice-actions{display:flex;gap:6px;margin-top:2px}
-#ccReadAloudPanel .cc-reader-voice-actions button{flex:1 1 0;font-size:12px}
-#ccReadAloudPanel .cc-reader-voice-actions button[aria-pressed=true]{background:#0f766e;border-color:#0f766e;color:white}
-#ccReadAloudPanel:has(#ccChineseVoicePicker:not([hidden])) .cc-reader-controls{position:sticky;top:0;z-index:2;padding:6px 0;background:white;box-shadow:0 2px 0 white}
+#ccReadAloudPanel .cc-reader-chinese-voice[hidden],#ccReadAloudPanel details[hidden]{display:none!important}
+#ccReadAloudPanel .cc-reader-chinese-voice{margin-top:10px;padding:9px;background:#f3faf8;border:1px solid #d0e5df;border-radius:9px}
+#ccChineseCurrentVoice{margin:0;font-size:12px;font-weight:750;overflow-wrap:anywhere}
 #documentRailTop .cc-reader-rail-row{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 #documentRailTop .cc-reader-rail-row button{width:100%!important}
 @media(max-width:700px){#ccReadAloudPanel{right:8px;top:12px;max-height:calc(100dvh - 24px);width:calc(100vw - 16px);padding:12px}}
