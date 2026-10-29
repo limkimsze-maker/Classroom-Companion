@@ -75,7 +75,61 @@ function refreshVoices(){
  voice.value=[...voice.options].some(o=>o.value===previous)?previous:'auto';
  if(voiceHint)voiceHint.textContent=chinese?CHINESE_VOICE_COPY.hint:L.local;
 }
+/* Printed PDF line breaks do not indicate a spoken pause.
+ * Reflow only the Chinese narration copy, preserving the PDF and preview. */
+function reflowChinesePdfForSpeech(value){
+ const lines=String(value||'').replace(/\r\n?/g,'\n').replace(/[\u2028\u2029]/g,'\n').split('\n');
+ let result='',paragraphBreak=false;
+ for(const original of lines){
+  const line=original.trim();
+  if(!line){if(result)paragraphBreak=true;continue}
+  if(result){
+   if(paragraphBreak)result+='\n\n';
+   else{
+    // Restore English word spacing, but never break a Chinese phrase
+    // solely because it wraps onto the next printed PDF line.
+    const end=result.slice(-1),start=line[0];
+    if(/[A-Za-z0-9]$/.test(end)&&/^[A-Za-z0-9]/.test(start))result+=' ';
+   }
+  }
+  result+=line;
+  paragraphBreak=false;
+ }
+ return result;
+}
+function splitChineseSpeech(text){
+ const max=160,out=[];let current='',searchFrom=0;
+ const sentences=typeof Intl.Segmenter==='function'
+  ?[...new Intl.Segmenter('zh-CN',{granularity:'sentence'}).segment(text)].map(part=>part.segment)
+  :text.match(/[^。！？!?]+[。！？!?]*/gu)||[text];
+ function emit(part){
+  const value=part.trim();if(!value)return;
+  const position=text.indexOf(value,searchFrom),start=position<0?searchFrom:position;
+  out.push({text:value,start,end:start+value.length});searchFrom=start+value.length;
+ }
+ function emitCurrent(){emit(current);current=''}
+ for(const sentence of sentences){
+  if(Array.from(current+sentence).length<=max){current+=sentence;continue}
+  emitCurrent();
+  const symbols=Array.from(sentence);
+  if(symbols.length<=max){current=sentence;continue}
+  let cursor=0;
+  while(symbols.length-cursor>max){
+   let end=cursor+max;
+   // For unusually long sentences, prefer real clause boundaries.
+   for(let k=end-1;k>=cursor+Math.floor(max*.58);k--){
+    if(/[，,、；;：:。！？!?]/u.test(symbols[k])){end=k+1;break}
+    if(/\s/u.test(symbols[k])){end=k+1;break}
+   }
+   emit(symbols.slice(cursor,end).join(''));cursor=end;
+  }
+  current=symbols.slice(cursor).join('');
+ }
+ emitCurrent();
+ return out;
+}
 function splitText(text,code){
+ if(code==='zh')return splitChineseSpeech(String(text||''));
  const sentences=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter(LANGS[code]?.tag||'en',{granularity:'sentence'}).segment(text)].map(x=>({text:x.segment,start:x.index})):[{text,start:0}];
  const chunks=[],limit=code==='zh'?55:code==='ta'?85:140;
  for(const sentence of sentences){
@@ -136,7 +190,8 @@ async function play(text){
   if(job.id!==run)return;
   if(choice?.missing){setState('idle');chineseReaderVoice.missing();notice(status.textContent);return}
   let chosen=choice?choice.voice:selected==='builtin'?null:selected.startsWith('voice-')?voices[Number(selected.slice(6))]:preferred(nativeVoices().filter(v=>matches(v,job.code)),job.code);
-  const chunks=splitText(value,job.code);
+  const speechCopy=job.code==='zh'&&source?.document?.kind==='pdf'?reflowChinesePdfForSpeech(value):value;
+  const chunks=splitText(speechCopy,job.code);
   for(const chunk of chunks){
    if(job.id!==run)return;
    if(source?.document&&!sameDocument(source.document,window.CCDocumentText?.snapshot())){invalidate();return}
@@ -226,6 +281,6 @@ function boot(){
 }
 // Register before the whiteboard's keyboard shortcuts, scoped to the reader.
 window.addEventListener('keydown',event=>{if(event.target===mainButton&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.stopImmediatePropagation();mainButton.click();return}if(!panel||panel.hidden||!event.target?.closest?.('#ccReadAloudPanel'))return;if(event.key==='Escape'){event.preventDefault();close()}event.stopImmediatePropagation()},true);
-window.CCReadAloud=Object.freeze({open:()=>open(),stop:()=>stop(),state:()=>({state,language:language?.value,source:source?.document?{...source.document,text:undefined}:null}),splitText});
+window.CCReadAloud=Object.freeze({open:()=>open(),stop:()=>stop(),state:()=>({state,language:language?.value,source:source?.document?{...source.document,text:undefined}:null}),splitText,reflowChinesePdfForSpeech});
 if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
