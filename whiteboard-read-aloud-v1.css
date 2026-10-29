@@ -29,3 +29,8 @@
 #documentRailTop .cc-reader-rail-row button{width:100%!important}
 @media(max-width:700px){#ccReadAloudPanel{right:8px;top:12px;max-height:calc(100dvh - 24px);width:calc(100vw - 16px);padding:12px}}
 @media(max-height:520px){#ccReadAloudPanel{top:8px;max-height:calc(100dvh - 16px)}#ccReadAloudText{min-height:90px}}
+
+/* Chinese quick reader: one toolbar toggle and a compact, visible pace control. */
+header.top .ccToolGroup .cc-reader-inline-speed,header.top .tools .cc-reader-inline-speed{display:inline-flex!important;align-items:center!important;gap:3px!important;flex:0 0 auto!important;flex-shrink:0!important;min-width:0!important;max-width:none!important;height:34px!important;padding:2px 4px!important;margin:0!important;border:1px solid #c5d5da!important;border-radius:8px!important;background:#f7fbfa!important;color:#17324d!important;font:700 11px/1.2 system-ui,sans-serif!important;white-space:nowrap!important;box-sizing:border-box!important}
+header.top .cc-reader-inline-speed select{width:61px!important;min-width:0!important;max-width:61px!important;height:27px!important;padding:2px 1px!important;border:0!important;border-radius:5px!important;background:white!important;color:#17324d!important;font:700 11px system-ui,sans-serif!important;cursor:pointer!important}
+header.top .cc-reader-inline-speed select:focus-visible{outline:2px solid #0f766e;outline-offset:1px}
