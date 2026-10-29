@@ -98,7 +98,8 @@ function reflowChinesePdfForSpeech(value){
  return result;
 }
 function splitChineseSpeech(text){
- const max=160,out=[];let current='',searchFrom=0;
+ // Keep network-voice utterances reasonably short: Chrome may stall on long reads.
+ const max=72,out=[];let current='',searchFrom=0;
  const sentences=typeof Intl.Segmenter==='function'
   ?[...new Intl.Segmenter('zh-CN',{granularity:'sentence'}).segment(text)].map(part=>part.segment)
   :text.match(/[^。！？!?]+[。！？!?]*/gu)||[text];
