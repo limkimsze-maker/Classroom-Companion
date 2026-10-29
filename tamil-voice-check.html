@@ -41,7 +41,7 @@ footer{font-size:12px;color:#71808b;margin-top:22px}
 <header><div class="symbol" aria-hidden="true">♫</div><div><h1>Tamil Voice Check</h1><p class="sub">Classroom Companion · Test this browser, not the cloud catalogue</p></div></header>
 <section>
 <div id="result" class="status" aria-live="polite">Checking your Tamil voices…</div>
-<p id="detail" class="hint">The list may take a moment to load in Chrome or Edge.</p>
+<p id="detail" class="hint">The list may take a moment to load in Chrome or Edge. Press Listen on Venba first to test the speech engine independently.</p>
 <div class="actions"><button id="refresh" type="button">Check again</button><button id="copy" class="secondary" type="button">Copy voice report</button><button id="stop" class="secondary" type="button">Stop sound</button></div>
 </section>
 <section>
@@ -61,7 +61,7 @@ footer{font-size:12px;color:#71808b;margin-top:22px}
 'use strict';
 const synth=window.speechSynthesis;
 const list=document.getElementById('voices'),result=document.getElementById('result'),detail=document.getElementById('detail');
-const sample='ஒரு நாள் காலை, மீனா பள்ளிக்குச் சென்றாள். அங்கே அவள் ஒரு சிறிய பறவையைப் பார்த்தாள்.';
+const sample='வணக்கம். இன்று நாம் ஒரு கதை படிப்போம்.';
 let shown=[];
 const isTamil=v=>/^ta(?:-|$)/i.test(String(v.lang||'').replace(/_/g,'-'));
 function type(v){
@@ -93,14 +93,27 @@ function refresh(){
   const test=document.createElement('button');test.type='button';test.textContent='Listen';
   test.setAttribute('aria-label','Listen to '+v.name);
   test.onclick=()=>{
+   // Unlike the Whiteboard, this runs directly on a click with a short sentence
+   // and the voice's default rate. It isolates Edge's online speech engine.
    try{
     synth.cancel();
-    const u=new SpeechSynthesisUtterance(sample);u.voice=v;u.lang=v.lang||'ta-SG';u.rate=.94;u.pitch=1;
-    test.textContent='Playing…';
-    u.onend=()=>test.textContent='Listen';
-    u.onerror=()=>{test.textContent='Listen';detail.textContent='This voice could not play here. Try another browser.'};
+    const u=new SpeechSynthesisUtterance(sample);
+    u.voice=v;u.lang=v.lang||'ta-SG';
+    test.textContent='Connecting…';
+    result.textContent='Testing: '+v.name;
+    detail.textContent='Waiting for the browser to start speaking a short Tamil sentence…';
+    u.onstart=()=>{test.textContent='Speaking…';detail.textContent='Audio started: '+v.name};
+    u.onend=()=>{test.textContent='Listen again';result.textContent='Playback succeeded';detail.textContent=v.name+' played the short Tamil sentence successfully.'};
+    u.onerror=event=>{
+     const error=String(event?.error||'unknown error');
+     test.textContent='Try again';
+     result.textContent='Playback failed: '+error;
+     detail.textContent=v.name+' could not play in this browser (error: '+error+'). If several voices fail here too, the cause is probably Edge speech synthesis or network settings, rather than the Whiteboard.';
+    };
     synth.speak(u);
-   }catch(e){test.textContent='Listen';detail.textContent='Could not play voice: '+e.message}
+   }catch(e){
+    test.textContent='Try again';result.textContent='Playback failed';detail.textContent='Could not start '+v.name+': '+e.message;
+   }
   };
   item.append(meta,test);list.append(item);
  });
