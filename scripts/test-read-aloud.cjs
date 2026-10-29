@@ -28,23 +28,37 @@ function mockVoices(){
   assert.equal(await page.evaluate(()=>__spoken[0].rate),code==='zh'?.85:1);
   if(code==='zh'){assert.equal(await page.evaluate(()=>__spoken[0].voice),'Google 普通话（中国大陆）');assert.equal(await page.locator('#ccReadAloudVoice').inputValue(),'google-mandarin');assert.equal(await page.locator('#ccChineseTryVoices').count(),0);console.log('GOOGLE_MANDARIN_DEFAULT_OK')}
   await page.evaluate(()=>{__spoken=[]});
-  await page.locator('#ccReadAloudSpeed').selectOption('0.85');await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);
-  let spoken=await page.evaluate(()=>__spoken);assert.equal(spoken[0].text,sample);assert.equal(spoken[0].rate,.85);assert.ok(spoken[0].lang.startsWith(code==='zh'?'zh':code));
-  const target=sample.slice(0,code==='zh'?2:code==='ta'?5:4);await page.locator('#ccReadAloudText').evaluate((el,n)=>{el.focus();el.setSelectionRange(0,n)},target.length);await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle');spoken=await page.evaluate(()=>__spoken);assert.equal(spoken.at(-1).text,target);
-  await page.locator('#ccReadAloudPanel [data-read-action=repeat]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle');assert.equal(await page.evaluate(()=>__spoken.at(-1).text),target);
-  await page.evaluate(()=>{window.__nativeDelay=3000});await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.locator('#ccReadAloudPanel [data-read-action=stop]').click();assert.equal(await page.evaluate(()=>CCReadAloud.state().state),'idle');await page.evaluate(()=>{window.__nativeDelay=15});
+  if(code==='zh'){
+   assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);
+   assert.equal(await page.locator('#ccReadAloudQuickSpeed').inputValue(),'0.85');
+   await page.locator('#ccReadAloudQuickSpeed').selectOption('0.85');
+   await page.locator('#ccReadAloudBtn').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);
+   const spoken=await page.evaluate(()=>__spoken);assert.equal(spoken[0].text,sample);assert.equal(spoken[0].rate,.85);
+   await page.evaluate(()=>{window.__nativeDelay=3000});await page.locator('#ccReadAloudBtn').click();
+   assert.equal(await page.evaluate(()=>CCReadAloud.state().state),'reading');
+   assert.equal(await page.locator('#ccReadAloudBtn').getAttribute('aria-pressed'),'true');
+   await page.locator('#ccReadAloudBtn').click();assert.equal(await page.evaluate(()=>CCReadAloud.state().state),'idle');
+   assert.equal(await page.locator('#ccReadAloudBtn').getAttribute('aria-pressed'),'false');
+   assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);await page.evaluate(()=>{window.__nativeDelay=15});
+  }else{
+   await page.locator('#ccReadAloudSpeed').selectOption('0.85');await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);
+   let spoken=await page.evaluate(()=>__spoken);assert.equal(spoken[0].text,sample);assert.equal(spoken[0].rate,.85);assert.ok(spoken[0].lang.startsWith(code));
+   const target=sample.slice(0,code==='ta'?5:4);await page.locator('#ccReadAloudText').evaluate((el,n)=>{el.focus();el.setSelectionRange(0,n)},target.length);await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle');spoken=await page.evaluate(()=>__spoken);assert.equal(spoken.at(-1).text,target);
+   await page.locator('#ccReadAloudPanel [data-read-action=repeat]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle');assert.equal(await page.evaluate(()=>__spoken.at(-1).text),target);
+   await page.evaluate(()=>{window.__nativeDelay=3000});await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.locator('#ccReadAloudPanel [data-read-action=stop]').click();assert.equal(await page.evaluate(()=>CCReadAloud.state().state),'idle');await page.evaluate(()=>{window.__nativeDelay=15});
+  }
   assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
-  await page.locator('#ccReadAloudText').press('Escape');assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);assert.equal(await page.evaluate(()=>tool),'finger');
+  if(code!=='zh')await page.locator('#ccReadAloudText').press('Escape');assert.equal(await page.locator('#ccReadAloudPanel').isVisible(),false);assert.equal(await page.evaluate(()=>tool),'finger');
   // Speech-to-text output uses the same read-only selection bridge and stays undoable.
   const inserted=sample+'\n'+sample;await page.evaluate(text=>{const detail={text};document.dispatchEvent(new CustomEvent('whiteboard-insert-speech-text',{detail}));if(!detail.inserted)throw Error('Speech insertion failed')},inserted);
-  await page.locator('#ccReadAloudBtn').click();assert.ok((await page.locator('#ccReadAloudText').inputValue()).includes(inserted));await page.locator('#ccReadAloudPanel [data-read-action=close]').click();await page.locator('#undoBtn').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
+  await page.locator('#ccReadAloudBtn').click();assert.ok((await page.locator('#ccReadAloudText').inputValue()).includes(inserted));if(code!=='zh')await page.locator('#ccReadAloudPanel [data-read-action=close]').click();else await page.waitForFunction(()=>CCReadAloud.state().state==='idle');await page.locator('#undoBtn').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
   // Open actual Word files, then select passages in the extracted original text.
   await page.locator('input[type=file][accept="*/*"]').setInputFiles(path.join(fixtures,code+'.docx'));await page.waitForFunction(()=>CCDocumentText.snapshot().ready);
   await page.evaluate(()=>{strokes.push({colour:'#2563eb',size:4,erase:false,points:[{x:.2,y:.2},{x:.35,y:.3}]});redraw();syncUi()});const before=await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export()));
   await page.locator('#ccDocumentReadBtn').click();await page.waitForFunction(()=>document.getElementById('ccReadAloudText').value.length>0);
   assert.equal((await page.locator('#ccReadAloudText').inputValue()).trim(),fs.readFileSync(path.join(fixtures,code+'.txt'),'utf8'));
-  await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle');assert.equal(await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export())),before);
-  await page.locator('#ccReadAloudPanel [data-read-action=close]').click();await page.locator('#ccPermanentExitBtn').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
+  if(code!=='zh')await page.locator('#ccReadAloudPanel [data-read-action=read]').click();await page.waitForFunction(()=>CCReadAloud.state().state==='idle');assert.equal(await page.evaluate(()=>JSON.stringify(CCDocumentAnnotations.export())),before);
+  if(code!=='zh')await page.locator('#ccReadAloudPanel [data-read-action=close]').click();await page.locator('#ccPermanentExitBtn').click();assert.equal(await page.evaluate(()=>JSON.stringify(strokes)),original);
   console.log('NATIVE_VOICE_AND_WORD_OK',code,label);
   if(code==='en'){
    await page.locator('input[type=file][accept="*/*"]').setInputFiles(path.join(fixtures,'text.pdf'));await page.waitForFunction(()=>CCDocumentText.snapshot().ready);await page.locator('#ccDocumentReadBtn').click();await page.waitForFunction(()=>document.getElementById('ccReadAloudText').value.includes('first page'));
@@ -72,7 +86,7 @@ function mockVoices(){
  const mandarin=await context.newPage();await mandarin.addInitScript(mockVoices);await mandarin.addInitScript(audioObserver);await mandarin.goto(base+'/Classroom-Companion/whiteboard-smart-beta.html?edition=zh');await mandarin.waitForSelector('#ccReadAloudBtn');
  await mandarin.evaluate(()=>{__voiceData=__voiceData.filter(v=>!v.name.startsWith('Google'));strokes.push({type:'text',text:'同学们，请慢慢地读。',x:.1,y:.1,w:.5,h:.2,size:24,font:'Arial',colour:'#111'});redraw();syncUi()});
  await mandarin.locator('#ccReadAloudBtn').click();await mandarin.waitForFunction(()=>CCReadAloud.state().state==='idle');assert.equal(await mandarin.evaluate(()=>__spoken.length),0);assert.equal(await mandarin.evaluate(()=>__audioOutputs.length),0);assert.ok((await mandarin.locator('#ccReadAloudStatus').textContent()).includes('Google'));
- await mandarin.evaluate(()=>{__voiceData.push({name:'Google 普通话（中国大陆）',lang:'zh-CN',localService:false})});await mandarin.locator('#ccReadAloudPanel [data-read-action=read]').click();await mandarin.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);assert.equal(await mandarin.evaluate(()=>__spoken.at(-1).voice),'Google 普通话（中国大陆）');console.log('GOOGLE_MANDARIN_MISSING_AND_LATE_VOICE_OK');await mandarin.close();
+ await mandarin.evaluate(()=>{__voiceData.push({name:'Google 普通话（中国大陆）',lang:'zh-CN',localService:false})});await mandarin.locator('#ccReadAloudBtn').click();await mandarin.waitForFunction(()=>CCReadAloud.state().state==='idle'&&__spoken.length>0);assert.equal(await mandarin.evaluate(()=>__spoken.at(-1).voice),'Google 普通话（中国大陆）');console.log('GOOGLE_MANDARIN_MISSING_AND_LATE_VOICE_OK');await mandarin.close();
  // Real local synthesis and playback, without any installed/system voice.
  const local=await context.newPage();local.on('console',m=>{if(m.type()==='warning')console.log('LOCAL_WARNING',m.text())});await local.addInitScript(audioObserver);await local.goto(base+'/Classroom-Companion/whiteboard-smart-beta.html?edition=en');await local.waitForSelector('#ccReadAloudBtn');
  await local.evaluate(()=>{const obj={type:'text',text:'Hello.',x:.1,y:.1,w:.5,h:.2,size:24,font:'Arial',colour:'#111'};strokes.push(obj);tool='select';syncUi();ClassroomObjectSelection.select(obj)});await local.locator('#ccReadAloudBtn').click();await local.locator('#ccReadAloudPanel summary').click();
