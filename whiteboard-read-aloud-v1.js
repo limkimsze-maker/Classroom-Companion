@@ -32,7 +32,7 @@ function notice(message){
 function say(key){if(status)status.textContent=L[key]||key;if(['empty','busy','noText','changed','failed','unavailable','choose'].includes(key))notice(L[key]||key)}
 function setState(value){
  state=value;if(stopButton)stopButton.disabled=value==='idle';if(repeat)repeat.disabled=!last;if(read)read.disabled=value==='loading'||!preview?.value.trim();if(panel)panel.dataset.state=value;
- if(ui==='zh')for(const button of [mainButton,railButton]){
+ for(const button of [mainButton,railButton]){
   if(!button)continue;const active=value!=='idle';button.textContent=button===railButton?(active?'■':'🔊'):(active?'■ '+L.stop:'🔊 '+L.short);
   button.title=active?L.stop:L.title;button.setAttribute('aria-label',active?L.stop:L.title);button.setAttribute('aria-pressed',String(active));
  }
@@ -54,95 +54,94 @@ function matches(v,code){
  if(code==='zh')return /^(?:zh-(?:cn|sg|tw)(?:-|$)|zh-(?:hans|hant)(?:-(?:cn|sg|tw))?$|cmn(?:-|$))/.test(tag)||tag==='zh';
  return tag===code||tag.startsWith(code+'-');
 }
+/* Browser voice availability varies; only names actually advertised by
+ * speechSynthesis are usable. Cloud TTS voices are not automatically browser voices. */
 function preferred(list,code){
- const tags=code==='en'?['en-sg','en-gb','en-us']:code==='zh'?['zh-sg','zh-cn','cmn-hans-cn','zh-tw']:code==='ms'?['ms-sg','ms-my']:['ta-sg','ta-in','ta-lk'];
- // Web Speech voices have no standard gender field. Use recognised adult female
- // names or an explicit female label; never guess from list order or pitch.
- const female=v=>{
-  const name=String(v.name||'').toLowerCase();
-  if(/\b(?:male|child|girl|boy|kid)\b|童声|儿童|女孩|男声|男聲|xiaoshuang|xiaoyou/.test(name))return false;
-  return /xiaoxiao|晓晓|曉曉|huihui|慧慧|yaoyao|瑶瑶|瑤瑤|ting[- ]?ting|婷婷|hanhan|涵涵|yating|雅婷|\bfemale\b|女声|女聲/.test(name);
+ const candidates=list.filter(v=>matches(v,code)),norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,' ').trim();
+ if(code==='en'){
+  const uk=candidates.find(v=>/^google\s+uk\s+english\s+female$/i.test(norm(v.name))&&/^en-gb$/i.test(v.lang));
+  if(uk)return uk;
+ }
+ const isMale=v=>/\b(?:male|man|boy|osman|valluvar|surya|anbu|kumar)\b|男声|男聲/i.test(norm(v.name));
+ const isFemale=v=>{
+  if(isMale(v))return false;
+  const n=norm(v.name);
+  if(/\b(?:female|woman|lady)\b|女声|女聲/.test(n))return true;
+  if(code==='en')return /\b(?:sonia|hazel|libby|olivia|aria|jenny|natasha|susan|zira|samantha|serena|kate|heather)\b/.test(n);
+  if(code==='ms')return /\b(?:yasmin)\b/.test(n);
+  if(code==='ta')return /\b(?:venba|pallavi|kani|saranya)\b/.test(n);
+  return false;
  };
- const candidates=code==='zh'?list.filter(female):list;
- return [...candidates].sort((a,b)=>{const score=v=>{const i=tags.indexOf(String(v.lang).toLowerCase().replace(/_/g,'-')),locale=i<0?99:i;return code==='zh'?locale*2-(/natural|neural|premium|enhanced|自然|增强|增強/i.test(v.name)?30:0):locale};return score(a)-score(b)})[0];
+ if(code==='ms'||code==='ta'){
+  // Only claim Google if a correctly language-tagged Google voice exists.
+  const google=candidates.find(v=>!isMale(v)&&/\bgoogle\b/.test(norm(v.name)+' '+norm(v.voiceURI)));
+  if(google)return google;
+ }
+ const locales=code==='en'?['en-gb','en-sg','en-au','en-us']:code==='ms'?['ms-my','ms-sg']:['ta-sg','ta-my','ta-in','ta-lk'];
+ const score=v=>{
+  const i=locales.indexOf(norm(v.lang).replace(/_/g,'-')),n=norm(v.name);
+  return (i<0?60:i*8)-(/\b(?:natural|neural|premium|enhanced)\b/.test(n)?3:0);
+ };
+ return candidates.filter(isFemale).sort((a,b)=>score(a)-score(b))[0]||null;
 }
+
 function refreshVoices(){
  if(voice&&language.value==='zh'&&chineseReaderVoice){voices=browserVoices().filter(v=>matches(v,'zh'));chineseReaderVoice.refresh(voices);return}
  chineseReaderVoice?.hide();
- if(!voice)return;const previous=voice.value;voices=nativeVoices().filter(v=>matches(v,language.value));voice.replaceChildren();
+ if(!voice)return;const previous=voice.value;voices=browserVoices().filter(v=>matches(v,language.value));voice.replaceChildren();
  const chinese=language.value==='zh';
  for(const [value,label] of [['auto',chinese?CHINESE_VOICE_COPY.automatic:L.automatic],['builtin',chinese?CHINESE_VOICE_COPY.builtin:L.builtin],...voices.map((v,i)=>['voice-'+i,v.name+' · '+v.lang])]){const option=document.createElement('option');option.value=value;option.textContent=label;voice.append(option)}
  voice.value=[...voice.options].some(o=>o.value===previous)?previous:'auto';
  if(voiceHint)voiceHint.textContent=chinese?CHINESE_VOICE_COPY.hint:L.local;
 }
-/* Printed PDF line breaks do not indicate a spoken pause.
- * Reflow only the Chinese narration copy, preserving the PDF and preview. */
-function reflowChinesePdfForSpeech(value){
- const lines=String(value||'').replace(/\r\n?/g,'\n').replace(/[\u2028\u2029]/g,'\n').split('\n');
- let result='',paragraphBreak=false;
+/* Reflow the narration copy only: original PDF, layout, annotations and
+ * extracted preview are untouched. Blank lines remain paragraph boundaries. */
+function reflowPdfForSpeech(raw,code){
+ const lines=String(raw||'').replace(/\r\n?/g,'\n').replace(/[\u2028\u2029]/g,'\n').split('\n');
+ let result='',paragraph=false;
  for(const original of lines){
   const line=original.trim();
-  if(!line){if(result)paragraphBreak=true;continue}
+  if(!line){if(result)paragraph=true;continue}
   if(result){
-   if(paragraphBreak)result+='\n\n';
-   else{
-    // Restore English word spacing, but never break a Chinese phrase
-    // solely because it wraps onto the next printed PDF line.
-    const end=result.slice(-1),start=line[0];
-    if(/[A-Za-z0-9]$/.test(end)&&/^[A-Za-z0-9]/.test(start))result+=' ';
-   }
+   if(paragraph)result+='\n\n';
+   else if(code==='zh'){
+    if(/[A-Za-z0-9]$/.test(result.slice(-1))&&/^[A-Za-z0-9]/.test(line))result+=' ';
+   }else if(!/^[,.;:!?।॥，。！？；：、\)\]\}]/u.test(line)&&!/[\(\[\{]$/u.test(result))result+=' ';
   }
-  result+=line;
-  paragraphBreak=false;
+  result+=line;paragraph=false;
  }
  return result;
 }
-function splitChineseSpeech(text){
- // Keep network-voice utterances reasonably short: Chrome may stall on long reads.
- const max=72,out=[];let current='',searchFrom=0;
+function reflowChinesePdfForSpeech(raw){return reflowPdfForSpeech(raw,'zh')}
+function splitFluentSpeech(raw,code){
+ const text=String(raw||''),locale=LANGS[code]?.tag||'en',max=code==='zh'?72:code==='ta'?92:125;
+ const graphemes=s=>typeof Intl.Segmenter==='function'
+  ?[...new Intl.Segmenter(locale,{granularity:'grapheme'}).segment(s)].map(x=>x.segment):Array.from(s);
  const sentences=typeof Intl.Segmenter==='function'
-  ?[...new Intl.Segmenter('zh-CN',{granularity:'sentence'}).segment(text)].map(part=>part.segment)
-  :text.match(/[^。！？!?]+[。！？!?]*/gu)||[text];
- function emit(part){
-  const value=part.trim();if(!value)return;
-  const position=text.indexOf(value,searchFrom),start=position<0?searchFrom:position;
-  out.push({text:value,start,end:start+value.length});searchFrom=start+value.length;
- }
- function emitCurrent(){emit(current);current=''}
+  ?[...new Intl.Segmenter(locale,{granularity:'sentence'}).segment(text)].map(x=>x.segment)
+  :text.split(/(?<=[.!?。！？])\s*/u);
+ const chunks=[];let pending='',offset=0;
+ const emit=s=>{const value=s.trim();if(!value)return;const at=text.indexOf(value,offset),start=at<0?offset:at;chunks.push({text:value,start,end:start+value.length});offset=start+value.length};
  for(const sentence of sentences){
-  if(Array.from(current+sentence).length<=max){current+=sentence;continue}
-  emitCurrent();
-  const symbols=Array.from(sentence);
-  if(symbols.length<=max){current=sentence;continue}
-  let cursor=0;
-  while(symbols.length-cursor>max){
-   let end=cursor+max;
-   // For unusually long sentences, prefer real clause boundaries.
-   for(let k=end-1;k>=cursor+Math.floor(max*.58);k--){
-    if(/[，,、；;：:。！？!?]/u.test(symbols[k])){end=k+1;break}
-    if(/\s/u.test(symbols[k])){end=k+1;break}
-   }
-   emit(symbols.slice(cursor,end).join(''));cursor=end;
-  }
-  current=symbols.slice(cursor).join('');
- }
- emitCurrent();
- return out;
-}
-function splitText(text,code){
- if(code==='zh')return splitChineseSpeech(String(text||''));
- const sentences=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter(LANGS[code]?.tag||'en',{granularity:'sentence'}).segment(text)].map(x=>({text:x.segment,start:x.index})):[{text,start:0}];
- const chunks=[],limit=code==='zh'?55:code==='ta'?85:140;
- for(const sentence of sentences){
-  const symbols=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter(LANGS[code]?.tag||'en',{granularity:'grapheme'}).segment(sentence.text)].map(x=>({text:x.segment,index:x.index})):Array.from(sentence.text).map((text,i,all)=>({text,index:all.slice(0,i).join('').length}));
+  if(graphemes(pending+sentence).length<=max){pending+=sentence;continue}
+  emit(pending);pending='';
+  const pieces=graphemes(sentence);
+  if(pieces.length<=max){pending=sentence;continue}
   let i=0;
-  while(i<symbols.length){let end=Math.min(symbols.length,i+limit);if(end<symbols.length){for(let k=end;k>i+Math.floor(limit*.55);k--)if(/\s/.test(symbols[k-1].text)){end=k;break}}
-   const raw=symbols.slice(i,end).map(x=>x.text).join(''),trimmed=raw.trim();
-   if(trimmed){const start=sentence.start+symbols[i].index+raw.indexOf(trimmed);chunks.push({text:trimmed,start,end:start+trimmed.length})}i=end;
+  while(pieces.length-i>max){
+   let end=i+max;
+   for(let k=end-1;k>=i+Math.floor(max*.56);k--){
+    if(/[，,;；:：.!?。！？]/u.test(pieces[k])){end=k+1;break}
+    if(/\s/u.test(pieces[k])){end=k+1;break}
+   }
+   emit(pieces.slice(i,end).join(''));i=end;
   }
+  pending=pieces.slice(i).join('');
  }
- return chunks;
+ emit(pending);return chunks;
 }
+function splitText(text,code){return splitFluentSpeech(text,code)}
+
 function synthesize(text,code,rate){
  if(!worker){worker=new Worker(workerUrl,{type:'module'});worker.addEventListener('message',event=>{const result=event.data||{},request=pending.get(result.id);if(!request)return;pending.delete(result.id);clearTimeout(request.timer);result.error?request.reject(Error(result.error)):request.resolve(result)});worker.addEventListener('error',()=>resetWorker(Error('Local speech worker failed')))}
  return new Promise((resolve,reject)=>{const id=++workerSerial,timer=setTimeout(()=>resetWorker(Error('Local voice timed out')),45000);pending.set(id,{resolve,reject,timer});worker.postMessage({id,text,language:code,rate})});
@@ -190,8 +189,8 @@ async function play(text){
   const choice=job.code==='zh'?await chineseReaderVoice.ready(()=>job.id!==run):null;
   if(job.id!==run)return;
   if(choice?.missing){setState('idle');chineseReaderVoice.missing();notice(status.textContent);return}
-  let chosen=choice?choice.voice:selected==='builtin'?null:selected.startsWith('voice-')?voices[Number(selected.slice(6))]:preferred(nativeVoices().filter(v=>matches(v,job.code)),job.code);
-  const speechCopy=job.code==='zh'&&source?.document?.kind==='pdf'?reflowChinesePdfForSpeech(value):value;
+  let chosen=choice?choice.voice:selected==='builtin'?null:selected.startsWith('voice-')?voices[Number(selected.slice(6))]:preferred(browserVoices().filter(v=>matches(v,job.code)),job.code);
+  const speechCopy=source?.document?.kind==='pdf'?reflowPdfForSpeech(value,job.code):value;
   const chunks=splitText(speechCopy,job.code);
   for(const chunk of chunks){
    if(job.id!==run)return;
@@ -242,7 +241,7 @@ function button(text,action,cls=''){const b=document.createElement('button');b.t
 function boot(){
  const anchor=document.getElementById('speechToTextBtn');if(!anchor)return;
  mainButton=button('🔊 '+L.short,'open','btn soft');mainButton.id='ccReadAloudBtn';mainButton.title=L.title;mainButton.setAttribute('aria-label',L.title);mainButton.setAttribute('aria-expanded','false');mainButton.setAttribute('aria-controls','ccReadAloudPanel');anchor.insertAdjacentElement('afterend',mainButton);
- if(ui==='zh'){
+ {
   mainButton.removeAttribute('aria-controls');mainButton.removeAttribute('aria-expanded');mainButton.setAttribute('aria-pressed','false');
   const quickLabel=document.createElement('label');quickLabel.className='cc-reader-inline-speed';quickLabel.htmlFor='ccReadAloudQuickSpeed';
   const caption=document.createElement('span');caption.textContent=L.speed;
@@ -266,7 +265,7 @@ function boot(){
  panel.append(head,sources,sourceLabel,hint,preview,controls,options,details,status);document.body.append(panel);
  if(window.CCChineseReaderVoice)chineseReaderVoice=window.CCChineseReaderVoice.create({ui,host:panel,details,voice,speed,status,onRefresh:refreshVoices});
  refreshVoices();if(quickSpeed)quickSpeed.value=speed.value;setState('idle');say('empty');
- mainButton.addEventListener('click',()=>{if(ui==='zh'){if(state!=='idle')stop();else open(true,true)}else open(true)});
+ mainButton.addEventListener('click',()=>{if(state!=='idle')stop();else open(true,true)});
  if(quickSpeed)quickSpeed.addEventListener('change',()=>{
   const wasReading=state!=='idle';if(wasReading)stop('');speed.value=quickSpeed.value;chineseReaderVoice?.changed();
   if(wasReading)open(true,true);
@@ -275,13 +274,13 @@ function boot(){
  for(const option of [language,speed,voice])option.addEventListener('change',()=>{stop('ready');if(option===language)refreshVoices();else if(language.value==='zh')chineseReaderVoice?.changed();if(quickSpeed)quickSpeed.value=speed.value});
  synth?.addEventListener?.('voiceschanged',refreshVoices);
  const toolbar=document.getElementById('documentQuickBar');
- function rail(){const top=document.getElementById('documentRailTop');if(!top||document.getElementById('ccDocumentReadBtn'))return;const search=top.querySelector('.doc-search-main');const row=document.createElement('div');row.className='cc-reader-rail-row';railButton=button('🔊','open','doc-search-main');railButton.id='ccDocumentReadBtn';railButton.title=L.title;railButton.setAttribute('aria-label',L.title);railButton.addEventListener('click',()=>{if(ui==='zh'){if(state!=='idle')stop();else open(true,true)}else open(true)});if(search)row.append(search);row.append(railButton);top.append(row)}
+ function rail(){const top=document.getElementById('documentRailTop');if(!top||document.getElementById('ccDocumentReadBtn'))return;const search=top.querySelector('.doc-search-main');const row=document.createElement('div');row.className='cc-reader-rail-row';railButton=button('🔊','open','doc-search-main');railButton.id='ccDocumentReadBtn';railButton.title=L.title;railButton.setAttribute('aria-label',L.title);railButton.addEventListener('click',()=>{if(state!=='idle')stop();else open(true,true)});if(search)row.append(search);row.append(railButton);top.append(row)}
  if(toolbar){rail();new MutationObserver(rail).observe(toolbar,{childList:true,subtree:true})}
  for(const event of ['cc-document-opened','cc-document-closed','cc-document-page-changing'])window.addEventListener(event,()=>{if(source?.document||state!=='idle')invalidate()});
  window.addEventListener('pagehide',()=>{stop('');resetWorker(Error('Page closed'));audio?.close().catch(()=>{})});
 }
 // Register before the whiteboard's keyboard shortcuts, scoped to the reader.
 window.addEventListener('keydown',event=>{if(event.target===mainButton&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.stopImmediatePropagation();mainButton.click();return}if(!panel||panel.hidden||!event.target?.closest?.('#ccReadAloudPanel'))return;if(event.key==='Escape'){event.preventDefault();close()}event.stopImmediatePropagation()},true);
-window.CCReadAloud=Object.freeze({open:()=>open(),stop:()=>stop(),state:()=>({state,language:language?.value,source:source?.document?{...source.document,text:undefined}:null}),splitText,reflowChinesePdfForSpeech});
+window.CCReadAloud=Object.freeze({open:()=>open(),stop:()=>stop(),state:()=>({state,language:language?.value,source:source?.document?{...source.document,text:undefined}:null}),splitText,reflowChinesePdfForSpeech,reflowPdfForSpeech});
 if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
