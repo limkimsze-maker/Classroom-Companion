@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#117e73">
+<title>中文句子排序实验室 · Classroom Companion</title>
+<style>
+:root{--ink:#16334a;--muted:#667d88;--teal:#0b786d;--teal2:#e1f5ef;--gold:#f6ba54;--line:#d6e4e5;--paper:#fff;--bg:#f2f7f6;--shadow:0 13px 33px rgba(24,57,71,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(135deg,#eaf7f4,#f7fafc 55%,#fff8ec);color:var(--ink);font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,sans-serif;min-height:100vh}
+button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:not-allowed}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #f0a725;outline-offset:2px}
+.container{max-width:1160px;margin:auto;padding:18px 20px 46px}
+header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+.head{max-width:1200px;margin:auto;min-height:78px;display:flex;align-items:center;gap:12px;padding:11px 18px}
+.logo{width:51px;height:51px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(135deg,#058775,#195d6b);color:white;font-weight:900;font-size:26px;flex-shrink:0}
+.brand{flex:1;min-width:0}.brand b{display:block;font-size:clamp(18px,2.4vw,25px);line-height:1.2}.brand small{font-size:11px;color:var(--muted);font-weight:700}
+.nav{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid #bbd9d3;background:white;border-radius:12px;padding:10px 14px;font-weight:800;color:#175e5a;min-height:42px;transition:background .15s}.btn:hover:not(:disabled){background:#e8f5f1}.btn.primary{background:var(--teal);border-color:var(--teal);color:white}.btn.primary:hover:not(:disabled){background:#075e58}.btn.warn{background:#fff4e6;color:#9c580a;border-color:#edd4a9}.btn.small{min-height:34px;padding:6px 11px;font-size:13px}.btn.ghost{border-color:var(--line);color:var(--ink)}.btn.danger{border-color:#f0c5bd;color:#ac3329}
+.hero{padding:29px 0 15px}.eyebrow{display:inline-block;font-size:12px;letter-spacing:.08em;color:#0c776e;font-weight:900;text-transform:uppercase}.hero h1{font-size:clamp(28px,4.7vw,43px);line-height:1.25;margin:8px 0 10px;letter-spacing:-.02em}.hero p{font-size:15px;line-height:1.75;color:var(--muted);margin:0;max-width:850px}
+.panel{background:#fff;border:1px solid #dce8e7;border-radius:22px;padding:24px;box-shadow:var(--shadow);margin:18px 0}.panel h2{margin:0 0 8px;font-size:22px}.panel p{line-height:1.65}.hint{font-size:13px;line-height:1.7;color:var(--muted)}
+.control-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:13px}.pill{display:inline-flex;align-items:center;gap:5px;background:#e9f7f3;border:1px solid #baddd5;border-radius:100px;padding:5px 10px;color:#0d6c64;font-weight:800;font-size:12px}
+.field-title{display:block;font-weight:850;margin:16px 0 7px}.sentence-input{width:100%;min-height:144px;resize:vertical;padding:15px;border:1.5px solid #cbdde0;border-radius:13px;background:#fafdfc;font-size:19px;line-height:1.9;color:var(--ink)}.sentence-input:focus{border-color:#3bab9b;outline:2px solid #d1f2e8}
+.segmented{display:inline-flex;border:1px solid #b7d7d3;padding:4px;background:#f4faf8;border-radius:13px;gap:4px;flex-wrap:wrap}.segmented button{border:0;border-radius:9px;padding:9px 13px;background:transparent;color:#48606a;font-weight:800}.segmented button.active{background:#087b70;color:white;box-shadow:0 2px 9px rgba(0,0,0,.1)}
+.status{min-height:22px;color:#4e6871;font-size:13px;margin:10px 0 0}.status.good{color:#087b53}.status.bad{color:#b43c2d}
+.edit-list{display:grid;gap:14px;margin-top:14px}.edit-card{border:1px solid var(--line);border-radius:17px;background:#fbfdfc;padding:16px}.edit-head{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;justify-content:space-between}.edit-title{font-size:12px;font-weight:900;color:#0b746b}.original{font-size:19px;font-weight:780;line-height:1.7;overflow-wrap:anywhere}
+.tokens{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:13px}.token{border:1.5px solid #b8d7d5;background:#e4f4ef;border-radius:11px;padding:9px 12px;min-height:45px;min-width:48px;font-size:20px;color:#153b47;font-weight:850}.token.selected{background:#fff3db;border-color:#d89a31}.join{background:white;color:#6c817c;border:1px dashed #a8c7c1;border-radius:8px;min-height:34px;padding:4px 8px;font-weight:900;font-size:13px}.join:hover{background:#d4f1e6}.end-punct{font-size:24px;margin-left:1px;font-weight:900}
+.split-panel{padding:12px;margin-top:12px;border:1px solid #e0e5d5;border-radius:12px;background:#fffaf0}.split-panel strong{display:block;margin-bottom:8px;font-size:13px;color:#78560b}.split-options{display:flex;gap:7px;flex-wrap:wrap}.split-options button{border:1px solid #e6cca0;background:white;border-radius:9px;min-height:38px;padding:6px 11px;color:#5d481f;font-weight:850;font-size:16px}
+.manual-box{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}.manual-box label{font-size:12px;color:var(--muted);font-weight:850}.manual-box input{flex:1 1 330px;min-width:160px;padding:9px 10px;border:1px solid #d5e3e3;border-radius:9px;background:white;font-size:15px}.small-note{font-size:11px;color:#778e96;margin-top:7px}
+.hidden{display:none!important}
+.player{max-width:1030px;margin:auto}.stat-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}.stat{font-size:13px;font-weight:900;color:#0b756c;background:#e5f7f0;border-radius:100px;padding:8px 13px}
+.prompt{font-size:clamp(21px,3.3vw,30px);font-weight:900;text-align:center;margin:12px 0 15px}.prompt-sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:17px}.zone{border:2px dashed #adc7c7;border-radius:17px;background:#f7fbfa;padding:15px;min-height:124px;margin-bottom:15px}.zone.answer{background:#f6f9ff;border-color:#9cb4db}.zone-label{font-size:12px;font-weight:900;color:#667f8a;margin-bottom:12px}.tile-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:57px}.piece{padding:13px 17px;min-height:56px;border:1.5px solid #b0d5cd;background:#e5f5ef;border-radius:13px;color:#17354c;font-size:clamp(20px,3vw,27px);font-weight:900;box-shadow:0 3px 0 #b6dcd1;touch-action:manipulation;max-width:100%;overflow-wrap:anywhere}.answer .piece{background:#fff0cc;border-color:#e2bf71;box-shadow:0 3px 0 #dfc681}.piece:focus-visible{outline:3px solid #f0a725}.piece.dragging{opacity:.45}.empty{color:#97a9b1;font-size:15px;padding:8px 0}.punct{font-size:24px;color:#354b56;font-weight:900;margin:0 4px}
+.feedback{min-height:48px;padding:12px 14px;border-radius:12px;background:#f5f7fa;color:#5d7482;font-size:16px;font-weight:800;line-height:1.5;margin-top:10px}.feedback.good{background:#e4f8eb;color:#0b7c49}.feedback.bad{background:#fff0ef;color:#ae4031}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.actions .btn{min-height:47px}
+.end-card{text-align:center;padding:34px 15px}.end-card .big{font-size:52px}
+.switch{display:flex;align-items:center;gap:6px;font-weight:750;font-size:13px;color:#425e65}.switch input{width:18px;height:18px;accent-color:var(--teal)}
+footer{text-align:center;color:#83949a;font-size:12px;margin:30px 0}
+@media(max-width:680px){.container{padding:11px 12px 35px}.head{padding:9px 11px;min-height:68px;flex-wrap:wrap}.logo{width:41px;height:41px;border-radius:12px;font-size:23px}.brand b{font-size:18px}.brand small{font-size:10px}.nav{width:100%}.nav .btn{flex:1}.panel{padding:16px;border-radius:16px}.hero{padding:18px 0 4px}.hero h1{font-size:29px}.piece{padding:11px 14px}.manual-box input{flex-basis:100%}}
+</style>
+</head>
+<body>
+<header><div class="head">
+<div class="logo" aria-hidden="true">序</div>
+<div class="brand"><b>中文句子排序实验室</b><small>Classroom Companion · 独立测试版</small></div>
+<nav class="nav"><button id="teacherNav" class="btn ghost" type="button">⚙ 教师设置</button><button id="playNav" class="btn primary" type="button">▶ 开始练习</button></nav>
+</div></header>
+<main class="container">
+<section id="teacherPage">
+ <div class="hero"><span class="eyebrow">SMART CHINESE SENTENCE REORDERING</span><h1>老师写正确句子，系统自动打乱。</h1><p>输入完整的中文句子，自动拆分成词语或短语。老师可以合并、拆分或手动调整，学生再把打乱的词块排回正确顺序。</p></div>
+ <section class="panel">
+ <div class="control-row"><span class="pill">✓ 不需安装</span><span class="pill">✓ 自动分词</span><span class="pill">✓ 老师自主分组</span><span class="pill">✓ 本地保存</span></div>
+ <label class="field-title" for="sentenceInput">① 输入正确句子（每行一句）</label>
+ <textarea class="sentence-input" id="sentenceInput" placeholder="我和妈妈在公园里快乐地散步。&#10;妈妈在厨房里准备美味的晚餐。"></textarea>
+ <p class="hint">也可在句子中使用 <strong>/</strong> 指定分组，例如：<strong>我和妈妈 / 在公园里 / 快乐地散步。</strong> 斜线不会出现在学生的题目中。</p>
+ <label class="field-title">② 让系统自动分组</label>
+ <div class="control-row"><div class="segmented" role="group" aria-label="分组方式"><button id="wordMode" type="button">词语模式</button><button id="phraseMode" class="active" type="button">短语模式</button></div><button class="btn" id="analyzeBtn" type="button">↻ 重新分析</button><button class="btn ghost" id="sampleBtn" type="button">载入示例</button></div>
+ <p id="teacherStatus" class="status" role="status"></p>
+ </section>
+ <section class="panel">
+ <h2>③ 检查与调整词块</h2>
+ <p class="hint">点选词块可在其中拆分；点词块之间的 ＋ 可合并。也可直接用 / 自定义分组。若系统分得不合适，老师随时可以修改。</p>
+ <div id="editorList" class="edit-list"></div>
+ <div class="control-row">
+ <button class="btn primary" id="saveStartBtn" type="button">▶ 保存并开始练习</button>
+ <button class="btn ghost" id="studentLinkBtn" type="button">🔗 复制学生练习链接</button>
+ <button class="btn ghost" id="exportBtn" type="button">↓ 导出 JSON</button>
+ <label class="btn ghost" for="importInput" style="cursor:pointer">↑ 导入 JSON</label><input id="importInput" type="file" accept=".json,application/json" hidden>
+ </div>
+ <p class="hint">练习设置保存在此浏览器。学生链接包含当前句子，可在其他设备打开；请勿输入个人资料或机密内容。语音朗读取决于浏览器可用的中文语音。</p>
+ </section>
+</section>
+<section id="playPage" class="hidden player">
+ <div class="hero"><span class="eyebrow">句子排序</span><h1>把词语排成一个完整的句子</h1><p>点击下方词语，或用鼠标拖动词块。完成后按「提交答案」。</p></div>
+ <section class="panel" id="gamePanel">
+ <div class="stat-row"><span id="progress" class="stat">第 1 / 1 题</span><span id="score" class="stat">首次答对：0</span></div>
+ <div id="gameBody">
+ <div class="prompt">请把词语排成正确的句子。</div>
+ <div class="prompt-sub">先想一想，完整句子应该怎样排列？</div>
+ <div class="zone answer" id="answerZone"><div class="zone-label">你的句子</div><div id="answerTiles" class="tile-row"></div></div>
+ <div class="zone" id="bankZone"><div class="zone-label">词语卡片</div><div id="bankTiles" class="tile-row"></div></div>
+ <div id="feedback" class="feedback" role="status">点选词块开始排列。</div>
+ <div class="control-row"><label class="switch"><input id="autoRead" type="checkbox" checked> 答对后朗读</label><label class="switch">语速 <select id="rate"><option value=".78">慢</option><option value=".9" selected>适中</option><option value="1">正常</option></select></label></div>
+ <div class="actions"><button class="btn" id="clearAnswer" type="button">↺ 重排</button><button class="btn primary" id="submitBtn" type="button">✓ 提交答案</button><button class="btn primary hidden" id="nextBtn" type="button">下一题 →</button><button class="btn ghost" id="readBtn" type="button">🔊 朗读句子</button></div>
+ </div>
+ <div id="summary" class="end-card hidden"><div class="big">🌟</div><h2>练习完成！</h2><p id="summaryText"></p><button class="btn primary" id="againBtn">再练一次</button></div>
+ </section>
+</section>
+<footer>由 Lim Kim Sze 制作 · 参考 English Word Order and Matching · 仅供教学试用 · 当前不属于 Classroom Companion 中文正式版</footer>
+</main>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const STORE='cc-chinese-order-trial-v1';
+const SAMPLES=['我和妈妈在公园里快乐地散步。','妈妈在厨房里准备美味的晚餐。','今天下午，我和妈妈去图书馆借书。','小明认真地完成了功课。','姐姐和弟弟一起到图书馆看书。'];
+const PROTECTED=['图书馆','博物馆','动物园','电影院','体育馆','游乐场','游泳池','自行车','电视机','星期一','星期二','星期三','星期四','星期五','星期六','星期日','幼儿园','教学楼','实验室','停车场','办公室','课室','操场','校园','学校','教室','厨房','公园','商店','超市','朋友','老师','同学','妈妈','爸爸','弟弟','姐姐','妹妹','哥哥','早上','晚上','下午','上午','今天','明天','昨天','美味','快乐','认真','漂亮','终于','因为','所以','虽然','但是','如果','然后','一起','已经','正在'].sort((a,b)=>b.length-a.length);
+const END=/[。！？!?；;]+$/u;
+let mode='phrase',items=[],current=0,bank=[],answer=[],firstRight=0,attempts=0,hadMistake=false,locked=false,selSplit=null,dragId=null;
+let shared=false;
+function cleanRaw(s){return String(s||'').replace(/\u3000/g,' ').trim().replace(/\s*\/\s*/g,'').replace(/\s+/g,'');}
+function parseOriginal(line){const raw=cleanRaw(line),m=raw.match(END),end=m?m[0]:'';return {text:raw.slice(0,raw.length-end.length),end:end,original:raw};}
+function isPunct(x){return /^[，,、：:（）()“”‘’—…]+$/u.test(x);}
+function wordSegment(sentence){
+ let preliminary=[];
+ if(typeof Intl!=='undefined' && Intl.Segmenter){
+  preliminary=Array.from(new Intl.Segmenter('zh-Hans',{granularity:'word'}).segment(sentence),x=>x.segment);
+ }else preliminary=Array.from(sentence);
+ let result=[];
+ for(let i=0;i<preliminary.length;){
+  // Preserve common P1-P6 multi-character words when the browser splits them.
+  let found=null,len=0,joined='';
+  for(let j=i;j<Math.min(i+7,preliminary.length);j++){
+    joined+=preliminary[j];
+    if(PROTECTED.includes(joined)&&joined.length>len){found=joined;len=joined.length;}
+  }
+  if(found){result.push(found);let covered=0;while(covered<found.length&&i<preliminary.length){covered+=preliminary[i].length;i++;}continue;}
+  const t=preliminary[i++];
+  if(isPunct(t)&&result.length)result[result.length-1]+=t;
+  else if(t.trim())result.push(t);
+ }
+ return result.filter(Boolean);
+}
+function phraseSegment(tokens){
+ const output=[];
+ for(let i=0;i<tokens.length;){
+  const a=tokens[i],b=tokens[i+1],c=tokens[i+2];
+  // A conjunction can form a natural subject group: 我和妈妈 / 姐姐和弟弟.
+  if(b==='和'&&c&&!/[，,]/.test(a)){output.push(a+b+c);i+=3;continue;}
+  // Location phrases: 在公园里, 在厨房里, 到图书馆.
+  if(['在','从','到','向','往'].includes(a)&&b){
+   let p=a+b;i+=2;
+   if(['里','上','中','旁','边','面','前','后'].includes(tokens[i]))p+=tokens[i++];
+   output.push(p);continue;
+  }
+  // Attribute phrases and adverbial phrases.
+  if(b==='的'&&c){output.push(a+b+c);i+=3;continue;}
+  if(b==='地'&&c){output.push(a+b+c);i+=3;continue;}
+  if(['去','来','回'].includes(a)&&b){output.push(a+b);i+=2;continue;}
+  if(['今天','明天','昨天','这个','那个'].includes(a)&&b&&/^(上午|下午|早上|晚上|中午|星期)/.test(b)){output.push(a+b);i+=2;continue;}
+  output.push(a);i++;
+ }
+ return output;
+}
+function suggested(text,style){const words=wordSegment(text);return style==='word'?words:phraseSegment(words);}
+function fromLine(raw,style){
+ const x=parseOriginal(raw);
+ if(!x.text) return null;
+ const hasManual=raw.includes('/');
+ const gs=hasManual?raw.replace(END,'').split('/').map(x=>x.replace(/\s+/g,'')).filter(Boolean):suggested(x.text,style);
+ return {text:x.text,end:x.end,groups:gs.join('')===x.text?gs:Array.from(x.text)};
+}
+function allValid(arr){return Array.isArray(arr)&&arr.length>0&&arr.length<=100&&arr.every(x=>x&&typeof x.text==='string'&&typeof x.end==='string'&&Array.isArray(x.groups)&&x.groups.length>=1&&x.groups.length<=200&&x.groups.every(g=>typeof g==='string'&&g.length)&&x.groups.join('')===x.text&&x.text.length<=500);}
+function status(msg,kind){$('teacherStatus').textContent=msg;$('teacherStatus').className='status'+(kind?' '+kind:'');}
+function save(){try{localStorage.setItem(STORE,JSON.stringify({mode:mode,items:items}));return true;}catch(e){status('无法保存到浏览器，请使用「导出 JSON」备份。','bad');return false;}}
+function readStorage(){try{const v=JSON.parse(localStorage.getItem(STORE));if(v&&allValid(v.items)){items=v.items;mode=v.mode==='word'?'word':'phrase';return true;}}catch(e){}return false;}
+function setMode(m){mode=m;$('wordMode').classList.toggle('active',m==='word');$('phraseMode').classList.toggle('active',m==='phrase');}
+function analyze(){
+ const lines=$('sentenceInput').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(!lines.length){status('请先输入至少一个完整句子。','bad');return false;}
+ if(lines.length>50){status('测试版一次最多接受 50 个句子。','bad');return false;}
+ const next=lines.map(line=>fromLine(line,mode));
+ if(next.some(x=>!x||x.text.length<2||x.text.length>150)){status('请检查句子；每句需 2 至 150 字。','bad');return false;}
+ items=next;selSplit=null;save();renderEditors();
+ status('已分析 '+items.length+' 个句子。请检查自动分组，必要时调整。','good');
+ return true;
+}
+function esc(v){return String(v).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));}
+function renderEditors(){
+ const root=$('editorList');root.replaceChildren();
+ if(!items.length){root.innerHTML='<p class="hint">分析句子后，分组建议会显示在这里。</p>';return;}
+ items.forEach((item,idx)=>{
+  const card=document.createElement('article');card.className='edit-card';
+  const heading=document.createElement('div');heading.className='edit-head';
+  heading.innerHTML='<span class="edit-title">第 '+(idx+1)+' 句 · '+item.groups.length+' 个词块</span><span class="original">'+esc(item.text+item.end)+'</span>';card.appendChild(heading);
+  const row=document.createElement('div');row.className='tokens';
+  item.groups.forEach((g,j)=>{
+   const b=document.createElement('button');b.type='button';b.className='token'+(selSplit&&selSplit.i===idx&&selSplit.j===j?' selected':'');b.textContent=g;b.title='点击选择词块，进一步拆分';
+   b.onclick=()=>{selSplit=selSplit&&selSplit.i===idx&&selSplit.j===j?null:{i:idx,j:j};renderEditors();};
+   row.appendChild(b);
+   if(j<item.groups.length-1){
+    const plus=document.createElement('button');plus.className='join';plus.type='button';plus.textContent='＋';plus.title='合并左右相邻词块';plus.setAttribute('aria-label','合并「'+g+'」和「'+item.groups[j+1]+'」');
+    plus.onclick=()=>{item.groups.splice(j,2,item.groups[j]+item.groups[j+1]);selSplit=null;save();renderEditors();};row.appendChild(plus);
+   }
+  });
+  if(item.end){const e=document.createElement('span');e.className='end-punct';e.textContent=item.end;row.appendChild(e);}
+  card.appendChild(row);
+  if(selSplit&&selSplit.i===idx&&item.groups[selSplit.j]&&Array.from(item.groups[selSplit.j]).length>1){
+   const selected=selSplit.j,chars=Array.from(item.groups[selected]);const pane=document.createElement('div');pane.className='split-panel';
+   const title=document.createElement('strong');title.textContent='在「'+item.groups[selected]+'」的哪个位置拆开？';pane.appendChild(title);
+   const options=document.createElement('div');options.className='split-options';
+   for(let k=1;k<chars.length;k++){
+    const b=document.createElement('button');b.type='button';b.textContent=chars.slice(0,k).join('')+' | '+chars.slice(k).join('');
+    b.onclick=()=>{item.groups.splice(selected,1,chars.slice(0,k).join(''),chars.slice(k).join(''));selSplit=null;save();renderEditors();};
+    options.appendChild(b);
+   }
+   pane.appendChild(options);card.appendChild(pane);
+  }
+  const manual=document.createElement('div');manual.className='manual-box';
+  const label=document.createElement('label');label.textContent='手动分组 (/)：';label.htmlFor='group'+idx;
+  const input=document.createElement('input');input.type='text';input.id='group'+idx;input.value=item.groups.join(' / ');input.setAttribute('aria-label','第'+(idx+1)+'句手动分组');
+  const apply=document.createElement('button');apply.type='button';apply.className='btn small ghost';apply.textContent='应用';
+  const accept=()=>{const parts=input.value.split('/').map(x=>x.replace(/\s+/g,'')).filter(Boolean);
+   if(!parts.length||parts.join('')!==item.text){input.setCustomValidity('分组不能改变原句，也不能遗漏任何字。');input.reportValidity();return;}
+   input.setCustomValidity('');item.groups=parts;selSplit=null;save();renderEditors();status('分组已更新。','good');
+  };apply.onclick=accept;input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();accept();}};
+  manual.append(label,input,apply);card.appendChild(manual);
+  const tip=document.createElement('div');tip.className='small-note';tip.textContent='老师可自由控制分组；不会改变原句和标准答案。';card.appendChild(tip);root.appendChild(card);
+ });
+}
+function showTeacher(){stopSpeech();$('teacherPage').classList.remove('hidden');$('playPage').classList.add('hidden');window.scrollTo(0,0);}
+function showPlay(){ $('teacherPage').classList.add('hidden');$('playPage').classList.remove('hidden');window.scrollTo(0,0); }
+function shuffled(list){const a=list.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}if(a.length>1&&a.every((v,i)=>v.id===list[i].id)){const t=a[0];a[0]=a[1];a[1]=t;}return a;}
+function initPuzzle(){
+ locked=false;hadMistake=false;attempts=0;answer=[];
+ bank=shuffled(items[current].groups.map((text,id)=>({text:text,id:id})));
+ $('nextBtn').classList.add('hidden');$('submitBtn').classList.remove('hidden');
+ $('progress').textContent='第 '+(current+1)+' / '+items.length+' 题';
+ $('score').textContent='首次答对：'+firstRight+' / '+current;
+ feedback('点选下方词块，按正确顺序排列。','');
+ renderGame();stopSpeech();
+}
+function feedback(txt,k){$('feedback').textContent=txt;$('feedback').className='feedback'+(k?' '+k:'');}
+function el(tag,cn,txt){const x=document.createElement(tag);if(cn)x.className=cn;if(txt!==undefined)x.textContent=txt;return x;}
+function renderGame(){
+ const bankRoot=$('bankTiles'),answerRoot=$('answerTiles');bankRoot.replaceChildren();answerRoot.replaceChildren();
+ const draw=(list,container,dest)=>{
+  list.forEach((t,i)=>{
+   const btn=el('button','piece',t.text);btn.type='button';btn.draggable=!locked;btn.setAttribute('aria-label',t.text+'，点击'+(dest==='bank'?'移到答案':'返回词库'));btn.dataset.id=String(t.id);
+   btn.onclick=()=>{if(locked)return;if(dest==='bank'){bank.splice(i,1);answer.push(t);}else{answer.splice(i,1);bank.push(t);}renderGame();};
+   btn.ondragstart=e=>{if(locked){e.preventDefault();return;}dragId={id:t.id,source:dest};btn.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(t.id));};
+   btn.ondragend=()=>{dragId=null;btn.classList.remove('dragging');};
+   container.appendChild(btn);
+  });
+  if(!list.length)container.appendChild(el('span','empty',dest==='bank'?'全部词块已移动':'点击下方词语开始排列'));
+ };
+ draw(answer,answerRoot,'answer');draw(bank,bankRoot,'bank');
+ if(items[current]?.end)answerRoot.appendChild(el('span','punct',items[current].end));
+}
+function locateDrop(e,arr){const tiles=Array.from(e.currentTarget.querySelectorAll('.piece')).filter(x=>!x.classList.contains('dragging'));for(let i=0;i<tiles.length;i++){const rect=tiles[i].getBoundingClientRect();if(e.clientY<rect.bottom&&e.clientX<rect.left+rect.width/2)return i;}return arr.length;}
+function dropOn(e,dest){e.preventDefault();if(locked||!dragId)return;const source=dragId.source,arr=source==='bank'?bank:answer,at=arr.findIndex(x=>x.id===dragId.id);if(at<0)return;const piece=arr.splice(at,1)[0],target=dest==='bank'?bank:answer;let pos=locateDrop(e,target);if(arr===target&&at<pos)pos--;target.splice(Math.max(0,pos),0,piece);dragId=null;renderGame();}
+for(const name of ['bank','answer']){const z=$(name==='bank'?'bankTiles':'answerTiles');z.addEventListener('dragover',e=>{if(!locked)e.preventDefault();});z.addEventListener('drop',e=>dropOn(e,name));}
+function stopSpeech(){if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(e){}}
+function speak(text){if(!('speechSynthesis' in window)){feedback('当前浏览器不支持朗读。','bad');return;}stopSpeech();const u=new SpeechSynthesisUtterance(text);u.lang='zh-CN';u.rate=Number($('rate').value)||.9;const voices=speechSynthesis.getVoices();const zh=voices.filter(v=>/^zh/i.test(v.lang));const best=zh.find(v=>/Google.*普通话|Google.*Chinese|Xiaoxiao|晓晓|Ting-Ting|Yaoyao/i.test(v.name))||zh.find(v=>/女|Female/i.test(v.name))||zh[0];if(best)u.voice=best;try{speechSynthesis.speak(u);}catch(e){feedback('朗读暂时无法播放。','bad');}}
+function play(){
+ if(!allValid(items)){showTeacher();status('请先设置至少一个完整句子。','bad');return;}
+ save();shared=false;current=0;firstRight=0;showPlay();$('summary').classList.add('hidden');$('gameBody').classList.remove('hidden');initPuzzle();
+}
+function submit(){
+ if(locked)return;
+ if(answer.length!==items[current].groups.length){feedback('请先把所有词块移入答案区。','bad');return;}
+ attempts++;
+ const good=answer.every((a,i)=>a.id===i);
+ if(good){
+  locked=true;if(!hadMistake)firstRight++;
+  feedback('✓ 答对了！做得好！','good');
+  $('score').textContent='首次答对：'+firstRight+' / '+(current+1);
+  $('submitBtn').classList.add('hidden');$('nextBtn').classList.remove('hidden');
+  $('nextBtn').textContent=current===items.length-1?'查看成绩 →':'下一题 →';
+  if($('autoRead').checked)speak(items[current].text+items[current].end);
+ }else{hadMistake=true;feedback('再试一次！你可以点击词块重新调整顺序。','bad');}
+}
+function next(){stopSpeech();if(current+1<items.length){current++;initPuzzle();}else{
+ $('gameBody').classList.add('hidden');$('summary').classList.remove('hidden');
+ $('summaryText').textContent='完成 '+items.length+' 道题，首次答对 '+firstRight+' 道。';
+}}
+function download(name,txt,type){const b=new Blob([txt],{type:type||'application/json;charset=utf-8'});const url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+function exportFile(){if(!allValid(items)){status('请先分析句子。','bad');return;}download('中文句子排序-练习.json',JSON.stringify({version:1,mode:mode,items:items},null,2));status('已导出练习 JSON。','good');}
+function makeShareUrl(){if(!allValid(items))return null;const data=encodeURIComponent(JSON.stringify({version:1,items:items})),url=location.origin+location.pathname+'#play='+data;return url;}
+function copyLink(){
+ const link=makeShareUrl();if(!link){status('请先输入和分析句子。','bad');return;}
+ if(link.length>12000){status('链接过长。请减少题数，或改用导出 JSON。','bad');return;}
+ if(navigator.clipboard?.writeText){navigator.clipboard.writeText(link).then(()=>status('学生链接已复制，可分享给学生。','good')).catch(()=>{prompt('复制以下学生链接：',link);});}
+ else prompt('复制以下学生链接：',link);
+}
+$('teacherNav').onclick=showTeacher;
+$('playNav').onclick=play;
+$('wordMode').onclick=()=>{setMode('word');analyze();};
+$('phraseMode').onclick=()=>{setMode('phrase');analyze();};
+$('analyzeBtn').onclick=analyze;
+$('sampleBtn').onclick=()=>{$('sentenceInput').value=SAMPLES.join('\n');analyze();};
+$('saveStartBtn').onclick=()=>{if(analyzeCheck())play();};
+function analyzeCheck(){
+ const rows=$('sentenceInput').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(rows.length!==items.length||rows.some((line,i)=>cleanRaw(line)!==items[i].text+items[i].end))return analyze();
+ return allValid(items);
+}
+$('studentLinkBtn').onclick=()=>{if(analyzeCheck())copyLink();};
+$('exportBtn').onclick=()=>{if(analyzeCheck())exportFile();};
+$('importInput').onchange=async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  if(file.size>250000)throw Error('文件太大');
+  const data=JSON.parse(await file.text());
+  if(!allValid(data.items))throw Error('格式错误或分组不完整');
+  items=data.items;setMode(data.mode==='word'?'word':'phrase');
+  $('sentenceInput').value=items.map(x=>x.text+x.end).join('\n');save();renderEditors();status('导入成功：'+items.length+' 个句子。','good');
+ }catch(err){status('导入失败：'+err.message,'bad');}finally{e.target.value='';}
+};
+$('clearAnswer').onclick=()=>{if(locked)return;bank=shuffled([...bank,...answer]);answer=[];feedback('已清空答案，重新排列。','');renderGame();};
+$('submitBtn').onclick=submit;
+$('nextBtn').onclick=next;
+$('readBtn').onclick=()=>{if('speechSynthesis' in window&&speechSynthesis.speaking){stopSpeech();return;}if(answer.length===items[current].groups.length)speak(answer.map(x=>x.text).join('')+items[current].end);else feedback('请先排好完整句子，再按朗读。','bad');};
+$('againBtn').onclick=play;
+window.addEventListener('beforeunload',stopSpeech);
+const hash=location.hash;
+if(hash.startsWith('#play=')){
+ try{
+  const obj=JSON.parse(decodeURIComponent(hash.slice(6)));
+  if(!allValid(obj.items))throw Error('bad');
+  items=obj.items;shared=true;$('teacherNav').classList.add('hidden');$('playNav').classList.add('hidden');
+  current=0;firstRight=0;showPlay();initPuzzle();
+ }catch(err){readStorage();$('sentenceInput').value=items.map(x=>x.text+x.end).join('\n');status('学生链接无效，请老师重新生成。','bad');renderEditors();}
+}else{
+ if(!readStorage())items=SAMPLES.map(x=>fromLine(x,'phrase'));
+ $('sentenceInput').value=items.map(x=>x.text+x.end).join('\n');
+ setMode(mode);renderEditors();status('已载入 '+items.length+' 句示例。你可随时修改。','good');
+}
+})();
+</script>
+</body>
+</html>
