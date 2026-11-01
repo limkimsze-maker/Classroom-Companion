@@ -217,7 +217,7 @@ function textPanel(text,cls){studentRoot().append(e('div',cls||'question-text',t
 function actions(list){$('stageActions').replaceChildren(...list)}
 function addNext(){actions([makeButton(index+1<items.length?'Next challenge →':'See my results →','btn primary',nextQuestion)])}
 function nextQuestion(){stopMic();completed++;if(index+1<items.length){index++;renderStudent()}else showResults()}
-function completeCorrect(){score++;feedback('Brilliant! You got it! ⭐','good');addNext()}
+function completeCorrect(){score++;$('scoreProgress').textContent='⭐ '+score+' correct';feedback('Brilliant! You got it! ⭐','good');addNext()}
 function markWrong(){feedback('Not quite. Have another go! You can do it.','bad')}
 function showResults(){
  $('questionStage').hidden=true;$('resultsArea').hidden=false;
@@ -374,7 +374,7 @@ function renderBuilder(){
   if(phase>=3){
    summary.textContent=buildExpanded(q);
    holder.replaceChildren(e('h3',null,'You made the sentence richer! 🌈'));
-   if(!missed)score++;
+   if(!missed){score++;$('scoreProgress').textContent='⭐ '+score+' correct';}
    feedback('Well done! You added time, place and manner details.','good');addNext();return;
   }
   const part=phases[phase];
