@@ -357,7 +357,9 @@ function renderDoctor(){
 }
 function buildExpanded(q){
  const final=q.base.replace(/[.!?]\s*$/,'');
- return q.time+', '+final.charAt(0).toLowerCase()+final.slice(1)+' '+q.place+' '+q.manner+'.';
+ const common=/^(The|A|An|My|Our|His|Her|Their|This|That|These|Those)\b/.test(final);
+ const sentence=common?final.charAt(0).toLowerCase()+final.slice(1):final;
+ return q.time+', '+sentence+' '+q.place+' '+q.manner+'.';
 }
 function renderBuilder(){
  const q=items[index],phases=[
@@ -392,8 +394,11 @@ function renderBuilder(){
 const SVG_BASE='<svg viewBox="0 0 660 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Colourful school illustration">';
 function person(x,y,shirt,pants,pose){
  const legs='<path d="M'+(x-17)+' '+(y+60)+' l-8 56 M'+(x+17)+' '+(y+60)+' l8 56" fill="none" stroke="'+pants+'" stroke-width="17" stroke-linecap="round"/>';
- const arms=pose==='help'?'<path d="M'+(x-27)+' '+(y+8)+' l-28 39 M'+(x+27)+' '+(y+8)+' l30 43"':'<path d="M'+(x-27)+' '+(y+8)+' l-22 30 M'+(x+27)+' '+(y+8)+' l24 28"';
- return legs+'<rect x="'+(x-28)+'" y="'+(y-12)+'" width="56" height="76" rx="19" fill="'+shirt+'"/>'+arms.replace('fill="none"','fill="none" stroke="#e7af84" stroke-width="13" stroke-linecap="round"')+'<circle cx="'+x+'" cy="'+(y-42)+'" r="28" fill="#edbd94"/><path d="M'+(x-27)+' '+(y-47)+' Q'+(x-30)+' '+(y-81)+' '+x+' '+(y-73)+' Q'+(x+29)+' '+(y-77)+' '+(x+27)+' '+(y-47)+'" fill="#4c566a"/><circle cx="'+(x-10)+'" cy="'+(y-43)+'" r="3" fill="#374657"/><circle cx="'+(x+9)+'" cy="'+(y-43)+'" r="3" fill="#374657"/><path d="M'+(x-6)+' '+(y-33)+' q7 7 14 0" stroke="#ab6656" stroke-width="2" fill="none"/>';
+ const d=pose==='help'
+  ?'M'+(x-27)+' '+(y+8)+' l-28 39 M'+(x+27)+' '+(y+8)+' l30 43'
+  :'M'+(x-27)+' '+(y+8)+' l-22 30 M'+(x+27)+' '+(y+8)+' l24 28';
+ const arms='<path d="'+d+'" fill="none" stroke="#e7af84" stroke-width="13" stroke-linecap="round"/>';
+ return legs+'<rect x="'+(x-28)+'" y="'+(y-12)+'" width="56" height="76" rx="19" fill="'+shirt+'"/>'+arms+'<circle cx="'+x+'" cy="'+(y-42)+'" r="28" fill="#edbd94"/><path d="M'+(x-27)+' '+(y-47)+' Q'+(x-30)+' '+(y-81)+' '+x+' '+(y-73)+' Q'+(x+29)+' '+(y-77)+' '+(x+27)+' '+(y-47)+'" fill="#4c566a"/><circle cx="'+(x-10)+'" cy="'+(y-43)+'" r="3" fill="#374657"/><circle cx="'+(x+9)+'" cy="'+(y-43)+'" r="3" fill="#374657"/><path d="M'+(x-6)+' '+(y-33)+' q7 7 14 0" stroke="#ab6656" stroke-width="2" fill="none"/>';
 }
 function sceneSVG(which){
  let sky='#c9eff5',ground='#b1e4b8',props='',people='';
