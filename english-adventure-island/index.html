@@ -280,7 +280,7 @@ footer a{color:#ffe49e}
 <script>
 'use strict';
 (()=>{
- const cards=[...document.querySelectorAll('.card')],buttons=[...document.querySelectorAll('[data-skill]')],search=document.getElementById('searchInput');
+ const cards=[...document.querySelectorAll('.card')],buttons=[...document.querySelectorAll('button[data-skill]')],search=document.getElementById('searchInput');
  const store='english-adventure-island-opened-v1';let filter='all',opened=new Set(),last='';
  try{const raw=JSON.parse(localStorage.getItem(store)||'[]');if(Array.isArray(raw))opened=new Set(raw.filter(x=>cards.some(c=>c.dataset.id===x)))}catch(err){}
  function save(){try{localStorage.setItem(store,JSON.stringify([...opened]))}catch(err){}}
