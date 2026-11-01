@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en-SG">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff9ee">
+<meta name="description" content="English Adventure Island: eight free, interactive primary English learning activities with teacher-customisable questions.">
+<meta property="og:title" content="English Adventure Island | Eight Learning Adventures">
+<meta property="og:description" content="Explore words, sentences, stories and speaking through eight free primary English activities.">
+<title>English Adventure Island ✦ Eight Learning Adventures</title>
+<style>
+:root{--ink:#244a5c;--deep:#104c5b;--secondary:#5d7e85;--teal:#138f7e;--cream:#fffbf3;--orange:#f07859;--gold:#ffcb6e}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:#fffcf6;color:var(--ink);margin:0}
+button,input{font:inherit}button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:4px solid #ffb94b;outline-offset:3px}
+[hidden]{display:none!important}
+header{background:#fffcf4;border-bottom:1px solid #e8ebdf;position:relative;z-index:5}
+.header-inner{max-width:1240px;margin:auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:950;color:#124f59;text-decoration:none;letter-spacing:-.02em}
+.brand-icon{width:51px;height:51px;border-radius:17px;background:#087c70;display:grid;place-items:center;box-shadow:0 5px 0 #04615c;font-size:29px;color:#fff}
+.brand-label{display:block;font-size:clamp(17px,2.1vw,23px);line-height:1.15}
+.brand small{display:block;font-size:11px;letter-spacing:.12em;color:#789297;text-transform:uppercase;margin-top:3px}
+.nav{display:flex;gap:7px;flex-wrap:wrap}
+.nav a{color:#41666a;text-decoration:none;font-size:14px;font-weight:850;padding:10px 12px;border-radius:11px}
+.nav a:hover{background:#e8f5ed}
+.nav .companion{background:#fff0ce;color:#8a6130}
+.hero{background:radial-gradient(circle at 85% 16%,#ffeed4 0,transparent 33%),radial-gradient(circle at 10% 88%,#d1f1e0 0,transparent 30%),linear-gradient(160deg,#d9f3f2 0%,#edfbf1 58%,#fff4da 100%);border-bottom:1px solid #e7ebdd;overflow:hidden}
+.hero-inner{max-width:1240px;margin:auto;padding:52px 25px 62px;display:grid;grid-template-columns:1.04fr .96fr;align-items:center;gap:27px;min-height:550px}
+.kicker{display:inline-flex;gap:9px;align-items:center;background:#fffefa;border:2px solid #c2e3d6;border-radius:99px;padding:9px 16px;color:#167a70;font-size:14px;font-weight:950;box-shadow:0 5px 0 #d6eadf}
+.hero h1{font-size:clamp(44px,5.6vw,77px);font-weight:1000;color:#125e64;letter-spacing:-.045em;line-height:1.15;margin:21px 0 15px}
+.hero h1 span{display:block;color:#e47d52;text-shadow:3px 5px 0 #fff0c4}
+.hero p{color:#47767d;font-size:clamp(18px,2.1vw,25px);font-weight:770;line-height:1.65;margin:0 0 18px;max-width:540px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin:25px 0}
+.big-btn{border:0;text-decoration:none;display:inline-flex;align-items:center;gap:10px;justify-content:center;border-radius:17px;min-height:57px;padding:14px 21px;font-size:18px;font-weight:950;transition:transform .15s}
+.big-btn:hover{transform:translateY(-3px)}
+.big-btn.primary{background:#f47f55;color:#fff;box-shadow:0 6px 0 #c8623d,0 12px 24px #ca72513b}
+.big-btn.secondary{background:#fff;color:#146f66;border:2px solid #b8d9d1;box-shadow:0 5px 0 #d4e9de}
+.micro-stats{display:flex;gap:8px;flex-wrap:wrap;margin:21px 0}
+.micro-stats span{background:#fffcf6cc;border:1px solid #d8e9dc;border-radius:99px;padding:8px 11px;color:#547474;font-size:13px;font-weight:850}
+.surprise{background:#fff;border:2px solid #f5d89e;border-radius:16px;padding:14px 16px;margin-top:15px;max-width:480px;box-shadow:0 6px 0 #ffeaca}
+.surprise strong{color:#a96c38}
+.surprise h2{font-size:22px;margin:6px 0 12px;color:#185b65}
+.surprise a{display:inline-block;color:#fff;text-decoration:none;background:#0a8275;border-radius:12px;padding:11px 16px;font-weight:900}
+.stage{max-width:615px;position:relative;margin:auto;width:100%}
+.stage svg{width:100%;height:auto;display:block;filter:drop-shadow(0 15px 18px #4a877924)}
+.float{animation:float 5.3s ease-in-out infinite}
+.float2{animation:float 6.8s ease-in-out infinite reverse}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.stage-note{position:absolute;right:0;bottom:0;background:#fff;color:#905e3d;border:3px solid #ffe0a9;border-radius:16px;padding:10px 15px;box-shadow:0 6px 0 #edd4a7;transform:rotate(3deg);font-size:13px;font-weight:950}
+.wrap{max-width:1240px;margin:auto;padding:0 24px}
+.section-head{text-align:center;margin-bottom:24px}
+.section-head .small-tag{display:inline-flex;background:#ffefcb;color:#936b34;font-size:13px;font-weight:900;padding:8px 14px;border-radius:99px}
+.section-head h2{color:#15515d;font-size:clamp(29px,3.5vw,44px);font-weight:1000;margin:12px 0 8px;line-height:1.25}
+.section-head p{font-size:17px;color:#5a7c85;line-height:1.6;margin:0}
+.worlds{padding:62px 0 29px;background:#fffdf8}
+.world-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:29px 0 5px}
+.world{border:2px solid #e7e6dd;box-shadow:0 6px 0 #eee9df;border-radius:23px;background:white;min-height:151px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:17px 9px;text-align:center;color:#2d5b62;transition:transform .2s,border-color .2s}
+.world .emoji{font-size:42px}
+.world strong{font-size:20px;line-height:1.2}
+.world small{font-size:13px;font-weight:750;color:#67878a}
+.world[data-skill=words]{background:#fff7db}
+.world[data-skill=sentences]{background:#eaf7ff}
+.world[data-skill=stories]{background:#f4eeff}
+.world[data-skill=speaking]{background:#fff0ea}
+.world:hover{transform:translateY(-4px)}
+.world[aria-pressed=true]{border-color:#168c78;box-shadow:0 5px 0 #91cbbb;outline:2px solid #c3ebde}
+.adventures{padding:32px 0 76px;background:linear-gradient(#fffdf8,#f6fbf8)}
+.section-row{display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.section-row .section-head{text-align:left;margin:0}
+.discovery{display:flex;align-items:center;gap:10px;background:white;border:1px solid #dce7de;padding:11px 13px;border-radius:15px;box-shadow:0 4px 0 #e2eadd}
+.discovery span{font-size:29px}
+.discovery strong{display:block;color:#117468;font-size:15px}
+.discovery small{font-size:11px;color:#799097;font-weight:760}
+.track{margin-top:6px;height:9px;background:#e1ede7;border-radius:99px;width:130px;overflow:hidden}
+.track-fill{height:100%;width:0;background:linear-gradient(90deg,#26b49b,#ffcb6e);transition:width .2s}
+.toolbar{background:white;border:1px solid #e3e8df;border-radius:18px;padding:14px;display:flex;justify-content:space-between;gap:13px;flex-wrap:wrap;margin:23px 0}
+.filters{display:flex;gap:7px;flex-wrap:wrap}
+.filter{border:1px solid #e0e6e0;border-radius:99px;background:#f4f7f4;color:#52757b;min-height:43px;padding:9px 14px;font-size:13px;font-weight:900}
+.filter[aria-pressed=true]{background:#0c8476;border-color:#0c8476;color:white}
+.filter:hover:not([aria-pressed=true]){background:#e7f5ea}
+.search{display:flex;align-items:center;gap:8px;background:#f8fbf8;border:1px solid #dce9e1;border-radius:13px;padding:8px 12px;min-width:180px}
+.search input{border:0;outline:0;background:transparent;font-size:15px;max-width:220px;min-width:0;width:22vw;color:#28565c;padding:5px}
+.search:focus-within{outline:3px solid #ffd087}
+.filter-status{font-size:14px;font-weight:800;color:#6c848c;min-height:20px;margin:8px 0 17px}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:19px}
+.card{min-width:0;border:2px solid #eee6db;box-shadow:0 8px 0 #eae5dd,0 14px 28px #24395113;border-radius:25px;overflow:hidden;background:white;color:inherit;text-decoration:none;transition:transform .2s}
+.card:hover{transform:translateY(-6px);border-color:#9bcdbb;box-shadow:0 13px 0 #eae5dd,0 20px 32px #2439511b}
+.card .visual{height:162px;display:grid;place-items:center;position:relative;overflow:hidden}
+.card .visual:before{content:"";width:215px;height:215px;border-radius:50%;background:#ffffff50;position:absolute;top:60px;left:-20px}
+.card .visual:after{content:"✦";position:absolute;color:#fff7;right:18px;top:9px;font-size:50px}
+.card .visual .emoji{font-size:79px;z-index:1;filter:drop-shadow(0 7px 0 #00000017);transition:transform .2s}
+.card:hover .visual .emoji{transform:scale(1.1) rotate(-6deg)}
+.card .visual small{position:absolute;z-index:1;color:#fff;font-size:12px;font-weight:950;bottom:16px;left:18px;letter-spacing:.15em;text-transform:uppercase}
+.peach{background:linear-gradient(130deg,#ffaa76,#ef7969)}
+.sky{background:linear-gradient(130deg,#84c3f0,#6894dc)}
+.mint{background:linear-gradient(130deg,#69cab7,#25aa9c)}
+.purple{background:linear-gradient(130deg,#baa0e8,#898dd7)}
+.yellow{background:linear-gradient(130deg,#f8d473,#e9b255)}
+.pink{background:linear-gradient(130deg,#f8a2ba,#de809d)}
+.aqua{background:linear-gradient(130deg,#78d1e2,#509fd1)}
+.lavender{background:linear-gradient(130deg,#b5a3e8,#9175c9)}
+.card-body{padding:18px;display:flex;flex-direction:column;min-height:229px}
+.card-number{font-size:11px;color:#91a0a3;font-weight:950;letter-spacing:.15em;display:flex;justify-content:space-between;align-items:center}
+.star{font-size:17px;color:#e6e2d6}
+.card.opened .star{color:#ffc75e}
+.card h3{font-size:clamp(19px,2vw,24px);font-weight:1000;line-height:1.25;color:#1b515a;margin:14px 0 9px}
+.card p{font-size:14px;line-height:1.65;color:#608089;font-weight:710;margin:0 0 18px;flex:1}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.skill{border-radius:9px;background:#f0f8f1;padding:7px 8px;color:#538176;font-size:11px;font-weight:950}
+.enter{border-radius:11px;background:#128173;color:#fff;font-size:13px;font-weight:950;padding:10px 12px;white-space:nowrap}
+.none{border:2px dashed #c1dfd0;border-radius:15px;background:#f6fbf6;padding:32px;text-align:center;font-size:18px;color:#417c71;font-weight:800}
+.how{background:linear-gradient(145deg,#e9f7ee,#edf7ff);padding:62px 0 72px}
+.how-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:19px;margin-top:30px}
+.how-card{background:white;border:2px solid #d4e8e0;border-radius:23px;padding:24px;box-shadow:0 6px 0 #d9eadf}
+.how-card span{font-size:44px}
+.how-card h3{font-size:21px;color:#20655f;margin:13px 0 9px}
+.how-card p{color:#5a7c84;line-height:1.75;font-size:16px;font-weight:710;margin:0}
+.end{background:#0f7770;color:white;text-align:center;padding:45px 22px}
+.end h2{font-size:clamp(25px,3vw,37px);margin:0 0 12px}
+.end p{color:#daf4eb;line-height:1.6;margin:0 0 20px}
+.end a{display:inline-flex;text-decoration:none;background:#ffdd83;border-radius:13px;padding:12px 18px;color:#445a43;font-weight:950}
+.teacher{padding:43px 0;background:#fffcf6}
+.teacher details{background:white;border:1px solid #e2e9db;border-radius:19px;padding:20px 22px}
+.teacher summary{font-size:18px;font-weight:950;color:#30646a;cursor:pointer}
+.teacher p{color:#597b84;font-size:15px;line-height:1.8}
+.teacher button{border:1px solid #b9dbc8;border-radius:10px;background:#ebf7ef;color:#286e66;font-weight:900;padding:10px 13px}
+.teacher button:hover{background:#dff1e4}
+.teacher-buttons{display:flex;gap:9px;flex-wrap:wrap}
+.teacher-feedback{font-size:13px;color:#0d7766;min-height:18px}
+footer{background:#173e4b;color:#dce8e8;text-align:center;padding:30px 20px;font-size:13px;line-height:1.8}
+footer strong{color:#fff;font-size:17px}
+footer a{color:#ffe49e}
+.projector .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.projector .card .visual{height:190px}
+.projector .card h3{font-size:28px}
+.projector .card p{font-size:19px}
+.projector .card-body{min-height:246px}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.hero-inner{grid-template-columns:1fr;text-align:center;padding:40px 20px}.hero p{margin-left:auto;margin-right:auto}.hero-actions,.micro-stats{justify-content:center}.stage{max-width:590px}.world-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.how-grid{grid-template-columns:1fr}.projector .cards{grid-template-columns:1fr}}
+@media(max-width:540px){.header-inner{padding:11px 12px;gap:10px}.brand-icon{width:44px;height:44px;font-size:25px}.brand-label{font-size:18px}.brand small{font-size:9px}.nav a:not(.companion){display:none}.nav .companion{font-size:12px;padding:8px}.hero-inner{padding:35px 16px 30px}.hero h1{font-size:clamp(45px,11vw,59px)}.hero p{font-size:18px}.big-btn{font-size:16px;padding:12px 14px}.wrap{padding:0 15px}.worlds{padding-top:43px}.world-grid{gap:10px}.world{padding:11px 7px;min-height:125px}.world .emoji{font-size:33px}.world strong{font-size:17px}.world small{font-size:11px}.discovery{width:100%;justify-content:center}.toolbar{padding:11px}.filter{font-size:12px;padding:8px 11px}.search{width:100%}.search input{width:100%;max-width:none}.cards,.projector .cards{grid-template-columns:1fr;gap:18px}.card .visual{height:155px}.card-body{min-height:0}.card h3{font-size:23px}.card p{font-size:15px}.stage-note{font-size:11px}.how{padding:48px 0}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header id="home">
+<div class="header-inner">
+<a href="#home" class="brand" aria-label="English Adventure Island homepage"><span class="brand-icon" aria-hidden="true">🌴</span><span><span class="brand-label">English Adventure Island</span><small>Read · Write · Speak · Explore</small></span></a>
+<nav class="nav" aria-label="Site navigation"><a href="#worlds">Explore worlds</a><a href="#adventures">Eight adventures</a><a href="#how">How to play</a><a href="../" class="companion">Classroom Companion ↗</a></nav>
+</div>
+</header>
+<main>
+<section class="hero" aria-labelledby="heroTitle">
+<div class="hero-inner">
+<div>
+<span class="kicker">✦ EIGHT FUN LEARNING ADVENTURES ✦</span>
+<h1 id="heroTitle">Welcome to <span>English Adventure Island!</span></h1>
+<p>Discover new words. Build better sentences. Tell amazing stories. Every small step is a new adventure!</p>
+<div class="hero-actions"><a class="big-btn primary" href="#adventures">🚀 Let’s explore!</a><button type="button" id="surpriseBtn" class="big-btn secondary">🎲 Surprise me!</button></div>
+<div id="surpriseBox" class="surprise" hidden aria-live="polite"><strong>✨ Pip picked a challenge for you!</strong><h2 id="surpriseTitle"></h2><a id="surpriseLink" href="#adventures" target="_blank" rel="noopener noreferrer">Play this adventure →</a></div>
+<div class="micro-stats"><span>⭐ 8 interactive challenges</span><span>🎒 Perfect for primary pupils</span><span>📱 Laptop and phone friendly</span></div>
+</div>
+<div class="stage">
+<svg viewBox="0 0 670 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="svgTitle svgDesc">
+<title id="svgTitle">Pip the island explorer welcomes you</title>
+<desc id="svgDesc">A friendly orange fox in an explorer outfit waves while floating learning islands show books, pencils, speech bubbles and stars.</desc>
+<defs><linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a4e3ae"/><stop offset="1" stop-color="#5cbc98"/></linearGradient><linearGradient id="soil" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#bea576"/><stop offset="1" stop-color="#907755"/></linearGradient><linearGradient id="fur" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb565"/><stop offset="1" stop-color="#ec7d49"/></linearGradient></defs>
+<circle cx="338" cy="242" r="205" fill="#ceeee4" opacity=".65"/><circle cx="338" cy="242" r="161" fill="none" stroke="#acd8c3" stroke-width="4" stroke-dasharray="7 15"/>
+<g fill="#fff" opacity=".9"><ellipse cx="104" cy="72" rx="40" ry="17"/><ellipse cx="130" cy="60" rx="35" ry="25"/><ellipse cx="161" cy="76" rx="44" ry="18"/><ellipse cx="508" cy="64" rx="47" ry="21"/><ellipse cx="543" cy="56" rx="32" ry="30"/><ellipse cx="581" cy="75" rx="47" ry="18"/></g>
+<g fill="#ffcc71"><path d="M81 160 l10 21 23 8-23 8-10 22-10-22-22-8 22-8Z"/><path d="M589 155 l8 17 18 7-18 6-8 18-7-18-19-6 19-7Z"/><path d="M552 369 l8 15 15 6-15 5-8 16-7-16-16-5 16-6Z"/></g>
+<g class="float">
+<ellipse cx="342" cy="414" rx="245" ry="28" fill="#2b867a" opacity=".16"/>
+<path d="M111 326 Q132 267 261 261 Q446 229 558 306 Q586 338 551 362 Q416 417 258 391 Q147 381 111 326Z" fill="url(#leaf)"/>
+<path d="M122 342 Q271 394 408 389 Q507 387 551 361 Q530 419 435 445 Q335 470 251 444 Q164 412 122 342Z" fill="url(#soil)"/>
+<path d="M156 375 Q336 440 508 383" fill="none" stroke="#927857" stroke-width="7" opacity=".4"/>
+<path d="M199 337 Q339 301 492 342" fill="none" stroke="#e0f8c9" stroke-width="16" stroke-linecap="round"/>
+<g transform="translate(172 203)"><rect width="105" height="113" rx="13" fill="#fff0b5" stroke="#d6a16e" stroke-width="5"/><path d="M-10 0 L53 -53 L116 0" fill="#f2937d" stroke="#e87f6a" stroke-width="17" stroke-linejoin="round" stroke-linecap="round"/><rect x="20" y="35" width="34" height="78" rx="8" fill="#81c3d5"/><rect x="69" y="38" width="23" height="31" rx="5" fill="#fff"/></g>
+<g transform="translate(452 236)"><rect width="76" height="87" rx="13" fill="#8fb3e7"/><rect x="10" y="14" width="55" height="45" rx="7" fill="#fff4ce"/><path d="M19 37 H56 M19 44 H48" stroke="#9b7d5b" stroke-width="5"/><rect x="12" y="64" width="52" height="8" rx="3" fill="#fff"/></g>
+<g transform="translate(340 175)">
+<path d="M-63 105 Q-112 72 -99 43" fill="none" stroke="#ed945e" stroke-width="25" stroke-linecap="round"/>
+<path d="M-71 109 Q-63 39 -8 40 Q62 42 73 115 Q61 170 1 172 Q-61 171 -71 109Z" fill="#ef985c" stroke="#d87d4f" stroke-width="5"/>
+<ellipse cx="3" cy="126" rx="39" ry="39" fill="#ffe3ac"/>
+<path d="M-60 110 Q-97 97 -109 57" stroke="#f6ad71" stroke-width="18" fill="none" stroke-linecap="round"/>
+<path d="M71 104 Q114 73 101 40" stroke="#f6ad71" stroke-width="17" fill="none" stroke-linecap="round"/>
+<path d="M103 39 l14-13 7 10" fill="none" stroke="#f6ad71" stroke-width="10" stroke-linecap="round"/>
+<path d="M-79 21 L-65 -59 L-7 -27 L51 -65 L82 22 Q75 81 0 85 Q-74 87 -79 21Z" fill="url(#fur)" stroke="#cc7445" stroke-width="5"/>
+<path d="M-66 7 Q-45 -17 -12 5 L-4 51 Q-37 67 -62 40Z M56 9 Q33 -17 9 5 L0 51 Q36 67 61 39Z" fill="#fff2d3"/>
+<ellipse cx="-26" cy="12" rx="9" ry="11" fill="#fff"/><ellipse cx="33" cy="11" rx="9" ry="11" fill="#fff"/><circle cx="-24" cy="13" r="4" fill="#3c5663"/><circle cx="33" cy="12" r="4" fill="#3c5663"/>
+<path d="M-12 45 L13 45 L1 58Z" fill="#564650"/><path d="M0 58 q-10 16 -23 6 M1 58 q11 16 23 6" fill="none" stroke="#9e5b43" stroke-width="4" stroke-linecap="round"/>
+<ellipse cx="-57" cy="38" rx="12" ry="7" fill="#ffa6a0" opacity=".7"/><ellipse cx="59" cy="38" rx="12" ry="7" fill="#ffa6a0" opacity=".7"/>
+<path d="M-44 -51 Q4 -97 53 -52" fill="none" stroke="#8cbd8f" stroke-width="21" stroke-linecap="round"/>
+<rect x="-31" y="-69" width="71" height="18" rx="8" fill="#5f9d79"/>
+</g>
+<circle cx="164" cy="325" r="7" fill="#ffcf76"/><circle cx="538" cy="336" r="6" fill="#ffd78c"/>
+</g>
+<g class="float2"><rect x="74" y="203" width="97" height="81" rx="21" fill="#fff" stroke="#c7e4dc" stroke-width="4"/><text x="121" y="259" font-size="48" text-anchor="middle">📚</text></g>
+<g class="float2"><rect x="504" y="202" width="104" height="82" rx="21" fill="#fff" stroke="#c7e4dc" stroke-width="4"/><text x="555" y="258" font-size="46" text-anchor="middle">✏️</text></g>
+<g class="float"><rect x="434" y="91" width="98" height="82" rx="21" fill="#fff" stroke="#d9e6da" stroke-width="4"/><text x="482" y="149" font-size="45" font-weight="900" text-anchor="middle" fill="#ec9268">ABC</text></g>
+<g class="float"><rect x="119" y="364" width="88" height="72" rx="18" fill="#fff" stroke="#d9e6da" stroke-width="4"/><text x="163" y="415" font-size="44" text-anchor="middle">🎤</text></g>
+</svg>
+<div class="stage-note">🦊 Pip says: Let's explore!</div>
+</div>
+</div>
+</section>
+<section id="worlds" class="worlds">
+<div class="wrap">
+<div class="section-head"><span class="small-tag">🧭 EXPLORE THE ISLAND</span><h2>Which world will you visit?</h2><p>Pick a learning world that sounds fun to you!</p></div>
+<div class="world-grid" role="group" aria-label="Filter activities by learning skill">
+<button class="world" type="button" data-skill="words" aria-pressed="false"><span class="emoji" aria-hidden="true">🌳</span><strong>Word Woods</strong><small>Discover and match words</small></button>
+<button class="world" type="button" data-skill="sentences" aria-pressed="false"><span class="emoji" aria-hidden="true">🌈</span><strong>Sentence Sky</strong><small>Build and improve sentences</small></button>
+<button class="world" type="button" data-skill="stories" aria-pressed="false"><span class="emoji" aria-hidden="true">🏰</span><strong>Story Valley</strong><small>Explore story order</small></button>
+<button class="world" type="button" data-skill="speaking" aria-pressed="false"><span class="emoji" aria-hidden="true">🎙️</span><strong>Speaking Stage</strong><small>Look, think and talk</small></button>
+</div>
+</div>
+</section>
+<section id="adventures" class="adventures">
+<div class="wrap">
+<div class="section-row">
+<div class="section-head"><span class="small-tag">⭐ EIGHT LEARNING ADVENTURES</span><h2>Choose your challenge!</h2><p>Tap a colourful card to open an activity in a new tab.</p></div>
+<div class="discovery" role="status" aria-live="polite"><span aria-hidden="true">🌟</span><div><strong id="openedCount">0 of 8 islands explored</strong><small>Opened activities, not scores</small><div class="track"><div class="track-fill" id="progressFill"></div></div></div></div>
+</div>
+<div class="toolbar">
+<div class="filters" role="group" aria-label="Filter activities">
+<button type="button" class="filter" data-skill="all" aria-pressed="true">All 8</button>
+<button type="button" class="filter" data-skill="words" aria-pressed="false">🌱 Words 2</button>
+<button type="button" class="filter" data-skill="sentences" aria-pressed="false">🌈 Sentences 4</button>
+<button type="button" class="filter" data-skill="stories" aria-pressed="false">📚 Stories 1</button>
+<button type="button" class="filter" data-skill="speaking" aria-pressed="false">🎤 Speaking 1</button>
+</div>
+<label class="search">🔎 <input id="searchInput" type="search" placeholder="Find an activity…" aria-label="Search for an activity" autocomplete="off"></label>
+</div>
+<p id="filterStatus" class="filter-status" role="status" aria-live="polite">Showing all 8 activities.</p>
+<div id="cards" class="cards">
+<a class="card" data-id="sentence-scramble" data-skill="sentences" data-search="sentence scramble word order arrange complete correct grammar" href="./sentence-scramble/" target="_blank" rel="noopener noreferrer" aria-label="Open Sentence Scramble in a new tab">
+<div class="visual peach"><span class="emoji" aria-hidden="true">🧩</span><small>Word order adventure</small></div>
+<div class="card-body"><div class="card-number"><span>ADVENTURE 01</span><span class="star" aria-label="Not opened yet">★</span></div><h3>Sentence Scramble</h3><p>Oops! The words are mixed up. Put them in order to create a complete sentence.</p><div class="card-foot"><span class="skill">🌈 Sentence Sky</span><span class="enter">Let's play →</span></div></div></a>
+<a class="card" data-id="missing-word" data-skill="words" data-search="missing word cloze fill blank vocabulary choices" href="./missing-word/" target="_blank" rel="noopener noreferrer" aria-label="Open Missing Word Mission in a new tab">
+<div class="visual sky"><span class="emoji" aria-hidden="true">🎯</span><small>Word detective mission</small></div>
+<div class="card-body"><div class="card-number"><span>ADVENTURE 02</span><span class="star" aria-label="Not opened yet">★</span></div><h3>Missing Word Mission</h3><p>One word has gone missing! Choose the best word to finish each sentence.</p><div class="card-foot"><span class="skill">🌳 Word Woods</span><span class="enter">Let's play →</span></div></div></a>
+<a class="card" data-id="punctuation-detective" data-skill="sentences" data-search="punctuation detective comma full stop question mark exclamation colon" href="./punctuation-detective/" target="_blank" rel="noopener noreferrer" aria-label="Open Punctuation Detective in a new tab">
+<div class="visual mint"><span class="emoji" aria-hidden="true">🔎</span><small>Punctuation mystery</small></div>
+<div class="card-body"><div class="card-number"><span>ADVENTURE 03</span><span class="star" aria-label="Not opened yet">★</span></div><h3>Punctuation Detective</h3><p>Find the missing mark! Do you need a question mark, comma or full stop?</p><div class="card-foot"><span class="skill">🌈 Sentence Sky</span><span class="enter">Let's play →</span></div></div></a>
+<a class="card" data-id="story-sequencing" data-skill="stories" data-search="story sequencing paragraph arrange order events beginning middle end" href="./story-sequencing/" target="_blank" rel="noopener noreferrer" aria-label="Open Story Sequencing in a new tab">
+<div class="visual purple"><span class="emoji" aria-hidden="true">📚</span><small>Storytime quest</small></div>
+<div class="card-body"><div class="card-number"><span>ADVENTURE 04</span><span class="star" aria-label="Not opened yet">★</span></div><h3>Story Sequencing</h3><p>The story events are in a muddle. Put them back in the right order!</p><div class="card-foot"><span class="skill">🏰 Story Valley</span><span class="enter">Let's play →</span></div></div></a>
+<a class="card" data-id="word-partners" data-skill="words" data-search="word partners match collocations matching phrase vocabulary" href="./word-partners/" target="_blank" rel="noopener noreferrer" aria-label="Open Word Partners in a new tab">
+<div class="visual yellow"><span class="emoji" aria-hidden="true">🤝</span><small>Perfect pair challenge</small></div>
+<div class="card-body"><div class="card-number"><span>ADVENTURE 05</span><span class="star" aria-label="Not opened yet">★</span></div><h3>Word Partners</h3><p>Some words go together like good friends. Find the best matching pairs!</p><div class="card-foot"><span class="skill">🌳 Word Woods</span><span class="enter">Let's play →</span></div></div></a>
+<a class="card" data-id="sentence-doctor" data-skill="sentences" data-search="sentence doctor grammar fix error correct sentence editing" href="./sentence-doctor/" target="_blank" rel="noopener noreferrer" aria-label="Open Sentence Doctor in a new tab">
+<div class="visual pink"><span class="emoji" aria-hidden="true">🩺</span><small>Grammar rescue centre</small></div>
+<div class="card-body"><div class="card-number"><span>ADVENTURE 06</span><span class="star" aria-label="Not opened yet">★</span></div><h3>Sentence Doctor</h3><p>Be a sentence doctor! Spot grammar problems and choose the best correction.</p><div class="card-foot"><span class="skill">🌈 Sentence Sky</span><span class="enter">Let's play →</span></div></div></a>
+<a class="card" data-id="sentence-expander" data-skill="sentences" data-search="sentence expander when where how writing details improve sentences" href="./sentence-expander/" target="_blank" rel="noopener noreferrer" aria-label="Open Sentence Expander in a new tab">
+<div class="visual aqua"><span class="emoji" aria-hidden="true">✨</span><small>Magic sentence maker</small></div>
+<div class="card-body"><div class="card-number"><span>ADVENTURE 07</span><span class="star" aria-label="Not opened yet">★</span></div><h3>Sentence Expander</h3><p>Give a simple sentence some sparkle by adding when, where and how!</p><div class="card-foot"><span class="skill">🌈 Sentence Sky</span><span class="enter">Let's play →</span></div></div></a>
+<a class="card" data-id="picture-talk" data-skill="speaking" data-search="picture talk speaking oral english communication images speaking pictures" href="./picture-talk/" target="_blank" rel="noopener noreferrer" aria-label="Open Picture Talk in a new tab">
+<div class="visual lavender"><span class="emoji" aria-hidden="true">🎤</span><small>Speaking superstar stage</small></div>
+<div class="card-body"><div class="card-number"><span>ADVENTURE 08</span><span class="star" aria-label="Not opened yet">★</span></div><h3>Picture Talk</h3><p>Look carefully at a picture, share your ideas and become a confident speaker.</p><div class="card-foot"><span class="skill">🎙️ Speaking Stage</span><span class="enter">Let's play →</span></div></div></a>
+</div>
+<div class="none" id="empty" hidden>🔍 No adventure found. Try a different word!</div>
+</div>
+</section>
+<section class="how" id="how">
+<div class="wrap"><div class="section-head"><span class="small-tag">🗺️ PIP'S ADVENTURE GUIDE</span><h2>Three easy steps!</h2><p>Ready-to-use questions, with no pupil login or teacher setup needed.</p></div>
+<div class="how-grid">
+<div class="how-card"><span aria-hidden="true">👀</span><h3>1. Pick an island</h3><p>Choose a fun English skill and tap your favourite activity card.</p></div>
+<div class="how-card"><span aria-hidden="true">🚀</span><h3>2. Have a go</h3><p>Start with the first of five example questions. Listen, think, try and learn!</p></div>
+<div class="how-card"><span aria-hidden="true">🌟</span><h3>3. Explore again</h3><p>Try another challenge or return to your favourite. Practising helps you grow!</p></div>
+</div></div>
+</section>
+<section class="end"><h2>Every great English learner starts with curiosity!</h2><p>Pip is ready for your next adventure. What will you discover today?</p><a href="#adventures">🌈 Explore the eight adventures</a></section>
+<section class="teacher" id="teacher"><div class="wrap">
+<details><summary>👩‍🏫 Teacher corner · Customise, share and display</summary>
+<p>Each of the eight activities starts in pupil mode and contains five editable examples. Open an activity and click ⚙️ to edit questions, save them to that browser, import/export lesson JSON and, in Picture Talk, upload your own illustration. Different lesson types use English-specific practice formats. Exploration stars on this hub indicate only that an activity was opened; they do not represent learning scores.</p>
+<div class="teacher-buttons"><button id="projectorMode" type="button" aria-pressed="false">📺 Larger projector cards</button><button id="copyUrl" type="button">🔗 Copy island link</button><button id="resetStars" type="button">🧹 Reset exploration stars</button></div>
+<p class="teacher-feedback" role="status" id="teacherStatus" aria-live="polite"></p>
+</details></div></section>
+</main>
+<footer><strong>English Adventure Island</strong><div>Fun, free English learning for primary pupils · Created by Lim Kim Sze</div><div>Built for classroom teaching and independent exploration.</div></footer>
+<script>
+'use strict';
+(()=>{
+ const cards=[...document.querySelectorAll('.card')],buttons=[...document.querySelectorAll('[data-skill]')],search=document.getElementById('searchInput');
+ const store='english-adventure-island-opened-v1';let filter='all',opened=new Set(),last='';
+ try{const raw=JSON.parse(localStorage.getItem(store)||'[]');if(Array.isArray(raw))opened=new Set(raw.filter(x=>cards.some(c=>c.dataset.id===x)))}catch(err){}
+ function save(){try{localStorage.setItem(store,JSON.stringify([...opened]))}catch(err){}}
+ function stars(){cards.forEach(c=>{const on=opened.has(c.dataset.id);c.classList.toggle('opened',on);c.querySelector('.star').setAttribute('aria-label',on?'Previously opened':'Not opened yet')});
+  document.getElementById('openedCount').textContent=opened.size+' of '+cards.length+' islands explored';
+  document.getElementById('progressFill').style.width=(100*opened.size/cards.length)+'%';
+ }
+ function mark(id){opened.add(id);save();stars()}
+ function apply(){
+  let visible=0;const query=search.value.trim().toLowerCase();
+  cards.forEach(c=>{const on=(filter==='all'||c.dataset.skill===filter)&&(!query||(c.dataset.search+' '+c.textContent).toLowerCase().includes(query));c.hidden=!on;if(on)visible++});
+  const label={all:'all',words:'word',sentences:'sentence',stories:'story',speaking:'speaking'}[filter];
+  document.getElementById('filterStatus').textContent='Showing '+visible+' '+(filter==='all'?'':label+' ')+'activit'+(visible===1?'y.':'ies.');
+  document.getElementById('empty').hidden=visible>0;
+ }
+ function change(next){filter=next;buttons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.skill===next)));apply()}
+ buttons.forEach(b=>b.addEventListener('click',()=>{change(b.dataset.skill);if(b.classList.contains('world'))document.getElementById('adventures').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}));
+ search.addEventListener('input',apply);
+ cards.forEach(c=>c.addEventListener('click',()=>mark(c.dataset.id)));
+ document.getElementById('surpriseBtn').addEventListener('click',()=>{
+  const eligible=cards.filter(c=>!c.hidden),pool=eligible.length?eligible:cards;
+  const options=pool.length>1?pool.filter(c=>c.dataset.id!==last):pool,picked=options[Math.floor(Math.random()*options.length)];
+  last=picked.dataset.id;document.getElementById('surpriseTitle').textContent=picked.querySelector('h3').textContent;
+  const link=document.getElementById('surpriseLink');link.href=picked.href;link.dataset.id=picked.dataset.id;
+  document.getElementById('surpriseBox').hidden=false;
+ });
+ document.getElementById('surpriseLink').addEventListener('click',e=>mark(e.currentTarget.dataset.id));
+ document.getElementById('projectorMode').addEventListener('click',e=>{
+  const on=document.body.classList.toggle('projector');e.currentTarget.setAttribute('aria-pressed',String(on));
+  e.currentTarget.textContent=on?'📺 Return to standard cards':'📺 Larger projector cards';
+ });
+ const message=document.getElementById('teacherStatus');
+ document.getElementById('copyUrl').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(location.href.split('#')[0]);message.textContent='✓ Island link copied.'}
+  catch(err){message.textContent='Please copy the website address from your browser address bar.'}
+ });
+ document.getElementById('resetStars').addEventListener('click',()=>{
+  if(!opened.size){message.textContent='There are no exploration stars to reset.';return}
+  if(!window.confirm('Clear the exploration stars saved in this browser? Activity questions are not affected.'))return;
+  opened.clear();save();stars();message.textContent='✓ Exploration stars reset.';
+ });
+ stars();apply();
+})();
+</script>
+</body>
+</html>
