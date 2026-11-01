@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en-SG">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fffaf3">
+<meta name="description" content="Picture Talk: a free, pupil-first English learning activity with teacher-customisable questions.">
+<title>Picture Talk | English Adventure Island</title>
+<link rel="stylesheet" href="../activity.css">
+<script src="../activity.js" defer></script>
+</head>
+<body data-activity="picture-talk">
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="../" class="island-home" aria-label="Back to English Adventure Island">🏝️ Island</a>
+    <div class="logo">
+      <span class="logo-mark" id="toolEmoji" aria-hidden="true">🎤</span>
+      <span><strong id="toolTitle">Picture Talk</strong><small>English Adventure Island</small></span>
+    </div>
+    <button type="button" id="gearButton" class="gear" aria-pressed="false" aria-label="Open teacher settings" title="Teacher settings"><span aria-hidden="true">⚙️</span><span class="gear-label">Teacher settings</span></button>
+  </div>
+</header>
+<main class="wrap">
+  <section id="studentArea" aria-labelledby="studentTitle">
+    <div class="student-hero">
+      <span class="badge">⭐ Ready to learn?</span>
+      <h1 id="studentTitle">Picture Talk</h1>
+      <p id="studentSubtitle">Let the adventure begin!</p>
+    </div>
+    <div id="questionStage" class="stage">
+      <div class="stage-header">
+        <span class="progress" id="questionProgress">Challenge 1</span>
+        <span class="score-chip" id="scoreProgress">⭐ 0 correct</span>
+      </div>
+      <div id="stageContent"></div>
+      <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+      <div class="stage-actions" id="stageActions"></div>
+    </div>
+    <div id="resultsArea" class="stage" hidden></div>
+  </section>
+  <section id="teacherArea" class="teacher-panel" aria-labelledby="teacherTitle" hidden>
+    <span class="badge">⚙️ Teacher workspace</span>
+    <h2 id="teacherTitle">Prepare your Picture Talk lesson</h2>
+    <p class="teacher-intro">Edit questions below, add your own, or load the five ready-to-use examples. Select <strong>Save questions &amp; play</strong> to return pupils directly to the first challenge. Your lesson is stored on this browser only; export JSON to transfer it to another device.</p>
+    <div class="teacher-toolbar">
+      <button type="button" id="addQuestion" class="btn secondary">＋ Add question</button>
+      <button type="button" id="restoreExamples" class="btn secondary">📚 Load five examples</button>
+      <button type="button" id="exportLesson" class="btn secondary">⬇ Export JSON</button>
+      <button type="button" id="importLesson" class="btn secondary">⬆ Import JSON</button>
+      <input id="jsonFile" class="file-hidden" type="file" accept=".json,application/json" aria-label="Choose a lesson JSON file">
+    </div>
+    <p id="notice" class="teacher-status" role="status" aria-live="polite"></p>
+    <div id="editorList"></div>
+    <div class="teacher-foot">
+      <button type="button" id="savePlay" class="btn primary">✓ Save questions &amp; play</button>
+      <button type="button" id="cancelTeacher" class="btn secondary">↩ Return without saving</button>
+    </div>
+  </section>
+</main>
+<footer class="page-footer">English Adventure Island · Created by Lim Kim Sze · Free primary school learning resources</footer>
+</body>
+</html>
