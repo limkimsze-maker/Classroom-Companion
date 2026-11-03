@@ -140,7 +140,30 @@
 #omrReaderDetail summary{cursor:pointer;text-decoration:underline}
 #omrReaderFrame{display:block;width:100%;height:480px;border:1px solid #c5d8dc;border-radius:9px;background:#fff;margin-top:10px}
 @media(max-width:650px){.oneTapControls{display:grid;grid-template-columns:1fr 1fr}.oneTapControls .btn:last-of-type{grid-column:1/-1}.omrHeading h2{font-size:20px}}
+
+/* Annotation toolbar is separate from composition and music-writing Beautify. */
+.annotationToolbar{position:sticky;top:0;z-index:70;width:100%;background:rgba(242,250,250,.97);border-bottom:1px solid #add1d5;box-shadow:0 5px 18px #12354b14;backdrop-filter:blur(8px);padding:9px max(12px,calc((100vw - 1550px)/2))}
+.annotationToolbarInner{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:thin;white-space:nowrap;padding-bottom:4px}
+.annotationToolbar strong{font-size:12px;font-weight:800;color:#145e69;margin-right:5px;flex-shrink:0}
+.annotationToolbar .annotationBtn{border:1px solid #b9d4db;border-radius:9px;background:#fff;color:#1a4d5c;padding:7px 10px;min-height:37px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;cursor:pointer}
+.annotationToolbar .annotationBtn.active{background:#087b86;border-color:#087b86;color:white}
+.annotationToolbar .annotationBtn:focus-visible{outline:3px solid #f2bd66;outline-offset:2px}
+.annotationToolbar .annotationBtn:disabled{opacity:.38;cursor:not-allowed}
+.annotationToolbar .annotationDivider{height:25px;border-left:1px solid #b4ccd0;margin:0 5px}
+.annotationToolbar label{font-size:11px;color:#486779;font-weight:700;display:flex;align-items:center;gap:5px}
+.annotationToolbar input[type=color]{width:33px;height:32px;padding:2px;border:1px solid #b5d2d5;border-radius:7px;background:white}
+.annotationToolbar input[type=range]{width:76px;accent-color:#087b86}
+.annotationToolbar input[type=file]{display:none}
+#annotationStatus{font-size:11px;color:#37616c;padding:2px 0 0 2px;line-height:1.35;min-height:16px}
+.paperScroll{position:relative}
+.annotationLayer{position:absolute;z-index:12;display:block;overflow:visible;touch-action:none;user-select:none;background:transparent}
+.annotationLayer[hidden]{display:none!important}
+.annotationObject{cursor:inherit}
+.annotationPreview{opacity:.8;pointer-events:none}
+@media(max-width:700px){.annotationToolbar{padding:7px 8px}.annotationToolbar strong{font-size:11px}.annotationToolbar .annotationBtn{font-size:11px;min-height:37px;padding:7px 9px}}
+@media print{.annotationToolbar{display:none!important}.annotationLayer{pointer-events:none!important}}
 </style>
+<script src="./annotation-tools.js?v=1155984" defer></script>
 </head>
 <body>
 <header class="topbar"><div class="brand"><div class="logo" aria-hidden="true">♫</div><div><h1>Music Score Studio</h1><p>Classroom Companion · A friendly music notation board</p></div></div><span class="top-pill">Free · No account · Made for teaching</span></header>
@@ -153,6 +176,37 @@
   <div class="omrDetails">Recognition by <a href="https://github.com/pzfreo/partsong" target="_blank" rel="noopener noreferrer">Partsong</a> (Paul Fremantle) and <a href="https://github.com/liebharc/homr" target="_blank" rel="noopener noreferrer">homr</a>, licensed AGPL-3.0. The full source and licence are included in this site's AI reader. Photos are processed on your device; the studio does not upload them. Your browser needs to download the model and audio libraries.</div>
   <p class="omrNote">Printed notation only. Check the result before teaching: accidental marks, dense piano chords, ties and repeat signs can still be misread. For a quick note-writing lesson, use the editable staff below.</p>
 </div></section>
+
+
+<section id="annotationToolbar" class="annotationToolbar" role="region" aria-label="Teacher annotation tools" data-active-tool="cursor">
+ <div class="annotationToolbarInner">
+  <strong>🖍 Teacher annotation</strong>
+  <button type="button" class="annotationBtn active" data-annotation-tool="cursor" aria-pressed="true" title="Turn off annotation and interact with the original music score">↖ Cursor</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="select" aria-pressed="false" title="Select, move, resize or delete an annotation">▣ Selector</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="hand" aria-pressed="false" title="Place and move a pointing-hand marker">👆 Pointing hand</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="arrow" aria-pressed="false" title="Drag to point an arrow at a musical note">➜ Arrow</button>
+  <span class="annotationDivider" aria-hidden="true"></span>
+  <button type="button" class="annotationBtn" data-annotation-tool="pen" aria-pressed="false" title="Annotate freely; this pen does not add playable notes">✎ Pen</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="highlighter" aria-pressed="false" title="Translucent highlighter for staff notes">🖍 Highlighter</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="line" aria-pressed="false" title="Draw a straight line">／ Line</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="rect" aria-pressed="false" title="Draw a rectangle round a passage">▭ Box</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="ellipse" aria-pressed="false" title="Circle a note or phrase">◯ Oval</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="text" aria-pressed="false" title="Place a typed note or label">T Text</button>
+  <button type="button" class="annotationBtn" data-annotation-tool="eraser" aria-pressed="false" title="Erase only annotations, not real notes">⌫ Eraser</button>
+  <label title="Annotation colour">Colour <input id="annotationColor" type="color" value="#e35d46" aria-label="Annotation colour"></label>
+  <label title="Line thickness">Size <input id="annotationWidth" type="range" min="1" max="14" step="1" value="4" aria-label="Annotation stroke thickness"></label>
+  <span class="annotationDivider" aria-hidden="true"></span>
+  <button type="button" class="annotationBtn" id="annotationUndo" title="Undo an annotation" disabled>↶ Undo</button>
+  <button type="button" class="annotationBtn" id="annotationRedo" title="Redo an annotation" disabled>↷ Redo</button>
+  <button type="button" class="annotationBtn" id="annotationDelete" title="Delete selected mark" disabled>× Delete</button>
+  <button type="button" class="annotationBtn" id="annotationHide" title="Temporarily hide annotation marks" aria-pressed="false">Hide marks</button>
+  <button type="button" class="annotationBtn" id="annotationClear" title="Clear all annotation marks on the current score view">Clear</button>
+  <button type="button" class="annotationBtn" id="annotationExport" title="Save the annotations as a JSON file">⇩ Save marks</button>
+  <button type="button" class="annotationBtn" id="annotationImport" title="Open saved annotations">⇧ Open marks</button>
+  <input id="annotationImportFile" type="file" accept=".json,application/json" aria-label="Import annotations file">
+ </div>
+ <div id="annotationStatus" role="status" aria-live="polite">Choose 👆 Pointing hand, ➜ Arrow or ▣ Selector to mark the score during teaching. Cursor restores the note editor.</div>
+</section>
 
 <div class="shell">
 <aside class="panel" aria-label="Notation tools">
