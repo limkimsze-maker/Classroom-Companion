@@ -1116,7 +1116,7 @@ function wireOneStepScanner(){
    busy=true;pending=files;job=crypto.randomUUID?.()||String(Date.now());
    running.hidden=false;bar.style.width='7%';detail.open=false;
    message('Preparing trained music reader… First setup downloads approximately 157 MB on Wi-Fi.');
-   if(!initialized){initialized=true;frame.src='ai/index.html?cc-bridge=1';}
+   if(!initialized){initialized=true;frame.src='ai/index.html?cc-bridge=1'+(new URLSearchParams(location.search).has('cpu')?'&cpu=1':'');}
    else sendPending();
  }
  $('omrCameraButton').onclick=()=>{unlockSound();$('omrCameraInput').click();};
