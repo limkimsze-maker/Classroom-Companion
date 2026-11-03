@@ -44,6 +44,22 @@
 
 @media(max-width:1020px){.shell{grid-template-columns:1fr}.panel{display:block}.steps{grid-template-columns:1fr 1fr}.valueBtn{min-height:52px}.scoreSvg{min-width:900px}}@media(max-width:650px){.topbar{padding:14px}.brand h1{font-size:18px}.top-pill{display:none}.shell{padding:10px;gap:10px}.panel,.paperCard{border-radius:12px}.panel{padding:13px}.toolbar{padding:11px}.btn{padding:8px 10px}.meta{grid-template-columns:1fr}.steps{grid-template-columns:1fr}.paperTop{padding:11px}.notice{font-size:12px}}
 @media print{*{box-shadow:none!important}body{background:#fff}.topbar,.panel,.toolbar,.paperTop,.bottomline,.how,.notice,.footer{display:none!important}.shell{display:block;padding:0}.paperCard{border:0;margin:0;overflow:visible}.paperScroll{overflow:visible}.scoreSvg{width:100%!important;min-width:0!important;max-width:100%!important;page-break-inside:avoid}#score{border:0}.meta{display:none}@page{size:A4 portrait;margin:12mm}}
+
+/* Separate faithful polyphonic MusicXML player; the melody editor stays untouched. */
+.piano-active #editorScorePanel,.piano-active .notice,.piano-active .how{display:none}
+.piano-active #print,.piano-active #savePNG,.piano-active #saveSVG,.piano-active #saveXML{display:none}
+#pianoPanel[hidden],#grandStaffWarning[hidden]{display:none!important}
+.pianoTop{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:linear-gradient(100deg,#eaf6f5,#fff)}
+.pianoTop h3{margin:0;font-size:19px}
+.pianoTop p{margin:3px 0 0;color:#57717c;font-size:12px}
+.pianoInfo{padding:13px 20px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;border-bottom:1px solid #e1ebee}
+.pianoInfo label{display:flex;gap:7px;align-items:center;font-size:13px;font-weight:700}
+.pianoInfo input{max-width:80px;padding:7px;border-radius:8px;border:1px solid #bdcfd4}
+.pianoHint{margin:12px 17px;padding:10px 14px;background:#fff7e7;color:#78571d;border-radius:9px;font-size:12px}
+.pianoScoreScroll{overflow:auto;max-height:72vh;background:white}
+#pianoScore{display:block;width:100%;min-width:760px;height:auto}
+#grandStaffWarning{background:#fff4e2;border:1px solid #eacb91;color:#78551f;border-radius:10px;margin:12px 0;padding:12px;font-size:13px}
+#grandStaffWarning strong{display:block;margin-bottom:4px}
 </style>
 </head>
 <body>
@@ -79,9 +95,15 @@
 <div class="group"><div class="lab">4 · Teacher's extras</div><div class="segrow"><button class="smallBtn" id="sample">♫ Load example</button><button class="smallBtn" id="guide">? Quick guide</button></div><p class="hint">In Draw mode, use your mouse, finger or stylus to circle or annotate a note.</p><div class="field" style="margin-top:10px"><label for="penColor">Annotation colour</label><select id="penColor"><option value="#df654d">Coral red</option><option value="#127f9b">Ocean blue</option><option value="#2e9657">Green</option><option value="#262f43">Black</option></select></div></div>
 </aside>
 <main class="layout-main">
-<div class="paperCard" style="margin-top:0"><div class="toolbar"><div class="transport"><button class="btn primary" id="play">▶ Play score</button><button class="btn" id="scanScore" title="Photograph or upload a printed sheet music score">📷 Scan score</button><button class="btn" id="stop" disabled>■ Stop</button><span class="divider"></span><button class="btn" id="undo" title="Undo (Ctrl+Z)" disabled>↶ Undo</button><button class="btn" id="redo" title="Redo (Ctrl+Y)" disabled>↷ Redo</button></div><div class="exports"><button class="btn" id="print">⎙ Print / PDF</button><button class="btn" id="savePNG">⇩ PNG</button><button class="btn" id="saveSVG">⇩ SVG</button><button class="btn" id="saveXML">⇩ MusicXML</button></div></div>
+<div class="paperCard" style="margin-top:0"><div class="toolbar"><div class="transport"><button class="btn primary" id="play">▶ Play score</button><button class="btn" id="openXML" title="Open a MusicXML file with both piano hands, chords, rests and ties">🎹 Open MusicXML</button><input type="file" id="musicXmlInput" class="sr" accept=".musicxml,.xml,text/xml,application/xml"><button class="btn" id="scanScore" title="Photograph or upload a printed sheet music score">📷 Scan score</button><button class="btn" id="stop" disabled>■ Stop</button><span class="divider"></span><button class="btn" id="undo" title="Undo (Ctrl+Z)" disabled>↶ Undo</button><button class="btn" id="redo" title="Redo (Ctrl+Y)" disabled>↷ Redo</button></div><div class="exports"><button class="btn" id="print">⎙ Print / PDF</button><button class="btn" id="savePNG">⇩ PNG</button><button class="btn" id="saveSVG">⇩ SVG</button><button class="btn" id="saveXML">⇩ MusicXML</button></div></div>
 <div class="meta"><div><label for="title">SCORE TITLE</label><input id="title" placeholder="e.g. Our Class Melody" value="My Music Score" maxlength="100"></div><div><label for="composer">COMPOSER / CLASS (OPTIONAL)</label><input id="composer" placeholder="e.g. Primary 3 Music" maxlength="100"></div></div></div>
-<div class="paperCard"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><span id="modeHint">Click a line or space to add a quarter note</span></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Interactive music staff. Click a bar to insert notes; click a note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Click the staff to place a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
+<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><span id="modeHint">Click a line or space to add a quarter note</span></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Interactive music staff. Click a bar to insert notes; click a note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Click the staff to place a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
+<div class="paperCard" id="pianoPanel" hidden>
+  <div class="pianoTop"><div><h3 id="pianoTitle">Imported MusicXML piano score</h3><p id="pianoSubtitle">Two hands play together</p></div><button type="button" class="btn" id="closePiano">↩ Return to melody editor</button></div>
+  <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span></div>
+  <div class="pianoHint">MusicXML playback uses actual pitches, durations and simultaneous voices from the file. The notation below is a simplified pitch-and-timing preview, not a professionally engraved score. Upload an uncompressed .musicxml or .xml file; scanning a photograph does not generate an accurate MusicXML file.</div>
+  <div class="pianoScoreScroll"><svg id="pianoScore" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MusicXML notes shown as grand staff with both hands"></svg></div>
+</div>
 <div class="notice"><span style="font-size:21px" aria-hidden="true">✦</span><span><strong>Teaching-friendly:</strong> Notes are automatically arranged into bars. When a bar is full, choose another bar. Your composition is saved automatically in this browser; export JSON to keep a portable copy.</span></div>
 <div class="panel how"><h3>Start in three simple steps</h3><div class="steps"><div class="step"><span class="num">1</span><span><strong>Choose a note.</strong> Select Quarter, Half or another value on the left.</span></div><div class="step"><span class="num">2</span><span><strong>Click the staff.</strong> Higher placement means a higher pitch.</span></div><div class="step"><span class="num">3</span><span><strong>Press Play.</strong> Listen, edit and print your own score.</span></div></div><div class="segrow" style="margin-top:13px"><button id="exportJSON" class="smallBtn">⇩ Save project (.json)</button><button id="importJSON" class="smallBtn">⇧ Open project (.json)</button><button id="clear" class="smallBtn" style="color:#aa434e">Start blank score</button><input id="importFile" type="file" accept="application/json,.json" class="sr"></div></div>
 </main></div><footer class="footer">Music Score Studio · Classroom Companion · Works entirely in your browser · Created for classroom teaching, not professional music publishing.</footer>
@@ -104,6 +126,7 @@
         <input id="scanTilt" type="range" min="-6" max="6" step="0.5" value="0" disabled>
         <button class="btn primary" id="scanRead" style="margin-top:11px;width:100%" type="button" disabled>⌕ Read printed notes</button>
         <div class="scanStatus" id="scanStatus" role="status" aria-live="polite">Choose a picture to begin.</div>
+        <div id="grandStaffWarning" hidden><strong>⚠ Piano score or multiple staves detected</strong>This photo scanner cannot accurately reconstruct both hands, chords, ties and rests together. A playback of the detected notes would not be the original music. For faithful piano playback, open a MusicXML (.musicxml/.xml) file using the button above. If these are only separate lines of a single melody (not a piano score), use the override below.<div class="scanActions"><button type="button" class="smallBtn" id="scanForceMelody">Treat as melody lines only</button></div></div>
         <div id="scanResult" class="scanResult" hidden><div class="lab">Detected music · tap a note to check or correct it</div><div id="scanNotes" class="scanNotes"></div>
            <div id="scanEditor" class="scanEditor" hidden>
              <p class="scanEditTitle" id="scanEditTitle">Edit detected note</p>
@@ -427,7 +450,7 @@ window.CCPhotoOMR={scan,estimateTilt,buildBars};
 const NS='http://www.w3.org/2000/svg', LS='cc-music-score-studio-v1';
 const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16]; const STEPS=['C','D','E','F','G','A','B']; const TICKS=96;
 const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
-let data=blank(),tool='note',den=4,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
+let piano=null;let data=blank(),tool='note',den=4,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let context=null,oscillators=[],playTimers=[],toastTimer=0,stopTimer=null,playing=false,audioBus=null;
 const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
 const ticks=e=>(TICKS/e.den)*(e.dot?1.5:1);
@@ -560,7 +583,7 @@ function stopPlayback(){
  // Cancel future notes too; a new playback may begin immediately.
  for(const node of oscillators){try{node.stop(0)}catch(e){}}
  oscillators=[];playing=false;playingId=null;
- $('play').textContent='▶ Play score';$('stop').disabled=true;render();
+ $('play').textContent=piano?'▶ Play both hands':'▶ Play score';$('stop').disabled=true;render();
 }
 function tone(midi,start,duration,volume=1){
  const instrument=data.instrument||'piano';
@@ -598,6 +621,7 @@ function clickSound(at,accent=false){
  o.connect(g);g.connect(ensureAudioBus());o.start(at);o.stop(at+.08);oscillators.push(o);
 }
 async function play(){
+ if(piano)return playPiano();
  if(playing){stopPlayback();return}
  if(!data.bars.some(b=>b.some(e=>e.kind==='note'))){flash('Add some notes first, or load the example.');return}
  try{context=context||new(window.AudioContext||window.webkitAudioContext)();await context.resume();ensureAudioBus()}
@@ -645,7 +669,7 @@ for(let b=0;b<data.bars.length;b++){xml+=`\n<measure implicit="no" number="${b+1
 for(let i=0;i<data.bars[b].length;i++){const e=data.bars[b][i];xml+='<note>';if(e.kind==='rest'){xml+='<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave}</octave></pitch>`}xml+=`<duration>${ticks(e)}</duration><type>${({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[e.den]}</type>`;if(e.dot)xml+='<dot />';if(e.kind==='note'&&e.acc)xml+=`<accidental>${e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural'}</accidental>`;xml+='</note>'}xml+='</measure>'}
 xml+='\n</part>\n</score-partwise>';download(new Blob([xml],{type:'application/vnd.recordare.musicxml+xml'}),filename()+'.musicxml');flash('MusicXML saved')}
 function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]])})):[];return result}
-function loadProject(raw,record=true){const v=validateProject(raw);if(record)change();data=v;selected=null;syncConfig();commit()}
+function loadProject(raw,record=true){closePiano();const v=validateProject(raw);if(record)change();data=v;selected=null;syncConfig();commit()}
 function twinkle(){const q=(step,octave,den=4)=>({id:makeId(),kind:'note',step,octave,den,dot:false,acc:''});return {title:'Twinkle, Twinkle, Little Star',composer:'Traditional · Classroom example',clef:'treble',meter:'4/4',tempo:100,instrument:data.instrument||'piano',pitchNames:true,metronome:false,bars:[ [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)] ],strokes:[]}}
 function setBarsCount(add){if(add){if(data.bars.length>=40){flash('Maximum 40 bars in this classroom version.');return}change();data.bars.push([]);commit();updateStatus('A new blank bar has been added.')}else if(data.bars.length>1&&data.bars.at(-1).length===0){change();data.bars.pop();selected=null;commit()}else flash('You can remove only the final empty bar.')}
 
@@ -683,7 +707,7 @@ function drawScanPicture(){
    for(const n of scanResultData.notes){if(n.removed)continue;ctx.beginPath();ctx.ellipse(n.x,n.y,Math.max(8,scanResultData.staves[n.staff].space*.9),Math.max(8,scanResultData.staves[n.staff].space*.85),0,0,Math.PI*2);ctx.strokeStyle=n.sid===scanSelected?'#087b86':n.manual?'#3558db':n.score<.55?'#d58c1e':'#d14344';ctx.lineWidth=n.sid===scanSelected?4:2.5;ctx.stroke()}
  }
 }
-function resetScanResult(){scanResultData=null;scanSelected=null;$('scanResult').hidden=true;if(scanSource)drawScanPicture()}
+function resetScanResult(){scanResultData=null;scanSelected=null;$('scanResult').hidden=true;$('grandStaffWarning').hidden=true;if(scanSource)drawScanPicture()}
 function noteInScan(){return scanResultData?.notes.find(n=>n.sid===scanSelected&&!n.removed)}
 function refreshScanNotes(){
  if(!scanResultData)return;
@@ -704,7 +728,7 @@ function refreshScanNotes(){
  }
  const packed=window.CCPhotoOMR.buildBars(scanResultData.notes,{meter:$('scanMeter').value,fifths:Number($('scanKey').value),staves:scanResultData.staves,barlines:scanResultData.barlines});scanResultData.bars=packed.bars;scanResultData.adjusted=packed.adjusted;
  scanResultData.detected=notes.length;
- $('scanImport').disabled=!notes.length;$('scanImportPlay').disabled=!notes.length;
+ $('scanImport').disabled=!notes.length||!!scanResultData.isGrandStaff;$('scanImportPlay').disabled=!notes.length||!!scanResultData.isGrandStaff;
 }
 function editScanNote(key,value){const n=noteInScan();if(!n)return;n[key]=value;n.manual=true;refreshScanNotes();drawScanPicture()}
 function readPhoto(){
@@ -714,15 +738,17 @@ function readPhoto(){
    try{
      resetScanResult();
      const parsed=window.CCPhotoOMR.scan($('scanCanvas'),{clef:$('scanClef').value,meter:$('scanMeter').value,fifths:Number($('scanKey').value)});
+     parsed.isGrandStaff=looksLikeGrandStaff(parsed.staves);$('grandStaffWarning').hidden=!parsed.isGrandStaff;
      scanResultData=parsed;scanNextId=0;for(const n of parsed.notes)n.sid='s'+(++scanNextId);
      scanSelected=parsed.notes[0]?.sid??null;refreshScanNotes();drawScanPicture();$('scanResult').hidden=false;
      const doubtful=parsed.notes.filter(n=>n.score<.55).length;
-     setScanMessage(`${parsed.detected} possible notes found across ${parsed.staves.length} staff${parsed.staves.length===1?'':'s'}. ${doubtful?doubtful+' need extra checking. ':''}${parsed.adjusted?parsed.adjusted+' overlong note(s) shortened to fit the time signature. ':''}Tap each detected note to correct its pitch and duration, or add a missing note. Then reproduce it.`);
+     setScanMessage(`${parsed.isGrandStaff?'Piano grand staff detected: automatic photo playback is disabled because both hands cannot be reconstructed reliably. Open MusicXML for accurate two-hand playback. ':''}${parsed.detected} possible notes found across ${parsed.staves.length} staff${parsed.staves.length===1?'':'s'}. ${doubtful?doubtful+' need extra checking. ':''}${parsed.adjusted?parsed.adjusted+' overlong note(s) shortened to fit the time signature. ':''}${parsed.isGrandStaff?'This scan is not playable as a true piano arrangement.':'Tap each detected note to correct its pitch or duration, then reproduce it.'}`);
    }catch(err){setScanMessage(err.message||'The score could not be read.',true)}finally{b.disabled=false}
  },45);
 }
 function applyRecognised(playAfter){
  if(!scanResultData)return;
+ if(scanResultData.isGrandStaff){setScanMessage('This is a piano grand staff. The photo scanner cannot combine its two hands faithfully. Use the MusicXML player instead.',true);return;}
  if(data.bars.some(bar=>bar.length)||data.strokes.length){if(!confirm('Replace your current score with the detected notes? Undo will restore your previous score.'))return}
  const project={...blank(),title:'Scanned melody',composer:'',clef:$('scanClef').value,meter:$('scanMeter').value,
   tempo:data.tempo,instrument:data.instrument||'piano',pitchNames:true,playFlow:true,bars:scanResultData.bars,strokes:[]};
@@ -731,7 +757,7 @@ function applyRecognised(playAfter){
  }catch(err){setScanMessage('Could not reproduce this score: '+err.message,true)}
 }
 function wireScanner(){
- $('scanScore').onclick=()=>showScan(true);$('closeScan').onclick=()=>showScan(false);
+ $('scanScore').onclick=()=>showScan(true);$('openXML').onclick=()=>$('musicXmlInput').click();$('musicXmlInput').addEventListener('change',async ev=>{const file=ev.target.files?.[0];ev.target.value='';if(file)await openMusicXML(file)});$('closePiano').onclick=closePiano;$('closeScan').onclick=()=>showScan(false);
  $('scanModal').addEventListener('click',e=>{if(e.target===$('scanModal'))showScan(false)});
  $('scanCamera').onclick=()=>$('scanCameraInput').click();$('scanChoose').onclick=()=>$('scanFileInput').click();
  for(const id of ['scanCameraInput','scanFileInput'])$(id).addEventListener('change',e=>{const file=e.target.files?.[0];e.target.value='';if(file)loadScanPicture(file)});
@@ -752,8 +778,174 @@ function wireScanner(){
   const found=scanResultData.notes.filter(n=>!n.removed).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
   if(found&&Math.hypot(found.x-x,found.y-y)<Math.max(30,scanResultData.staves[found.staff].space*3)){scanSelected=found.sid;refreshScanNotes();drawScanPicture()}
  });
+ $('scanForceMelody').onclick=()=>{if(!scanResultData)return;scanResultData.isGrandStaff=false;$('grandStaffWarning').hidden=true;refreshScanNotes();setScanMessage('Melody-only override enabled. This is NOT a faithful two-hand piano transcription; compare every note, rest and rhythm before using playback.');};
  $('scanRead').onclick=readPhoto;
  $('scanImportPlay').onclick=()=>applyRecognised(true);$('scanImport').onclick=()=>applyRecognised(false);
+}
+
+// A true multi-voice MusicXML performance is separate from the one-staff editor.
+// It remains on the teacher's device and is never uploaded.
+function looksLikeGrandStaff(staves){
+ if(staves.length<4||staves.length%2)return false;
+ let close=[],far=[];
+ for(let i=0;i<staves.length-1;i++){
+  const gap=staves[i+1].lines[0]-staves[i].lines[4],space=staves[i].space;
+  (i%2===0?close:far).push(gap/space);
+ }
+ const median=v=>v.slice().sort((a,b)=>a-b)[Math.floor(v.length/2)];
+ return close.length>=2&&far.length>=1&&median(far)>median(close)*1.3;
+}
+function closePiano(){
+ if(!piano)return;
+ if(playing)stopPlayback();piano=null;
+ document.body.classList.remove('piano-active');$('pianoPanel').hidden=true;
+ $('play').textContent='▶ Play score';$('play').title='Play the editable melody';
+}
+function child(node,tag){return Array.from(node?.children||[]).find(n=>n.localName===tag)||null}
+function children(node,tag){return Array.from(node?.children||[]).filter(n=>n.localName===tag)}
+function nodeText(node,tag){return (child(node,tag)?.textContent||'').trim()}
+function parseMusicXML(source){
+ if(source.length>5*1024*1024)throw Error('MusicXML files must be smaller than 5 MB.');
+ if(/<!ENTITY/i.test(source))throw Error('XML entity declarations are not supported.');
+ const root=new DOMParser().parseFromString(source,'application/xml');
+ if(root.getElementsByTagName('parsererror').length)throw Error('This is not valid MusicXML.');
+ if(root.documentElement?.localName!=='score-partwise')throw Error('Only uncompressed score-partwise MusicXML (.musicxml or .xml) is supported.');
+ const parts=children(root.documentElement,'part');
+ if(!parts.length)throw Error('No musical parts were found in this MusicXML.');
+ if(parts.length>12)throw Error('This score has too many parts for the classroom player.');
+ const TPQ=960,steps={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+ const parsedParts=[],allMeasures=[],rawNotes=[],names={};let detectedTempo=null,signature='4/4';
+ for(const scorePart of children(child(root.documentElement,'part-list'),'score-part'))names[scorePart.getAttribute('id')]=nodeText(scorePart,'part-name')||'Instrument';
+ for(let pi=0;pi<parts.length;pi++){
+  const part=parts[pi],partName=names[part.getAttribute('id')]||'Part '+(pi+1),measures=children(part,'measure');
+  if(measures.length>240)throw Error('This MusicXML contains too many measures.');
+  let divisions=1,beats=4,beatType=4,currentClefs={1:'treble'},measureResults=[],pendingTies=new Map();
+  for(let mi=0;mi<measures.length;mi++){
+   let cursor=0,maxCursor=0,lastOnset=0,lastDuration=0;
+   const items=[],measure=measures[mi];
+   const currentTicks=()=>Math.max(1,Math.round(beats*TPQ*4/beatType));
+   const durationFor=el=>Math.max(0,Math.round((Number(nodeText(el,'duration'))||0)/Math.max(1,divisions)*TPQ));
+   for(const node of Array.from(measure.children)){
+    const tag=node.localName;
+    if(tag==='attributes'){
+     divisions=Math.max(1,Number(nodeText(node,'divisions'))||divisions);
+     const time=child(node,'time');if(time){beats=Number(nodeText(time,'beats'))||beats;beatType=Number(nodeText(time,'beat-type'))||beatType;if(beats>0&&beats<20&&[1,2,4,8,16].includes(beatType))signature=beats+'/'+beatType;}
+     for(const clef of children(node,'clef')){const number=Number(clef.getAttribute('number'))||1;currentClefs[number]=nodeText(clef,'sign')==='F'?'bass':'treble';}
+    }else if(tag==='direction'){
+     const snd=child(node,'sound'),beatsPer=Number(snd?.getAttribute('tempo')||nodeText(child(child(node,'direction-type'),'metronome'),'per-minute'));
+     if(beatsPer>=30&&beatsPer<=240&&detectedTempo===null)detectedTempo=beatsPer;
+    }else if(tag==='backup'){
+     cursor=Math.max(0,cursor-durationFor(node));
+    }else if(tag==='forward'){
+     cursor+=durationFor(node);maxCursor=Math.max(maxCursor,cursor);
+    }else if(tag==='note'){
+     const chord=!!child(node,'chord'),rest=!!child(node,'rest'),dur=durationFor(node);
+     const onset=chord?lastOnset:cursor;
+     if(!chord){lastOnset=onset;lastDuration=dur;cursor+=dur;maxCursor=Math.max(maxCursor,cursor)}
+     if(rest)continue;
+     const pitch=child(node,'pitch'),step=nodeText(pitch,'step'),oct=Number(nodeText(pitch,'octave'));
+     if(!(step in steps)||!Number.isInteger(oct)||oct<0||oct>9)continue;
+     const alter=Number(nodeText(pitch,'alter'))||0;
+     const midi=12*(oct+1)+steps[step]+alter;
+     if(midi<18||midi>110)continue;
+     const staff=Number(nodeText(node,'staff'))||1,voice=nodeText(node,'voice')||'1';
+     const tied=children(node,'tie').map(x=>x.getAttribute('type'));
+     const tieKey=[pi,staff,voice,midi].join(':');
+     const prev=pendingTies.get(tieKey);
+     if(tied.includes('stop')&&prev){prev.duration+=dur;if(!tied.includes('start'))pendingTies.delete(tieKey);continue;}
+     const item={measure:mi,onset,duration:dur||lastDuration||TPQ,midi,step,octave:oct,alter,staff,part:pi,voice,clef:currentClefs[staff]||currentClefs[1]||'treble'};
+     items.push(item);
+     if(tied.includes('start'))pendingTies.set(tieKey,item);
+    }
+   }
+   measureResults.push({items,length:Math.max(currentTicks(),maxCursor),signature:beats+'/'+beatType});
+   allMeasures[mi]=Math.max(allMeasures[mi]||0,Math.max(currentTicks(),maxCursor));
+  }
+  parsedParts.push({name:partName,measures:measureResults});
+ }
+ const measureStart=[],measureLength=[];let total=0;
+ for(let i=0;i<allMeasures.length;i++){measureStart[i]=total;measureLength[i]=allMeasures[i]||4*TPQ;total+=measureLength[i]}
+ for(const part of parsedParts)for(const m of part.measures)for(const note of m.items){
+  note.start=(measureStart[note.measure]||0)+note.onset;rawNotes.push(note)
+ }
+ if(rawNotes.length>3800)throw Error('This score is too large for classroom playback (3,800-note limit).');
+ if(!rawNotes.length)throw Error('No playable pitches were found in the MusicXML.');
+ rawNotes.sort((a,b)=>a.start-b.start||a.midi-b.midi);
+ const lanesMap=new Map();
+ for(const e of rawNotes){const key=e.part+':'+e.staff;if(!lanesMap.has(key))lanesMap.set(key,{id:key,part:e.part,staff:e.staff,clef:e.clef,label:parsedParts[e.part].name+(e.staff>1?' · staff '+e.staff:'')});}
+ const lanes=[...lanesMap.values()].sort((a,b)=>a.part-b.part||a.staff-b.staff);
+ return {title:nodeText(child(root.documentElement,'work'),'work-title')||nodeText(root.documentElement,'movement-title')||'Imported score',
+  tempo:detectedTempo||96,signature,parts:parsedParts.length,measureStart,measureLength,notes:rawNotes,lanes,total,TPQ};
+}
+function pianoSVG(){
+ if(!piano)return;
+ const W=1160,measuresPerSystem=2,sysCount=Math.ceil(piano.measureLength.length/measuresPerSystem),lanes=piano.lanes.slice(0,6),lineGap=15,staffHeight=4*lineGap,sysHeight=lanes.length*122+48,H=75+sysCount*sysHeight;
+ const svg=$('pianoScore');svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('height',H);
+ svg.append(el('rect',{x:0,y:0,width:W,height:H,fill:'#fff'}));
+ textSvg(svg,W/2,36,piano.title,24,{'text-anchor':'middle','font-weight':750});
+ const staffBase=(clef)=>clef==='bass'?18:30;
+ const steps2=['C','D','E','F','G','A','B'];
+ const pitchIndex=e=>e.octave*7+steps2.indexOf(e.step);
+ for(let sys=0;sys<sysCount;sys++){
+  const measureA=sys*measuresPerSystem, xA=142, totalW=W-xA-34,barW=totalW/measuresPerSystem;
+  for(let li=0;li<lanes.length;li++){
+   const lane=lanes[li],top=75+sys*sysHeight+li*122;
+   for(let j=0;j<5;j++)line(svg,45,top+j*lineGap,W-30,top+j*lineGap,'#244452',1.4);
+   const symbol=lane.clef==='bass'?'𝄢':'𝄞';
+   textSvg(svg,49,top+(lane.clef==='bass'?49:57),symbol,lane.clef==='bass'?55:62,{'font-family':'Noto Music, Segoe UI Symbol, serif'});
+   textSvg(svg,86,top+28,lane.label.slice(0,17),11,{'font-weight':650,fill:'#527583'});
+   for(let bi=0;bi<measuresPerSystem;bi++){
+    const mi=measureA+bi;if(mi>=piano.measureLength.length)continue;
+    const start=piano.measureStart[mi],len=piano.measureLength[mi],left=xA+bi*barW;
+    line(svg,left,top,left,top+staffHeight,'#244452',1.5);
+    if(li===0)textSvg(svg,left+7,top-20,String(mi+1),12,{fill:'#647f8a'});
+    const notes=piano.notes.filter(e=>e.measure===mi&&e.part===lane.part&&e.staff===lane.staff);
+    for(const e of notes){
+     const x=left+21+(Math.min(1,Math.max(0,(e.onset/len)))*(barW-43)),y=top+staffHeight-(pitchIndex(e)-staffBase(lane.clef))*lineGap/2;
+     for(let ledger=top+staffHeight+lineGap;ledger<=y+1;ledger+=lineGap)line(svg,x-12,ledger,x+12,ledger,'#244452',1.4);
+     for(let ledger=top-lineGap;ledger>=y-1;ledger-=lineGap)line(svg,x-12,ledger,x+12,ledger,'#244452',1.4);
+     const filled=e.duration<=piano.TPQ*1.8;
+     svg.append(el('ellipse',{cx:x,cy:y,rx:9.5,ry:6.2,transform:`rotate(-17 ${x} ${y})`,fill:filled?'#204757':'#fff',stroke:'#204757','stroke-width':1.8}));
+     if(e.duration<piano.TPQ*3.2){const up=y>=top+staffHeight*.5;line(svg,x+(up?8:-8),y,x+(up?8:-8),y+(up?-43:43),'#204757',1.6)}
+    }
+   }
+   const finalX=xA+Math.min(measuresPerSystem,piano.measureLength.length-measureA)*barW;
+   line(svg,finalX,top,finalX,top+staffHeight,'#244452',1.5);
+  }
+ }
+}
+async function openMusicXML(file){
+ if(file.size>5*1024*1024){flash('Please choose a MusicXML under 5 MB.');return}
+ try{
+  const xml=await file.text();const parsed=parseMusicXML(xml);
+  if(playing)stopPlayback();
+  piano=parsed;document.body.classList.add('piano-active');$('pianoPanel').hidden=false;
+  $('pianoTitle').textContent=parsed.title;
+  $('pianoSubtitle').textContent=parsed.parts+' instrument part(s) · '+parsed.lanes.length+' staff/track(s) · '+parsed.signature+' time';
+  $('pianoCounts').textContent=parsed.notes.length+' notes · '+parsed.measureLength.length+' bars · Both hands play together';
+  $('pianoTempo').value=parsed.tempo;
+  $('play').textContent='▶ Play both hands';$('play').title='Play imported MusicXML with all voices together';
+  pianoSVG();$('pianoPanel').scrollIntoView({behavior:'smooth',block:'start'});
+  updateStatus('MusicXML opened. All imported parts are scheduled together using their real rhythms.');
+  flash('MusicXML opened — press Play both hands');
+ }catch(e){flash('MusicXML could not be opened: '+e.message);updateStatus('MusicXML import failed: '+e.message)}
+}
+async function playPiano(){
+ if(!piano)return;
+ if(playing){stopPlayback();return}
+ try{context=context||new(window.AudioContext||window.webkitAudioContext)();await context.resume();ensureAudioBus()}
+ catch(err){flash('Audio unavailable on this device.');return}
+ const bpm=Math.max(30,Math.min(240,Number($('pianoTempo').value)||piano.tempo));
+ piano.tempo=bpm;const secondsPerTick=60/bpm/piano.TPQ;
+ const start=context.currentTime+.12;
+ playing=true;$('play').textContent='❚❚ Playing both hands';$('stop').disabled=false;
+ for(const e of piano.notes){
+  const offset=e.start*secondsPerTick, dur=Math.max(.09,e.duration*secondsPerTick*.98);
+  // The left and right hands, chords, and overlapping voices play concurrently.
+  tone(e.midi,start+offset,dur,piano.notes.length>100?.53:.68);
+ }
+ stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+piano.total*secondsPerTick-context.currentTime)*1000+300);
+ updateStatus('Playing '+piano.parts+' part(s) at '+bpm+' BPM; piano chords and both hands are synchronised.');
 }
 
 function wire(){document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
