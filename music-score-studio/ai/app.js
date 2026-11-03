@@ -999,7 +999,7 @@ async function readScan() {
     // Only a read of every page gives the time a whole score takes.
     const fresh = pages.every((p) => !p.xml);
     // Systems you've just fixed are read as they are.
-    if (!rereading && !scanSettings.systemsChecked) await checkSystems(stopped);
+    if (!companionMode() && !rereading && !scanSettings.systemsChecked) await checkSystems(stopped);
     for (let i = 0; i < pages.length; i++) {
       if (pages[i].xml) continue;
       pageLabel = `Page ${i + 1} of ${pages.length}`;
