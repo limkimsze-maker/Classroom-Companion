@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Partsong Music Reader for Classroom Companion | Partsong – learn your choir part from sheet music</title>
+  <meta name="description" content="Photograph or import choral sheet music and hear just your part – soprano, alto, tenor or bass – with the score following along. Free, runs on your phone, works offline.">
+  <link rel="canonical" href="https://partsong.app/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://partsong.app/">
+  <meta property="og:site_name" content="Partsong">
+  <meta property="og:title" content="Partsong – learn your choir part from sheet music">
+  <meta property="og:description" content="Scan your choir music. Hear just your part. Free, on your phone, works offline.">
+  <meta property="og:image" content="https://partsong.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Partsong: scan your choir music, hear just your part">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Partsong",
+    "url": "https://partsong.app/",
+    "description": "Photograph or import choral sheet music and hear just your part, with the score following along. Runs on your phone and works offline.",
+    "applicationCategory": "MusicApplication",
+    "operatingSystem": "Android, iOS, Windows, macOS, Linux (web browser)",
+    "browserRequirements": "Requires a recent Chrome, Edge or Safari",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
+    "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+    "image": "https://partsong.app/og-image.png"
+  }
+  </script>
+  <meta name="theme-color" content="#2b2870">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="favicon.ico" sizes="48x48">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Anonymous, cookie-free usage counts (https://www.goatcounter.com); skips localhost. -->
+</head>
+<body>
+  <header>
+    <button id="back" class="icon-btn" hidden aria-label="Back">&larr;</button>
+    <h1>Partsong</h1>
+    <span id="header-version" class="header-version"></span>
+  </header>
+
+  <div id="error-toast" class="error-toast" role="alert" hidden></div>
+  <div id="update-banner" class="update-banner" role="status" hidden>
+    <span>A new version of Partsong is available.</span>
+    <button id="update-now" class="primary">Update</button>
+    <button id="update-later" class="card-close" aria-label="Later">&times;</button>
+  </div>
+  <div id="page-zoom" class="page-zoom" role="dialog" aria-label="Page" hidden>
+    <img id="page-zoom-img" alt="">
+    <div class="page-zoom-bar">
+      <span id="page-zoom-num"></span>
+      <button id="page-zoom-rotate">&#8635; Rotate</button>
+      <button id="page-zoom-close" class="primary">Done</button>
+    </div>
+  </div>
+
+  <div id="about" class="report-overlay" role="dialog" aria-labelledby="about-heading" hidden>
+    <div class="report-card about-card">
+      <h2 id="about-heading">Partsong <small id="about-version"></small></h2>
+      <p>Scan choral sheet music on your phone and practise your own part, with the other parts quieter.</p>
+      <p>Everything runs on your device: the music is read on the phone, and your scores stay on it unless you share them. No account needed.</p>
+      <p>When you share a score, an encrypted copy is uploaded so the link can bring it to the people you send it to. The key is only in the link, so nobody else, Partsong included, can open it. Copies are deleted after a year; for a copy that doesn't expire, use Export PDF in a score's settings.</p>
+      <p>To see which features get used, Partsong counts visits and actions (such as reading a score or pressing play) anonymously with <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>: no cookies, nothing that identifies you, and never your scores or their names.</p>
+      <h3>Licence</h3>
+      <p>© 2026 Paul Fremantle. Partsong is free software: you can use, study, share and change it under the terms of the
+        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">GNU Affero General Public License v3.0</a>.
+        It comes with no warranty.</p>
+      <p>Source code: <a href="https://github.com/pzfreo/partsong" target="_blank" rel="noopener">github.com/pzfreo/partsong</a></p>
+      <p><a href="privacy.html">Privacy notice</a> · <a href="terms.html">Terms of use</a></p>
+      <h3>Built with</h3>
+      <ul class="credits">
+        <li><a href="https://github.com/liebharc/homr" target="_blank" rel="noopener">homr</a> by Christian Liebhardt: reads the music (AGPL-3.0). Its models build on
+          <a href="https://github.com/BreezeWhite/oemer" target="_blank" rel="noopener">oemer</a> (MIT) and
+          <a href="https://github.com/NetEase/Polyphonic-TrOMR" target="_blank" rel="noopener">Polyphonic-TrOMR</a> (Apache-2.0).</li>
+        <li><a href="https://github.com/pzfreo/homr-rs" target="_blank" rel="noopener">homr-rs</a>: homr in Rust, so it runs in any browser (AGPL-3.0), including parts ported from
+          <a href="https://opencv.org" target="_blank" rel="noopener">OpenCV</a> (Apache-2.0) and
+          <a href="https://python-pillow.org" target="_blank" rel="noopener">Pillow</a> (MIT-CMU).</li>
+        <li><a href="https://onnxruntime.ai" target="_blank" rel="noopener">ONNX Runtime Web</a> (MIT)</li>
+        <li><a href="https://mozilla.github.io/pdf.js/" target="_blank" rel="noopener">pdf.js</a> (Apache-2.0)</li>
+        <li><a href="https://opensheetmusicdisplay.org" target="_blank" rel="noopener">OpenSheetMusicDisplay</a> (BSD-3-Clause)</li>
+        <li><a href="https://github.com/tokotype/PlusJakartaSans" target="_blank" rel="noopener">Plus Jakarta Sans</a> by Tokotype (SIL Open Font Licence)</li>
+      </ul>
+      <p>The sample score, Thomas Tallis's <em>If ye love me</em>, edited by K. Jaworski, is from the <a href="https://www.cpdl.org" target="_blank" rel="noopener">Choral Public Domain Library</a> and shared under the <a href="https://www.cpdl.org/wiki/index.php/ChoralWiki:CPDL" target="_blank" rel="noopener">CPDL licence</a>.</p>
+      <p>Problems or ideas: <button class="link report-open">Report a problem</button> or email <a href="mailto:bugs@partsong.app">bugs@partsong.app</a></p>
+      <div class="actions"><button id="about-close" class="primary">Close</button></div>
+    </div>
+  </div>
+  <div id="report" class="report-overlay" role="dialog" aria-labelledby="report-heading" hidden>
+    <div class="report-card">
+      <div class="card-head">
+        <h2 id="report-heading">Report a problem</h2>
+        <button id="report-close" class="card-close" aria-label="Close">&times;</button>
+      </div>
+      <label for="report-text">What happened? What did you expect?</label>
+      <textarea id="report-text" rows="4" placeholder="e.g. On page 2 the altos play the sopranos' notes in bar 20"></textarea>
+      <ol id="report-steps" class="steps"></ol>
+      <button id="report-share" class="primary wide">Share report with score</button>
+      <p id="report-status" class="report-status" aria-live="polite"></p>
+      <details>
+        <summary>Technical details included</summary>
+        <pre id="report-diag"></pre>
+      </details>
+    </div>
+  </div>
+  <main>
+    <section id="home">
+      <div class="intro">
+        <p class="tagline">Scan your choir music.<br>Hear just <span>your part</span>.</p>
+        <p id="intro-more" class="muted">Photograph your sheet music or open a PDF, choose soprano, alto, tenor or bass, and Partsong plays your line with the others softer while the score follows along. Free, works offline, and your music stays on your phone.</p>
+      </div>
+      <div class="actions">
+        <button id="new-scan" class="primary">Scan music</button>
+        <label class="button">Open PDF<input id="open-xml" type="file" accept=".pdf,application/pdf,.html,text/html,.musicxml,.xml,application/vnd.recordare.musicxml+xml" multiple hidden></label>
+      </div>
+      <p class="no-reader" hidden></p>
+      <p class="muted beta-note">Partsong is new and still in beta, so it won't read every score perfectly yet. If something goes wrong, please <button class="link report-open">report a problem</button>: it really helps us improve it.</p>
+      <h2>Your scores</h2>
+      <div id="install-card" class="install-card" hidden>
+        <p><strong>Install Partsong</strong>: it opens like an app, straight from your home screen, and works offline.</p>
+        <div class="actions">
+          <button id="install-now" class="primary">Install</button>
+          <button id="install-later">Not now</button>
+        </div>
+      </div>
+      <div id="import-offer" class="import-offer" role="alertdialog" aria-labelledby="import-question" hidden>
+        <p id="import-question"></p>
+        <div class="actions">
+          <button id="import-yes" class="primary">Add</button>
+          <button id="import-no">Cancel</button>
+        </div>
+      </div>
+      <p id="library-status" class="muted share-status" aria-live="polite"></p>
+      <input id="library-search" class="library-search" type="search" placeholder="Search your scores" aria-label="Search your scores" autocomplete="off" hidden>
+      <ul id="library" class="library"></ul>
+      <p id="library-none" class="muted" hidden>No scores match.</p>
+      <div id="library-empty">
+        <p class="muted">Nothing scanned yet.</p>
+        <p class="muted sample-blurb">Or try it out with a sample: Tallis's <em>If ye love me</em>, three pages for four voices.</p>
+        <button class="primary try-sample">Try a sample score</button>
+      </div>
+      <p class="report-link"><span class="footer-sample"><button class="link try-sample">Try a sample score</button> · </span><button class="link report-open">Report a problem</button> · <button class="link about-open">About</button> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>
+    </section>
+
+    <section id="scan" hidden>
+      <p class="muted">Add one photo per page, in order, or a PDF. Hold the phone square to the page in good light.</p>
+      <p class="no-reader" hidden></p>
+      <div class="actions">
+        <label class="button primary">Take photo<input id="camera" type="file" accept="image/*" capture="environment" hidden></label>
+        <label class="button">Add images or PDF<input id="gallery" type="file" accept="image/*,application/pdf,.pdf" multiple hidden></label>
+      </div>
+      <ol id="pages" class="pages"></ol>
+      <label class="name-field">Name <input id="scan-name" placeholder="e.g. Messiah: Hallelujah chorus" autocomplete="off"></label>
+      <button id="recognise" class="primary wide" disabled>Read music</button>
+      <div id="status" class="status" aria-live="polite"></div>
+      <div id="systems-check" class="systems-check" hidden>
+        <p id="check-intro"></p>
+        <div id="check-list" class="photo-list"></div>
+        <div class="markup-bar check-bar">
+          <p>Once you're done:</p>
+          <button id="check-done" class="primary">Read music</button>
+        </div>
+      </div>
+      <p id="read-hint" class="hint" hidden>Keep Partsong open on this screen until it finishes: phones pause apps in the background.</p>
+      <button id="discard-scan" class="link discard">Discard this scan</button>
+    </section>
+
+    <section id="practice" hidden>
+      <div class="title-row">
+        <label class="title-wrap"><input id="title" class="title-input" aria-label="Score title (tap to rename)"><span id="title-icon" aria-hidden="true">&#9998;</span></label>
+        <button id="share" class="share-btn" aria-label="Share this score" title="Share this score">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.1c-.8 0-1.4.3-2 .8l-7.1-4.2c.1-.2.1-.5.1-.7s0-.5-.1-.7L16 7.2c.5.5 1.2.8 2 .8 1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3c0 .2 0 .5.1.7L8 8.8C7.5 8.3 6.8 8 6 8c-1.7 0-3 1.3-3 3s1.3 3 3 3c.8 0 1.5-.3 2-.8l7.1 4.2c-.1.2-.1.4-.1.6 0 1.6 1.3 2.9 2.9 2.9s2.9-1.3 2.9-2.9-1.3-2.9-2.9-2.9z"/></svg>
+        </button>
+      </div>
+      <p id="share-status" class="muted share-status" aria-live="polite"></p>
+
+      <div id="follow" class="follow" hidden>
+        <p id="tap-hint" class="muted">Tap a bar to start from there.</p>
+        <div id="photo-list" class="photo-list"></div>
+      </div>
+
+      <div id="read-view" class="read-view" hidden>
+        <p class="muted">The music as the app read it. Wrong notes here are recognition errors.</p>
+        <div id="osmd"></div>
+      </div>
+
+      <div id="panel-backdrop" class="panel-backdrop" hidden></div>
+      <div id="panel" class="panel" hidden>
+        <div id="panel-head" class="panel-head">
+          <span class="grab" aria-hidden="true"></span>
+          <button id="panel-close" class="panel-close">Done</button>
+        </div>
+        <h2>Share <button class="q" aria-controls="share-help" aria-expanded="false" aria-label="About sharing">?</button></h2>
+        <p id="share-help" class="hint" hidden>Audio: what Play plays, as set below (turn Other parts to 0 for your part alone). Part with score: a link that brings the score, with your part and settings, into Partsong. Links last a year. Export PDF: the pages as a PDF with the score inside, to keep, print or send; it doesn't expire, and Open PDF brings it back into Partsong.</p>
+        <div class="row2" aria-live="polite">
+          <button id="share-audio">Share audio</button>
+          <button id="share-score">Share part with score</button>
+        </div>
+        <div class="row2">
+          <button id="export-pdf">Export PDF</button>
+        </div>
+
+        <h2>Your part <button class="q" aria-controls="part-help" aria-expanded="false" aria-label="About choosing your part">?</button></h2>
+        <p id="part-help" class="hint" hidden>Marking works for any score: tap the staff you sing in each system. Picking from the list is quicker if your part stays on the same staff throughout.</p>
+        <div id="auto-part">
+          <div id="parts-doubt" class="parts-doubt" hidden>
+            <p class="doubt-title">Partsong couldn't sort out the parts in this score</p>
+            <p class="hint" id="doubt-intro">Its layout changes from page to page. Two steps get you your part exactly:</p>
+            <div id="doubt-fix-step">
+              <p class="doubt-step">1. Check the systems</p>
+              <p class="hint">Where Partsong split a system in two, or ran two together, tap between the staves to fix it.</p>
+              <button id="doubt-fix">Check and fix systems</button>
+            </div>
+            <p class="doubt-step" id="doubt-mark-title">2. Mark your part</p>
+            <p class="hint">Tap the staff you sing in each system.</p>
+            <button id="doubt-mark" class="primary">Mark your part on the music</button>
+          </div>
+          <div id="parts-list">
+            <button id="start-markup">Mark your part on the music</button>
+            <p class="hint">Or pick it:</p>
+            <ul id="lines" class="lines"></ul>
+          </div>
+          <p id="parts-show" class="hint" hidden><button id="show-parts" class="link"></button></p>
+        </div>
+        <div id="marked-part" class="marked-part" hidden>
+          <p>Using your marks: <strong id="marked-count"></strong></p>
+          <div class="actions">
+            <button id="edit-markup">Edit marks</button>
+            <button id="clear-marks" class="danger-text">Clear marks</button>
+          </div>
+        </div>
+        <p id="fix-link" class="hint">Parts out of step, or staves grouped wrongly on a page? <button id="start-fix" class="link">Check and fix systems</button></p>
+
+        <div class="controls">
+          <label><span>Other parts <output id="others-val"></output></span>
+            <input id="others" type="range" min="0" max="100" value="25">
+          </label>
+          <label class="octave-row"><span>Your part's pitch</span>
+            <select id="octave">
+              <option value="0">As written</option>
+              <option value="-1">An octave lower (tenor clef)</option>
+              <option value="1">An octave higher</option>
+            </select>
+          </label>
+          <label class="octave-row"><span>Sound</span>
+            <select id="instrument">
+              <option value="piano">Piano</option>
+              <option value="organ">Organ</option>
+              <option value="voice">Voice</option>
+            </select>
+          </label>
+          <label><span>Tempo <output id="tempo-val"></output> &#9833;/min</span>
+            <input id="tempo" type="range" min="30" max="180" value="80">
+          </label>
+          <div class="bars">
+            <label>From bar <input id="from-bar" type="number" min="1" value="1" inputmode="numeric"></label>
+            <label>to <input id="to-bar" type="number" min="1" inputmode="numeric"></label>
+            <label class="check"><input id="loop" type="checkbox"> Loop</label>
+          </div>
+          <div id="repeats" class="repeats" hidden>
+            <label class="check"><input id="play-repeats" type="checkbox"> Play repeats</label>
+            <ul id="repeat-list"></ul>
+          </div>
+        </div>
+
+        <div class="bottom">
+          <div class="lock-box">
+            <label class="check"><input type="checkbox" id="lock"> <strong>Lock</strong></label>
+            <button class="q" aria-controls="lock-help" aria-expanded="false" aria-label="About locking">?</button>
+          </div>
+          <button id="read-again">Read again</button>
+          <button id="delete" class="danger">Delete</button>
+        </div>
+        <p id="lock-help" class="hint" hidden>Locked: your part, the title, Read again and Delete can't be changed by accident.</p>
+        <p class="report-link"><button class="link report-open">Report a problem</button> · <button class="link about-open">About</button></p>
+      </div>
+
+      <div id="fix-bar" class="markup-bar" hidden>
+        <p>Tap between staves to add or remove a split.</p>
+        <button id="fix-cancel">Cancel</button>
+        <button id="fix-done" class="primary">Read again</button>
+      </div>
+
+      <div id="markup-bar" class="markup-bar" hidden>
+        <p>Tap your staff in each system. Shared staff: tap again for the lower voice, again to unmark.</p>
+        <button id="markup-done" class="primary">Done</button>
+      </div>
+
+      <div class="transport">
+        <button id="rewind" class="icon-round" aria-label="Back to start bar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM19 5v14L9 12z"/></svg>
+        </button>
+        <button id="play" class="icon-round primary" aria-label="Play">
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+        </button>
+        <div id="position" class="position">Bar 1</div>
+        <button id="view-toggle" class="icon-round view-toggle">
+          <svg class="i-read" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5a2.5 2.5 0 1 1-1.5-2.3V5.5l11-2v11.5a2.5 2.5 0 1 1-1.5-2.3V7.3l-8 1.5z"/></svg>
+          <svg class="i-pages" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8.5L19 7v14.5H6z M8.5 11h8M8.5 14h8M8.5 17h8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></svg>
+          <span id="view-toggle-label">As read</span>
+        </button>
+        <button id="settings" class="icon-round" aria-label="Settings" aria-expanded="false" aria-controls="panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="16" cy="7" r="2.2" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="10" cy="17" r="2.2" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
