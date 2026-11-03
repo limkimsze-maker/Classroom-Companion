@@ -42,6 +42,11 @@ once(
     '  }',
     "recognized scores"
 )
+once(
+    "    if (!rereading && !scanSettings.systemsChecked) await checkSystems(stopped);",
+    "    if (!companionMode() && !rereading && !scanSettings.systemsChecked) await checkSystems(stopped);",
+    "automatic camera recognition without manual confirmation"
+)
 code += """
 // Classroom Companion same-origin integration, added under the AGPL-3.0.
 // This code does not upload photos; the File is transferred to this iframe in memory.
