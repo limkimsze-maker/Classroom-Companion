@@ -57,7 +57,20 @@
 .pianoInfo input{max-width:80px;padding:7px;border-radius:8px;border:1px solid #bdcfd4}
 .pianoHint{margin:12px 17px;padding:10px 14px;background:#fff7e7;color:#78571d;border-radius:9px;font-size:12px}
 .pianoScoreScroll{overflow:auto;max-height:72vh;background:white}
-#pianoScore{display:block;width:100%;min-width:760px;height:auto}
+#pianoScore{display:block;width:100%;min-width:760px;height:auto;background:#fff}
+.pianoScoreScroll[hidden],#engravedScore[hidden]{display:none!important}
+.pianoScoreScroll{min-height:260px;position:relative;background:#fff}
+.simpleScoreGuide{position:sticky;top:0;z-index:4;background:#f2fafb;border-bottom:2px solid #77b7be;padding:10px 14px;box-shadow:0 3px 12px #12354b12}
+.simpleGuideNav{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.simpleGuideNav strong{flex:1;min-width:110px;font-size:13px;color:#184b5d}
+.simpleGuideNav button{font:600 12px system-ui;border:1px solid #abcbd2;border-radius:8px;background:#fff;color:#215466;padding:6px 9px}
+.simpleGuideNav button:disabled{opacity:.35}
+.simpleNotes{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;min-height:29px}
+.simpleNotes span{padding:4px 7px;border:1px solid #b8d2d7;border-radius:7px;background:#fff;font:700 12px system-ui;color:#24475a}
+.simpleNotes span.active{background:#ffda73;border-color:#c87521;color:#6f3507;box-shadow:0 0 0 2px #f0b64e70}
+.simpleNotes .noteGuideText{font-weight:600;color:#466773;background:transparent;border:0}
+@media print{.simpleScoreGuide{display:none!important}}
+
 /* Follow-along score display — amber means currently sounding. */
 #pianoScore .pianoPlaybackNote .playbackHalo{display:none;pointer-events:none}
 #pianoScore .pianoPlaybackNote.is-playing .playbackHalo{display:initial;fill:#ffd15d;fill-opacity:.5;stroke:#cc610e;stroke-width:2.5}
@@ -170,7 +183,7 @@
   <div class="pianoHint">Playback uses the recognised MusicXML pitches, chords, rhythms and simultaneous parts. Verify it against the original score: recognition is never guaranteed perfect.</div>
   <div id="notationHeader" class="omrNotationHeader"><strong id="notationStatus">Preparing the sheet music…</strong><button id="notationViewToggle" type="button" class="smallBtn" hidden>Show simplified view</button></div>
   <div id="engravedScore" class="omrEngravedScore" hidden></div>
-  <div class="pianoScoreScroll"><svg id="pianoScore" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MusicXML notes shown as grand staff with both hands"></svg></div>
+  <div class="pianoScoreScroll"><div id="simpleScoreGuide" class="simpleScoreGuide"><div class="simpleGuideNav"><button id="simplePrev" type="button">◀ Previous</button><strong id="simplePageLabel">Simplified score</strong><button id="simpleNext" type="button">Next ▶</button></div><div id="simpleNotes" class="simpleNotes" aria-label="Pitches in the current bar"></div></div><svg id="pianoScore" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MusicXML notes shown as grand staff with both hands"></svg></div>
 </div>
 <div class="notice"><span style="font-size:21px" aria-hidden="true">✦</span><span><strong>Teaching-friendly:</strong> Notes are automatically arranged into bars. When a bar is full, choose another bar. Your composition is saved automatically in this browser; export JSON to keep a portable copy.</span></div>
 <div class="panel how"><h3>Start in three simple steps</h3><div class="steps"><div class="step"><span class="num">1</span><span><strong>Choose a note.</strong> Select Quarter, Half or another value on the left.</span></div><div class="step"><span class="num">2</span><span><strong>Click the staff.</strong> Higher placement means a higher pitch.</span></div><div class="step"><span class="num">3</span><span><strong>Press Play.</strong> Listen, edit and print your own score.</span></div></div><div class="segrow" style="margin-top:13px"><button id="exportJSON" class="smallBtn">⇩ Save project (.json)</button><button id="importJSON" class="smallBtn">⇧ Open project (.json)</button><button id="clear" class="smallBtn" style="color:#aa434e">Start blank score</button><input id="importFile" type="file" accept="application/json,.json" class="sr"></div></div>
@@ -946,9 +959,12 @@ function parseMusicXML(source){
  return {title:nodeText(child(root.documentElement,'work'),'work-title')||nodeText(root.documentElement,'movement-title')||'Imported score',
   tempo:detectedTempo||96,signature,parts:parsedParts.length,measureStart,measureLength,notes:rawNotes,lanes,total,TPQ};
 }
-function pianoSVG(){
+function pianoSVG(measureToShow=simplePageStart){
  if(!piano)return;
- const W=1160,measuresPerSystem=2,sysCount=Math.ceil(piano.measureLength.length/measuresPerSystem),lanes=piano.lanes.slice(0,6),lineGap=15,staffHeight=4*lineGap,sysHeight=lanes.length*122+48,H=75+sysCount*sysHeight;
+ const allBars=piano.measureLength.length;
+ simplePageStart=Math.max(0,Math.min(Math.max(0,allBars-1),Math.floor(measureToShow/8)*8));
+ const shownBars=Math.min(8,Math.max(0,allBars-simplePageStart));
+ const W=1160,measuresPerSystem=2,sysCount=Math.max(1,Math.ceil(shownBars/measuresPerSystem)),lanes=piano.lanes.slice(0,6),lineGap=15,staffHeight=4*lineGap,sysHeight=Math.max(1,lanes.length)*122+48,H=75+sysCount*sysHeight;
  const noteIds=new Map(piano.notes.map((note,i)=>[note,i]));
  const svg=$('pianoScore');svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('height',H);
  svg.append(el('rect',{x:0,y:0,width:W,height:H,fill:'#fff'}));
@@ -957,7 +973,7 @@ function pianoSVG(){
  const steps2=['C','D','E','F','G','A','B'];
  const pitchIndex=e=>e.octave*7+steps2.indexOf(e.step);
  for(let sys=0;sys<sysCount;sys++){
-  const measureA=sys*measuresPerSystem, xA=142, totalW=W-xA-34,barW=totalW/measuresPerSystem;
+  const measureA=simplePageStart+sys*measuresPerSystem, xA=142, totalW=W-xA-34,barW=totalW/measuresPerSystem;
   for(let li=0;li<lanes.length;li++){
    const lane=lanes[li],top=75+sys*sysHeight+li*122;
    for(let j=0;j<5;j++)line(svg,45,top+j*lineGap,W-30,top+j*lineGap,'#244452',1.4);
@@ -965,7 +981,7 @@ function pianoSVG(){
    textSvg(svg,49,top+(lane.clef==='bass'?49:57),symbol,lane.clef==='bass'?55:62,{'font-family':'Noto Music, Segoe UI Symbol, serif'});
    textSvg(svg,86,top+28,lane.label.slice(0,17),11,{'font-weight':650,fill:'#527583'});
    for(let bi=0;bi<measuresPerSystem;bi++){
-    const mi=measureA+bi;if(mi>=piano.measureLength.length)continue;
+    const mi=measureA+bi;if(mi>=simplePageStart+shownBars)continue;
     const start=piano.measureStart[mi],len=piano.measureLength[mi],left=xA+bi*barW;
     line(svg,left,top,left,top+staffHeight,'#244452',1.5);
     if(li===0)textSvg(svg,left+7,top-20,String(mi+1),12,{fill:'#647f8a'});
@@ -982,19 +998,47 @@ function pianoSVG(){
      if(e.duration<piano.TPQ*3.2){const up=y>=top+staffHeight*.5;line(group,x+(up?8:-8),y,x+(up?8:-8),y+(up?-43:43),'#204757',1.6,{'class':'noteStem'})}
     }
    }
-   const finalX=xA+Math.min(measuresPerSystem,piano.measureLength.length-measureA)*barW;
+   const finalX=xA+Math.min(measuresPerSystem,simplePageStart+shownBars-measureA)*barW;
    line(svg,finalX,top,finalX,top+staffHeight,'#244452',1.5);
   }
  }
  pianoNoteNodes=new Map([...svg.querySelectorAll('[data-play-index]')].map(node=>[Number(node.getAttribute('data-play-index')),node]));
+ for(const i of pianoActiveIndices)pianoNoteNodes.get(i)?.classList.add('is-playing');
+ const label=document.getElementById('simplePageLabel');if(label)label.textContent='Bars '+(simplePageStart+1)+'–'+(simplePageStart+shownBars)+' of '+allBars;
+ document.getElementById('simplePrev').disabled=simplePageStart===0;
+ document.getElementById('simpleNext').disabled=simplePageStart+shownBars>=allBars;
+ renderSimpleNoteStrip(simpleCurrentMeasure>=simplePageStart&&simpleCurrentMeasure<simplePageStart+shownBars?simpleCurrentMeasure:simplePageStart);
 }
 
 // Engraving is handled by OpenSheetMusicDisplay (BSD-3-Clause). The local
 // pitch-and-timing view remains available without a network connection.
 let osmdLoadPromise=null,engravedSerial=0;
 let pianoNoteNodes=new Map(),engravedCursors=[],pianoTrackingFrame=0,pianoTrackingToken=0;
+let simplePageStart=0,simpleCurrentMeasure=0,pianoActiveIndices=new Set(),simpleNoteNodes=new Map();
+function renderSimpleNoteStrip(measure){
+ if(!piano)return;
+ simpleCurrentMeasure=Math.max(0,Math.min(piano.measureLength.length-1,measure));
+ const holder=document.getElementById('simpleNotes');if(!holder)return;
+ holder.replaceChildren();simpleNoteNodes=new Map();
+ const heading=document.createElement('span');heading.className='noteGuideText';heading.textContent='Bar '+(simpleCurrentMeasure+1)+':';holder.append(heading);
+ const candidates=piano.notes.map((note,i)=>({note,i})).filter(x=>x.note.measure===simpleCurrentMeasure);
+ const notes=candidates.slice(0,64);
+ for(const {note,i} of notes){
+  const chip=document.createElement('span');chip.dataset.noteIndex=String(i);
+  const accidental=note.alter>0?'♯':note.alter<0?'♭':'';
+  chip.textContent=note.step+accidental+note.octave+(note.staff>1?' ↓':'');
+  chip.title='Pitch '+note.step+accidental+note.octave+' · part '+(note.part+1)+' · staff '+note.staff;
+  if(pianoActiveIndices.has(i))chip.classList.add('active');
+  holder.append(chip);simpleNoteNodes.set(i,chip);
+ }
+ if(!notes.length){const x=document.createElement('span');x.textContent='No detected notes in this bar';holder.append(x);}
+ if(candidates.length>64){const more=document.createElement('span');more.textContent='+'+(candidates.length-64)+' notes';holder.append(more);}
+}
+
 function resetPianoTracking(){
  pianoTrackingToken++;
+ pianoActiveIndices.clear();
+ for(const chip of simpleNoteNodes.values())chip.classList.remove('active');
  if(pianoTrackingFrame){cancelAnimationFrame(pianoTrackingFrame);pianoTrackingFrame=0;}
  for(const node of pianoNoteNodes.values())node.classList.remove('is-playing');
  for(const slot of engravedCursors){
@@ -1067,11 +1111,14 @@ function startPianoTracking(audioStart,secondsPerTick){
    let newest=-1;
    while(at<events.length&&events[at].tick<=tick+.25){
     const event=events[at++],node=pianoNoteNodes.get(event.index);
-    if(event.on){active.add(event.index);newest=event.index;node?.classList.add('is-playing');}
-    else{active.delete(event.index);node?.classList.remove('is-playing');}
+    if(event.on){active.add(event.index);pianoActiveIndices.add(event.index);newest=event.index;node?.classList.add('is-playing');simpleNoteNodes.get(event.index)?.classList.add('active');}
+    else{active.delete(event.index);pianoActiveIndices.delete(event.index);node?.classList.remove('is-playing');simpleNoteNodes.get(event.index)?.classList.remove('active');}
    }
    if(newest>=0){
     const note=piano.notes[newest],status=document.getElementById('pianoNowPlaying');
+    const simplePane=document.querySelector('.pianoScoreScroll');
+    if(simplePane&&!simplePane.hidden&&document.getElementById('followNotes')?.checked&&(note.measure<simplePageStart||note.measure>=simplePageStart+8))pianoSVG(note.measure);
+    if(note.measure!==simpleCurrentMeasure)renderSimpleNoteStrip(note.measure);
     if(status)status.textContent='Bar '+(note.measure+1)+' · '+active.size+(active.size===1?' note':' notes')+' sounding';
     if(performance.now()-lastScroll>350){
      const pane=document.querySelector('.pianoScoreScroll');
@@ -1124,8 +1171,16 @@ async function renderEngravedPages(pages){
   area.hidden=false;document.querySelector('.pianoScoreScroll').hidden=true;
   toggle.hidden=false;toggle.textContent='Show simplified view';
   toggle.onclick=()=>{
-   const toSimple=area.hidden===false;
-   area.hidden=toSimple;document.querySelector('.pianoScoreScroll').hidden=!toSimple;
+   const toSimple=!area.hidden;
+   const pane=document.querySelector('.pianoScoreScroll');
+   if(toSimple){
+    const current=[...pianoActiveIndices].at(-1);
+    const measure=current===undefined?simplePageStart:(piano.notes[current]?.measure??simplePageStart);
+    pianoSVG(measure);
+    pane.hidden=false;area.hidden=true;
+    pane.scrollTop=0;pane.scrollLeft=0;
+    status.textContent='Simplified teaching view · dark notes on staves, amber notes during playback.';
+   }else{pane.hidden=true;area.hidden=false;status.textContent='Full engraved score · follow the moving cursor.';}
    toggle.textContent=toSimple?'Show engraved score':'Show simplified view';
   };
   status.textContent='Engraved notation · compare all detected notes with the original.';
@@ -1138,7 +1193,7 @@ async function renderEngravedPages(pages){
 function showPianoScore(parsed, origin, sourcePages=[]){
  if(playing)stopPlayback();
  resetPianoTracking();
- piano=parsed;document.body.classList.add('piano-active');$('pianoPanel').hidden=false;
+ piano=parsed;simplePageStart=0;simpleCurrentMeasure=0;document.body.classList.add('piano-active');$('pianoPanel').hidden=false;
  $('pianoTitle').textContent=parsed.title;
  $('pianoSubtitle').textContent=parsed.parts+' instrument part(s) · '+parsed.lanes.length+' staff/track(s) · '+parsed.signature+' time';
  $('pianoCounts').textContent=parsed.notes.length+' notes · '+parsed.measureLength.length+' bars · simultaneous playback';
@@ -1299,7 +1354,10 @@ async function playPiano(){
  updateStatus('Playing '+piano.parts+' part(s) at '+bpm+' BPM; piano chords and both hands are synchronised.');
 }
 
-function wire(){document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+function wire(){
+ document.getElementById('simplePrev').onclick=()=>{pianoSVG(Math.max(0,simplePageStart-8));document.querySelector('.pianoScoreScroll').scrollTop=0;};
+ document.getElementById('simpleNext').onclick=()=>{pianoSVG(simplePageStart+8);document.querySelector('.pianoScoreScroll').scrollTop=0;};
+ document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
 document.querySelectorAll('[data-den]').forEach(b=>b.addEventListener('click',()=>{den=+b.dataset.den;document.querySelectorAll('[data-den]').forEach(v=>v.classList.toggle('active',v===b));updateStatus(`${b.title}. Click the staff to place it.`)}));
 $('dotted').onchange=ev=>{dot=ev.target.checked};$('accidental').onchange=ev=>{acc=ev.target.value};
 for(const id of ['clef','meter'])$(id).addEventListener('change',ev=>{const key=id;const value=ev.target.value;if(id==='meter'){const [n,d]=value.split('/').map(Number),target=n*TICKS/d;if(data.bars.some(b=>sumBar(b)>target)){ev.target.value=data.meter;flash('Some existing bars are too long for that time signature. Shorten them first.');return}}change();data[key]=value;selected=null;commit();flash(`${id==='clef'?'Clef':'Time signature'} changed`)});
