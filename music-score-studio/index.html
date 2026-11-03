@@ -110,8 +110,8 @@
 @media print{.omrHero{display:none!important}}
 
 .omrNotationHeader{padding:9px 15px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;color:#4c6b77;font-size:12px;border-top:1px solid #e8eff0}
-.omrEngravedScore{overflow-x:auto;max-height:80vh;background:#fff;padding:10px 18px}
-.omrRenderedPage{margin:8px auto 24px;max-width:1060px;border-bottom:1px dashed #d8e6e8;padding-bottom:15px}
+.omrEngravedScore{overflow-x:auto;max-height:80vh;background:#fff;padding:10px 18px;min-height:280px;position:relative}
+.omrRenderedPage{margin:8px auto 24px;width:100%;min-width:690px;max-width:1060px;border-bottom:1px dashed #d8e6e8;padding-bottom:15px}
 .omrRenderedPage h4{font-size:12px;font-weight:750;color:#436a78;margin:0 0 8px}
 @media print{.omrNotationHeader{display:none}.omrEngravedScore{overflow:visible;max-height:none}}
 
@@ -1148,27 +1148,36 @@ function ensureOSMD(){
 async function renderEngravedPages(pages){
  const serial=++engravedSerial,area=$('engravedScore'),toggle=$('notationViewToggle'),status=$('notationStatus');
  engravedCursors=[];
- area.replaceChildren();area.hidden=true;toggle.hidden=true;
+ // Keep the professional music container IN LAYOUT during rendering. OSMD
+ // reads offsetWidth; rendering into [hidden] (display:none) makes blank SVGs.
+ area.replaceChildren();area.hidden=false;area.style.visibility='hidden';toggle.hidden=true;
  document.querySelector('.pianoScoreScroll').hidden=false;
- if(!pages.length){status.textContent='Showing a simplified pitch-and-timing preview.';return}
+ if(!pages.length){area.hidden=true;area.style.visibility='';status.textContent='Showing a simplified pitch-and-timing preview.';return}
  status.textContent='Loading professional notation display…';
  try{
   await ensureOSMD();if(serial!==engravedSerial)return;
+  // Let the browser calculate a real width, even when on a narrow phone.
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  if(serial!==engravedSerial)return;
+  if(area.offsetWidth<150)throw Error('Score layout has no available width.');
   let pageTickOffset=0;
   for(let i=0;i<pages.length;i++){
    const section=document.createElement('div');section.className='omrRenderedPage';
    const heading=document.createElement('h4');heading.textContent='Page '+(i+1);section.append(heading);
-   const host=document.createElement('div');section.append(host);area.append(section);
-   const obj=new window.opensheetmusicdisplay.OpenSheetMusicDisplay(host,{autoResize:false,backend:'svg',drawTitle:i===0,drawComposer:i===0,cursorsOptions:[{type:0,color:'#f59e0b',alpha:.43,follow:false}]});
+   const host=document.createElement('div');host.style.width='100%';section.append(host);area.append(section);
+   const obj=new window.opensheetmusicdisplay.OpenSheetMusicDisplay(host,{autoResize:false,backend:'svg',drawTitle:i===0,drawComposer:i===0,cursorsOptions:[{type:1,color:'#db7418',alpha:.9,follow:false}]});
    await obj.load(pages[i]);if(serial!==engravedSerial)return;
+   // Important: both host and area are visible to layout calculations here.
    obj.render();
+   const engraving=host.querySelector('svg');
+   if(!engraving||engraving.getBoundingClientRect().width<120||!engraving.querySelector('path, line, use'))throw Error('The professional score was blank; showing the simplified notation instead.');
    const pageTicks=parseMusicXML(pages[i]).total;
    const cursor=obj.cursor||obj.cursors?.[0];
    if(cursor){try{cursor.reset();cursor.hide();engravedCursors.push({cursor,start:pageTickOffset,end:pageTickOffset+pageTicks,section,ready:false,visible:false,position:-1,lastTarget:0});}catch(e){}}
    pageTickOffset+=pageTicks;
   }
   if(serial!==engravedSerial)return;
-  area.hidden=false;document.querySelector('.pianoScoreScroll').hidden=true;
+  area.style.visibility='';area.hidden=false;document.querySelector('.pianoScoreScroll').hidden=true;
   toggle.hidden=false;toggle.textContent='Show simplified view';
   toggle.onclick=()=>{
    const toSimple=!area.hidden;
@@ -1186,7 +1195,9 @@ async function renderEngravedPages(pages){
   status.textContent='Engraved notation · compare all detected notes with the original.';
  }catch(e){
   if(serial!==engravedSerial)return;
-  area.hidden=true;status.textContent='Using built-in score preview. Full engraving unavailable: '+e.message;
+  area.hidden=true;area.style.visibility='';
+  document.querySelector('.pianoScoreScroll').hidden=false;
+  status.textContent='Using built-in score preview. Full engraving unavailable: '+e.message;
  }
 }
 
