@@ -764,12 +764,32 @@ if(!exportMode){const hit=el('rect',{x:x-24,y:top-53,width:48,height:158,fill:'t
 if(idx===data.bars.length-1){line(svg,x1+5,top,x1+5,top+72,'#263d49',4)}
 }
 }
-for(const stroke of data.strokes){if(stroke.points?.length>1)svg.append(el('polyline',{points:stroke.points.map(p=>`${p[0]},${p[1]}`).join(' '),fill:'none',stroke:stroke.color||'#df654d','stroke-width':3.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}))}
-if(!exportMode&&penDraft?.length>1)svg.append(el('polyline',{points:penDraft.map(p=>`${p[0]},${p[1]}`).join(' '),fill:'none',stroke:$('penColor').value,'stroke-width':3.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+for(let i=0;i<data.strokes.length;i++){
+ const stroke=data.strokes[i];if(!stroke.points||stroke.points.length<2)continue;
+ const pts=stroke.points.map(p=>p[0]+','+p[1]).join(' ');
+ if(!exportMode&&boxSelectedStrokes.has(i))svg.append(el('polyline',{points:pts,fill:'none',stroke:'#48c7d4','stroke-opacity':.65,'stroke-width':12,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+ svg.append(el('polyline',{points:pts,fill:'none',stroke:stroke.color||'#df654d','stroke-width':3.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+ if(!exportMode&&stroke.kind==='music'&&Number.isFinite(stroke.headX)&&Number.isFinite(stroke.headY)){
+  const symbol=stroke.den===2?'◯':stroke.den===4?'●':'♪';
+  const words=stroke.den===2?'2 beats':stroke.den===4?'1 beat':String(4/stroke.den)+' beats';
+  const blue=stroke.den===2;
+  svg.append(el('rect',{x:stroke.headX+15,y:stroke.headY-25,width:60,height:19,rx:7,fill:blue?'#dfecfc':'#fff0d8',stroke:blue?'#4d91b0':'#c47b3a','stroke-width':.8,'pointer-events':'none'}));
+  textSvg(svg,stroke.headX+19,stroke.headY-12,symbol+' '+words,10,{'font-weight':800,fill:'#204a59','pointer-events':'none'});
+ }
+}
+if(!exportMode&&penDraft?.length>1)svg.append(el('polyline',{points:penDraft.map(p=>p[0]+','+p[1]).join(' '),fill:'none',stroke:den===2?'#2876ac':'#c45c34','stroke-width':3.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+if(!exportMode&&boxDraft){
+ const x=Math.min(boxDraft.x0,boxDraft.x1),y=Math.min(boxDraft.y0,boxDraft.y1);
+ svg.append(el('rect',{x,y,width:Math.abs(boxDraft.x1-boxDraft.x0),height:Math.abs(boxDraft.y1-boxDraft.y0),fill:'#42a8c2','fill-opacity':.14,stroke:'#087b86','stroke-width':2,'stroke-dasharray':'10 5','pointer-events':'none'}));
+}
 return svg;}
-function render(){const svg=$('score'),fresh=makeScore();svg.setAttribute('viewBox',fresh.getAttribute('viewBox'));svg.replaceChildren(...[...fresh.childNodes]);$('counter').textContent=`· ${data.bars.length} bar${data.bars.length===1?'':'s'} · ${data.meter}`;let s=findSelected();const actions=$('selectedActions');actions.replaceChildren();if(s){const label=document.createElement('span');label.className='editLabel';label.textContent=`Selected: ${noteName(s.e)} · Bar ${s.bar+1}`;actions.append(label);if(s.e.kind==='note'){for(const [t,n] of [['↑ Higher',1],['↓ Lower',-1]]){const b=document.createElement('button');b.className='smallBtn';b.textContent=t;b.onclick=()=>adjustPitch(n);actions.append(b)}}const apply=document.createElement('button');apply.className='smallBtn';apply.textContent='Apply value';apply.title='Apply selected duration, dot and accidental to this symbol';apply.onclick=applyValue;actions.append(apply);const del=document.createElement('button');del.className='smallBtn';del.style.color='#ae4148';del.textContent='Delete';del.onclick=removeSelected;actions.append(del)}else{const l=document.createElement('span');l.className='editLabel';l.textContent='Select a symbol to move, edit or delete it';actions.append(l)}$('removeBar').disabled=data.bars.length<=1||data.bars[data.bars.length-1].length>0;updateHistoryButtons()}
+function render(){const svg=$('score'),fresh=makeScore();svg.setAttribute('viewBox',fresh.getAttribute('viewBox'));svg.replaceChildren(...[...fresh.childNodes]);$('counter').textContent=`· ${data.bars.length} bar${data.bars.length===1?'':'s'} · ${data.meter}`;let s=findSelected();const actions=$('selectedActions');actions.replaceChildren();
+if(boxSelectedNotes.size||boxSelectedStrokes.size){
+ const label=document.createElement('span');label.className='editLabel';label.textContent=boxSelectedNotes.size+' notes/rests + '+boxSelectedStrokes.size+' sketches selected';actions.append(label);
+ const del=document.createElement('button');del.className='smallBtn';del.textContent='Delete selection';del.onclick=deleteBoxSelection;actions.append(del);
+}else if(s){const label=document.createElement('span');label.className='editLabel';label.textContent=`Selected: ${noteName(s.e)} · Bar ${s.bar+1}`;actions.append(label);if(s.e.kind==='note'){for(const [t,n] of [['↑ Higher',1],['↓ Lower',-1]]){const b=document.createElement('button');b.className='smallBtn';b.textContent=t;b.onclick=()=>adjustPitch(n);actions.append(b)}}const apply=document.createElement('button');apply.className='smallBtn';apply.textContent='Apply value';apply.title='Apply selected duration, dot and accidental to this symbol';apply.onclick=applyValue;actions.append(apply);const del=document.createElement('button');del.className='smallBtn';del.style.color='#ae4148';del.textContent='Delete';del.onclick=removeSelected;actions.append(del)}else{const l=document.createElement('span');l.className='editLabel';l.textContent='Select a symbol to move, edit or delete it';actions.append(l)}$('removeBar').disabled=data.bars.length<=1||data.bars[data.bars.length-1].length>0;updateHistoryButtons()}
 function svgPoint(ev){const svg=$('score'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const m=svg.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0}}
-function clicked(ev){if(tool==='pen'||drag?.moved)return;const target=ev.target.closest('[data-id], [data-bar]');if(!target)return;
+function clicked(ev){if(tool==='pen'||tool==='box'||drag?.moved)return;const target=ev.target.closest('[data-id], [data-bar]');if(!target)return;
 if(target.hasAttribute('data-id')){selectEvent(target.dataset.id);return}
 if(tool==='select')return;
 const bar=Number(target.dataset.bar),top=Number(target.dataset.top),left=Number(target.dataset.left),width=Number(target.dataset.width);if(bar<0||bar>=data.bars.length)return;const p=svgPoint(ev);const pitch=pitchOfY(p.y,top);const index=findInsertIndex(bar,p.x,left,width);addEvent(bar,index,pitch)}
@@ -896,6 +916,72 @@ function inkRecognizeStrokes(strokes,layout,barCount){
  return grouped.sort((a,b)=>a.place.bar-b.place.bar||a.head.x-b.head.x);
 }
 
+function setQuickNoteValue(value){
+ if(!VALID_DEN.includes(+value))return;
+ den=+value;
+ $('inkLengthMode').value=String(den);
+ document.querySelectorAll('[data-den]').forEach(button=>button.classList.toggle('active',+button.dataset.den===den));
+ for(const [id,d] of [['quickQuarter',4],['quickHalf',2]]){
+  const btn=$(id);btn.classList.toggle('is-current',den===d);btn.setAttribute('aria-pressed',String(den===d));
+ }
+ if(boxSelectedNotes.size||boxSelectedStrokes.size)changeBoxNoteValue(den);
+ else $('beautifyFeedback').textContent=(den===2?'◯ Half · 2 beats':den===4?'● Quarter · 1 beat':'Value '+den)+'. Draw more notes; Beautify All converts them together.';
+}
+function changeBoxNoteValue(duration){
+ let allowed=[],skipped=[];
+ for(let b=0;b<data.bars.length;b++){
+  const bar=data.bars[b],chosen=bar.filter(e=>boxSelectedNotes.has(e.id));
+  if(!chosen.length)continue;
+  const len=bar.reduce((total,e)=>total+ticks(boxSelectedNotes.has(e.id)?{...e,den:duration}:e),0);
+  if(len>cap()+.001)skipped.push(b+1);else allowed.push(b);
+ }
+ if(!allowed.length&&!boxSelectedStrokes.size){flash('Selected notes cannot fit at that duration.');return;}
+ change();
+ for(const b of allowed)for(const e of data.bars[b])if(boxSelectedNotes.has(e.id))e.den=duration;
+ for(const i of boxSelectedStrokes)if(data.strokes[i])data.strokes[i].den=duration;
+ commit();
+ $('beautifyFeedback').textContent='Changed selection to '+(duration===2?'◯ Half, 2 beats':duration===4?'● Quarter, 1 beat':'value '+duration)+(skipped.length?'. Bars '+skipped.join(', ')+' were already too full.':'.');
+}
+function selectInMusicBox(rect){
+ boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=null;
+ const layout=staffLayout();
+ for(let b=0;b<data.bars.length;b++){
+  const bar=data.bars[b],top=layout.top(Math.floor(b/2)),left=layout.left+(b%2)*layout.barW;
+  const coords=eventPositions(bar,left,layout.barW);
+  for(let i=0;i<bar.length;i++){
+   const e=bar[i],y=e.kind==='note'?top+72-(noteIndex(e.step,e.octave)-bottomIndex())*9:top+40;
+   if(coords[i]>=rect.x0&&coords[i]<=rect.x1&&y>=rect.y0&&y<=rect.y1)boxSelectedNotes.add(e.id);
+  }
+ }
+ data.strokes.forEach((stroke,i)=>{
+  const b=inkBounds(stroke.points);
+  if(b&&b.maxX>=rect.x0&&b.minX<=rect.x1&&b.maxY>=rect.y0&&b.minY<=rect.y1)boxSelectedStrokes.add(i);
+ });
+ render();
+ const count=boxSelectedNotes.size+boxSelectedStrokes.size;
+ const message=count?'Selected '+boxSelectedNotes.size+' musical symbols and '+boxSelectedStrokes.size+' sketches. Choose Quarter/Half to change value, or Delete selection.':'Nothing selected. Drag a larger box over notes or sketches.';
+ $('beautifyFeedback').textContent=message;updateStatus(message);
+}
+function deleteBoxSelection(){
+ if(!boxSelectedNotes.size&&!boxSelectedStrokes.size)return;
+ change();
+ data.bars=data.bars.map(bar=>bar.filter(e=>!boxSelectedNotes.has(e.id)));
+ data.strokes=data.strokes.filter((_,i)=>!boxSelectedStrokes.has(i));
+ const count=boxSelectedNotes.size+boxSelectedStrokes.size;
+ boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=null;
+ commit();flash('Deleted '+count+' items. Undo restores them.');
+}
+function clearScoreTop(){
+ if(!confirm('Clear all notes and handwritten sketches from this score? Your settings remain, and Undo restores the notes.'))return;
+ if(piano)closePiano();
+ change();
+ data.bars=data.bars.map(()=>[]);data.strokes=[];
+ selected=null;boxSelectedNotes.clear();boxSelectedStrokes.clear();boxDraft=null;
+ commit();setMode('pen');
+ $('beautifyFeedback').textContent='Score cleared; you can draw new notes. Press Undo to restore the previous score.';
+ flash('Score cleared · Undo available');
+}
+
 function startMusicInk(){
  // The teacher's handwriting engine draws into the editable melody staff;
  // the separate annotation overlay must release pointer events first.
@@ -973,10 +1059,60 @@ function clearInkStrokes(){
  updateStatus(m);flash('Drawings cleared · Undo to restore');
 }
 
-function pointerDown(ev){const p=svgPoint(ev);if(tool==='pen'){ev.preventDefault();penDraft=[[+p.x.toFixed(1),+p.y.toFixed(1)]];drag={type:'pen',pointer:ev.pointerId,moved:false};$('score').setPointerCapture(ev.pointerId);render();return}
-if(tool==='select'&&ev.target.closest('[data-id]')){const id=ev.target.closest('[data-id]').dataset.id;selected=id;drag={type:'note',pointer:ev.pointerId,id,y:p.y,moved:false};$('score').setPointerCapture(ev.pointerId);render()}}
-function pointerMove(ev){if(!drag||ev.pointerId!==drag.pointer)return;const p=svgPoint(ev);if(drag.type==='pen'){penDraft.push([+p.x.toFixed(1),+p.y.toFixed(1)]);drag.moved=true;render();return}if(drag.type==='note'&&Math.abs(p.y-drag.y)>5){drag.moved=true;let s=findSelected();if(!s||s.e.kind!=='note')return;const steps=Math.round((drag.y-p.y)/9);if(steps===0)return;const ix=noteIndex(s.e.step,s.e.octave)+steps;if(ix<8||ix>48)return;if(!drag.changed){change();drag.changed=true}Object.assign(s.e,fromIndex(ix));drag.y-=steps*9;render()}}
-function pointerUp(ev){if(!drag||ev.pointerId!==drag.pointer)return;const old=drag;drag=null;if(old.type==='pen'){if(penDraft&&penDraft.length>1){change();data.strokes.push({points:penDraft,color:$('penColor').value});saved()}penDraft=null;render();return}if(old.changed){saved();render();updateStatus('Note moved.')}else{render();}}
+function pointerDown(ev){
+ const p=svgPoint(ev);
+ if(tool==='box'){
+  ev.preventDefault();boxDraft={x0:p.x,y0:p.y,x1:p.x,y1:p.y};
+  drag={type:'box',pointer:ev.pointerId,moved:false};$('score').setPointerCapture(ev.pointerId);render();return;
+ }
+ if(tool==='pen'){
+  ev.preventDefault();penDraft=[[+p.x.toFixed(1),+p.y.toFixed(1)]];
+  drag={type:'pen',pointer:ev.pointerId,moved:false,noteDen:den};
+  $('score').setPointerCapture(ev.pointerId);render();return;
+ }
+ if(tool==='select'&&ev.target.closest('[data-id]')){
+  const id=ev.target.closest('[data-id]').dataset.id;
+  selected=id;drag={type:'note',pointer:ev.pointerId,id,y:p.y,moved:false};
+  $('score').setPointerCapture(ev.pointerId);render();
+ }
+}
+function pointerMove(ev){
+ if(!drag||ev.pointerId!==drag.pointer)return;
+ const p=svgPoint(ev);
+ if(drag.type==='box'){boxDraft.x1=p.x;boxDraft.y1=p.y;drag.moved=true;render();return;}
+ if(drag.type==='pen'){
+  const xy=[+p.x.toFixed(1),+p.y.toFixed(1)],last=penDraft.at(-1);
+  if(Math.hypot(xy[0]-last[0],xy[1]-last[1])>1.1&&penDraft.length<1600)penDraft.push(xy);
+  drag.moved=true;render();return;
+ }
+ if(drag.type==='note'&&Math.abs(p.y-drag.y)>5){
+  drag.moved=true;const s=findSelected();if(!s||s.e.kind!=='note')return;
+  const steps=Math.round((drag.y-p.y)/9);if(!steps)return;
+  const ix=noteIndex(s.e.step,s.e.octave)+steps;if(ix<8||ix>48)return;
+  if(!drag.changed){change();drag.changed=true;}Object.assign(s.e,fromIndex(ix));drag.y-=steps*9;render();
+ }
+}
+function pointerUp(ev){
+ if(!drag||ev.pointerId!==drag.pointer)return;
+ const old=drag;drag=null;
+ if(old.type==='box'){
+  const b=boxDraft;boxDraft=null;
+  if(b&&Math.hypot(b.x1-b.x0,b.y1-b.y0)>8){
+   selectInMusicBox({x0:Math.min(b.x0,b.x1),y0:Math.min(b.y0,b.y1),x1:Math.max(b.x0,b.x1),y1:Math.max(b.y0,b.y1)});
+  }else{boxSelectedNotes.clear();boxSelectedStrokes.clear();render();}
+  return;
+ }
+ if(old.type==='pen'){
+  if(penDraft&&penDraft.length>2){
+   const points=penDraft,head=inkFindNotehead(points),value=old.noteDen;
+   change();
+   data.strokes.push({points,kind:'music',den:value,color:value===2?'#2876ac':'#c45c34',...(head?{headX:head.x,headY:head.y}:{})});
+   saved();$('beautifyFeedback').textContent=data.strokes.length+' sketches ready. Keep drawing or tap ✦ Beautify All.';
+  }
+  penDraft=null;render();return;
+ }
+ if(old.changed){saved();render();updateStatus('Note moved.')}else render();
+}
 function currentAccidental(barIndex,evIndex){const event=data.bars[barIndex][evIndex];if(!event||event.kind!=='note')return 0;
 if(event.acc==='#')return 1;if(event.acc==='b')return -1;if(event.acc==='n')return 0;
 for(let i=evIndex-1;i>=0;i--){const e=data.bars[barIndex][i];if(e.kind==='note'&&e.step===event.step&&e.octave===event.octave&&e.acc){return e.acc==='#'?1:e.acc==='b'?-1:0}}return 0}
@@ -1718,11 +1854,16 @@ async function playPiano(){
 function wire(){
  $('startMusicInk').onclick=startMusicInk;
  $('beautifyInk').onclick=beautifyInk;
+ $('quickQuarter').onclick=()=>setQuickNoteValue(4);
+ $('quickHalf').onclick=()=>setQuickNoteValue(2);
+ $('inkLengthMode').onchange=e=>setQuickNoteValue(e.target.value);
+ $('musicBoxSelect').onclick=()=>{document.querySelector('[data-annotation-tool="cursor"]')?.click();if(piano)closePiano();setMode('box');$('editorScorePanel').scrollIntoView({behavior:'smooth',block:'start'});};
+ $('clearScoreTop').onclick=clearScoreTop;
  $('clearInk').onclick=clearInkStrokes;
  document.getElementById('simplePrev').onclick=()=>{pianoSVG(Math.max(0,simplePageStart-8));document.querySelector('.pianoScoreScroll').scrollTop=0;};
  document.getElementById('simpleNext').onclick=()=>{pianoSVG(simplePageStart+8);document.querySelector('.pianoScoreScroll').scrollTop=0;};
  document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
-document.querySelectorAll('[data-den]').forEach(b=>b.addEventListener('click',()=>{den=+b.dataset.den;document.querySelectorAll('[data-den]').forEach(v=>v.classList.toggle('active',v===b));updateStatus(`${b.title}. Click the staff to place it.`)}));
+document.querySelectorAll('[data-den]').forEach(b=>b.addEventListener('click',()=>{setQuickNoteValue(+b.dataset.den);updateStatus(`${b.title}. Click the staff to place it.`)}));
 $('dotted').onchange=ev=>{dot=ev.target.checked};$('accidental').onchange=ev=>{acc=ev.target.value};
 for(const id of ['clef','meter'])$(id).addEventListener('change',ev=>{const key=id;const value=ev.target.value;if(id==='meter'){const [n,d]=value.split('/').map(Number),target=n*TICKS/d;if(data.bars.some(b=>sumBar(b)>target)){ev.target.value=data.meter;flash('Some existing bars are too long for that time signature. Shorten them first.');return}}change();data[key]=value;selected=null;commit();flash(`${id==='clef'?'Clef':'Time signature'} changed`)});
 $('tempo').addEventListener('change',ev=>{let v=Math.min(220,Math.max(40,Math.round(Number(ev.target.value)||96)));ev.target.value=v;if(data.tempo===v)return;change();data.tempo=v;commit()});
@@ -1737,7 +1878,7 @@ $('importJSON').onclick=()=>$('importFile').click();$('importFile').onchange=asy
 $('sample').onclick=()=>{if(data.bars.some(b=>b.length)||data.strokes.length){if(!confirm('Replace the current score with the example? You can use Undo to restore it.'))return}change();data=twinkle();selected=null;syncConfig();commit();flash('Example loaded: Twinkle, Twinkle, Little Star')};
 $('clear').onclick=()=>{if(!confirm('Start a new blank score? Your current score can still be restored with Undo, or export it first.'))return;change();data=blank();selected=null;syncConfig();commit();flash('Blank score ready')};
 $('guide').onclick=()=>$('helpModal').classList.add('open');$('closeHelp').onclick=()=>$('helpModal').classList.remove('open');$('helpModal').addEventListener('click',e=>{if(e.target===$('helpModal'))$('helpModal').classList.remove('open')});
-window.addEventListener('keydown',ev=>{if(ev.key==='Escape'){$('helpModal').classList.remove('open');showScan(false);return}const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ev.preventDefault();ev.shiftKey?redo():undo();return}if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ev.preventDefault();redo();return}if(ev.key===' '){ev.preventDefault();play();return}if((ev.key==='Delete'||ev.key==='Backspace')&&selected){ev.preventDefault();removeSelected();return}if(['ArrowUp','ArrowDown'].includes(ev.key)&&selected){ev.preventDefault();adjustPitch(ev.key==='ArrowUp'?1:-1);return}if(['ArrowLeft','ArrowRight'].includes(ev.key)&&selected){ev.preventDefault();let all=data.bars.flat().map(e=>e.id),i=all.indexOf(selected);i=Math.max(0,Math.min(all.length-1,i+(ev.key==='ArrowRight'?1:-1)));if(all.length)selectEvent(all[i])}});
+window.addEventListener('keydown',ev=>{if(ev.key==='Escape'){$('helpModal').classList.remove('open');showScan(false);return}const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ev.preventDefault();ev.shiftKey?redo():undo();return}if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ev.preventDefault();redo();return}if(ev.key===' '){ev.preventDefault();play();return}if((ev.key==='Delete'||ev.key==='Backspace')&&(selected||boxSelectedNotes.size||boxSelectedStrokes.size)){ev.preventDefault();if(boxSelectedNotes.size||boxSelectedStrokes.size)deleteBoxSelection();else removeSelected();return}if(['ArrowUp','ArrowDown'].includes(ev.key)&&selected){ev.preventDefault();adjustPitch(ev.key==='ArrowUp'?1:-1);return}if(['ArrowLeft','ArrowRight'].includes(ev.key)&&selected){ev.preventDefault();let all=data.bars.flat().map(e=>e.id),i=all.indexOf(selected);i=Math.max(0,Math.min(all.length-1,i+(ev.key==='ArrowRight'?1:-1)));if(all.length)selectEvent(all[i])}});
 window.addEventListener('beforeunload',()=>{if(playing)stopPlayback()});}
 try{const raw=localStorage.getItem(LS);if(raw)data=validateProject(JSON.parse(raw))}catch(e){data=blank()}
 wire();wireScanner();wireProfessionalScanner();wireOneStepScanner();syncConfig();setMode('note');commit();updateStatus('Ready · Click the staff to place a note.');
