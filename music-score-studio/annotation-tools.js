@@ -58,6 +58,32 @@ function updateButtons(){
  $('annotationClear').disabled=!state.items.length;
  $('annotationExport').disabled=!state.items.length;
 }
+// Friendly cursor icons (SVG generated locally; no image downloads).
+function cuteToolCursor(kind){
+ const heads={
+  pen:{body:'#56cdb7',cap:'#168b94',tip:'#324856',face:'#24505a'},
+  highlighter:{body:'#ffe17c',cap:'#f0a73f',tip:'#f5bc29',face:'#78551b'},
+  eraser:{body:'#ffb4c7',cap:'#f080aa',tip:'#ffe1ea',face:'#843c66'}
+ };
+ if(!(kind in heads))return '';
+ const c=heads[kind];
+ const text=kind==='highlighter'?'HI':kind==='eraser'?'♡':'✦';
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">'+
+ '<g transform="rotate(30 24 24)">'+
+ '<rect x="14" y="4" width="19" height="31" rx="7" fill="'+c.body+'" stroke="'+c.face+'" stroke-width="2"/>'+
+ '<path d="M14 13H33" stroke="'+c.cap+'" stroke-width="5"/>'+
+ '<circle cx="20" cy="23" r="1.8" fill="'+c.face+'"/><circle cx="27" cy="23" r="1.8" fill="'+c.face+'"/>'+
+ '<path d="M20 28Q23.5 31 27 28" stroke="'+c.face+'" stroke-width="1.6" fill="none" stroke-linecap="round"/>'+
+ (kind==='highlighter'?'<path d="M15 35H32L29 45H18Z" fill="'+c.tip+'" stroke="'+c.face+'" stroke-width="2"/>':
+ kind==='eraser'?'<path d="M15 35Q23 39 32 35V44Q23 48 15 44Z" fill="'+c.tip+'" stroke="'+c.face+'" stroke-width="2"/>':
+ '<path d="M16 35H31L24 46Z" fill="#f4d5a0" stroke="'+c.face+'" stroke-width="2"/><path d="M22 42L24 46L26 42Z" fill="'+c.tip+'"/>')+
+ '</g></svg>';
+ return 'url("data:image/svg+xml,'+encodeURIComponent(svg)+'") '+(kind==='eraser'?'24 45':'24 45')+', crosshair';
+}
+function toolCursor(kind){
+ return cuteToolCursor(kind)||(kind==='select'?'grab':kind==='hand'?'pointer':kind==='text'?'text':kind==='cursor'?'default':'crosshair');
+}
+
 function setMode(next){
  if(!modes.has(next))return;
  state.tool=next;state.drawing=null;
@@ -68,9 +94,9 @@ function setMode(next){
  });
  $('annotationToolbar').dataset.activeTool=next;
  if(state.layer)state.layer.style.pointerEvents=next==='cursor'?'none':'auto';
- if(state.layer)state.layer.style.cursor=next==='select'?'grab':next==='eraser'?'cell':next==='hand'?'pointer':next==='text'?'text':next==='cursor'?'default':'crosshair';
+ if(state.layer)state.layer.style.cursor=toolCursor(next);
  render();
- const descriptions={cursor:'Cursor: annotate no more; use the original note editor normally.',select:'Selector: tap a mark, drag to move it, or use its corner handle to resize.',hand:'Pointing hand: tap a note to place 👆; tap elsewhere to move the hand.',arrow:'Arrow: drag from the start to the point you want pupils to notice.',pen:'Pen: draw on the current score without changing playable notes.',highlighter:'Highlighter: swipe across notes to emphasise them.',line:'Line: drag to draw a straight line.',rect:'Rectangle: drag to outline a musical passage.',ellipse:'Oval: drag to circle a note or section.',text:'Text: tap the score and type an annotation.',eraser:'Eraser: tap or swipe over marks to remove them.'};
+ const descriptions={cursor:'Cursor: annotate no more; use the original note editor normally.',select:'Selector: tap a mark, drag to move it, or use its corner handle to resize.',hand:'Pointing hand: tap a note to place 👆; tap elsewhere to move the hand.',arrow:'Arrow: drag from the start to the point you want pupils to notice.',pen:'Pen: draw on the current score without changing playable notes.',highlighter:'Cute Highlighter: swipe across notes to emphasise them.',line:'Line: drag to draw a straight line.',rect:'Rectangle: drag to outline a musical passage.',ellipse:'Oval: drag to circle a note or section.',text:'Text: tap the score and type an annotation.',eraser:'Cute Eraser: tap or swipe over annotation marks to remove them.'};
  say(descriptions[next]);
  scheduleSync();
 }
@@ -120,7 +146,7 @@ function sync(){
  state.layer.style.height=g.height+'px';
  state.layer.setAttribute('viewBox','0 0 '+Math.round(g.width)+' '+Math.round(g.height));
  state.layer.style.pointerEvents=state.tool==='cursor'?'none':'auto';
- state.layer.style.cursor=state.tool==='select'?'grab':state.tool==='eraser'?'cell':state.tool==='hand'?'pointer':'crosshair';
+ state.layer.style.cursor=toolCursor(state.tool);
  state.layer.hidden=state.hidden;
  if(updated||changed)render();
  updateButtons();
