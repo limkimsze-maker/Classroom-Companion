@@ -47,6 +47,11 @@ once(
     "    if (!companionMode() && !rereading && !scanSettings.systemsChecked) await checkSystems(stopped);",
     "automatic camera recognition without manual confirmation"
 )
+once(
+    'worker.postMessage({ type: "init", exact: exactEncoder(), threads: tunedThreads(), gpu: tunedGpu() });',
+    'worker.postMessage({ type: "init", noGpu: new URLSearchParams(location.search).has("cpu"), exact: exactEncoder(), threads: tunedThreads(), gpu: tunedGpu() });',
+    "CPU-only fallback for browser diagnostics"
+)
 code += """
 // Classroom Companion same-origin integration, added under the AGPL-3.0.
 // This code does not upload photos; the File is transferred to this iframe in memory.
