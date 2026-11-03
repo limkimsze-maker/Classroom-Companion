@@ -2597,9 +2597,10 @@ const CC_CHANNEL = "cc-music-omr-v1";
 function companionMode() {
   return new URLSearchParams(location.search).has("cc-bridge") && window.parent !== window;
 }
+let companionJobId = null;
 function companionSend(payload) {
   if (!companionMode()) return;
-  try { window.parent.postMessage({channel:CC_CHANNEL,...payload},location.origin); } catch (e) {
+  try { window.parent.postMessage({channel:CC_CHANNEL,jobId:companionJobId,...payload},location.origin); } catch (e) {
     console.warn("Classroom Companion bridge message failed", e);
   }
 }
@@ -2614,6 +2615,7 @@ window.addEventListener("message", async event => {
     return;
   }
   ccScanBusy=true;
+  companionJobId=msg.jobId;
   try {
     if(noReader) throw Error("Recognition is not supported on this iPhone or iPad. Try Android or Chrome/Edge on a computer.");
     if(!Array.isArray(msg.files) || !msg.files.length || msg.files.length > 8)
