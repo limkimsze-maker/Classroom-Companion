@@ -90,21 +90,33 @@
 .omrRenderedPage{margin:8px auto 24px;max-width:1060px;border-bottom:1px dashed #d8e6e8;padding-bottom:15px}
 .omrRenderedPage h4{font-size:12px;font-weight:750;color:#436a78;margin:0 0 8px}
 @media print{.omrNotationHeader{display:none}.omrEngravedScore{overflow:visible;max-height:none}}
+
+/* One-flow camera -> local trained OMR -> full-score playback */
+.oneTapControls{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 11px}
+.oneTapControls .btn{min-height:46px}
+.omrRunning{background:#f6fbfc;border:1px solid #c7e0e5;border-radius:13px;padding:14px;margin-top:13px}
+.omrRunning[hidden]{display:none!important}
+.omrRunningHeader{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:9px;color:#234a5b}
+.omrRunningHeader strong{font-size:14px}
+.omrRunning p{font-size:12px;color:#526c7b;margin:10px 0}
+.omrProgressTrack{height:7px;border-radius:9px;background:#e2eff0;overflow:hidden;margin-top:10px}
+.omrProgressTrack span{display:block;height:100%;width:7%;border-radius:9px;background:#087b86;transition:width .3s}
+#omrReaderDetail{color:#476676;font-size:12px;margin-top:8px}
+#omrReaderDetail summary{cursor:pointer;text-decoration:underline}
+#omrReaderFrame{display:block;width:100%;height:480px;border:1px solid #c5d8dc;border-radius:9px;background:#fff;margin-top:10px}
+@media(max-width:650px){.oneTapControls{display:grid;grid-template-columns:1fr 1fr}.oneTapControls .btn:last-of-type{grid-column:1/-1}.omrHeading h2{font-size:20px}}
 </style>
 </head>
 <body>
 <header class="topbar"><div class="brand"><div class="logo" aria-hidden="true">♫</div><div><h1>Music Score Studio</h1><p>Classroom Companion · A friendly music notation board</p></div></div><span class="top-pill">Free · No account · Made for teaching</span></header>
 
-<section class="omrHero" aria-label="AI photo recognition and score import"><div class="omrCard">
-  <div class="omrHeading"><div><div class="omrEyebrow">Trained OMR · Music Score Studio</div><h2>Scan printed music with trained OMR and play it</h2><p>Use the established <b>homr</b> optical music recognition engine through the independent, free Partsong scanner, then import its recognised score here. The old experimental note detector remains available below only for simple melodies.</p></div><span class="omrStatusFlag">On-device recognition · No account</span></div>
-  <div class="omrSteps">
-    <div class="omrStep"><strong>1 · Read the printed score with AI</strong><p>Open Partsong, choose a picture or take a photo, then tap <b>Read music</b>. It uses an actual trained model, not simple circles.</p><a id="aiScanLink" class="btn primary" href="https://partsong.app/" target="_blank" rel="noopener noreferrer">📷 Open AI music scanner</a></div>
-    <div class="omrStep"><strong>2 · Save the recognised score</strong><p>After recognition, open your score's settings in Partsong and choose <b>Export PDF</b>. That PDF contains the machine-readable music, not just a picture.</p><a class="btn soft" href="https://partsong.app/" target="_blank" rel="noopener noreferrer">↗ Return to scanner</a></div>
-    <div class="omrStep"><strong>3 · Reproduce and play in this studio</strong><p>Choose the exported Partsong PDF. Music Score Studio extracts the notes, chords, parts, rhythm and simultaneous playback, across all its pages.</p><button type="button" id="omrImportButton" class="btn primary">🎹 Import recognised score</button><input id="omrImportInput" type="file" accept=".pdf,.musicxml,.xml,application/pdf,text/xml"></div>
-  </div>
-  <div id="omrImportStatus" role="status" aria-live="polite">Ready to import a recognised score. For existing MusicXML, use step 3 directly.</div>
-  <div class="omrDetails">Scanner: <a href="https://github.com/pzfreo/partsong" target="_blank" rel="noopener noreferrer">Partsong</a> by Paul Fremantle, powered by <a href="https://github.com/liebharc/homr" target="_blank" rel="noopener noreferrer">homr</a> (AGPL-3.0). The independent scanner processes photos on the device. Its optional sharing feature is separate. Music Score Studio reads the exported file locally.</div>
-  <p class="omrNote">Best for sharp, straight-on photographs of printed scores. AI recognition still needs checking, especially with dense chords, faint accidentals, and overlapping voices. No photograph is silently uploaded from this page.</p>
+<section class="omrHero" aria-label="Photo to score and playback"><div class="omrCard">
+  <div class="omrHeading"><div><div class="omrEyebrow">Trained optical music recognition · Classroom Companion</div><h2>📷 Take Picture → Reproduce Score → Play</h2><p>Photograph printed music. The trained reader converts it to notation, displays the score and plays all parts together — without exporting or changing apps.</p></div><span class="omrStatusFlag">On-device photo reading</span></div>
+  <div class="oneTapControls"><button type="button" class="btn primary" id="omrCameraButton">📷 Take picture &amp; play</button><input id="omrCameraInput" class="sr" type="file" accept="image/*" capture="environment"><button type="button" class="btn" id="omrChooseButton">▣ Choose picture(s)</button><input id="omrChooseInput" class="sr" type="file" accept="image/*,.pdf,application/pdf" multiple><button type="button" class="btn" id="omrImportButton">🎹 Open recognised PDF / MusicXML</button><input id="omrImportInput" type="file" accept=".pdf,.musicxml,.xml,application/pdf,text/xml" class="sr"></div>
+  <div id="omrImportStatus" role="status" aria-live="polite">Ready. Use the camera or select a clear picture of printed music. Both hands of a piano score can play together.</div>
+  <div class="omrRunning" id="omrRunning" hidden><div class="omrRunningHeader"><strong id="omrProgress">Preparing trained music reader…</strong><button type="button" class="smallBtn" id="omrCancel">Cancel scan</button></div><div class="omrProgressTrack" role="progressbar" aria-label="Music scan in progress"><span id="omrProgressFill"></span></div><p>Initial setup downloads approximately 157 MB of recognition models once and stores them in your browser. Please use Wi-Fi for the first scan.</p><details id="omrReaderDetail"><summary>Show trained recognition engine (advanced)</summary><iframe id="omrReaderFrame" title="Partsong trained music recogniser" loading="eager" allow="camera" referrerpolicy="strict-origin-when-cross-origin"></iframe></details></div>
+  <div class="omrDetails">Recognition by <a href="https://github.com/pzfreo/partsong" target="_blank" rel="noopener noreferrer">Partsong</a> (Paul Fremantle) and <a href="https://github.com/liebharc/homr" target="_blank" rel="noopener noreferrer">homr</a>, licensed AGPL-3.0. The full source and licence are included in this site's AI reader. Photos are processed on your device; the studio does not upload them. Your browser needs to download the model and audio libraries.</div>
+  <p class="omrNote">Printed notation only. Check the result before teaching: accidental marks, dense piano chords, ties and repeat signs can still be misread. For a quick note-writing lesson, use the editable staff below.</p>
 </div></section>
 
 <div class="shell">
@@ -1084,6 +1096,68 @@ async function loadRecognisedScore(file){
   omrImportMessage('Imported '+pages.length+' page(s), '+parsed.notes.length+' playable notes and '+parsed.lanes.length+' staves. Ready for playback.');
  }catch(e){omrImportMessage('Import failed: '+e.message,true);flash('Could not import: '+e.message)}
 }
+
+function wireOneStepScanner(){
+ const channel='cc-music-omr-v1', status=$('omrImportStatus'), running=$('omrRunning'),
+       frame=$('omrReaderFrame'), detail=$('omrReaderDetail'), progress=$('omrProgress'), bar=$('omrProgressFill');
+ let pending=null, ready=false, busy=false, job=null, initialized=false;
+ const message=(s,error=false)=>{status.textContent=s;status.classList.toggle('error',error);progress.textContent=s;};
+ const unlockSound=()=>{try{context=context||new(window.AudioContext||window.webkitAudioContext)();context.resume().catch(()=>{});}catch(e){}};
+ function sendPending(){if(!ready||!pending||!frame.contentWindow)return;
+   const files=pending;pending=null;
+   frame.contentWindow.postMessage({channel,type:'scan',jobId:job,files,title:files.length===1?files[0].name.replace(/\.[^.]+$/,''):'Classroom score'},location.origin);
+   message('Recognising notes, rests, chords and both staves…');}
+ async function start(files){
+   if(busy){message('A score is already being processed. You can cancel it before starting another.',true);return;}
+   if(!files.length)return;
+   if(files.length>8){message('Choose at most 8 score photos for one scan.',true);return;}
+   if(files.some(f=>f.size>18*1024*1024)){message('Each image should be smaller than 18 MB.',true);return;}
+   unlockSound();
+   busy=true;pending=files;job=crypto.randomUUID?.()||String(Date.now());
+   running.hidden=false;bar.style.width='7%';detail.open=false;
+   message('Preparing trained music reader… First setup downloads approximately 157 MB on Wi-Fi.');
+   if(!initialized){initialized=true;frame.src='ai/index.html?cc-bridge=1';}
+   else sendPending();
+ }
+ $('omrCameraButton').onclick=()=>{unlockSound();$('omrCameraInput').click();};
+ $('omrChooseButton').onclick=()=>{unlockSound();$('omrChooseInput').click();};
+ for(const id of ['omrCameraInput','omrChooseInput']) $(id).onchange=e=>{
+   const files=[...e.target.files];e.target.value='';if(files.length)start(files);
+ };
+ $('omrCancel').onclick=()=>{job=null;pending=null;busy=false;ready=false;initialized=false;frame.src='about:blank';running.hidden=true;message('Scan cancelled. You can take another picture.');};
+ window.addEventListener('message', async e=>{
+   const m=e.data;
+   if(e.origin!==location.origin||e.source!==frame.contentWindow||m?.channel!==channel)return;
+   if(m.type==='ready'){ready=true;sendPending();return;}
+   if(m.jobId!==job||!busy)return;
+   if(m.type==='status'){
+     if(m.message){message('Reading score · '+m.message);
+       const match=/([\d.]+)\s*\/\s*157\s*MB/.exec(m.message);
+       if(match)bar.style.width=Math.min(76,Math.max(7,Number(match[1])/157*76))+'%';
+       else if(/staff|finding|reading|page/i.test(m.message))bar.style.width='85%';}
+     return;
+   }
+   if(m.type==='error'){
+     busy=false;pending=null;job=null;bar.style.width='10%';
+     message('Could not recognise the score: '+String(m.message||'Unknown error')+'. Try a clearer photo or open the reader details.',true);
+     detail.open=true;return;
+   }
+   if(m.type==='result'){
+     busy=false;pending=null;job=null;
+     try{
+       if(!Array.isArray(m.pages)||!m.pages.length||m.pages.length>20)throw Error('No valid recognised music pages were returned.');
+       const name=String(m.title||'Photographed music score').slice(0,120);
+       const parsed=combineMusicPages(m.pages,name);
+       if(!parsed.notes.length)throw Error('The recogniser found no playable notes.');
+       showPianoScore(parsed,'Photo-recognised '+m.pages.length+'-page score',m.pages);
+       bar.style.width='100%';running.hidden=true;
+       message('Reproduced '+parsed.notes.length+' notes across '+parsed.lanes.length+' staves. Playing now — verify against the original.');
+       try{await playPiano();}catch(err){flash('Press Play all parts to hear the score: '+err.message);}
+     }catch(err){running.hidden=false;detail.open=true;message('The score could not be reproduced: '+err.message,true);}
+   }
+ });
+}
+
 function wireProfessionalScanner(){
  $('omrImportButton').addEventListener('click',()=>$('omrImportInput').click());
  $('omrImportInput').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await loadRecognisedScore(file)});
@@ -1125,7 +1199,7 @@ $('guide').onclick=()=>$('helpModal').classList.add('open');$('closeHelp').oncli
 window.addEventListener('keydown',ev=>{if(ev.key==='Escape'){$('helpModal').classList.remove('open');showScan(false);return}const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ev.preventDefault();ev.shiftKey?redo():undo();return}if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ev.preventDefault();redo();return}if(ev.key===' '){ev.preventDefault();play();return}if((ev.key==='Delete'||ev.key==='Backspace')&&selected){ev.preventDefault();removeSelected();return}if(['ArrowUp','ArrowDown'].includes(ev.key)&&selected){ev.preventDefault();adjustPitch(ev.key==='ArrowUp'?1:-1);return}if(['ArrowLeft','ArrowRight'].includes(ev.key)&&selected){ev.preventDefault();let all=data.bars.flat().map(e=>e.id),i=all.indexOf(selected);i=Math.max(0,Math.min(all.length-1,i+(ev.key==='ArrowRight'?1:-1)));if(all.length)selectEvent(all[i])}});
 window.addEventListener('beforeunload',()=>{if(playing)stopPlayback()});}
 try{const raw=localStorage.getItem(LS);if(raw)data=validateProject(JSON.parse(raw))}catch(e){data=blank()}
-wire();wireScanner();wireProfessionalScanner();syncConfig();setMode('note');commit();updateStatus('Ready · Click the staff to place a note.');
+wire();wireScanner();wireProfessionalScanner();wireOneStepScanner();syncConfig();setMode('note');commit();updateStatus('Ready · Click the staff to place a note.');
 })();
 </script>
 </body>
