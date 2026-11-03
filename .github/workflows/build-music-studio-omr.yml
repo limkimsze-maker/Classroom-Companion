@@ -1,0 +1,101 @@
+name: Build Music Score Studio on-device OMR
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-music-studio-omr.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: classroom-music-omr-build
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Fetch fixed upstream Partsong implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          UPSTREAM=e7cbd9112763aa31e45abaea2d1bbe09159a8f1b
+          mkdir -p /tmp/partsong-pinned
+          git -C /tmp/partsong-pinned init -q
+          git -C /tmp/partsong-pinned remote add origin https://github.com/pzfreo/partsong.git
+          git -C /tmp/partsong-pinned fetch --depth=1 origin "$UPSTREAM"
+          git -C /tmp/partsong-pinned checkout -q FETCH_HEAD
+          test "$(git -C /tmp/partsong-pinned rev-parse HEAD)" = "$UPSTREAM"
+          python3 - <<'PY'
+          from pathlib import Path
+          from shutil import copy2,copytree,rmtree
+          src=Path('/tmp/partsong-pinned')
+          dest=Path('music-score-studio/ai')
+          dest.mkdir(parents=True,exist_ok=True)
+          files='index.html app.js audio.js db.js orient.js pdf-pages.js player.js score.js share.js styles.css omr-worker.js sw.js manifest.webmanifest icon.svg icon-192.png icon-512.png favicon.ico privacy.html terms.html LICENSE README.md'.split()
+          for name in files:
+              if not (src/name).exists(): raise SystemExit('Missing upstream file: '+name)
+              copy2(src/name,dest/name)
+          for name in ('omr','fonts','samples'):
+              if (dest/name).exists(): rmtree(dest/name)
+              copytree(src/name,dest/name)
+          (dest/'scripts').mkdir(exist_ok=True)
+          copy2(src/'scripts/fetch-models.sh',dest/'scripts/fetch-models.sh')
+          print('Copied verified AGPL source and WASM modules')
+          PY
+      - name: Integrate photo-in MusicXML-out browser bridge
+        run: python3 music-score-studio/ai-bridge-patch.py
+      - name: Download official trained homr models
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd music-score-studio/ai
+          bash scripts/fetch-models.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          want={
+             'segnet_308-3296ccd40960f90ca6ab9c035cca945675d30a0f.onnx':57311361,
+             'encoder_pytorch_model_465-597144cab54c8f6d0f6c9619df5c5312694eadd6.onnx':52861122,
+             'decoder_pytorch_model_465-597144cab54c8f6d0f6c9619df5c5312694eadd6.onnx':47309835,
+          }
+          for name,size in want.items():
+              got=(Path('models')/name).stat().st_size
+              if got!=size: raise SystemExit(f'Model integrity length mismatch: {name}: {got} != {size}')
+          print('All 3 on-device OMR models are complete: 157 MB')
+          PY
+      - name: Verify source and bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check music-score-studio/ai/app.js
+          node --check music-score-studio/ai/omr-worker.js
+          grep -q 'cc-music-omr-v1' music-score-studio/ai/app.js
+          test -s music-score-studio/ai/LICENSE
+          test -s music-score-studio/ai/omr/partsong_omr.wasm
+          test -s music-score-studio/ai/sw.js
+          ! grep -q data-goatcounter music-score-studio/ai/index.html
+      - name: Publish source and models to existing GitHub Pages branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f music-score-studio/ai
+          git reset -q -- music-score-studio/ai/models
+          if ! git diff --cached --quiet; then
+            git commit -m 'Vendor AGPL Partsong music recogniser with Classroom Companion bridge'
+            git push origin HEAD:main
+          fi
+          for model in music-score-studio/ai/models/*.onnx; do
+            git add -f "$model"
+            if ! git diff --cached --quiet; then
+              git commit -m "Ship trained browser OMR model $(basename "$model")"
+              git push origin HEAD:main
+            fi
+          done
