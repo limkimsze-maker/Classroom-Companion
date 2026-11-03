@@ -86,16 +86,25 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          push_safely() {
+            for attempt in 1 2 3 4; do
+              if git push origin HEAD:main; then return 0; fi
+              echo "Another update reached main; rebasing build commit ($attempt)"
+              git fetch origin main
+              git rebase origin/main
+            done
+            return 1
+          }
           git add -f music-score-studio/ai
           git reset -q -- music-score-studio/ai/models
           if ! git diff --cached --quiet; then
             git commit -m 'Vendor AGPL Partsong music recogniser with Classroom Companion bridge'
-            git push origin HEAD:main
+            push_safely
           fi
           for model in music-score-studio/ai/models/*.onnx; do
             git add -f "$model"
             if ! git diff --cached --quiet; then
               git commit -m "Ship trained browser OMR model $(basename "$model")"
-              git push origin HEAD:main
+              push_safely
             fi
           done
