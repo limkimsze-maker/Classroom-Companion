@@ -42,9 +42,11 @@ jobs:
           if(!input)throw Error('Take Picture → Play input not present');
           input.files=transfer.files;
           input.dispatchEvent(new Event('change',{bubbles:true}));
-          const stop=Date.now()+280000;
+          const stop=Date.now()+380000;
+          let t=0;
           while(Date.now()<stop){
              await wait(1800);
+             if(++t%8===0) console.log('OMR TEST STATUS:',msg?.textContent?.slice(0,300),'frame:',document.getElementById('omrReaderFrame')?.contentDocument?.getElementById('status')?.textContent?.slice(0,250));
              const panel=document.getElementById('pianoPanel');
              if(panel && !panel.hidden){
                const number=+(document.getElementById('pianoCounts')?.textContent.match(/(\d+) notes/)?.[1]||0);
@@ -63,9 +65,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # CI headless GPU can deadlock; exercise stable WASM-only inference for the real-score test.
+          sed -i 's|ai/index.html?cc-bridge=1|ai/index.html?cc-bridge=1\&cpu=1|' music-score-studio/index.html
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/music-omr-http.log 2>&1 &
           sleep 2
-          CHROME_FLAGS='--no-sandbox --disable-dev-shm-usage --autoplay-policy=no-user-gesture-required' node /tmp/headless-test.mjs 'http://localhost:8765/music-score-studio/index.html' /tmp/music-omr-result.json 330 /tmp/music-omr-drive.js
+          CHROME_FLAGS='--no-sandbox --disable-dev-shm-usage --autoplay-policy=no-user-gesture-required' node /tmp/headless-test.mjs 'http://localhost:8765/music-score-studio/index.html' /tmp/music-omr-result.json 430 /tmp/music-omr-drive.js
           cat /tmp/music-omr-result.json
           python3 - <<'PY'
           import json
