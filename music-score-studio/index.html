@@ -58,6 +58,17 @@
 .pianoHint{margin:12px 17px;padding:10px 14px;background:#fff7e7;color:#78571d;border-radius:9px;font-size:12px}
 .pianoScoreScroll{overflow:auto;max-height:72vh;background:white}
 #pianoScore{display:block;width:100%;min-width:760px;height:auto}
+/* Follow-along score display — amber means currently sounding. */
+#pianoScore .pianoPlaybackNote .playbackHalo{display:none;pointer-events:none}
+#pianoScore .pianoPlaybackNote.is-playing .playbackHalo{display:initial;fill:#ffd15d;fill-opacity:.5;stroke:#cc610e;stroke-width:2.5}
+#pianoScore .pianoPlaybackNote.is-playing .notehead{fill:#f07720;stroke:#8e3b09;stroke-width:2.5}
+#pianoScore .pianoPlaybackNote.is-playing .noteStem{stroke:#b55110;stroke-width:2.7}
+.pianoFollowLabel{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+.pianoFollowLabel input{width:18px;height:18px;accent-color:#087b86}
+#pianoNowPlaying{font-size:13px;font-weight:750;color:#8d410c;background:#fff3cc;border:1px solid #e8bc63;border-radius:9px;padding:7px 11px;min-height:34px}
+#engravedScore img[id*="cursor"],#engravedScore img[id*="Cursor"]{pointer-events:none}
+@media print{#pianoNowPlaying,.pianoFollowLabel{display:none!important}}
+
 #grandStaffWarning{background:#fff4e2;border:1px solid #eacb91;color:#78551f;border-radius:10px;margin:12px 0;padding:12px;font-size:13px}
 #grandStaffWarning strong{display:block;margin-bottom:4px}
 
@@ -155,7 +166,7 @@
 <div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><span id="modeHint">Click a line or space to add a quarter note</span></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Interactive music staff. Click a bar to insert notes; click a note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Click the staff to place a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
 <div class="paperCard" id="pianoPanel" hidden>
   <div class="pianoTop"><div><h3 id="pianoTitle">Imported MusicXML piano score</h3><p id="pianoSubtitle">Two hands play together</p></div><button type="button" class="btn" id="closePiano">↩ Return to melody editor</button></div>
-  <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span></div>
+  <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span><label class="pianoFollowLabel"><input type="checkbox" id="followNotes" checked> Follow notes</label><span id="pianoNowPlaying" aria-live="off">Press Play to follow the notes.</span></div>
   <div class="pianoHint">Playback uses the recognised MusicXML pitches, chords, rhythms and simultaneous parts. Verify it against the original score: recognition is never guaranteed perfect.</div>
   <div id="notationHeader" class="omrNotationHeader"><strong id="notationStatus">Preparing the sheet music…</strong><button id="notationViewToggle" type="button" class="smallBtn" hidden>Show simplified view</button></div>
   <div id="engravedScore" class="omrEngravedScore" hidden></div>
@@ -635,6 +646,7 @@ function ensureAudioBus(){
  audioBus=input;return input;
 }
 function stopPlayback(){
+ resetPianoTracking();
  for(const t of playTimers)clearTimeout(t);playTimers=[];
  if(stopTimer)clearTimeout(stopTimer);stopTimer=null;
  // Cancel future notes too; a new playback may begin immediately.
@@ -937,6 +949,7 @@ function parseMusicXML(source){
 function pianoSVG(){
  if(!piano)return;
  const W=1160,measuresPerSystem=2,sysCount=Math.ceil(piano.measureLength.length/measuresPerSystem),lanes=piano.lanes.slice(0,6),lineGap=15,staffHeight=4*lineGap,sysHeight=lanes.length*122+48,H=75+sysCount*sysHeight;
+ const noteIds=new Map(piano.notes.map((note,i)=>[note,i]));
  const svg=$('pianoScore');svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('height',H);
  svg.append(el('rect',{x:0,y:0,width:W,height:H,fill:'#fff'}));
  textSvg(svg,W/2,36,piano.title,24,{'text-anchor':'middle','font-weight':750});
@@ -962,19 +975,117 @@ function pianoSVG(){
      for(let ledger=top+staffHeight+lineGap;ledger<=y+1;ledger+=lineGap)line(svg,x-12,ledger,x+12,ledger,'#244452',1.4);
      for(let ledger=top-lineGap;ledger>=y-1;ledger-=lineGap)line(svg,x-12,ledger,x+12,ledger,'#244452',1.4);
      const filled=e.duration<=piano.TPQ*1.8;
-     svg.append(el('ellipse',{cx:x,cy:y,rx:9.5,ry:6.2,transform:`rotate(-17 ${x} ${y})`,fill:filled?'#204757':'#fff',stroke:'#204757','stroke-width':1.8}));
-     if(e.duration<piano.TPQ*3.2){const up=y>=top+staffHeight*.5;line(svg,x+(up?8:-8),y,x+(up?8:-8),y+(up?-43:43),'#204757',1.6)}
+     const group=el('g',{'class':'pianoPlaybackNote','data-play-index':noteIds.get(e)});
+     svg.append(group);
+     group.append(el('ellipse',{cx:x,cy:y,rx:20,ry:15,'class':'playbackHalo'}));
+     group.append(el('ellipse',{cx:x,cy:y,rx:9.5,ry:6.2,transform:`rotate(-17 ${x} ${y})`,'class':'notehead',fill:filled?'#204757':'#fff',stroke:'#204757','stroke-width':1.8}));
+     if(e.duration<piano.TPQ*3.2){const up=y>=top+staffHeight*.5;line(group,x+(up?8:-8),y,x+(up?8:-8),y+(up?-43:43),'#204757',1.6,{'class':'noteStem'})}
     }
    }
    const finalX=xA+Math.min(measuresPerSystem,piano.measureLength.length-measureA)*barW;
    line(svg,finalX,top,finalX,top+staffHeight,'#244452',1.5);
   }
  }
+ pianoNoteNodes=new Map([...svg.querySelectorAll('[data-play-index]')].map(node=>[Number(node.getAttribute('data-play-index')),node]));
 }
 
 // Engraving is handled by OpenSheetMusicDisplay (BSD-3-Clause). The local
 // pitch-and-timing view remains available without a network connection.
 let osmdLoadPromise=null,engravedSerial=0;
+let pianoNoteNodes=new Map(),engravedCursors=[],pianoTrackingFrame=0,pianoTrackingToken=0;
+function resetPianoTracking(){
+ pianoTrackingToken++;
+ if(pianoTrackingFrame){cancelAnimationFrame(pianoTrackingFrame);pianoTrackingFrame=0;}
+ for(const node of pianoNoteNodes.values())node.classList.remove('is-playing');
+ for(const slot of engravedCursors){
+  try{slot.cursor.hide();}catch(e){}
+  slot.visible=false;slot.ready=false;slot.position=-1;slot.lastTarget=0;
+ }
+ const status=document.getElementById('pianoNowPlaying');
+ if(status)status.textContent='Press Play to follow the notes.';
+}
+function osmdTimestampTicks(cursor){
+ const f=cursor?.iterator?.currentTimeStamp||cursor?.iterator?.CurrentTimeStamp||cursor?.Iterator?.currentTimeStamp;
+ if(!f)return NaN;
+ const val=typeof f.RealValue==='number'?f.RealValue:typeof f.realValue==='number'?f.realValue:typeof f.Numerator==='number'&&typeof f.Denominator==='number'?f.Numerator/f.Denominator:NaN;
+ return Number.isFinite(val)?Math.round(val*4*960):NaN;
+}
+function followPianoElement(node,pane){
+ if(!document.getElementById('followNotes')?.checked||!pane||pane.hidden||!node)return;
+ const area=pane.getBoundingClientRect(),item=node.getBoundingClientRect();
+ if(!area.height||!item.height)return;
+ const dy=item.top<area.top+45||item.bottom>area.bottom-45?item.top-area.top-area.height*.38:0;
+ const dx=item.left<area.left+25||item.right>area.right-25?item.left-area.left-area.width*.37:0;
+ if(Math.abs(dy)>5||Math.abs(dx)>5){
+  const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  pane.scrollBy({top:dy,left:dx,behavior:reduce?'instant':'smooth'});
+ }
+}
+function moveEngravedPlaybackCursor(globalTick){
+ const pane=document.getElementById('engravedScore');
+ for(const slot of engravedCursors){
+  if(slot.failed)continue;
+  const cursor=slot.cursor;
+  if(globalTick<slot.start||globalTick>=slot.end){
+   if(slot.visible){try{cursor.hide()}catch(e){}slot.visible=false;}
+   continue;
+  }
+  const target=globalTick-slot.start;
+  try{
+   if(!slot.ready||target<slot.lastTarget-3){cursor.reset();slot.ready=true;slot.position=-1;}
+   slot.lastTarget=target;
+   let now=osmdTimestampTicks(cursor),steps=0;
+   while(Number.isFinite(now)&&now<target-2&&steps<220&&!cursor.iterator?.endReached){
+    cursor.next();
+    const next=osmdTimestampTicks(cursor);
+    if(Number.isFinite(next)&&next>target+2){cursor.previous();break;}
+    if(!Number.isFinite(next)||next===now&&cursor.iterator?.endReached)break;
+    now=next;steps++;
+   }
+   const pos=osmdTimestampTicks(cursor);
+   if(!slot.visible||slot.position!==pos){
+    cursor.show();slot.visible=true;slot.position=pos;
+    if(pane&&!pane.hidden)followPianoElement(cursor.cursorElement||slot.section,pane);
+   }
+  }catch(e){slot.failed=true;try{cursor.hide()}catch(_){}}
+ }
+}
+function startPianoTracking(audioStart,secondsPerTick){
+ resetPianoTracking();
+ const token=pianoTrackingToken,events=[];
+ piano.notes.forEach((note,i)=>{
+  events.push({tick:note.start,index:i,on:true});
+  events.push({tick:note.start+Math.max(note.duration*.98,.08/secondsPerTick),index:i,on:false});
+ });
+ events.sort((a,b)=>a.tick-b.tick||(a.on===b.on?0:a.on?1:-1));
+ let at=0,lastScroll=0,initial=true;
+ const active=new Set();
+ const frame=()=>{
+  if(token!==pianoTrackingToken||!playing||!piano||!context)return;
+  const tick=(context.currentTime-audioStart)/secondsPerTick;
+  if(tick>=0){
+   let newest=-1;
+   while(at<events.length&&events[at].tick<=tick+.25){
+    const event=events[at++],node=pianoNoteNodes.get(event.index);
+    if(event.on){active.add(event.index);newest=event.index;node?.classList.add('is-playing');}
+    else{active.delete(event.index);node?.classList.remove('is-playing');}
+   }
+   if(newest>=0){
+    const note=piano.notes[newest],status=document.getElementById('pianoNowPlaying');
+    if(status)status.textContent='Bar '+(note.measure+1)+' · '+active.size+(active.size===1?' note':' notes')+' sounding';
+    if(performance.now()-lastScroll>350){
+     const pane=document.querySelector('.pianoScoreScroll');
+     if(pane&&!pane.hidden)followPianoElement(pianoNoteNodes.get(newest),pane);
+     lastScroll=performance.now();
+    }
+   }
+   if(initial||newest>=0){moveEngravedPlaybackCursor(tick);initial=false;}
+  }
+  if(tick<piano.total+1)pianoTrackingFrame=requestAnimationFrame(frame);
+ };
+ pianoTrackingFrame=requestAnimationFrame(frame);
+}
+
 function ensureOSMD(){
  if(window.opensheetmusicdisplay?.OpenSheetMusicDisplay)return Promise.resolve();
  if(osmdLoadPromise)return osmdLoadPromise;
@@ -989,19 +1100,25 @@ function ensureOSMD(){
 }
 async function renderEngravedPages(pages){
  const serial=++engravedSerial,area=$('engravedScore'),toggle=$('notationViewToggle'),status=$('notationStatus');
+ engravedCursors=[];
  area.replaceChildren();area.hidden=true;toggle.hidden=true;
  document.querySelector('.pianoScoreScroll').hidden=false;
  if(!pages.length){status.textContent='Showing a simplified pitch-and-timing preview.';return}
  status.textContent='Loading professional notation display…';
  try{
   await ensureOSMD();if(serial!==engravedSerial)return;
+  let pageTickOffset=0;
   for(let i=0;i<pages.length;i++){
    const section=document.createElement('div');section.className='omrRenderedPage';
    const heading=document.createElement('h4');heading.textContent='Page '+(i+1);section.append(heading);
    const host=document.createElement('div');section.append(host);area.append(section);
-   const obj=new window.opensheetmusicdisplay.OpenSheetMusicDisplay(host,{autoResize:false,backend:'svg',drawTitle:i===0,drawComposer:i===0});
+   const obj=new window.opensheetmusicdisplay.OpenSheetMusicDisplay(host,{autoResize:false,backend:'svg',drawTitle:i===0,drawComposer:i===0,cursorsOptions:[{type:0,color:'#f59e0b',alpha:.43,follow:false}]});
    await obj.load(pages[i]);if(serial!==engravedSerial)return;
    obj.render();
+   const pageTicks=parseMusicXML(pages[i]).total;
+   const cursor=obj.cursor||obj.cursors?.[0];
+   if(cursor){try{cursor.reset();cursor.hide();engravedCursors.push({cursor,start:pageTickOffset,end:pageTickOffset+pageTicks,section,ready:false,visible:false,position:-1,lastTarget:0});}catch(e){}}
+   pageTickOffset+=pageTicks;
   }
   if(serial!==engravedSerial)return;
   area.hidden=false;document.querySelector('.pianoScoreScroll').hidden=true;
@@ -1020,6 +1137,7 @@ async function renderEngravedPages(pages){
 
 function showPianoScore(parsed, origin, sourcePages=[]){
  if(playing)stopPlayback();
+ resetPianoTracking();
  piano=parsed;document.body.classList.add('piano-active');$('pianoPanel').hidden=false;
  $('pianoTitle').textContent=parsed.title;
  $('pianoSubtitle').textContent=parsed.parts+' instrument part(s) · '+parsed.lanes.length+' staff/track(s) · '+parsed.signature+' time';
@@ -1176,6 +1294,7 @@ async function playPiano(){
   // The left and right hands, chords, and overlapping voices play concurrently.
   tone(e.midi,start+offset,dur,piano.notes.length>100?.53:.68);
  }
+ startPianoTracking(start,secondsPerTick);
  stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+piano.total*secondsPerTick-context.currentTime)*1000+300);
  updateStatus('Playing '+piano.parts+' part(s) at '+bpm+' BPM; piano chords and both hands are synchronised.');
 }
