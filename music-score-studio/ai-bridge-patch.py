@@ -14,6 +14,8 @@ code=SRC.read_text(encoding="utf-8")
 
 def once(before,after,name):
     global code
+    before=before.replace(chr(92)+"`","`").replace(chr(92)+"${","${")
+    after=after.replace(chr(92)+"`","`").replace(chr(92)+"${","${")
     if code.count(before)!=1:
         raise SystemExit("Patch anchor mismatch: "+name+" ("+str(code.count(before))+")")
     code=code.replace(before,after,1)
