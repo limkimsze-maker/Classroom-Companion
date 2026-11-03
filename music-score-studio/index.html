@@ -25,7 +25,16 @@
 .scanStatus{font-size:13px;line-height:1.45;padding:10px 12px;border-radius:10px;background:#e6f5f5;color:#255967;margin:11px 0}
 .scanStatus.error{background:#fff2f1;color:#96353b}
 .scanWarning{font-size:12px;color:#617784;margin-top:10px}
-.scanNotes{font-size:12px;line-height:1.7;background:#fff;border:1px solid #e0e8e9;padding:9px;border-radius:8px;overflow-wrap:anywhere;max-height:115px;overflow:auto}
+.scanNotes{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;line-height:1.7;background:#fff;border:1px solid #e0e8e9;padding:9px;border-radius:8px;overflow-wrap:anywhere;max-height:115px;overflow:auto}
+.scanNoteChip{background:#fff;border:1px solid #cedfe4;border-radius:7px;padding:6px 8px;color:#234e60;font-size:12px;font-weight:650;min-height:32px}
+.scanNoteChip.active{background:#087b86;color:white;border-color:#087b86}
+.scanNoteChip.low{border-style:dashed;border-color:#bf8531}
+.scanEditor{margin-top:9px;border:1px solid #badde0;background:#f0f9f9;padding:11px;border-radius:10px}
+.scanEditorGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.scanEditor .scanEditTitle{margin:0 0 8px;font-weight:750;font-size:13px}
+.scanEditor .field{margin-bottom:3px}
+.scanEditor .check{margin-top:9px}
+.scanEditor .scanActions{margin-bottom:0}
 .scanSettings .field{margin-bottom:10px}
 .scanLabel{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:#526d7c;font-weight:650}
 .scanSettings input[type=range]{width:100%;accent-color:var(--teal)}
@@ -87,15 +96,27 @@
       <section><div class="lab">Original picture · detected notes will be circled</div><div class="scanImage" id="scanImage"><div class="empty" id="scanEmpty">Photograph a clear, straight-on <strong>single-staff printed melody</strong>, or choose an existing JPG/PNG.</div><canvas id="scanCanvas" style="display:none" aria-label="Preview of captured music score"></canvas></div><p class="scanWarning">Photos are processed on this device only. They are not uploaded or saved. The photo itself is not retained with your project.</p></section>
       <section class="scanSettings"><div class="lab">Check these before scanning</div>
         <div class="formGrid"><div class="field"><label for="scanClef">Clef on the paper</label><select id="scanClef"><option value="treble">Treble 𝄞</option><option value="bass">Bass 𝄢</option></select></div>
-        <div class="field"><label for="scanMeter">Time signature</label><select id="scanMeter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></div></div>
+        <div class="field"><label for="scanMeter">Time signature</label><select id="scanMeter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></div>
+        <div class="field"><label for="scanKey">Key signature on paper</label><select id="scanKey"><option value="0">No sharps / flats (C major)</option><option value="-1">1 flat (B♭) · F major</option><option value="1">1 sharp (F♯) · G major</option><option value="-2">2 flats (B♭, E♭)</option><option value="2">2 sharps (F♯, C♯)</option></select></div></div>
         <div class="scanActions"><button class="smallBtn" id="scanRotateLeft" type="button" disabled>↶ Rotate 90°</button><button class="smallBtn" id="scanRotateRight" type="button" disabled>↷ Rotate 90°</button></div>
         <div class="scanLabel"><label for="scanTilt">Straighten image</label><output id="scanTiltValue" for="scanTilt">0°</output></div>
         <input id="scanTilt" type="range" min="-6" max="6" step="0.5" value="0" disabled>
         <button class="btn primary" id="scanRead" style="margin-top:11px;width:100%" type="button" disabled>⌕ Read printed notes</button>
         <div class="scanStatus" id="scanStatus" role="status" aria-live="polite">Choose a picture to begin.</div>
-        <div id="scanResult" class="scanResult" hidden><div class="lab">Detected music · check against the photo</div><div id="scanNotes" class="scanNotes"></div>
+        <div id="scanResult" class="scanResult" hidden><div class="lab">Detected music · tap a note to check or correct it</div><div id="scanNotes" class="scanNotes"></div>
+           <div id="scanEditor" class="scanEditor" hidden>
+             <p class="scanEditTitle" id="scanEditTitle">Edit detected note</p>
+             <div class="scanEditorGrid">
+               <div class="field"><label for="scanEditPitch">Note</label><select id="scanEditPitch"><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>A</option><option>B</option></select></div>
+               <div class="field"><label for="scanEditOctave">Octave</label><select id="scanEditOctave"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
+               <div class="field"><label for="scanEditDuration">Duration</label><select id="scanEditDuration"><option value="1">Whole · 4 beats</option><option value="2">Half · 2 beats</option><option value="4">Quarter · 1 beat</option><option value="8">Eighth · ½ beat</option><option value="16">Sixteenth · ¼ beat</option></select></div>
+               <div class="field"><label for="scanEditAcc">Accidental</label><select id="scanEditAcc"><option value="">Follow key signature</option><option value="#">Sharp ♯</option><option value="b">Flat ♭</option><option value="n">Natural ♮</option></select></div>
+             </div>
+             <label class="check"><input type="checkbox" id="scanEditDot"> Dotted note (adds half its duration)</label>
+             <div class="scanActions"><button class="smallBtn" id="scanAddNote" type="button">＋ Add missing note after</button><button class="smallBtn" id="scanRemoveNote" type="button">× Remove false detection</button></div>
+           </div>
            <div class="scanActions"><button class="btn primary" type="button" id="scanImportPlay">♫ Reproduce &amp; play</button><button class="btn" type="button" id="scanImport">Edit score first</button></div>
-           <div class="scanWarning"><strong>Important:</strong> this lightweight reader can make mistakes, especially with eighth notes, dotted notes, rests, accidentals, key signatures and multiple voices. Correct notes before using them for teaching.</div>
+           <div class="scanWarning"><strong>Important:</strong> you can edit pitches, lengths and accidentals or remove a false note above. This experimental scanner cannot reliably recognise handwritten music, chords, rests or complex rhythms. Always compare with the original score before teaching.</div>
         </div>
       </section>
     </div>
@@ -105,7 +126,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 /* Music Score Studio: privacy-first, introductory optical music recognition.
-   Supports clear printed single-staff melodies; not an AI or full OMR engine. */
+   Supports clear printed single-staff melodies, barlines, beams, dots and key signatures; teacher review is essential. */
 (()=>{'use strict';
 const STEPS=['C','D','E','F','G','A','B'];
 function estimateTilt(canvas){
@@ -139,7 +160,41 @@ function estimateTilt(canvas){
   if(!candidates[0]||candidates[0].score<1000)return 0;
   return Math.round(-candidates[0].degrees*2)/2;
 }
-function scan(canvas,{clef='treble',meter='4/4'}={}){
+  function buildBars(notes,{meter='4/4',fifths=0,staves=[],barlines=[]}={}){
+    const [n,d]=meter.split('/').map(Number),capacity=n*96/d;
+    const flatOrder=['B','E','A','D','G','C','F'],sharpOrder=['F','C','G','D','A','E','B'];
+    const keyNotes=fifths<0?flatOrder.slice(0,-fifths):sharpOrder.slice(0,fifths);
+    const order=notes.filter(x=>!x.removed).slice().sort((a,b)=>a.staff-b.staff||a.x-b.x);
+    const raw=[];let current=[];let lastGroup=null;
+    for(const note of order){
+      const group=(barlines[note.staff]||[]).filter(x=>x<note.x-staves[note.staff].space*.45).length;
+      const key=note.staff+':'+group;
+      if(lastGroup!==null&&lastGroup!==key){raw.push(current);current=[]}
+      current.push(note);lastGroup=key;
+    }
+    if(current.length)raw.push(current);
+    let bars=[],skipped=0,adjusted=0;
+    for(const group of raw){let events=[],used=0;
+      for(const note of group){
+        let den=[1,2,4,8,16].includes(note.den)?note.den:4,dotted=!!note.dot;
+        let duration=96/den*(dotted?1.5:1);
+        // Keep every detected pitch: an impossible duration is shortened, not
+        // silently discarded. Teachers should verify the value before playback.
+        if(duration>capacity){den=capacity>=48?2:4;dotted=capacity>=72;duration=96/den*(dotted?1.5:1);adjusted++}
+        if(used+duration>capacity+.01){if(events.length)bars.push(events);events=[];used=0}
+        let acc=note.acc||'';
+        // Explicit accidentals override the selected signature.
+        if(!acc&&keyNotes.includes(note.step))acc=fifths<0?'b':'#';
+        events.push({kind:'note',step:note.step,octave:note.octave,den,dot:dotted,acc});used+=duration;
+        if(bars.length>=40)break;
+      }
+      if(events.length)bars.push(events);
+      if(bars.length>=40)break;
+    }
+    return {bars:bars.length?bars:[[]],skipped,adjusted};
+  }
+
+function scan(canvas,{clef='treble',meter='4/4',fifths=0}={}){
   if(!canvas || !canvas.width || !canvas.height)throw Error('Please open a photograph first.');
   let w=canvas.width,h=canvas.height;
   const img=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data;
@@ -211,7 +266,28 @@ function scan(canvas,{clef='treble',meter='4/4'}={}){
     }
     return {fill:black/Math.max(1,total),edge:edgeBlack/Math.max(1,edge),core:coreBlack/Math.max(1,core)};
   }
-  const all=[];
+  function measureBarlines(staff,left,right,firstStaff){
+    const top=Math.round(staff.lines[0]),bot=Math.round(staff.lines[4]),gap=staff.space;
+    const y0=Math.round(top+gap*.26),y1=Math.round(bot-gap*.26),found=[];
+    for(let x=Math.max(2,Math.round(left+gap*(firstStaff?10.2:6.5)));x<Math.min(w-2,right);x++){
+      let black=0;for(let y=y0;y<=y1;y++)black+=binary[y*w+x];
+      // A barline crosses almost the entire staff. Note stems normally do not.
+      if(black/(y1-y0+1)<=.91)continue;
+      let heavy=0;
+      for(let y=y0;y<=y1;y++){
+        if(staff.lines.some(ly=>Math.abs(ly-y)<=1))continue;
+        let width=1;
+        for(let xx=x-1;xx>=x-Math.ceil(gap*.95)&&xx>=0&&binary[y*w+xx];xx--)width++;
+        for(let xx=x+1;xx<=x+Math.ceil(gap*.95)&&xx<w&&binary[y*w+xx];xx++)width++;
+        if(width>gap*.70)heavy++;
+      }
+      if(heavy<=Math.max(2,gap*.24))found.push(x);
+    }
+    const grouped=[];
+    for(const x of found){const last=grouped.at(-1);if(last&&x-last.at(-1)<=Math.max(2,gap*.22))last.push(x);else grouped.push([x]);}
+    return grouped.filter(a=>a.length<=Math.max(5,gap*.6)).map(a=>Math.round(a.reduce((x,y)=>x+y,0)/a.length));
+  }
+  const all=[],barlinesByStaff=[];
   for(let si=0;si<staves.length;si++){
     const staff=staves[si],gap=staff.space,top=staff.lines[0],bottom=staff.lines[4];
     // Estimate each staff's ink extent to avoid the clef and time signature.
@@ -221,8 +297,10 @@ function scan(canvas,{clef='treble',meter='4/4'}={}){
       if(hits>=3){left=Math.min(left,x);right=Math.max(right,x)}
     }
     if(right<=left){left=x0;right=x1}
-    const xmin=Math.max(1,Math.round(left+Math.max(gap*4.4,(right-left)*.08)));
-    const xmax=Math.min(w-2,Math.floor(right-gap*2.8));
+    const xmin=Math.max(1,Math.round(left+Math.max(gap*(si===0?10.2:6.5),(right-left)*.07)));
+    // Do not crop the right end: beams and final notes often sit beside the last barline.
+    const xmax=Math.min(w-2,Math.floor(right-gap*.15));
+    const barlines=measureBarlines(staff,left,right,si===0);barlinesByStaff[si]=barlines;
     const ymin=Math.max(0,Math.floor(top-gap*4.2)),ymax=Math.min(h-1,Math.ceil(bottom+gap*4.2));
     const stems=[];
     for(let x=xmin;x<=xmax;x++){
@@ -231,7 +309,7 @@ function scan(canvas,{clef='treble',meter='4/4'}={}){
         if(y<=ymax&&binary[y*w+x]){if(!len)first=y;len++}
         else{if(len>=gap*2.05&&len<=gap*6.2)runs.push({x,top:first,bottom:y-1,len});len=0}
       }
-      // Keep strong vertical runs. Adjacent x pixels of the same stem are merged below.
+      // Ignore vertical barlines before attempting to locate attached noteheads.
       for(const run of runs)stems.push(run);
     }
     const stemClusters=[];
@@ -254,8 +332,10 @@ function scan(canvas,{clef='treble',meter='4/4'}={}){
           const yy=pitchRow(half);
           if(Math.abs(yy-endpoint)>gap*.95)continue;
           const s=headScore(ex,yy,gap);
-          const filled=s.fill>.41&&s.core>.46;
-          const hollow=s.fill>.155&&s.fill<.52&&s.edge>.18&&s.core<.5;
+          const filled=s.fill>.40&&s.core>.45;
+          // Reject fragments of clefs, letters, barlines and rest signs that look
+          // hollow but have no continuous oval ring around an empty interior.
+          const hollow=s.fill>.24&&s.fill<.53&&s.edge>.39&&s.core<.35;
           if(!filled&&!hollow)continue;
           const score=(filled?s.fill+.22:s.edge*.75+.11)-Math.abs(yy-endpoint)/gap*.22;
           if(!best||score>best.score)best={x:ex,y:yy,half,den:filled?4:2,score,confidence:Math.min(1,score),stem,orient,staff:si};
@@ -266,7 +346,7 @@ function scan(canvas,{clef='treble',meter='4/4'}={}){
     candidates.sort((a,b)=>b.score-a.score);
     let accepted=[];
     for(const c of candidates){
-      if(accepted.some(a=>Math.abs(a.x-c.x)<gap*.76&&Math.abs(a.y-c.y)<gap*.75))continue;
+      if(accepted.some(a=>Math.abs(a.x-c.x)<gap*.87))continue;
       accepted.push(c);
     }
     // Whole-note heads have no stem. Require a nearly hollow oval and no nearby stem.
@@ -274,9 +354,9 @@ function scan(canvas,{clef='treble',meter='4/4'}={}){
       const yy=pitchRow(half);let lastX=-100;
       for(let x=xmin;x<xmax;x+=2){
         const s=headScore(x,yy,gap);
-        if(s.edge<.36||s.core>.22||s.fill<.17||s.fill>.50)continue;
+        if(s.edge<.51||s.core>.20||s.fill<.25||s.fill>.48)continue;
         if(x-lastX<gap*.9)continue;
-        if(accepted.some(a=>Math.abs(a.x-x)<gap*1.05))continue;
+        if(accepted.some(a=>Math.abs(a.x-x)<gap*1.05)||barlines.some(bx=>Math.abs(bx-x)<gap*.8))continue;
         if(stemClusters.some(cluster=>Math.abs(cluster[0].x-x)<gap*1.15&&cluster.some(s=>s.top<yy+gap&&s.bottom>yy-gap)))continue;
         let ringLeft=0,ringRight=0;
         for(let dy=-gap*.25;dy<=gap*.25;dy+=1){ringLeft+=ink(x-gap*.52,yy+dy);ringRight+=ink(x+gap*.52,yy+dy)}
@@ -285,38 +365,59 @@ function scan(canvas,{clef='treble',meter='4/4'}={}){
       }
     }
     accepted.sort((a,b)=>a.x-b.x);
-    // Infer beamed eighth notes only where a horizontal black beam connects stem tips.
-    for(const c of accepted){
-      if(c.den!==4||!c.stem)continue;
-      const sy=c.orient==='up'?c.stem.top:c.stem.bottom;
-      let hits=0,probes=0;
-      for(let dx=gap*.55;dx<gap*1.65;dx+=2){
-        probes++;let yes=0;for(let dy=-2;dy<=2;dy++)yes=Math.max(yes,cleaned[Math.max(0,Math.min(h-1,Math.round(sy+dy)))*w+Math.max(0,Math.min(w-1,Math.round(c.stem.x+dx)))])
-        hits+=yes;
+    // A dark long stem is not a barline when it carries a credible notehead.
+    barlinesByStaff[si]=barlines.filter(x=>!accepted.some(n=>n.stem&&n.score>.49&&Math.abs(n.stem.x-x)<gap*.40));
+    // Identify beams in either direction, including the right-hand note of a pair.
+    // A beam is a near-continuous dark bridge along the two stem tips.
+    function bridge(a,b,offset=0){
+      const ax=a.stem.x,bx=b.stem.x,ya=(a.orient==='up'?a.stem.top:a.stem.bottom)+offset,
+        yb=(b.orient==='up'?b.stem.top:b.stem.bottom)+offset;
+      let yes=0,total=0;
+      for(let x=Math.min(ax,bx)+Math.max(2,gap*.25);x<Math.max(ax,bx)-Math.max(2,gap*.25);x+=2){
+        const t=(x-ax)/(bx-ax),y=ya+(yb-ya)*t;let hit=0;
+        for(let dy=-Math.max(1,Math.round(gap*.12));dy<=Math.max(1,Math.round(gap*.12));dy++)hit=Math.max(hit,ink(x,y+dy));
+        yes+=hit;total++;
       }
-      const partner=accepted.some(other=>other!==c&&other.stem&&other.orient===c.orient&&other.x>c.x+gap*.8&&other.x<c.x+gap*7&&Math.abs((other.orient==='up'?other.stem.top:other.stem.bottom)-sy)<gap*.5);
-      if(partner&&probes&&hits/probes>.72)c.den=8;
+      return total>=3?yes/total:0;
+    }
+    for(let i=0;i<accepted.length-1;i++){
+      const a=accepted[i],b=accepted[i+1];
+      if(!a.stem||!b.stem||a.den!==4||b.den!==4||a.orient!==b.orient||b.x-a.x>gap*10||b.x-a.x<gap*.85)continue;
+      const ay=a.orient==='up'?a.stem.top:a.stem.bottom,by=b.orient==='up'?b.stem.top:b.stem.bottom;
+      if(Math.abs(ay-by)>gap*.8)continue;
+      if(bridge(a,b)>.72){a.den=8;b.den=8;
+        // Two parallel full beams mean sixteenth notes.
+        if(Math.max(bridge(a,b,a.orient==='up'?gap*.85:-gap*.85),bridge(a,b,a.orient==='up'?-gap*.85:gap*.85))>.93){a.den=16;b.den=16;}
+      }
+    }
+    // Dots are tiny, detached ink islands just to the right of a notehead.
+    for(let i=0;i<accepted.length;i++){
+      const a=accepted[i];if(a.den===1)continue;
+      const next=accepted[i+1],maxX=Math.min(xmax,a.x+gap*1.9,next?next.x-gap*.7:Infinity);
+      for(let x=Math.round(a.x+gap*.91);x<=maxX;x++){
+        for(let y=Math.round(a.y-gap*.35);y<=a.y+gap*.35;y++){
+          if(!ink(x,y)||ink(x-1,y)||ink(x,y-1))continue;
+          let dark=0;for(let oy=0;oy<3;oy++)for(let ox=0;ox<3;ox++)dark+=ink(x+ox,y+oy);
+          if(dark>=3&&dark<=8){a.dot=true;break}
+        }
+        if(a.dot)break;
+      }
     }
     for(const c of accepted){
       const idx=bottomIndex+c.half,octave=Math.floor(idx/7),step=STEPS[((idx%7)+7)%7];
       if(octave<1||octave>6)continue;
-      all.push({...c,step,octave,staff:si});
+      all.push({...c,step,octave,staff:si,acc:'',dot:!!c.dot});
     }
   }
   if(!all.length)throw Error('I found the staff lines, but could not confidently detect notes. Use a sharper, straight-on image; this first version recognises simple printed melodies only.');
   all.sort((a,b)=>a.staff-b.staff||a.x-b.x);
-  // Note: rests/accidentals/chords aren't reliably detectable by this lightweight reader.
-  const [n,d]=meter.split('/').map(Number),capacity=n*96/d;
-  let bars=[[]],total=0,skipped=0;
-  for(const note of all){const duration=96/note.den;
-    if(duration>capacity){skipped++;continue}
-    if(total+duration>capacity+.01){bars.push([]);total=0}
-    bars[bars.length-1].push({kind:'note',step:note.step,octave:note.octave,den:note.den,dot:false,acc:''});total+=duration;
-    if(bars.length>40){skipped++;break}
-  }
-  return {bars,notes:all,staves,detected:all.length,skipped,warning:'Experimental: review pitches, rhythm, rests, accidentals and key signature before teaching. Complex or handwritten scores are not supported.'};
+  // Treat visible barlines as primary measure boundaries. Reflow only if a
+  // measure is overfull, so a pickup can retain its short true duration.
+  const packed=buildBars(all,{meter,fifths,staves,barlines:barlinesByStaff});
+  return {bars:packed.bars,notes:all,staves,barlines:barlinesByStaff,detected:all.length,skipped:packed.skipped,adjusted:packed.adjusted,
+    warning:'Experimental: check key signature, rests, rhythms and all highlighted notes before teaching.'};
 }
-window.CCPhotoOMR={scan,estimateTilt};
+window.CCPhotoOMR={scan,estimateTilt,buildBars};
 })();
 
 </script>
@@ -324,7 +425,7 @@ window.CCPhotoOMR={scan,estimateTilt};
 (()=>{'use strict';
 const NS='http://www.w3.org/2000/svg', LS='cc-music-score-studio-v1';
 const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16]; const STEPS=['C','D','E','F','G','A','B']; const TICKS=96;
-const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,pitchNames:false,metronome:false,bars:Array.from({length:4},()=>[]),strokes:[]});
+const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
 let data=blank(),tool='note',den=4,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let context=null,oscillators=[],playTimers=[],toastTimer=0,stopTimer=null,playing=false;
 const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
@@ -432,7 +533,7 @@ async function play(){if(playing){stopPlayback();return}if(!data.bars.some(b=>b.
 playing=true;$('play').textContent='❚❚ Playing';$('stop').disabled=false;const quarterSec=60/data.tempo;let cursor=0;const begin=context.currentTime+.12;const barLen=cap()/24*quarterSec;
 for(let b=0;b<data.bars.length;b++){let tickPos=0;for(let i=0;i<data.bars[b].length;i++){const e=data.bars[b][i],sec=ticks(e)/24*quarterSec;if(e.kind==='note')tone(midiFor(b,i),begin+cursor,Math.max(.08,sec*.90));const id=e.id;const timer=setTimeout(()=>{if(!playing)return;playingId=id;render()},Math.max(0,(begin+cursor-context.currentTime)*1000));playTimers.push(timer);cursor+=sec;tickPos+=ticks(e)}
 if(data.metronome){const beatTicks=data.meter==='6/8'?36:24;for(let tick=0;tick<cap();tick+=beatTicks){const t=begin+(cursor-tickPos/24*quarterSec)+tick/24*quarterSec;clickSound(t,tick===0)}}
-cursor+=(cap()-tickPos)/24*quarterSec;}
+if(!data.playFlow)cursor+=(cap()-tickPos)/24*quarterSec;}
 stopTimer=setTimeout(()=>{stopPlayback();updateStatus('Playback finished.')},(begin+cursor-context.currentTime)*1000+150);updateStatus('Playing your melody…')}
 function filename(ext){return (data.title||'music-score').replace(/[^a-z0-9 _-]/gi,'').trim().replace(/\s+/g,'-').slice(0,55)||'music-score'}
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
@@ -444,13 +545,13 @@ function exportMusicXML(){const [beats,beatType]=data.meter.split('/');let xml=`
 for(let b=0;b<data.bars.length;b++){xml+=`\n<measure implicit="no" number="${b+1}">`;if(b===0){xml+=`<attributes><divisions>24</divisions><key><fifths>0</fifths></key><time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time><clef><sign>${data.clef==='treble'?'G':'F'}</sign><line>${data.clef==='treble'?2:4}</line></clef></attributes><direction placement="above"><direction-type><metronome parentheses="no"><beat-unit>quarter</beat-unit><per-minute>${data.tempo}</per-minute></metronome></direction-type><sound tempo="${data.tempo}" /></direction>`}
 for(let i=0;i<data.bars[b].length;i++){const e=data.bars[b][i];xml+='<note>';if(e.kind==='rest'){xml+='<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave}</octave></pitch>`}xml+=`<duration>${ticks(e)}</duration><type>${({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[e.den]}</type>`;if(e.dot)xml+='<dot />';if(e.kind==='note'&&e.acc)xml+=`<accidental>${e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural'}</accidental>`;xml+='</note>'}xml+='</measure>'}
 xml+='\n</part>\n</score-partwise>';download(new Blob([xml],{type:'application/vnd.recordare.musicxml+xml'}),filename()+'.musicxml');flash('MusicXML saved')}
-function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]])})):[];return result}
+function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]])})):[];return result}
 function loadProject(raw,record=true){const v=validateProject(raw);if(record)change();data=v;selected=null;syncConfig();commit()}
 function twinkle(){const q=(step,octave,den=4)=>({id:makeId(),kind:'note',step,octave,den,dot:false,acc:''});return {title:'Twinkle, Twinkle, Little Star',composer:'Traditional · Classroom example',clef:'treble',meter:'4/4',tempo:100,pitchNames:true,metronome:false,bars:[ [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)] ],strokes:[]}}
 function setBarsCount(add){if(add){if(data.bars.length>=40){flash('Maximum 40 bars in this classroom version.');return}change();data.bars.push([]);commit();updateStatus('A new blank bar has been added.')}else if(data.bars.length>1&&data.bars.at(-1).length===0){change();data.bars.pop();selected=null;commit()}else flash('You can remove only the final empty bar.')}
 
 // ----- Photo-based music recognition UI. All recognition stays inside this browser tab. -----
-let scanSource=null,scanOrientation=0,scanResultData=null,scanRenderTimer=null;
+let scanSource=null,scanOrientation=0,scanResultData=null,scanRenderTimer=null,scanSelected=null,scanNextId=0;
 function setScanMessage(message,error=false){const el=$('scanStatus');el.textContent=message;el.classList.toggle('error',!!error)}
 function showScan(open){if(!open){$('scanModal').classList.remove('open');$('scanModal').setAttribute('aria-hidden','true');return}
  $('scanClef').value=data.clef;$('scanMeter').value=data.meter;
@@ -463,11 +564,11 @@ async function loadScanPicture(file){
  try{img.src=url;await img.decode();if(!img.naturalWidth||!img.naturalHeight)throw Error('The image could not be decoded. Try JPG or PNG.');
   scanSource=img;scanOrientation=0;$('scanTilt').value='0';$('scanTiltValue').value='0°';
   for(const id of ['scanRotateLeft','scanRotateRight','scanTilt','scanRead'])$(id).disabled=false;
-  scanResultData=null;$('scanResult').hidden=true;
+  scanResultData=null;scanSelected=null;$('scanResult').hidden=true;
   drawScanPicture();
   const tilt=window.CCPhotoOMR.estimateTilt($('scanCanvas'));
   if(Math.abs(tilt)>=.45 && Math.abs(tilt)<=6){$('scanTilt').value=String(tilt);$('scanTiltValue').value=tilt+'°';drawScanPicture()}
-  setScanMessage('Picture ready'+(Math.abs(tilt)>=.45?' · straightened by '+tilt+'°':'')+'. Check the clef and time signature, then read the notes.');
+  setScanMessage('Picture ready'+(Math.abs(tilt)>=.45?' · straightened by '+tilt+'°':'')+'. Check the clef, time signature and key signature, then read the notes.');
  }catch(err){setScanMessage('Could not open picture: '+err.message,true)}finally{URL.revokeObjectURL(url)}
 }
 function drawScanPicture(){
@@ -480,23 +581,44 @@ function drawScanPicture(){
  ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.translate(c.width/2,c.height/2);ctx.rotate(angle);ctx.drawImage(scanSource,-w/2,-h/2,w,h);ctx.setTransform(1,0,0,1,0,0);
  c.style.display='block';$('scanEmpty').style.display='none';
  if(scanResultData){
-   for(const n of scanResultData.notes){ctx.beginPath();ctx.ellipse(n.x,n.y,Math.max(11,scanResultData.staves[n.staff].space*.8),Math.max(11,scanResultData.staves[n.staff].space*.78),0,0,Math.PI*2);ctx.strokeStyle='#d14344';ctx.lineWidth=3;ctx.stroke()}
+   for(const n of scanResultData.notes){if(n.removed)continue;ctx.beginPath();ctx.ellipse(n.x,n.y,Math.max(8,scanResultData.staves[n.staff].space*.9),Math.max(8,scanResultData.staves[n.staff].space*.85),0,0,Math.PI*2);ctx.strokeStyle=n.sid===scanSelected?'#087b86':n.manual?'#3558db':n.score<.55?'#d58c1e':'#d14344';ctx.lineWidth=n.sid===scanSelected?4:2.5;ctx.stroke()}
  }
 }
-function resetScanResult(){scanResultData=null;$('scanResult').hidden=true;if(scanSource)drawScanPicture()}
+function resetScanResult(){scanResultData=null;scanSelected=null;$('scanResult').hidden=true;if(scanSource)drawScanPicture()}
+function noteInScan(){return scanResultData?.notes.find(n=>n.sid===scanSelected&&!n.removed)}
+function refreshScanNotes(){
+ if(!scanResultData)return;
+ scanResultData.notes.sort((a,b)=>a.staff-b.staff||a.x-b.x);
+ const notes=scanResultData.notes.filter(n=>!n.removed);if(!noteInScan())scanSelected=notes[0]?.sid??null;const list=$('scanNotes'),oldScroll=list.scrollTop;list.replaceChildren();
+ for(let i=0;i<notes.length;i++){
+  const n=notes[i],chip=document.createElement('button');chip.type='button';chip.className='scanNoteChip'+(scanSelected===n.sid?' active':'')+(n.score<.55&&!n.manual?' low':'');
+  const fifths=Number($('scanKey').value),altered=fifths<0?['B','E','A','D','G','C','F'].slice(0,-fifths):['F','C','G','D','A','E','B'].slice(0,fifths);
+  const sounding=n.acc||(altered.includes(n.step)?fifths<0?'b':'#':'');
+  chip.textContent=`${i+1}. ${n.step}${sounding==='#'?'♯':sounding==='b'?'♭':sounding==='n'?'♮':''}${n.octave} · ${({1:'whole',2:'half',4:'¼',8:'⅛',16:'¹⁄₁₆'})[n.den]}${n.dot?' •':''}`;
+  chip.onclick=()=>{scanSelected=n.sid;refreshScanNotes();drawScanPicture()};list.append(chip);
+ }
+ list.scrollTop=oldScroll;
+ const selected=noteInScan();$('scanEditor').hidden=!selected;
+ if(selected){$('scanEditTitle').textContent='Correct note '+(notes.indexOf(selected)+1)+' of '+notes.length+(selected.score<.55&&!selected.manual?' · lower-confidence detection':'');
+  $('scanEditPitch').value=selected.step;$('scanEditOctave').value=String(selected.octave);
+  $('scanEditDuration').value=String(selected.den);$('scanEditAcc').value=selected.acc||'';$('scanEditDot').checked=!!selected.dot;
+ }
+ const packed=window.CCPhotoOMR.buildBars(scanResultData.notes,{meter:$('scanMeter').value,fifths:Number($('scanKey').value),staves:scanResultData.staves,barlines:scanResultData.barlines});scanResultData.bars=packed.bars;scanResultData.adjusted=packed.adjusted;
+ scanResultData.detected=notes.length;
+ $('scanImport').disabled=!notes.length;$('scanImportPlay').disabled=!notes.length;
+}
+function editScanNote(key,value){const n=noteInScan();if(!n)return;n[key]=value;n.manual=true;refreshScanNotes();drawScanPicture()}
 function readPhoto(){
  if(!scanSource)return;
- const b=$('scanRead');b.disabled=true;setScanMessage('Reading staff lines and noteheads on this device…');
- // Let the loading state paint before doing the image analysis.
+ const b=$('scanRead');b.disabled=true;setScanMessage('Reading staves, barlines and noteheads on this device…');
  setTimeout(()=>{
    try{
      resetScanResult();
-     const parsed=window.CCPhotoOMR.scan($('scanCanvas'),{clef:$('scanClef').value,meter:$('scanMeter').value});
-     scanResultData=parsed;drawScanPicture();
-     const names=parsed.notes.slice(0,64).map(n=>`${n.step}${n.octave} (${({1:'whole',2:'half',4:'quarter',8:'eighth'})[n.den]||'note'})`);
-     $('scanNotes').textContent=names.join(' · ')+(parsed.notes.length>64?' · …':'');
-     $('scanResult').hidden=false;
-     setScanMessage(`${parsed.detected} likely notes found across ${parsed.staves.length} staff system${parsed.staves.length===1?'':'s'}. They'll become ${parsed.bars.length} editable bar${parsed.bars.length===1?'':'s'}. Check the red circles against the photograph before importing.`);
+     const parsed=window.CCPhotoOMR.scan($('scanCanvas'),{clef:$('scanClef').value,meter:$('scanMeter').value,fifths:Number($('scanKey').value)});
+     scanResultData=parsed;scanNextId=0;for(const n of parsed.notes)n.sid='s'+(++scanNextId);
+     scanSelected=parsed.notes[0]?.sid??null;refreshScanNotes();drawScanPicture();$('scanResult').hidden=false;
+     const doubtful=parsed.notes.filter(n=>n.score<.55).length;
+     setScanMessage(`${parsed.detected} possible notes found across ${parsed.staves.length} staff${parsed.staves.length===1?'':'s'}. ${doubtful?doubtful+' need extra checking. ':''}${parsed.adjusted?parsed.adjusted+' overlong note(s) shortened to fit the time signature. ':''}Tap each detected note to correct its pitch and duration, or add a missing note. Then reproduce it.`);
    }catch(err){setScanMessage(err.message||'The score could not be read.',true)}finally{b.disabled=false}
  },45);
 }
@@ -504,7 +626,7 @@ function applyRecognised(playAfter){
  if(!scanResultData)return;
  if(data.bars.some(bar=>bar.length)||data.strokes.length){if(!confirm('Replace your current score with the detected notes? Undo will restore your previous score.'))return}
  const project={...blank(),title:'Scanned melody',composer:'',clef:$('scanClef').value,meter:$('scanMeter').value,
-  tempo:data.tempo,pitchNames:true,bars:scanResultData.bars,strokes:[]};
+  tempo:data.tempo,pitchNames:true,playFlow:true,bars:scanResultData.bars,strokes:[]};
  try{loadProject(project);showScan(false);setMode('select');updateStatus(`${scanResultData.detected} notes imported from the photo. Please check pitches and rhythms against the original before teaching.`);
    flash('Detected notes imported · Review and correct them in the editor.');if(playAfter)play();
  }catch(err){setScanMessage('Could not reproduce this score: '+err.message,true)}
@@ -517,7 +639,20 @@ function wireScanner(){
  $('scanRotateLeft').onclick=()=>{scanOrientation=(scanOrientation-90)%360;resetScanResult()};
  $('scanRotateRight').onclick=()=>{scanOrientation=(scanOrientation+90)%360;resetScanResult()};
  $('scanTilt').oninput=()=>{$('scanTiltValue').value=$('scanTilt').value+'°';clearTimeout(scanRenderTimer);scanRenderTimer=setTimeout(()=>{resetScanResult()},80)};
- for(const id of ['scanClef','scanMeter'])$(id).addEventListener('change',()=>{if(scanResultData)resetScanResult()});
+ $('scanClef').addEventListener('change',()=>{if(scanResultData)resetScanResult()});
+ for(const id of ['scanMeter','scanKey'])$(id).addEventListener('change',()=>{if(scanResultData)refreshScanNotes()});
+ for(const [id,key,convert] of [['scanEditPitch','step',String],['scanEditOctave','octave',Number],['scanEditDuration','den',Number],['scanEditAcc','acc',String],['scanEditDot','dot',Boolean]]){
+  $(id).addEventListener('change',e=>editScanNote(key,id==='scanEditDot'?e.target.checked:convert(e.target.value)));
+ }
+ $('scanRemoveNote').onclick=()=>{const n=noteInScan();if(!n)return;n.removed=true;scanSelected=null;refreshScanNotes();drawScanPicture()};
+ $('scanAddNote').onclick=()=>{const n=noteInScan();if(!n)return;const notes=scanResultData.notes.filter(v=>!v.removed).sort((a,b)=>a.staff-b.staff||a.x-b.x),idx=notes.indexOf(n),next=notes[idx+1];
+  const gap=scanResultData.staves[n.staff].space,x=Math.min($('scanCanvas').width-10,next&&next.staff===n.staff?(n.x+next.x)/2:n.x+gap*2);
+  const added={...n,sid:'s'+(++scanNextId),x,y:n.y,score:1,manual:true,removed:false,dot:false};
+  added.x=x;scanResultData.notes.push(added);scanSelected=added.sid;refreshScanNotes();drawScanPicture()};
+ $('scanCanvas').addEventListener('click',e=>{if(!scanResultData)return;const c=$('scanCanvas'),box=c.getBoundingClientRect(),x=(e.clientX-box.left)*c.width/box.width,y=(e.clientY-box.top)*c.height/box.height;
+  const found=scanResultData.notes.filter(n=>!n.removed).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
+  if(found&&Math.hypot(found.x-x,found.y-y)<Math.max(30,scanResultData.staves[found.staff].space*3)){scanSelected=found.sid;refreshScanNotes();drawScanPicture()}
+ });
  $('scanRead').onclick=readPhoto;
  $('scanImportPlay').onclick=()=>applyRecognised(true);$('scanImport').onclick=()=>applyRecognised(false);
 }
