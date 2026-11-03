@@ -142,6 +142,29 @@
 @media(max-width:650px){.oneTapControls{display:grid;grid-template-columns:1fr 1fr}.oneTapControls .btn:last-of-type{grid-column:1/-1}.omrHeading h2{font-size:20px}}
 
 
+
+/* Draw notes first, Beautify All once. Distinct note values and subtool separation. */
+.annotationToolbar .musicValueBtn{display:flex;align-items:center;gap:4px;border:2px solid #aacbd1;min-height:42px;font-weight:750}
+.annotationToolbar .musicValueBtn.is-current,.annotationToolbar .musicWriteBtn.is-current,.annotationToolbar .musicBoxBtn.is-current{background:#d9f1ed;color:#065664;border-color:#087b86;box-shadow:inset 0 0 0 1px #087b86}
+.musicValueSymbol{font-size:23px;line-height:1}
+.musicValueSymbol.filled{color:#ae512f}.musicValueSymbol.hollow{color:#2876ac}
+.annotationToolbar .musicValueBtn b{font-size:10px;background:#eff5f6;border-radius:5px;padding:2px 4px}
+.annotationToolbar .musicBeautifyBtn{background:#087b86;color:white;border:2px solid #075c63;font-size:14px;min-height:42px}
+.annotationToolbar .musicClearBtn{color:#a52f37;border:2px solid #d49c98;font-weight:800;min-height:42px}
+.annotationToolbar .musicClearBtn:hover{background:#fff2f0}
+.musicInkPinned{background:#eef9f6}
+.annotationToolbarInner{border-top:2px solid #afcddb;background:#f6f8ff;padding-top:9px}
+.annotationToolbarInner>strong{color:#495a7b}
+.scoreSvg.boxMode{touch-action:none;cursor:crosshair}
+@media(max-width:700px){
+ .musicInkPinned{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .musicInkHeading{display:block;grid-column:1/-1}
+ .annotationToolbar .musicValueBtn{min-width:0;justify-content:center;font-size:11px;padding:5px 2px}
+ .musicInkDuration{grid-column:1/-1}
+ .musicInkMessage{grid-column:1/-1;max-width:none}
+ .annotationToolbarInner{margin-top:6px}
+}
+
 /* Pinned first row: Beautify must not disappear inside the horizontally
    scrolling annotation tools or the off-screen music-writing sidebar. */
 .annotationToolbar{padding-top:7px}
@@ -202,23 +225,26 @@
 
 <section id="annotationToolbar" class="annotationToolbar" role="region" aria-label="Teacher annotation tools" data-active-tool="cursor">
  <div class="musicInkPinned" role="group" aria-label="Write and beautify music notes">
-  <span class="musicInkHeading">🎼 Music Writing</span>
-  <button type="button" class="annotationBtn musicWriteBtn" id="startMusicInk" title="Open your editable staff and draw musical notes with a finger or stylus">✎ Write Notes</button>
-  <label class="musicInkDuration" for="inkLengthMode">Note value
-   <select id="inkLengthMode" title="Choose the note duration to use when tidying handwritten noteheads">
-    <option value="4">♩ Quarter</option>
-    <option value="2">𝅗𝅥 Half</option>
-    <option value="1">𝅝 Whole</option>
-    <option value="8">♪ Eighth</option>
-    <option value="16">♬ Sixteenth</option>
-    <option value="auto">Auto (try drawing)</option>
+  <span class="musicInkHeading">🎼 Write musical notes</span>
+  <button type="button" class="annotationBtn musicWriteBtn" id="startMusicInk" title="Draw multiple handwritten notes; then beautify them all together">✏️ Draw Notes</button>
+  <button type="button" class="annotationBtn musicValueBtn is-current" id="quickQuarter" aria-pressed="true" title="Quarter note: filled head, 1 beat"><span class="musicValueSymbol filled">●</span> Quarter <b>1 beat</b></button>
+  <button type="button" class="annotationBtn musicValueBtn" id="quickHalf" aria-pressed="false" title="Half note: hollow head, 2 beats"><span class="musicValueSymbol hollow">◯</span> Half <b>2 beats</b></button>
+  <label class="musicInkDuration" for="inkLengthMode">More
+   <select id="inkLengthMode" title="Choose other note lengths, with each handwritten note remembering its value">
+    <option value="4">Quarter · 1 beat</option>
+    <option value="2">Half · 2 beats</option>
+    <option value="1">Whole · 4 beats</option>
+    <option value="8">Eighth · ½ beat</option>
+    <option value="16">Sixteenth · ¼ beat</option>
    </select>
   </label>
-  <button type="button" class="annotationBtn musicBeautifyBtn" id="beautifyInk" title="Convert noteheads near staff lines into correctly positioned playable notes">✦ Beautify Notes</button>
-  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Write Notes → draw on the staff → Beautify.</span>
+  <button type="button" class="annotationBtn musicBoxBtn" id="musicBoxSelect" title="Drag a rectangle over multiple music notes and sketches to select them">▧ Box Select</button>
+  <button type="button" class="annotationBtn musicBeautifyBtn" id="beautifyInk" title="Beautify ALL handwritten notes in one press">✦ Beautify All</button>
+  <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes and music handwriting, with confirmation and Undo">⌫ Clear Score</button>
+  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Draw several notes → Beautify All. Half and quarter stay distinct.</span>
  </div>
  <div class="annotationToolbarInner">
-  <strong>🖍 Teacher annotation</strong>
+  <strong>🖍 Teacher Annotations · marks only (not musical notes)</strong>
   <button type="button" class="annotationBtn active" data-annotation-tool="cursor" aria-pressed="true" title="Turn off annotation and interact with the original music score">↖ Cursor</button>
   <button type="button" class="annotationBtn" data-annotation-tool="select" aria-pressed="false" title="Select, move, resize or delete an annotation">▣ Selector</button>
   <button type="button" class="annotationBtn" data-annotation-tool="hand" aria-pressed="false" title="Place and move a pointing-hand marker">👆 Pointing hand</button>
@@ -251,12 +277,12 @@
 <h2>Make music, one note at a time</h2><p class="intro">Create melodies on the staff, or use the AI scanner above for printed piano and ensemble scores.</p>
 <div class="lab">1 · What would you like to do?</div>
 <div class="segrow" id="toolRow" role="group" aria-label="Editing mode">
-<button type="button" class="tool active" data-mode="note">♪ Note</button><button type="button" class="tool" data-mode="rest">𝄽 Rest</button><button type="button" class="tool" data-mode="select">↖ Select</button><button type="button" class="tool" data-mode="pen">✎ Write notes</button>
+<button type="button" class="tool active" data-mode="note">♪ Note</button><button type="button" class="tool" data-mode="rest">𝄽 Rest</button><button type="button" class="tool" data-mode="select">↖ Select</button><button type="button" class="tool" data-mode="box">▧ Box Select</button><button type="button" class="tool" data-mode="pen">✎ Write notes</button>
 </div>
 <div class="beautifyPanel">
  <strong>Music writing · 2 easy steps</strong>
- <p><b>1.</b> Tap <b>✎ Write Notes</b> in the always-visible top toolbar, then draw small oval noteheads on the staff. <b>2.</b> Tap <b>✦ Beautify Notes</b> above to turn them into playable notes.</p>
- <p>Use <b>Annotation Pen</b> only to circle, underline or explain; annotations are separate from musical handwriting. Sketches far from the staff are ignored.</p>
+ <p><b>1.</b> Tap <b>✏️ Draw Notes</b>, choose <b>● Quarter (1 beat)</b> or <b>◯ Half (2 beats)</b>, and draw all your notes. <b>2.</b> Tap <b>✦ Beautify All</b> once to convert everything.</p>
+ <p>Each sketch remembers the beat value selected when it was drawn. <b>Box Select</b> lets you drag around several notes for editing. Teacher Annotations below are separate and will not be converted. Drawings far from the staff are ignored.</p>
  <div class="beautifyButtons"><button class="smallBtn" id="clearInk" type="button" title="Clear musical handwriting only, without removing notation or annotation overlays">Clear handwritten notes</button></div>
 </div>
 <div class="group"><div class="lab">2 · Choose a note value</div>
@@ -641,6 +667,7 @@ const NS='http://www.w3.org/2000/svg', LS='cc-music-score-studio-v1';
 const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16]; const STEPS=['C','D','E','F','G','A','B']; const TICKS=96;
 const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
 let piano=null;let data=blank(),tool='note',den=4,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
+let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
 let context=null,oscillators=[],playTimers=[],toastTimer=0,stopTimer=null,playing=false,audioBus=null;
 const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
 const ticks=e=>(TICKS/e.den)*(e.dot?1.5:1);
@@ -664,7 +691,21 @@ function redo(){if(!future.length)return;if(playing)stopPlayback();history.push(
 function updateHistoryButtons(){$('undo').disabled=!history.length;$('redo').disabled=!future.length}
 function meterString(){return data.meter}
 function syncConfig(){$('title').value=data.title;$('composer').value=data.composer;$('clef').value=data.clef;$('meter').value=data.meter;$('tempo').value=data.tempo;$('instrument').value=data.instrument||'piano';$('pitchNames').checked=!!data.pitchNames;$('metronome').checked=!!data.metronome}
-function setMode(v){tool=v;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===v));$('score').classList.toggle('penMode',v==='pen');const hints={note:'Click a line or space to add a note',rest:'Click a bar to add a rest',select:'Click or drag a note to edit it',pen:'Draw directly on the score to annotate'};$('modeHint').textContent=hints[v];}
+function musicPenCursor(){
+ const xml='<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><g transform="rotate(30 24 24)"><rect x="16" y="3" width="17" height="30" rx="6" fill="#68d9c1" stroke="#156a71" stroke-width="2"/><path d="M16 12H33" stroke="#14868a" stroke-width="3"/><circle cx="21" cy="21" r="1.6" fill="#214a55"/><circle cx="28" cy="21" r="1.6" fill="#214a55"/><path d="M22 25Q24.5 28 27 25" fill="none" stroke="#214a55" stroke-width="1.5" stroke-linecap="round"/><path d="M17 33H32L24 46Z" fill="#f5d99c" stroke="#17666c" stroke-width="2"/><path d="M21 40L24 46L27 40Z" fill="#233c52"/></g></svg>';
+ return 'url("data:image/svg+xml,'+encodeURIComponent(xml)+'") 24 45, crosshair';
+}
+function setMode(v){
+ tool=v;
+ document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===v));
+ $('score').classList.toggle('penMode',v==='pen');
+ $('score').classList.toggle('boxMode',v==='box');
+ $('score').style.cursor=v==='pen'?musicPenCursor():v==='box'?'crosshair':'';
+ $('startMusicInk').classList.toggle('is-current',v==='pen');
+ $('musicBoxSelect').classList.toggle('is-current',v==='box');
+ const hints={note:'Tap staff to add a note',rest:'Tap bar to add a rest',select:'Select a note',pen:'Draw as many noteheads as needed, then Beautify All',box:'Drag to draw a selection box around notes or sketches'};
+ $('modeHint').textContent=hints[v]||'Edit score';
+}
 function findSelected(){for(let b=0;b<data.bars.length;b++){let i=data.bars[b].findIndex(e=>e.id===selected);if(i!==-1)return {bar:b,index:i,e:data.bars[b][i]}}return null}
 function addEvent(bar,i,pitch){const e={id:makeId(),kind:tool,den,dot,...(tool==='note'?{step:pitch.step,octave:pitch.octave,acc}:{} )};if(sumBar(data.bars[bar])+ticks(e)>cap()+.00001){flash('This bar is full for that note value. Try a shorter note or another bar.');return}change();data.bars[bar].splice(i,0,e);selected=e.id;commit();updateStatus(`${noteName(e)} added to bar ${bar+1}.`)}
 function removeSelected(){const s=findSelected();if(!s)return;change();data.bars[s.bar].splice(s.index,1);selected=null;commit();updateStatus('Symbol removed.')}
@@ -683,7 +724,7 @@ function drawClef(g,top){const symbol=data.clef==='treble'?'\uD834\uDD1E':'\uD83
 function drawLedger(g,x,y,top){const bottom=top+72;for(let yy=bottom+18;yy<=y+1;yy+=18)line(g,x-15,yy,x+15,yy,'#263d49',1.3);for(let yy=top-18;yy>=y-1;yy-=18)line(g,x-15,yy,x+15,yy,'#263d49',1.3)}
 function flag(g,x,y,up,second){let sign=up?1:-1;if(up){g.append(el('path',{d:`M ${x} ${y} C ${x+23} ${y+5}, ${x+21} ${y+22}, ${x+10} ${y+31} C ${x+18} ${y+16}, ${x+16} ${y+11}, ${x} ${y+10} Z`,fill:'#193a4a'}));if(second)g.append(el('path',{d:`M ${x} ${y+11} C ${x+23} ${y+16}, ${x+21} ${y+33}, ${x+10} ${y+42} C ${x+18} ${y+27}, ${x+16} ${y+22}, ${x} ${y+21} Z`,fill:'#193a4a'}))}else{g.append(el('path',{d:`M ${x} ${y} C ${x-24} ${y-5}, ${x-22} ${y-22}, ${x-12} ${y-31} C ${x-19} ${y-15}, ${x-17} ${y-10}, ${x} ${y-9} Z`,fill:'#193a4a'}));if(second)g.append(el('path',{d:`M ${x} ${y-11} C ${x-24} ${y-16}, ${x-22} ${y-33}, ${x-12} ${y-42} C ${x-19} ${y-26}, ${x-17} ${y-21}, ${x} ${y-20} Z`,fill:'#193a4a'}))}}
 function drawNote(g,e,x,top,isSelected){const y=top+72-(noteIndex(e.step,e.octave)-bottomIndex())*9;const up=y>=top+36;const filled=e.den>=4;drawLedger(g,x,y,top);
-if(isSelected)g.append(el('ellipse',{cx:x,cy:y,rx:22,ry:18,class:'selectedHalo'}));if(playingId===e.id)g.append(el('ellipse',{cx:x,cy:y,rx:23,ry:19,class:'playingHalo'}));
+if(isSelected||boxSelectedNotes.has(e.id))g.append(el('ellipse',{cx:x,cy:y,rx:22,ry:18,class:'selectedHalo'}));if(playingId===e.id)g.append(el('ellipse',{cx:x,cy:y,rx:23,ry:19,class:'playingHalo'}));
 const sym=el('g',{});g.append(sym);
 if(e.acc){let glyph=e.acc==='#'?'♯':e.acc==='b'?'♭':'♮';textSvg(sym,x-34,y+7,glyph,25,{'font-family':'Noto Music, Segoe UI Symbol, serif',fill:'#193a4a'})}
 if(e.den!==1){const sx=x+(up?10:-10),ex=sx,ey=y+(up?-62:62);line(sym,sx,y-0.5,ex,ey,'#193a4a',2.3);if(e.den>=8)flag(sym,ex,ey,up,e.den===16)}
@@ -691,7 +732,7 @@ sym.append(el('ellipse',{cx:x,cy:y,rx:e.den===1?12.4:11.6,ry:e.den===1?6.9:7.5,t
 if(e.dot)sym.append(el('circle',{cx:x+20,cy:y-3.5,r:2.8,fill:'#193a4a'}));
 if(data.pitchNames)textSvg(g,x,top+115,noteName(e),12,{'text-anchor':'middle',fill:'#047686','font-weight':750});
 return y;}
-function drawRest(g,e,x,top,isSelected){const cy=top+35;if(isSelected)g.append(el('ellipse',{cx:x,cy:cy+5,rx:22,ry:24,class:'selectedHalo'}));if(playingId===e.id)g.append(el('ellipse',{cx:x,cy:cy+5,rx:23,ry:25,class:'playingHalo'}));
+function drawRest(g,e,x,top,isSelected){const cy=top+35;if(isSelected||boxSelectedNotes.has(e.id))g.append(el('ellipse',{cx:x,cy:cy+5,rx:22,ry:24,class:'selectedHalo'}));if(playingId===e.id)g.append(el('ellipse',{cx:x,cy:cy+5,rx:23,ry:25,class:'playingHalo'}));
 if(e.den===1)g.append(el('rect',{x:x-12,y:top+18,width:24,height:9,fill:'#1a394a'}));
 else if(e.den===2)g.append(el('rect',{x:x-12,y:top+28,width:24,height:9,fill:'#1a394a'}));
 else if(e.den===4){g.append(el('path',{d:`M ${x+2} ${top+12} l -8 13 l 10 10 l -9 9 q 8 3 5 13 q 12 -14 -1 -23 l 8 -9 Z`,fill:'#1a394a'}))}
@@ -824,14 +865,14 @@ function inkLocateHead(head,layout,barCount){
 function inkRecognizeStrokes(strokes,layout,barCount){
  const items=strokes.map((stroke,i)=>{
   const bounds=inkBounds(stroke.points),head=inkFindNotehead(stroke.points);
-  return {i,bounds,head,place:head?inkLocateHead(head,layout,barCount):null};
+  return {i,bounds,head,den:VALID_DEN.includes(Number(stroke.den))?Number(stroke.den):null,place:head?inkLocateHead(head,layout,barCount):null};
  });
  const grouped=[];
  for(const item of items){
   if(!item.head||!item.place)continue;
   const overlap=grouped.find(g=>g.place.bar===item.place.bar&&Math.abs(g.head.x-item.head.x)<9&&Math.abs(g.head.y-item.head.y)<6);
-  if(overlap){overlap.used.add(item.i);overlap.filled=true;overlap.hasStem ||= item.head.combinedStem;}
-  else grouped.push({head:item.head,place:item.place,used:new Set([item.i]),hasStem:item.head.combinedStem,filled:false,hasDot:false});
+  if(overlap){overlap.used.add(item.i);overlap.filled=true;overlap.hasStem ||= item.head.combinedStem;overlap.den ||= item.den;}
+  else grouped.push({head:item.head,place:item.place,used:new Set([item.i]),den:item.den,hasStem:item.head.combinedStem,filled:false,hasDot:false});
  }
  const ovalIndices=new Set(grouped.flatMap(g=>[...g.used]));
  for(const item of items){
@@ -866,10 +907,10 @@ function startMusicInk(){
   scorePanel.style.scrollMarginTop='150px';
   scorePanel.scrollIntoView({behavior:'smooth',block:'start'});
  }
- const message='✎ Write Notes active. Draw a small oval on a staff line/space, then tap ✦ Beautify Notes in the top toolbar.';
+ const message='✏️ Cute pen active. Draw several noteheads, choose Quarter or Half as needed, then tap ✦ Beautify All once.';
  $('beautifyFeedback').textContent=message;
  updateStatus(message);
- flash('Music pen ready · Draw oval notes on the staff');
+ flash('✏️ Cute music pen ready · Draw all notes first');
 }
 
 function beautifyInk(){
@@ -897,7 +938,7 @@ function beautifyInk(){
   if(barNotes.some((event,i)=>event.kind==='note'&&event.step===pitch.step&&event.octave===pitch.octave&&Math.abs(oldX[i]-mark.head.x)<22)){
    duplicates++;continue;
   }
-  const chosen=auto?(mark.hasStem?(mark.filled?4:2):1):Number(value);
+  const chosen=mark.den||(auto?(mark.hasStem?(mark.filled?4:2):1):Number(value));
   const dotted=dot||mark.hasDot;
   const event={id:makeId(),kind:'note',step:pitch.step,octave:pitch.octave,acc,den:chosen,dot:dotted};
   if(countByBar[bar]+ticks(event)>cap()+.001){skipped++;continue;}
@@ -915,12 +956,12 @@ function beautifyInk(){
   data.bars[loc.bar].splice(index,0,event);
  }
  data.strokes=data.strokes.filter((_,index)=>!taken.has(index));
- selected=planned.at(-1).event.id;
- setMode('select');
+ selected=null;boxSelectedNotes.clear();boxSelectedStrokes.clear();
+ setMode('pen');
  commit();
  const total=planned.length,remaining=data.strokes.length;
  say('✓ '+total+(total===1?' note':' notes')+' beautified and ready to play!'+(remaining?' Other sketches kept.':'')+(skipped?' '+skipped+' could not fit.':'')+' Tap Write Notes to add more.');
- flash('✦ '+total+' note'+(total===1?'':'s')+' beautified — ready to play');
+ flash('✦ Beautified all '+total+' note'+(total===1?'':'s')+' — press Play');
 }
 
 function clearInkStrokes(){
@@ -1059,7 +1100,7 @@ function exportMusicXML(){const [beats,beatType]=data.meter.split('/');let xml=`
 for(let b=0;b<data.bars.length;b++){xml+=`\n<measure implicit="no" number="${b+1}">`;if(b===0){xml+=`<attributes><divisions>24</divisions><key><fifths>0</fifths></key><time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time><clef><sign>${data.clef==='treble'?'G':'F'}</sign><line>${data.clef==='treble'?2:4}</line></clef></attributes><direction placement="above"><direction-type><metronome parentheses="no"><beat-unit>quarter</beat-unit><per-minute>${data.tempo}</per-minute></metronome></direction-type><sound tempo="${data.tempo}" /></direction>`}
 for(let i=0;i<data.bars[b].length;i++){const e=data.bars[b][i];xml+='<note>';if(e.kind==='rest'){xml+='<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave}</octave></pitch>`}xml+=`<duration>${ticks(e)}</duration><type>${({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[e.den]}</type>`;if(e.dot)xml+='<dot />';if(e.kind==='note'&&e.acc)xml+=`<accidental>${e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural'}</accidental>`;xml+='</note>'}xml+='</measure>'}
 xml+='\n</part>\n</score-partwise>';download(new Blob([xml],{type:'application/vnd.recordare.musicxml+xml'}),filename()+'.musicxml');flash('MusicXML saved')}
-function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]])})):[];return result}
+function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]]),...(VALID_DEN.includes(+s.den)?{den:+s.den}:{}),...(s.kind==='music'?{kind:'music'}:{}),...(Number.isFinite(s.headX)&&Number.isFinite(s.headY)?{headX:s.headX,headY:s.headY}:{})})):[];return result}
 function loadProject(raw,record=true){closePiano();const v=validateProject(raw);if(record)change();data=v;selected=null;syncConfig();commit()}
 function twinkle(){const q=(step,octave,den=4)=>({id:makeId(),kind:'note',step,octave,den,dot:false,acc:''});return {title:'Twinkle, Twinkle, Little Star',composer:'Traditional · Classroom example',clef:'treble',meter:'4/4',tempo:100,instrument:data.instrument||'piano',pitchNames:true,metronome:false,bars:[ [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)] ],strokes:[]}}
 function setBarsCount(add){if(add){if(data.bars.length>=40){flash('Maximum 40 bars in this classroom version.');return}change();data.bars.push([]);commit();updateStatus('A new blank bar has been added.')}else if(data.bars.length>1&&data.bars.at(-1).length===0){change();data.bars.pop();selected=null;commit()}else flash('You can remove only the final empty bar.')}
