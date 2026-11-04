@@ -2790,8 +2790,8 @@ function moveEngravedPlaybackCursor(globalTick){
 }
 function startPianoTracking(audioStart,secondsPerTick,timing=null){
  resetPianoTracking();
- const token=pianoTrackingToken,events=[];
- piano.notes.forEach((note,i)=>{
+ const token=pianoTrackingToken,events=timing?.events?[...timing.events]:[];
+ if(!timing?.events)piano.notes.forEach((note,i)=>{
   const onset=timing?timing.secondsAt(note.start):note.start*secondsPerTick;
   const off=note.fermata&&timing
     ?timing.secondsAt(note.start+note.duration)
@@ -2827,7 +2827,7 @@ function startPianoTracking(audioStart,secondsPerTick,timing=null){
    }
    if(initial||newest>=0){moveEngravedPlaybackCursor(tick);initial=false;}
   }
-  if(tick<piano.total+1)pianoTrackingFrame=requestAnimationFrame(frame);
+  if((timing?context.currentTime-audioStart<timing.total+.5:tick<piano.total+1))pianoTrackingFrame=requestAnimationFrame(frame);
  };
  pianoTrackingFrame=requestAnimationFrame(frame);
 }
@@ -3072,6 +3072,54 @@ function createImportedTiming(score,secondsPerTick){
  return {pauses,secondsAt,tickAtSeconds,total:secondsAt(score.total)};
 }
 
+
+function createImportedRepeatedTiming(score,secondsPerTick,order){
+ const byBar=Array.from({length:score.measureLength.length},()=>[]);
+ score.notes.forEach((e,index)=>{if(byBar[e.measure])byBar[e.measure].push({e,index})});
+ const notes=[],events=[],segments=[];
+ let elapsed=0;
+ for(const bar of order){
+  const length=score.measureLength[bar],barStart=elapsed,entries=byBar[bar]||[];
+  const pauseMap=new Map();
+  for(const {e} of entries)if(e.fermata){
+   const t=Math.min(length,e.onset+e.duration);
+   pauseMap.set(t,Math.max(pauseMap.get(t)||0,Math.max(.25,Math.min(4,e.duration*secondsPerTick*.65))));
+  }
+  const pauses=[...pauseMap].sort((a,b)=>a[0]-b[0]).map(([tick,delay])=>({tick,delay}));
+  const localTime=t=>{
+   let result=t*secondsPerTick;
+   for(const p of pauses){if(p.tick<=t+.0001)result+=p.delay;else break}
+   return result;
+  };
+  for(const {e,index} of entries){
+   const onset=barStart+localTime(e.onset);
+   const full=e.duration*secondsPerTick;
+   const fermataDelay=e.fermata?(pauseMap.get(Math.min(length,e.onset+e.duration))||0):0;
+   const duration=e.fermata?full+fermataDelay:Math.max(.07,full*(e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:e.marcato?.92:e.legato?1.035:.98));
+   notes.push({e,index,onset,duration});
+   events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
+  }
+  elapsed+=localTime(length);
+  segments.push({bar,start:barStart,end:elapsed,length,pauses});
+  if(notes.length>6500)throw Error('Repeats produce too many notes for classroom playback. Shorten this score.');
+ }
+ events.sort((a,b)=>a.at-b.at||(a.on===b.on?0:a.on?1:-1));
+ function tickAtSeconds(seconds){
+  if(seconds<0)return seconds/secondsPerTick;
+  const segment=segments.find(x=>seconds<x.end+.00001);
+  if(!segment)return score.total;
+  const local=seconds-segment.start;let wait=0;
+  for(const pause of segment.pauses){
+   const before=pause.tick*secondsPerTick+wait;
+   if(local<before)return score.measureStart[segment.bar]+(local-wait)/secondsPerTick;
+   if(local<before+pause.delay)return score.measureStart[segment.bar]+pause.tick;
+   wait+=pause.delay;
+  }
+  return score.measureStart[segment.bar]+Math.min(segment.length,(local-wait)/secondsPerTick);
+ }
+ return {notes,events,segments,tickAtSeconds,total:elapsed,order};
+}
+
 async function playPiano(){
  if(!piano)return;
  if(playing){stopPlayback();return}
@@ -3079,20 +3127,26 @@ async function playPiano(){
  catch(err){flash('Audio unavailable on this device.');return}
  const bpm=Math.max(30,Math.min(240,Number($('pianoTempo').value)||piano.tempo));
  piano.tempo=bpm;const secondsPerTick=60/bpm/piano.TPQ;
- const timing=createImportedTiming(piano,secondsPerTick);
+ const order=expandMarkedBarOrder(piano.measureLength.length,i=>piano.barMarks?.[i]||{});
+ const repeats=order.length!==piano.measureLength.length||order.some((x,i)=>x!==i);
+ let timing;
+ try{timing=repeats?createImportedRepeatedTiming(piano,secondsPerTick,order):createImportedTiming(piano,secondsPerTick);}
+ catch(e){flash(e.message);return;}
  const start=context.currentTime+.12;
  playing=true;$('play').textContent='❚❚ Playing both hands';$('stop').disabled=false;
- for(const e of piano.notes){
-  const offset=timing.secondsAt(e.start),full=e.duration*secondsPerTick;
-  const fermataDelay=e.fermata?(timing.pauses.find(p=>Math.abs(p.tick-(e.start+e.duration))<.001)?.delay||0):0;
-  const dur=Math.max(.07,e.fermata?full+fermataDelay:full*(e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:e.marcato?.92:e.legato?1.035:.98));
+ const performanceNotes=timing.notes||piano.notes.map(e=>({
+   e,onset:timing.secondsAt(e.start),
+   duration:Math.max(.07,e.fermata?timing.secondsAt(e.start+e.duration)-timing.secondsAt(e.start):
+     e.duration*secondsPerTick*(e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:e.marcato?.92:e.legato?1.035:.98))
+ }));
+ for(const {e,onset,duration} of performanceNotes){
   const volume=(piano.notes.length>100?.53:.68)*(e.gain||.79)*(e.marcato?1.48:e.accent?1.27:1);
-  // Both piano hands, simultaneous chords, ties and articulation play together.
-  tone(e.midi,start+offset,dur,volume);
+  // Repeated bar visits, chords, fermatas and piano voices share one audio clock.
+  tone(e.midi,start+onset,duration,volume);
  }
  startPianoTracking(start,secondsPerTick,timing);
  stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+timing.total-context.currentTime)*1000+300);
- updateStatus('Playing '+piano.parts+' part(s) at '+bpm+' BPM; piano chords and both hands are synchronised.');
+ updateStatus('Playing '+piano.parts+' part(s) at '+bpm+' BPM; '+(repeats?'repeat signs and endings are included; ':'')+'piano chords and both hands are synchronised.');
 }
 
 
