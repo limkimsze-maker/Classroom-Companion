@@ -1072,9 +1072,23 @@ async function readScan() {
   }
   const entry = scanEntry(false);
   if (companionMode()) {
-    const recognized = entry.pages.filter(p => typeof p === "string" && p.includes("score-partwise"));
-    if (recognized.length) companionSend({type:"result",pages:recognized,title:entry.title});
-    else companionSend({type:"error",message:"No readable music was found. Try a sharper, straight-on photo."});
+    const recognizedPages=pages.filter(p=>typeof p.xml==="string"&&p.xml.includes("score-partwise"));
+    const recognized=recognizedPages.map(p=>p.xml);
+    if(recognized.length){
+      // Partsong's trained OMR reads pitches and rhythm. A separate, optional
+      // browser-local OCR pass reads printed Italian words and dynamics.
+      // If a phone cannot download OCR, preserve the usable recognised music.
+      let detectedMarks=[],ocrWarning="";
+      try{
+        const {readScoreTextMarks}=await import('./expression-ocr.js');
+        detectedMarks=await readScoreTextMarks(recognizedPages.map(p=>p.blob),
+          detail=>companionSend({type:"status",message:detail}));
+      }catch(e){
+        ocrWarning="Text/sign recognition was unavailable; notes and rhythms are still playable. "+
+          String(e?.message||"Check the score manually.");
+      }
+      companionSend({type:"result",pages:recognized,title:entry.title,detectedMarks,ocrWarning});
+    }else companionSend({type:"error",message:"No readable music was found. Try a sharper, straight-on photo."});
   }
   if (readSeconds) entry.readSeconds = readSeconds;
   saved = await db.put(entry).then(() => true, () => false);
