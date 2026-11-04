@@ -1,6 +1,8 @@
-/* Additional on-device OCR pass for printed music terms and dynamics.
-   Apache-2.0 Tesseract.js is loaded on demand. Photos are never sent to a server.
-   The trained homr/Partsong engine remains authoritative for pitches/rhythms. */
+/* Music Score Studio OCR integration, © 2026 Lim Kim Sze.
+   This adaptation module is distributed under GNU AGPL-3.0.
+   Tesseract.js © its contributors (Apache-2.0) is loaded on demand.
+   Photos are processed in the browser; images are not uploaded.
+   The trained homr/Partsong engine remains authoritative for pitches and rhythms. */
 const OCR_CDN='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 const TEMPO_WORDS=new Set(['grave','largo','lento','adagio','andante','moderato','allegretto','allegro','vivace','vivo','presto']);
 const EXPRESSION_WORDS=new Set(['cantabile','dolce','espressivo','grazioso','legato']);
