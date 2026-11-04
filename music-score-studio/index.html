@@ -2954,9 +2954,16 @@ function normalisedAutoMark(raw,range,score,pageNumber){
  const local=Math.max(0,Math.min(range.count-1,first+Math.floor(frac*(last-first))));
  const bar=range.start+local;
  if(bar<0||bar>=score.measureLength.length)return null;
- return {page:pageNumber,kind:raw.kind,value:val,bar,confidence,
-  text:String(raw.text||val).slice(0,90),needsReview:!!raw.needsReview,
-  approximate:true,applied:false};
+ // Reliable OMR measure-to-image coordinates are unavailable. Only
+ // left-aligned directions above the first system have a grounded
+ // position. Later printed terms remain one-tap teacher review items.
+ const nearStart=sys===0&&Number(raw.x)>=.04&&Number(raw.x)<=.30&&
+   !raw.positionApproximate&&Number(raw.systemCount)>0;
+ const needsReview=!!raw.needsReview||!nearStart;
+ return {page:pageNumber,kind:raw.kind,value:val,
+  bar:nearStart?range.start:bar,confidence,
+  text:String(raw.text||val).slice(0,90),needsReview,
+  approximate:!nearStart,applied:false};
 }
 function applyPhotoExpressionMarks(score,detectedPages,warning=''){
  score.autoTextWarning=String(warning||'').slice(0,350);
@@ -2980,14 +2987,15 @@ function applyPhotoExpressionMarks(score,detectedPages,warning=''){
 }
 function changePhotoMark(entry,bar,shouldApply){
  if(!piano||!piano.autoMarks?.includes(entry))return;
+ const next=piano.barMarks[bar]||{};
+ if(shouldApply&&next[entry.kind]&&next[entry.kind]!==entry.value&&
+    (!entry.applied||entry.bar!==bar)){
+  flash('That bar already has a different '+entry.kind+' marking. Remove it first.');renderPhotoMarkReview();return;
+ }
  const previous=piano.barMarks?.[entry.bar];
  if(entry.applied&&previous?.[entry.kind]===entry.value)delete previous[entry.kind];
  entry.applied=false;
  if(shouldApply){
-  const next=piano.barMarks[bar]||{};
-  if(next[entry.kind]&&next[entry.kind]!==entry.value){
-   flash('That bar already has a different '+entry.kind+' marking. Remove it first.');renderPhotoMarkReview();return;
-  }
   next[entry.kind]=entry.value;piano.barMarks[bar]=next;entry.bar=bar;entry.applied=true;
  }
  if(playing)stopPlayback();
@@ -3017,7 +3025,7 @@ function renderPhotoMarkReview(){
   select.value=String(item.bar);
   select.onchange=()=>changePhotoMark(item,Math.max(0,Math.min(piano.measureLength.length-1,Number(select.value))),true);
   const state=document.createElement('span');state.className='autoTermStatus';
-  state.textContent='Page '+(item.page+1)+' · '+item.confidence.toFixed(0)+'% OCR · '+(item.applied?'automatic':'needs review')+' · bar estimated';
+  state.textContent='Page '+(item.page+1)+' · '+item.confidence.toFixed(0)+'% OCR · '+(item.applied?'automatic':'needs review')+(item.approximate?' · bar estimated':' · first system');
   const button=document.createElement('button');button.className='smallBtn';
   button.textContent=item.applied?'Remove':'Apply';button.title=item.applied?'Exclude this OCR guess from playback':'Use the recognised term for this bar';
   button.onclick=()=>changePhotoMark(item,item.bar,!item.applied);
