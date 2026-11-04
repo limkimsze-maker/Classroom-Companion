@@ -302,7 +302,7 @@
 <header class="topbar"><div class="brand"><div class="logo" aria-hidden="true">♫</div><div><h1>Music Score Studio</h1><p>Classroom Companion · A friendly music notation board</p></div></div><span class="top-pill">Free · No account · Made for teaching</span></header>
 
 <section class="omrHero" aria-label="Photo to score and playback"><div class="omrCard">
-  <div class="omrHeading"><div><div class="omrEyebrow">Trained optical music recognition · Classroom Companion</div><h2>📷 Take Picture → Reproduce Score → Play</h2><p>Photograph printed music. The trained reader converts it to notation, displays the score and plays all parts together — without exporting or changing apps.</p></div><span class="omrStatusFlag">On-device photo reading</span></div>
+  <div class="omrHeading"><div><div class="omrEyebrow">Trained optical music recognition · Classroom Companion</div><h2>📷 Take Picture → Reproduce Score → Play</h2><p>Photograph printed music. The reader recognises notes and rhythms, then checks for printed tempo, dynamics and navigation words to shape playback automatically. Review uncertain interpretations below the score.</p></div><span class="omrStatusFlag">On-device photo reading</span></div>
   <div class="oneTapControls"><button type="button" class="btn primary" id="omrCameraButton">📷 Take picture &amp; play</button><input id="omrCameraInput" class="sr" type="file" accept="image/*" capture="environment"><button type="button" class="btn" id="omrChooseButton">▣ Choose picture(s)</button><input id="omrChooseInput" class="sr" type="file" accept="image/*,.pdf,application/pdf" multiple><button type="button" class="btn" id="omrImportButton">🎹 Open recognised PDF / MusicXML</button><input id="omrImportInput" type="file" accept=".pdf,.musicxml,.xml,application/pdf,text/xml" class="sr"></div>
   <div id="omrImportStatus" role="status" aria-live="polite">Ready. Use the camera or select a clear picture of printed music. Both hands of a piano score can play together.</div>
   <div class="omrRunning" id="omrRunning" hidden><div class="omrRunningHeader"><strong id="omrProgress">Preparing trained music reader…</strong><button type="button" class="smallBtn" id="omrCancel">Cancel scan</button></div><div class="omrProgressTrack" role="progressbar" aria-label="Music scan in progress"><span id="omrProgressFill"></span></div><p>Initial setup downloads approximately 157 MB of recognition models once and stores them in your browser. Please use Wi-Fi for the first scan.</p><details id="omrReaderDetail"><summary>Show trained recognition engine (advanced)</summary><iframe id="omrReaderFrame" title="Partsong trained music recogniser" loading="eager" allow="camera" referrerpolicy="strict-origin-when-cross-origin"></iframe></details></div>
@@ -2960,6 +2960,7 @@ function normalisedAutoMark(raw,range,score,pageNumber){
 }
 function applyPhotoExpressionMarks(score,detectedPages,warning=''){
  score.autoTextWarning=String(warning||'').slice(0,350);
+ score.ocrAttempted=Array.isArray(detectedPages)&&!score.autoTextWarning;
  score.autoMarks=[];
  if(!Array.isArray(detectedPages)||!detectedPages.length)return;
  if(!Array.isArray(score.barMarks))score.barMarks=[];
@@ -2998,11 +2999,11 @@ function renderPhotoMarkReview(){
  if(!piano){panel.hidden=true;return}
  const entries=piano.autoMarks||[];
  const warned=!!piano.autoTextWarning;
- panel.hidden=!entries.length&&!warned;
- if(!entries.length&&!warned)return;
+ panel.hidden=!entries.length&&!warned&&!piano.ocrAttempted;
+ if(panel.hidden)return;
  summary.textContent='Automatic score directions · '+entries.filter(e=>e.applied).length+' applied, '+entries.filter(e=>!e.applied).length+' to review';
  notice.textContent=piano.autoTextWarning||
-  'Printed tempo, dynamics and navigation words were read on your device. High-confidence matches were applied automatically. Staff/bar alignment is estimated. Small slurs, ties, accents and repeats may still be missed.';
+  (entries.length?'Printed tempo, dynamics and navigation words were read on your device. High-confidence matches were applied automatically. Bar alignment is estimated. Small slurs, ties, accents and repeats may still be missed.':'No reliable printed terms were detected. Playback still follows the recognised notes and any markings retained in MusicXML.');
  rows.replaceChildren();
  for(const item of entries.slice(0,80)){
   const row=document.createElement('div');row.className='autoTermRow';
@@ -3160,7 +3161,7 @@ function wireOneStepScanner(){
        applyPhotoExpressionMarks(parsed,m.detectedMarks,m.ocrWarning||'');
        showPianoScore(parsed,'Photo-recognised '+m.pages.length+'-page score',m.pages);
        bar.style.width='100%';running.hidden=true;
-       message('Reproduced '+parsed.notes.length+' notes and '+(parsed.autoMarks?.filter(a=>a.applied).length||0)+' printed directions. Playing now — verify against the original.');
+       message('Reproduced '+parsed.notes.length+' notes and '+(parsed.autoMarks?.filter(a=>a.applied).length||0)+' printed directions. '+(parsed.autoTextWarning?'Text OCR unavailable; ':'' )+'Playing now — verify against the original.');
        try{await playPiano();}catch(err){flash('Press Play all parts to hear the score: '+err.message);}
      }catch(err){running.hidden=false;detail.open=true;message('The score could not be reproduced: '+err.message,true);}
    }
