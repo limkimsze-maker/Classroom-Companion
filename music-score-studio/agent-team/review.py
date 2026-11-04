@@ -119,6 +119,7 @@ def model_call(instructions, user_text, max_output_tokens=3000):
         os.environ["OPENAI_API_KEY"],
         method="POST",
         payload=body,
+        accept="application/json",
     )
     return response_text(result)
 
