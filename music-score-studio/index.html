@@ -2532,7 +2532,7 @@ function child(node,tag){return Array.from(node?.children||[]).find(n=>n.localNa
 function children(node,tag){return Array.from(node?.children||[]).filter(n=>n.localName===tag)}
 function nodeText(node,tag){return (child(node,tag)?.textContent||'').trim()}
 
-function readImportedBarMarks(measure){
+function readImportedBarMarks(measure,isFirst=false){
  const d={};
  for(const line of children(measure,'barline')){
   const repeat=child(line,'repeat')?.getAttribute('direction');
@@ -2548,14 +2548,32 @@ function readImportedBarMarks(measure){
   for(const node of types){
    if(child(node,'segno'))d.sign='segno';
    const words=children(node,'words').map(w=>(w.textContent||'').trim()).join(' ');
+   const lowered=words.toLowerCase().replace(/\s+/g,' ').trim().replace(/\.$/,'');
    if(/\bD\.?\s*C\.?\b/i.test(words))d.sign='dc';
    else if(/\bD\.?\s*S\.?\b/i.test(words))d.sign='ds';
    else if(/\bFine\b/i.test(words))d.sign='fine';
+   if(ALLOWED_MARKS.tempo.includes(lowered))d.tempo=lowered;
+   if(ALLOWED_MARKS.expression.includes(lowered))d.expression=lowered;
+   if(/^(?:ritard|ritardando|rit)\.?$/i.test(words))d.tempo='ritardando';
+   if(/^(?:rall|rallentando)\.?$/i.test(words))d.tempo='rallentando';
+   if(/^(?:accel|accelerando)\.?$/i.test(words))d.tempo='accelerando';
+   if(/^(?:cresc|crescendo)\.?$/i.test(words))d.dynamic='crescendo';
+   if(/^(?:dim|diminuendo|decresc|decrescendo)\.?$/i.test(words))d.dynamic='diminuendo';
+   const dyn=child(node,'dynamics'),mark=Array.from(dyn?.children||[])[0]?.localName;
+   if(ALLOWED_MARKS.dynamic.includes(mark))d.dynamic=mark;
+   const wedge=child(node,'wedge')?.getAttribute('type');
+   if(wedge==='crescendo'||wedge==='diminuendo')d.dynamic=wedge;
+   const shift=child(node,'octave-shift')?.getAttribute('type');
+   if(shift==='down'){d.octave=true;d.octaveEncoded=true;}
+   const bpmMatch=words.match(/(?:♩|quarter|crotchet|j)\s*\.?\s*=\s*(\d{2,3})/i);
+   if(!isFirst&&bpmMatch){const bpm=Number(bpmMatch[1]);if(bpm>=40&&bpm<=220)d.tempoBpm=bpm;}
   }
   if(snd?.hasAttribute('dacapo'))d.sign='dc';
   else if(snd?.hasAttribute('dalsegno'))d.sign='ds';
   else if(snd?.hasAttribute('segno'))d.sign='segno';
   else if(snd?.hasAttribute('fine'))d.sign='fine';
+  const fromSound=Number(snd?.getAttribute('tempo'));
+  if(!isFirst&&fromSound>=40&&fromSound<=220)d.tempoBpm=Math.round(fromSound);
  }
  return d;
 }
@@ -2580,7 +2598,7 @@ function parseMusicXML(source){
    let cursor=0,maxCursor=0,lastOnset=0,lastDuration=0;
    const items=[],measure=measures[mi];
    if(!importedMarks[mi])importedMarks[mi]={};
-   Object.assign(importedMarks[mi],readImportedBarMarks(measure));
+   Object.assign(importedMarks[mi],readImportedBarMarks(measure,mi===0));
    const currentTicks=()=>Math.max(1,Math.round(beats*TPQ*4/beatType));
    const durationFor=el=>Math.max(0,Math.round((Number(nodeText(el,'duration'))||0)/Math.max(1,divisions)*TPQ));
    for(const node of Array.from(measure.children)){
@@ -3241,7 +3259,7 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
    const baseGain=hasDynamic?gainAt(e.onset):Number(e.gain)||dynamic;
    const volume=(score.notes.length>100?.53:.68)*baseGain*
       (e.marcato?1.48:e.accent?1.27:1)*(direction.expression==='dolce'?.83:1);
-   const midi=e.midi+(direction.octave?12:0);
+   const midi=e.midi+(direction.octave&&!direction.octaveEncoded?12:0);
    notes.push({e,index,onset,duration,volume,midi});
    events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
   }
