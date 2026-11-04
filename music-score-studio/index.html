@@ -1196,7 +1196,7 @@ function updateMusicNoteDuration(next){
   hideMusicNoteMenu();
   if(ok){
    const label=({1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th',32:'32nd',64:'64th',128:'128th'})[next];
-   const message=target.pitch.step+target.pitch.octave+' '+label+' note added instantly. Ready to play.';
+   const message=target.pitch.step+target.pitch.octave+' '+label+' note placed. Ready to play.';
    $('beautifyFeedback').textContent=message;updateStatus(message);flash('♪ '+message);
   }
   return;
@@ -2065,6 +2065,9 @@ for(const id of ['pitchNames','metronome'])$(id).addEventListener('change',ev=>{
 for(const id of ['title','composer'])$(id).addEventListener('change',ev=>{const v=ev.target.value.slice(0,100);if(v===data[id])return;change();data[id]=v;commit()});
 $('score').addEventListener('click',clicked);
 $('score').addEventListener('contextmenu',onMusicNoteRightClick);
+// The annotation SVG can overlay the staff. Bubble its context-menu event
+// to the paper card so right-click still adds notes without switching tools.
+$('editorScorePanel').addEventListener('contextmenu',onMusicNoteRightClick);
 $('musicNoteContextMenu').querySelectorAll('[data-note-duration]').forEach(b=>b.addEventListener('click',()=>updateMusicNoteDuration(Number(b.dataset.noteDuration))));
 document.addEventListener('pointerdown',ev=>{if(!$('musicNoteContextMenu').hidden&&!ev.target.closest('#musicNoteContextMenu'))hideMusicNoteMenu();},{capture:true});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape')hideMusicNoteMenu();});
