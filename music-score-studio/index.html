@@ -2753,6 +2753,24 @@ function child(node,tag){return Array.from(node?.children||[]).find(n=>n.localNa
 function children(node,tag){return Array.from(node?.children||[]).filter(n=>n.localName===tag)}
 function nodeText(node,tag){return (child(node,tag)?.textContent||'').trim()}
 
+// Convert MusicXML metronome marks to crotchets per minute for playback.
+// A dotted crotchet is 1.5 crotchets; <sound tempo> is already quarter-based.
+function directionQuarterBpm(direction){
+ const sound=child(direction,'sound');
+ if(sound?.hasAttribute('tempo')){
+  const explicit=Number(sound.getAttribute('tempo'));
+  if(Number.isFinite(explicit)&&explicit>0)return explicit;
+ }
+ const metronome=children(direction,'direction-type')
+  .map(type=>child(type,'metronome')).find(Boolean);
+ if(!metronome)return NaN;
+ const perMinute=Number(nodeText(metronome,'per-minute'));
+ const beatLength={whole:4,half:2,quarter:1,eighth:.5,'16th':.25}[nodeText(metronome,'beat-unit')];
+ if(!Number.isFinite(perMinute)||perMinute<=0||!beatLength)return NaN;
+ let dottedFactor=1;
+ for(let i=1;i<=Math.min(3,children(metronome,'beat-unit-dot').length);i++)dottedFactor+=2**-i;
+ return perMinute*beatLength*dottedFactor;
+}
 function readImportedBarMarks(measure,isFirst=false){
  const d={};
  for(const line of children(measure,'barline')){
@@ -2786,15 +2804,18 @@ function readImportedBarMarks(measure,isFirst=false){
    if(wedge==='crescendo'||wedge==='diminuendo')d.dynamic=wedge;
    const shift=child(node,'octave-shift')?.getAttribute('type');
    if(shift==='down'){d.octave=true;d.octaveEncoded=true;}
-   const bpmMatch=words.match(/(?:♩|quarter|crotchet|j)\s*\.?\s*=\s*(\d{2,3})/i);
-   if(!isFirst&&bpmMatch){const bpm=Number(bpmMatch[1]);if(bpm>=40&&bpm<=220)d.tempoBpm=bpm;}
+   const bpmMatch=words.match(/(?:♩|quarter|crotchet|j)\s*(\.)?\s*=\s*(\d{2,3})/i);
+   if(!isFirst&&bpmMatch){
+    const bpm=Math.round(Number(bpmMatch[2])*(bpmMatch[1]?1.5:1));
+    if(bpm>=40&&bpm<=220)d.tempoBpm=bpm;
+   }
   }
   if(snd?.hasAttribute('dacapo'))d.sign='dc';
   else if(snd?.hasAttribute('dalsegno'))d.sign='ds';
   else if(snd?.hasAttribute('segno'))d.sign='segno';
   else if(snd?.hasAttribute('fine'))d.sign='fine';
-  const fromSound=Number(snd?.getAttribute('tempo'));
-  if(!isFirst&&fromSound>=40&&fromSound<=220)d.tempoBpm=Math.round(fromSound);
+  const fromDirection=directionQuarterBpm(direction);
+  if(!isFirst&&fromDirection>=40&&fromDirection<=220)d.tempoBpm=Math.round(fromDirection);
  }
  return d;
 }
@@ -2829,7 +2850,7 @@ function parseMusicXML(source){
      const time=child(node,'time');if(time){beats=Number(nodeText(time,'beats'))||beats;beatType=Number(nodeText(time,'beat-type'))||beatType;if(beats>0&&beats<20&&[1,2,4,8,16].includes(beatType))signature=beats+'/'+beatType;}
      for(const clef of children(node,'clef')){const number=Number(clef.getAttribute('number'))||1;currentClefs[number]=nodeText(clef,'sign')==='F'?'bass':'treble';}
     }else if(tag==='direction'){
-     const snd=child(node,'sound'),beatsPer=Number(snd?.getAttribute('tempo')||nodeText(child(child(node,'direction-type'),'metronome'),'per-minute'));
+     const beatsPer=directionQuarterBpm(node);
      if(beatsPer>=30&&beatsPer<=240&&detectedTempo===null)detectedTempo=beatsPer;
      const type=child(node,'direction-type'),dyn=child(type,'dynamics');
      if(dyn){
@@ -2867,7 +2888,8 @@ function parseMusicXML(source){
      const marks=children(notations,'slur'),slurStart=marks.some(x=>x.getAttribute('type')==='start'),
        slurStop=marks.some(x=>x.getAttribute('type')==='stop');
      const voiceKey=[pi,staff,voice].join(':');
-     const legato=slurStart||(activeSlurs.has(voiceKey)&&!slurStop);
+     // The ending note still belongs to the slur; clear the state afterwards.
+     const legato=slurStart||activeSlurs.has(voiceKey);
      if(slurStart)activeSlurs.add(voiceKey);
      if(slurStop)activeSlurs.delete(voiceKey);
      const tieKey=[pi,staff,voice,midi].join(':');

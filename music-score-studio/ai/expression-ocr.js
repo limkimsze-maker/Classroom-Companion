@@ -27,8 +27,13 @@ function classifyMusicTerm(source){
  if(/^fine\.?$/.test(text))return {kind:'sign',value:'fine'};
  if(/^(?:segno|sign)\.?$/.test(text))return {kind:'sign',value:'segno'};
  if(/^(?:8va|8va\.)$/.test(text))return {kind:'octave',value:true};
- const digit=text.match(/^(?:j|q|quarter|crotchet|♩)\s*=\s*(\d{2,3})$/);
- if(digit){const bpm=Number(digit[1]);if(bpm>=40&&bpm<=220)return {kind:'tempoBpm',value:bpm};}
+ // A dotted crotchet is three quavers: convert its pulse to crotchets/minute.
+ // Keep dotted OCR matches for teacher review because the tiny dot is fallible.
+ const digit=text.match(/^(?:j|q|quarter|crotchet|♩)\s*(\.)?\s*=\s*(\d{2,3})$/);
+ if(digit){
+  const bpm=Math.round(Number(digit[2])*(digit[1]?1.5:1));
+  if(bpm>=40&&bpm<=220)return {kind:'tempoBpm',value:bpm,needsReview:!!digit[1]};
+ }
  if(/^(?:a tempo)$/.test(text))return {kind:'tempo',value:'a tempo'};
  if(/^meno mosso$/.test(text))return {kind:'tempo',value:'meno mosso'};
  if(/^(?:pi[uùú] mosso|piu mosso)$/.test(text))return {kind:'tempo',value:'più mosso'};
@@ -80,7 +85,7 @@ function extractMusicTermMatches(words,imageWidth,imageHeight){
     found={...term,confidence:+confidence.toFixed(1),text:part.map(w=>w.text).join(' '),
       x:Math.max(0,Math.min(1,part[0].bbox.x0/imageWidth)),
       y:Math.max(0,Math.min(1,(part[0].bbox.y0+part[0].bbox.y1)/(2*imageHeight))),
-      needsReview:!!term.ambiguous||confidence<(single?91:80),source:'image text'};
+      needsReview:!!term.ambiguous||!!term.needsReview||confidence<(single?91:80),source:'image text'};
     i+=size;break;
    }
    if(found)matches.push(found);else i++;
