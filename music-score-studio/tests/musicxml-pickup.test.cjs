@@ -29,17 +29,17 @@ const word = (tag, text) => element(tag, [], {}, String(text));
 const child = (e, name) => (e?.children || []).find(n => n.localName === name) || null;
 const children = (e, name) => (e?.children || []).filter(n => n.localName === name);
 const nodeText = (e, name) => (child(e, name)?.textContent || '').trim();
-const attributes = () => element('attributes', [
+const attributes = (beats = 4, beatType = 4) => element('attributes', [
   word('divisions', 1),
-  element('time', [word('beats', 4), word('beat-type', 4)])
+  element('time', [word('beats', beats), word('beat-type', beatType)])
 ]);
 const musicNote = (step, octave, duration) => element('note', [
   element('pitch', [word('step', step), word('octave', octave)]),
   word('duration', duration)
 ]);
-function bar(duration, implicit, first = false, step = 'C', octave = 4) {
+function bar(duration, implicit, first = false, step = 'C', octave = 4, meter = [4, 4]) {
   return element('measure', [
-    ...(first ? [attributes()] : []),
+    ...(first ? [attributes(...meter)] : []),
     ...(duration ? [musicNote(step, octave, duration)] : [])
   ], implicit === null ? {} : { implicit: implicit ? 'yes' : 'no' });
 }
@@ -198,3 +198,44 @@ test('a navigation jump does not sustain a tie across non-adjacent bar visits',(
  nearly(timing.notes[0].duration,1);
  nearly(timing.notes[1].duration,2);
 });
+
+for(const [beats,beatType,nominal] of [[2,4,1920],[3,4,2880],[6,8,2880]]){
+ test('entirely empty implicit '+beats+'/'+beatType+' bar uses its own nominal ticks',()=>{
+  const score=onePart(bar(0,true,true,'C',4,[beats,beatType]),bar(1,null));
+  assert.deepEqual(score.measureLength,[nominal,nominal]);
+  assert.deepEqual(score.measureStart,[0,nominal]);
+  assert.equal(noteAtSecondBar(score).start,nominal);
+  assert.equal(score.total,nominal*2);
+  const timing=timingFor(score);
+  nearly(timing.notes[0].onset,nominal/960,'first sounding onset');
+  nearly(timing.total,nominal*2/960,'total playback at 60 BPM');
+ });
+}
+test('two empty implicit 6/8 parts share one nominal bar, not two',()=>{
+ const score=parse([
+  {name:'Melody',bars:[bar(0,true,true,'C',4,[6,8]),bar(1,null,false,'C',5)]},
+  {name:'Bass',bars:[bar(0,true,true,'C',3,[6,8]),bar(1,null,false,'G',3)]}
+ ]);
+ assert.deepEqual(score.measureLength,[2880,2880]);
+ assert.deepEqual(score.measureStart,[0,2880]);
+ assert.equal(score.notes.filter(n=>n.measure===1&&n.start===2880).length,2);
+ const playback=timingFor(score);
+ assert.equal(playback.notes.filter(n=>n.e.measure===1&&Math.abs(n.onset-3)<1e-8).length,2);
+ nearly(playback.total,6);
+});
+for(const [beats,beatType,nominal] of [[2,4,1920],[3,4,2880],[6,8,2880]]){
+ test('silent first-part implicit pickup stays one beat in '+beats+'/'+beatType,()=>{
+  const score=parse([
+   {name:'Silent accompaniment',bars:[bar(0,true,true,'C',3,[beats,beatType]),bar(1,null,false,'G',3)]},
+   {name:'Melody',bars:[bar(1,true,true,'C',4,[beats,beatType]),bar(1,null,false,'D',4)]}
+  ]);
+  assert.deepEqual(score.measureLength,[960,nominal]);
+  assert.deepEqual(score.measureStart,[0,960]);
+  assert.equal(score.notes.filter(n=>n.measure===1&&n.start===960).length,2);
+  const playback=timingFor(score);
+  const sounding=playback.notes.filter(n=>n.e.measure===1);
+  assert.equal(sounding.length,2);
+  sounding.forEach(n=>nearly(n.onset,1,'aligned simultaneous note onset'));
+  nearly(playback.total,1+nominal/960,'total pickup score at 60 BPM');
+ });
+}
