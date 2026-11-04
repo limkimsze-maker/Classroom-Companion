@@ -204,3 +204,24 @@ test('OCR/teacher bar direction can override native scheduled gain when applied'
  const timing=perform(x.score,60/96/x.score.TPQ,[0]);
  near(timing.notes[0].volume,scaled(.4));
 });
+
+test('playPiano dispatch honours sound dynamics and omits silent oscillators',async()=>{
+ const score=parse([[[dir([dyn('f')],{sound:0}),note('C'),
+  dir([],{sound:45}),note('D')]]]);
+ const calls=[];
+ const playCode=slice('async function playPiano(){','/* Five pictured note stamps.');
+ const factory=new Function(
+  'piano','context','window','playing','stopPlayback','flash','ensureAudioBus',
+  '$','expandMarkedBarOrder','MUSICAL_DYNAMICS','CLASSROOM_TEMPOS',
+  'updateScoreFocusButtons','tone','startPianoTracking','setTimeout','updateStatus',
+  'let stopTimer=null;\n'+performanceCode+'\n'+playCode+'\nreturn playPiano;'
+ );
+ const play=factory(score,{currentTime:5,resume:async()=>{}},{},false,
+  ()=>{},()=>{},()=>{},id=>id==='pianoTempo'?{value:'96'}:{},
+  count=>Array.from({length:count},(_,i)=>i),dynamics,{},()=>{},
+  (...args)=>calls.push(args),()=>{},()=>0,()=>{}
+ );
+ await play();
+ assert.equal(calls.length,1,'a zero-dynamic note should never reach the oscillator');
+ near(calls[0][3],scaled(.5),'actual tone dispatch volume');
+});
