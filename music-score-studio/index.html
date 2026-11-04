@@ -2893,9 +2893,14 @@ function parseMusicXML(source){
    const items=[],measure=measures[mi];
    if(!importedMarks[mi])importedMarks[mi]={};
    const marks=readImportedBarMarks(measure,mi===0);
-   // Do not promote native note-timed dynamics to whole-bar playback.
-   // Teacher-reviewed OCR directions still use barMarks.dynamic.
-   delete marks.dynamic;
+   // Explicit MusicXML dynamics are note-timed below. Keep word-only
+   // cresc./dim. bar directions (and teacher-reviewed OCR overrides) working.
+   const nativeDynamics=children(measure,'direction').some(direction=>
+    children(direction,'direction-type').some(type=>
+     !!child(type,'dynamics')||!!child(type,'wedge'))||
+    !!child(direction,'sound')?.hasAttribute('dynamics'))||
+    children(measure,'sound').some(sound=>sound.hasAttribute('dynamics'));
+   if(nativeDynamics)delete marks.dynamic;
    Object.assign(importedMarks[mi],marks);
    const currentTicks=()=>Math.max(1,Math.round(beats*TPQ*4/beatType));
    const durationFor=el=>Math.max(0,Math.round((Number(nodeText(el,'duration'))||0)/Math.max(1,divisions)*TPQ));
