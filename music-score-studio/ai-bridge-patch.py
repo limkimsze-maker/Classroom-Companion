@@ -97,8 +97,13 @@ window.addEventListener("message", async event => {
 });
 companionSend({type:"ready"});
 """
+code="/* Partsong AI reader: original source © 2026 Paul Fremantle (AGPL-3.0).\n * Classroom Companion bridge and local modifications © 2026 Lim Kim Sze.\n * Modified 2026-11-04: same-origin score-photo/MusicXML integration, progress\n * reporting, diagnostic options, local classroom attribution and no analytics.\n * Modified source, build details and license: music-score-studio/ai/SOURCE.md\n * No warranty; upstream authors do not endorse this adaptation.\n */\n"+code
 SRC.write_text(code,encoding="utf-8")
 page=html.read_text(encoding="utf-8")
+if not page.startswith("<!doctype html>\\n"):
+    raise SystemExit("Unexpected Partsong HTML doctype; update source notices manually")
+page=page.replace("<!doctype html>\\n","<!doctype html>\\n"+"<!-- Partsong reader adapted for Classroom Companion by Lim Kim Sze on 2026-11-04; GNU AGPL-3.0. Original © 2026 Paul Fremantle. Source and changes: ./SOURCE.md. No warranty. -->\n",1)
+page=page.replace('<link rel="canonical" href="https://partsong.app/">','<link rel="canonical" href="https://limkimsze-maker.github.io/Classroom-Companion/music-score-studio/ai/">',1)
 page, count=re.subn(r'\s*<script data-goatcounter="[^"]*"[^>]*></script>','',page)
 if count!=1:
     raise SystemExit("Cannot remove optional upstream analytics script")
