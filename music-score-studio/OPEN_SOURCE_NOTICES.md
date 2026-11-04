@@ -4,7 +4,7 @@ This notice applies to `music-score-studio/` only. It **does not automatically c
 
 ## License and source
 
-**Music Score Studio original code and adaptations:** © 2026 Lim Kim Sze. Original Studio contributions are made available under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. The full source for this application is published at https://github.com/limkimsze-maker/Classroom-Companion/tree/main/music-score-studio. Read the license at `LICENSE`. Existing copyright statements and separate licenses of third-party materials remain intact.
+**Music Score Studio original code and adaptations:** © 2026 Lim Kim Sze. Original Studio contributions are made available under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. This grant concerns contributions for which Lim Kim Sze holds the necessary rights; it does not purport to license material owned by others without their permission. The full source for this application is published at https://github.com/limkimsze-maker/Classroom-Companion/tree/main/music-score-studio. Read the license at `LICENSE`. Existing copyright statements and separate licenses of third-party materials remain intact.
 
 **AI music reader:** Modified from [Partsong](https://github.com/pzfreo/partsong) © 2026 Paul Fremantle. Partsong incorporates [homr](https://github.com/liebharc/homr) by Christian Liebhardt and [homr-rs](https://github.com/pzfreo/homr-rs). The reader and modifications are AGPL-3.0; the complete modified web source and licensing notices are at `ai/`, with rebuild instructions in `ai/SOURCE.md` and `ai-bridge-patch.py`. Changes include a same-origin photo/MusicXML bridge, progress reporting, adapted UI and removal of optional analytics.
 
