@@ -911,7 +911,7 @@ function cleanBarDirective(raw){
  const out={};
  for(const key of DIRECTION_KEYS){
   const input=key==='octave'?raw[key]===true:String(raw[key]||'');
-  if(ALLOWED_MARKS[key].includes(input)&&(input===true||input!==''))out[key]=input;
+  if(ALLOWED_MARKS[key].includes(input)&&(key==='octave'?input===true:input!==''))out[key]=input;
  }
  return out;
 }
