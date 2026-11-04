@@ -3155,15 +3155,16 @@ function startPianoTracking(audioStart,secondsPerTick,timing=null){
   events.push({at:off,index:i,on:false});
  });
  events.sort((a,b)=>a.at-b.at||(a.on===b.on?0:a.on?1:-1));
- let at=0,lastScroll=0,initial=true;
+ let at=0,lastScroll=0,initial=true,lastCursorTick=-Infinity;
  const active=new Set();
  const frame=()=>{
   if(token!==pianoTrackingToken||!playing||!piano||!context)return;
   const elapsed=context.currentTime-audioStart;
   const tick=timing?timing.tickAtSeconds(elapsed):elapsed/secondsPerTick;
   if(tick>=0){
-   let newest=-1;
+   let newest=-1,activeChanged=false;
    while(at<events.length&&events[at].at<=elapsed+.012){
+    activeChanged=true;
     const event=events[at++],node=pianoNoteNodes.get(event.index);
     if(event.on){active.add(event.index);pianoActiveIndices.add(event.index);newest=event.index;node?.classList.add('is-playing');simpleNoteNodes.get(event.index)?.classList.add('active');}
     else{active.delete(event.index);pianoActiveIndices.delete(event.index);node?.classList.remove('is-playing');simpleNoteNodes.get(event.index)?.classList.remove('active');}
@@ -3180,7 +3181,14 @@ function startPianoTracking(audioStart,secondsPerTick,timing=null){
      lastScroll=performance.now();
     }
    }
-   if(initial||newest>=0){moveEngravedPlaybackCursor(tick);initial=false;}
+   if(newest<0&&(activeChanged||initial)&&active.size===0){
+    const status=document.getElementById('pianoNowPlaying');
+    if(status)status.textContent='Following the score · no notes sounding';
+   }
+   // Scroll and engraved-score cursor must keep following musical time in silence.
+   if(initial||newest>=0||Math.abs(tick-lastCursorTick)>=Math.max(30,(piano.TPQ||960)/8)){
+    moveEngravedPlaybackCursor(tick);lastCursorTick=tick;initial=false;
+   }
   }
   if((timing?context.currentTime-audioStart<timing.total+.5:tick<piano.total+1))pianoTrackingFrame=requestAnimationFrame(frame);
  };
@@ -3600,7 +3608,8 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
       (e.marcato?1.48:e.accent?1.27:1)*(direction.expression==='dolce'?.83:1);
    const midi=e.midi+(direction.octave&&!direction.octaveEncoded?12:0);
    notes.push({e,index,onset,duration,volume,midi});
-   events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
+   // Silent imported notes remain in the score, but do not sound or highlight.
+   if(volume>0)events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
   }
   elapsed=barStart+localTime(length);
   segments.push({bar,start:barStart,end:elapsed,length,pauses,localSeconds,tempoStart:barBpm,tempoEnd:targetBpm});
