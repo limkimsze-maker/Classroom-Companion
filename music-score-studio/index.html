@@ -3231,10 +3231,13 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
   else if(direction.dynamic==='crescendo')endDynamic=Math.min(1.3,dynamic*1.4);
   else if(direction.dynamic==='diminuendo')endDynamic=Math.max(.25,dynamic*.7);
   const gainAt=t=>beginDynamic+(endDynamic-beginDynamic)*fraction(t,length);
+  // Capture each bar's tempo independently. The outer BPM changes next bar,
+  // but stored cursor maps must retain their original tempo.
+  const barBpm=bpm,barDelta=targetBpm-barBpm;
   const localSeconds=t=>{
-   const clamped=Math.max(0,Math.min(length,t)),delta=targetBpm-bpm;
-   if(Math.abs(delta)<.00001)return clamped*60/(score.TPQ*bpm);
-   return 60/score.TPQ*length/delta*Math.log((bpm+delta*fraction(clamped,length))/bpm);
+   const clamped=Math.max(0,Math.min(length,t));
+   if(Math.abs(barDelta)<.00001)return clamped*60/(score.TPQ*barBpm);
+   return 60/score.TPQ*length/barDelta*Math.log((barBpm+barDelta*fraction(clamped,length))/barBpm);
   };
   const pauseMap=new Map();
   for(const {e} of entries)if(e.fermata){
@@ -3265,7 +3268,7 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
    events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
   }
   elapsed=barStart+localTime(length);
-  segments.push({bar,start:barStart,end:elapsed,length,pauses,localSeconds,tempoStart:bpm,tempoEnd:targetBpm});
+  segments.push({bar,start:barStart,end:elapsed,length,pauses,localSeconds,tempoStart:barBpm,tempoEnd:targetBpm});
   bpm=targetBpm;dynamic=endDynamic;
   if(notes.length>6500)throw Error('Too many repeated notes for a reliable classroom performance.');
  }
