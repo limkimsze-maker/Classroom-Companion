@@ -143,6 +143,16 @@
 
 
 
+
+.musicNoteContextMenu{position:fixed;z-index:2500;width:235px;padding:10px;border-radius:13px;background:#fff;box-shadow:0 14px 42px #142f4b45;border:2px solid #77abb5;display:flex;flex-direction:column;gap:6px;font:13px/1.3 system-ui,sans-serif}
+.musicNoteContextMenu[hidden]{display:none!important}
+.musicNoteContextMenu strong{color:#1c4b5b;font-size:13px;padding:2px 4px 7px}
+.musicNoteContextMenu button{min-height:43px;border:1px solid #b7cfd4;border-radius:9px;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:8px 11px;font-weight:800;color:#214658;background:#f9fcfc;text-align:left;cursor:pointer}
+.musicNoteContextMenu button:hover,.musicNoteContextMenu button:focus-visible{background:#e6f6f2;outline:2px solid #54aeb1}
+.musicNoteContextMenu button[data-current="true"]{border-color:#087b86;background:#dcf4ee}
+.musicNoteContextMenu button span{color:#496474;font-size:11px;font-weight:650}
+.musicNoteContextMenu small{font-size:10px;padding:3px 4px;color:#61747c}
+
 /* Draw notes first, Beautify All once. Distinct note values and subtool separation. */
 .annotationToolbar .musicValueBtn{display:flex;align-items:center;gap:4px;border:2px solid #aacbd1;min-height:42px;font-weight:750}
 .annotationToolbar .musicValueBtn.is-current,.annotationToolbar .musicWriteBtn.is-current,.annotationToolbar .musicBoxBtn.is-current{background:#d9f1ed;color:#065664;border-color:#087b86;box-shadow:inset 0 0 0 1px #087b86}
@@ -244,6 +254,13 @@
   <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes and music handwriting, with confirmation and Undo">⌫ Clear Score</button>
   <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Auto recognition ON · Half by default. Right-click a note for Quarter.</span>
  </div>
+
+<div id="musicNoteContextMenu" class="musicNoteContextMenu" role="menu" aria-label="Choose note duration" hidden>
+ <strong id="musicNoteMenuCaption">Musical note</strong>
+ <button type="button" data-note-duration="2" role="menuitem">◯ Half note <span>2 beats</span></button>
+ <button type="button" data-note-duration="4" role="menuitem">● Quarter note <span>1 beat</span></button>
+ <small>Right-click a note to change its duration.</small>
+</div>
  <div class="annotationToolbarInner">
   <strong>🖍 Teacher Annotations · marks only (not musical notes)</strong>
   <button type="button" class="annotationBtn active" data-annotation-tool="cursor" aria-pressed="true" title="Turn off annotation and interact with the original music score">↖ Cursor</button>
@@ -790,7 +807,7 @@ if(boxSelectedNotes.size||boxSelectedStrokes.size){
  const del=document.createElement('button');del.className='smallBtn';del.textContent='Delete selection';del.onclick=deleteBoxSelection;actions.append(del);
 }else if(s){const label=document.createElement('span');label.className='editLabel';label.textContent=`Selected: ${noteName(s.e)} · Bar ${s.bar+1}`;actions.append(label);if(s.e.kind==='note'){for(const [t,n] of [['↑ Higher',1],['↓ Lower',-1]]){const b=document.createElement('button');b.className='smallBtn';b.textContent=t;b.onclick=()=>adjustPitch(n);actions.append(b)}}const apply=document.createElement('button');apply.className='smallBtn';apply.textContent='Apply value';apply.title='Apply selected duration, dot and accidental to this symbol';apply.onclick=applyValue;actions.append(apply);const del=document.createElement('button');del.className='smallBtn';del.style.color='#ae4148';del.textContent='Delete';del.onclick=removeSelected;actions.append(del)}else{const l=document.createElement('span');l.className='editLabel';l.textContent='Select a symbol to move, edit or delete it';actions.append(l)}$('removeBar').disabled=data.bars.length<=1||data.bars[data.bars.length-1].length>0;updateHistoryButtons()}
 function svgPoint(ev){const svg=$('score'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const m=svg.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0}}
-function clicked(ev){if(tool==='pen'||tool==='box'||drag?.moved)return;const target=ev.target.closest('[data-id], [data-bar]');if(!target)return;
+function clicked(ev){if(suppressNoteClick){suppressNoteClick=false;return;}if(tool==='pen'||tool==='box'||drag?.moved)return;const target=ev.target.closest('[data-id], [data-bar]');if(!target)return;
 if(target.hasAttribute('data-id')){selectEvent(target.dataset.id);return}
 if(tool==='select')return;
 const bar=Number(target.dataset.bar),top=Number(target.dataset.top),left=Number(target.dataset.left),width=Number(target.dataset.width);if(bar<0||bar>=data.bars.length)return;const p=svgPoint(ev);const pitch=pitchOfY(p.y,top);const index=findInsertIndex(bar,p.x,left,width);addEvent(bar,index,pitch)}
@@ -1060,8 +1077,103 @@ function clearInkStrokes(){
  updateStatus(m);flash('Drawings cleared · Undo to restore');
 }
 
+
+let noteMenuTarget=null,noteHoldTimer=null,noteHoldStart=null,suppressNoteClick=false;
+function nearestMusicNote(p){
+ const layout=staffLayout();let result=null,best=31;
+ // First, let a still-handwritten notehead be edited before Beautify All.
+ for(let i=0;i<data.strokes.length;i++){
+  const stroke=data.strokes[i];
+  if(stroke?.kind!=='music'||!stroke.points?.length)continue;
+  const head=inkFindNotehead(stroke.points);
+  if(!head)continue;
+  const place=inkLocateHead(head,layout,data.bars.length);
+  if(!place)continue;
+  const distance=Math.hypot(p.x-head.x,p.y-head.y);
+  if(distance<best){best=distance;result={type:'ink',index:i,den:[2,4].includes(+stroke.den)?+stroke.den:2,pitch:pitchOfY(head.y,place.top)};}
+ }
+ // Then match actual beautified notation, using the notehead centre rather than the broad hitbox.
+ for(let bar=0;bar<data.bars.length;bar++){
+  const events=data.bars[bar],top=layout.top(Math.floor(bar/2)),left=layout.left+(bar%2)*layout.barW;
+  const xs=eventPositions(events,left,layout.barW);
+  for(let i=0;i<events.length;i++){
+   const e=events[i];if(e.kind!=='note')continue;
+   const y=top+72-(noteIndex(e.step,e.octave)-bottomIndex())*9;
+   const distance=Math.hypot(p.x-xs[i],p.y-y);
+   if(distance<best){best=distance;result={type:'note',id:e.id,den:e.den,pitch:{step:e.step,octave:e.octave}};}
+  }
+ }
+ return result;
+}
+function hideMusicNoteMenu(){
+ $('musicNoteContextMenu').hidden=true;noteMenuTarget=null;
+}
+function showMusicNoteMenu(target,clientX,clientY){
+ if(!target)return;
+ noteMenuTarget=target;const menu=$('musicNoteContextMenu');
+ $('musicNoteMenuCaption').textContent=target.pitch.step+target.pitch.octave+' · '+(target.den===4?'Quarter (1 beat)':'Half (2 beats)');
+ menu.querySelectorAll('[data-note-duration]').forEach(btn=>btn.dataset.current=String(Number(btn.dataset.noteDuration)===target.den));
+ menu.hidden=false;
+ const width=menu.offsetWidth||235,height=menu.offsetHeight||155;
+ menu.style.left=Math.max(5,Math.min(clientX,window.innerWidth-width-6))+'px';
+ menu.style.top=Math.max(5,Math.min(clientY,window.innerHeight-height-6))+'px';
+ menu.querySelector('[data-note-duration="'+(target.den===4?4:2)+'"]')?.focus({preventScroll:true});
+}
+function updateMusicNoteDuration(next){
+ const target=noteMenuTarget;if(!target||![2,4].includes(next))return;
+ if(target.type==='ink'){
+  const stroke=data.strokes[target.index];if(!stroke||stroke.kind!=='music'){hideMusicNoteMenu();return;}
+  if(stroke.den===next){hideMusicNoteMenu();return;}
+  change();stroke.den=next;stroke.color=next===2?'#2876ac':'#c45c34';commit();
+ }else{
+  let found=null,bar=-1;
+  for(let b=0;b<data.bars.length;b++){const e=data.bars[b].find(x=>x.id===target.id);if(e){found=e;bar=b;break;}}
+  if(!found||found.kind!=='note'){hideMusicNoteMenu();return;}
+  if(found.den===next){hideMusicNoteMenu();return;}
+  const proposed={...found,den:next};
+  if(sumBar(data.bars[bar])-ticks(found)+ticks(proposed)>cap()+.001){
+   hideMusicNoteMenu();flash('This bar does not have room for a half note.');return;
+  }
+  change();found.den=next;commit();
+ }
+ hideMusicNoteMenu();
+ const message=next===4?'● Quarter note · 1 beat':'◯ Half note · 2 beats';
+ $('beautifyFeedback').textContent=message+' · Updated. Undo is available.';
+ updateStatus(message);flash(message);
+}
+function onMusicNoteRightClick(ev){
+ const match=nearestMusicNote(svgPoint(ev));
+ if(!match)return;
+ ev.preventDefault();ev.stopPropagation();showMusicNoteMenu(match,ev.clientX,ev.clientY);
+}
+function clearMusicLongPress(){
+ clearTimeout(noteHoldTimer);noteHoldTimer=null;noteHoldStart=null;
+}
+function beginMusicLongPress(ev,p){
+ if(!['touch','pen'].includes(ev.pointerType)||ev.button!==0)return;
+ const target=nearestMusicNote(p);if(!target)return;
+ clearMusicLongPress();
+ const hold={id:ev.pointerId,x:ev.clientX,y:ev.clientY,target};
+ noteHoldStart=hold;
+ noteHoldTimer=setTimeout(()=>{
+  if(noteHoldStart!==hold)return;
+  if(drag?.pointer===hold.id){
+   drag=null;penDraft=null;boxDraft=null;render();
+   try{$('score').releasePointerCapture(hold.id);}catch(_){}
+  }
+  suppressNoteClick=true;
+  showMusicNoteMenu(hold.target,hold.x,hold.y);
+  clearMusicLongPress();
+ },620);
+}
+function cancelMusicLongPressOnMovement(ev){
+ const hold=noteHoldStart;
+ if(hold&&hold.id===ev.pointerId&&Math.hypot(ev.clientX-hold.x,ev.clientY-hold.y)>10)clearMusicLongPress();
+}
+
 function pointerDown(ev){
- const p=svgPoint(ev);
+ if(ev.button===2)return;
+ const p=svgPoint(ev);beginMusicLongPress(ev,p);
  if(tool==='box'){
   ev.preventDefault();boxDraft={x0:p.x,y0:p.y,x1:p.x,y1:p.y};
   drag={type:'box',pointer:ev.pointerId,moved:false};$('score').setPointerCapture(ev.pointerId);render();return;
@@ -1078,6 +1190,7 @@ function pointerDown(ev){
  }
 }
 function pointerMove(ev){
+ cancelMusicLongPressOnMovement(ev);
  if(!drag||ev.pointerId!==drag.pointer)return;
  const p=svgPoint(ev);
  if(drag.type==='box'){boxDraft.x1=p.x;boxDraft.y1=p.y;drag.moved=true;render();return;}
@@ -1094,6 +1207,7 @@ function pointerMove(ev){
  }
 }
 function pointerUp(ev){
+ clearMusicLongPress();
  if(!drag||ev.pointerId!==drag.pointer)return;
  const old=drag;drag=null;
  if(old.type==='box'){
@@ -1871,7 +1985,13 @@ $('tempo').addEventListener('change',ev=>{let v=Math.min(220,Math.max(40,Math.ro
 $('instrument').addEventListener('change',ev=>{if(data.instrument===ev.target.value)return;change();data.instrument=ev.target.value;commit();flash('Playback sound changed · Press Play to listen');});
 for(const id of ['pitchNames','metronome'])$(id).addEventListener('change',ev=>{change();data[id]=ev.target.checked;commit()});
 for(const id of ['title','composer'])$(id).addEventListener('change',ev=>{const v=ev.target.value.slice(0,100);if(v===data[id])return;change();data[id]=v;commit()});
-$('score').addEventListener('click',clicked);$('score').addEventListener('pointerdown',pointerDown);$('score').addEventListener('pointermove',pointerMove);$('score').addEventListener('pointerup',pointerUp);$('score').addEventListener('pointercancel',pointerUp);
+$('score').addEventListener('click',clicked);
+$('score').addEventListener('contextmenu',onMusicNoteRightClick);
+$('musicNoteContextMenu').querySelectorAll('[data-note-duration]').forEach(b=>b.addEventListener('click',()=>updateMusicNoteDuration(Number(b.dataset.noteDuration))));
+document.addEventListener('pointerdown',ev=>{if(!$('musicNoteContextMenu').hidden&&!ev.target.closest('#musicNoteContextMenu'))hideMusicNoteMenu();},{capture:true});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape')hideMusicNoteMenu();});
+window.addEventListener('scroll',hideMusicNoteMenu,{capture:true,passive:true});
+$('score').addEventListener('pointerdown',pointerDown);$('score').addEventListener('pointermove',pointerMove);$('score').addEventListener('pointerup',pointerUp);$('score').addEventListener('pointercancel',pointerUp);
 $('addBar').onclick=()=>setBarsCount(true);$('removeBar').onclick=()=>setBarsCount(false);$('undo').onclick=undo;$('redo').onclick=redo;
 $('play').onclick=play;$('stop').onclick=stopPlayback;$('soundDemo').onclick=soundDemo;$('print').onclick=()=>{window.print()};$('saveSVG').onclick=exportSVG;$('savePNG').onclick=exportPNG;$('saveXML').onclick=exportMusicXML;
 $('exportJSON').onclick=()=>{download(new Blob([JSON.stringify({...data,format:'cc-music-score-studio',version:1},null,2)],{type:'application/json'}),filename()+'.json');flash('Editable project saved')};
