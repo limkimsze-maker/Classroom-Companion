@@ -15,7 +15,11 @@ function extract(start, end) {
   assert.ok(from >= 0 && to > from, 'Expected parser or timing function in index.html');
   return html.slice(from, to);
 }
-const parserText = extract('function parseMusicXML(source){', '\nfunction pianoSVG(');
+// PR #64 adds a dynamics helper immediately before the parser. Include it
+// when both reviewed changes are combined; keep the pickup-only branch runnable.
+const parserStart = html.includes('function applyImportedDynamicEvents(')
+  ? 'function applyImportedDynamicEvents(' : 'function parseMusicXML(source){';
+const parserText = extract(parserStart, '\nfunction pianoSVG(');
 const timingText = extract('function createImportedRepeatedTiming(score,secondsPerTick,order){', '\nasync function playPiano(){');
 function element(localName, children = [], attributes = {}, ownText = null) {
   return {
