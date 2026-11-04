@@ -41,3 +41,10 @@ These edits are documented in `../ai-bridge-patch.py`, in the modified source fi
 - The original Partsong `privacy.html` and `terms.html` are preserved as upstream files; they describe the original Partsong service and should not be treated as terms for this separately hosted classroom adaptation.
 
 **This notice is not a legal opinion.** A compliance review should still check complete corresponding build source for the precompiled WASM artifacts, software-license scope of the host integration and any model-training data rights.
+
+## Automatic printed-term recognition
+
+- The new `ai/expression-ocr.js` is an AGPL-3.0 classroom-specific addition that matches OCR text to recognised musical directions; its source is distributed here.
+- **Tesseract.js 5.1.1** (Apache-2.0): https://github.com/naptha/tesseract.js ; loaded only when a photo needs OCR from https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js .
+- Photos are interpreted in the user's browser. The JavaScript library and language data must be downloaded initially, but images are not uploaded.
+- Printed words and estimated bar positions can be incorrect, and the underlying homr model can still miss small note-level signs. Users can review and correct suggestions in the score player.
