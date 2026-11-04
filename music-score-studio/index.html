@@ -1098,8 +1098,10 @@ const top=layout.top(sys);for(let r=0;r<5;r++)line(svg,27,top+r*18,layout.right,
 drawClef(svg,top);
 if(sys===0){
  const [numer,denom]=data.meter.split('/');
- textSvg(svg,100,top+33,numer,29,{'text-anchor':'middle','font-weight':800});
- textSvg(svg,100,top+67,denom,29,{'text-anchor':'middle','font-weight':800});
+ // Allow extra clearance after the two bass-clef dots.
+ const timeX=data.clef==='bass'?112:100;
+ textSvg(svg,timeX,top+33,numer,29,{'text-anchor':'middle','font-weight':800});
+ textSvg(svg,timeX,top+67,denom,29,{'text-anchor':'middle','font-weight':800});
 }
 // No starting barline after the clef and time signature: standard engraving
 // begins the first measure directly. The measure-end and final barlines remain.
