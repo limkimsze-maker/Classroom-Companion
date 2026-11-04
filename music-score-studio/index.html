@@ -2830,7 +2830,7 @@ function parseMusicXML(source){
  if(!parts.length)throw Error('No musical parts were found in this MusicXML.');
  if(parts.length>12)throw Error('This score has too many parts for the classroom player.');
  const TPQ=960,steps={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
- const parsedParts=[],allMeasures=[],rawNotes=[],names={},importedMarks=[];let detectedTempo=null,signature='4/4';
+ const parsedParts=[],allMeasures=[],emptyImplicitNominals=[],rawNotes=[],names={},importedMarks=[];let detectedTempo=null,signature='4/4';
  for(const scorePart of children(child(root.documentElement,'part-list'),'score-part'))names[scorePart.getAttribute('id')]=nodeText(scorePart,'part-name')||'Instrument';
  for(let pi=0;pi<parts.length;pi++){
   const part=parts[pi],partName=names[part.getAttribute('id')]||'Part '+(pi+1),measures=children(part,'measure');
@@ -2908,14 +2908,16 @@ function parseMusicXML(source){
    const measureTicks=measure.getAttribute('implicit')==='yes'&&maxCursor>0&&maxCursor<nominalTicks
     ?maxCursor:Math.max(nominalTicks,maxCursor);
    measureResults.push({items,length:measureTicks,signature:beats+'/'+beatType});
-   // An empty implicit pickup in a silent part must not pad the shared bar.
+   // Empty implicit measures should not pad an actual pickup in another part.
+   // Remember their own meter only for bars with no written duration in any part.
    if(maxCursor>0||measure.getAttribute('implicit')!=='yes')
     allMeasures[mi]=Math.max(allMeasures[mi]||0,measureTicks);
+   else emptyImplicitNominals[mi]=Math.max(emptyImplicitNominals[mi]||0,nominalTicks);
   }
   parsedParts.push({name:partName,measures:measureResults});
  }
  const measureStart=[],measureLength=[];let total=0;
- for(let i=0;i<allMeasures.length;i++){measureStart[i]=total;measureLength[i]=allMeasures[i]||4*TPQ;total+=measureLength[i]}
+ for(let i=0;i<allMeasures.length;i++){measureStart[i]=total;measureLength[i]=allMeasures[i]||emptyImplicitNominals[i]||4*TPQ;total+=measureLength[i]}
  for(const part of parsedParts)for(const m of part.measures)for(const note of m.items){
   note.start=(measureStart[note.measure]||0)+note.onset;rawNotes.push(note)
  }
