@@ -2075,52 +2075,139 @@ function clickSound(at,accent=false){
  g.gain.exponentialRampToValueAtTime(.0001,at+.075);
  o.connect(g);g.connect(ensureAudioBus());o.start(at);o.stop(at+.08);oscillators.push(o);
 }
+
+/* Traverse repeat signs and D.C./D.S. al Fine safely.
+   A maximum expansion prevents malformed scores causing endless playback. */
+function expandBarPlayOrder(){
+ const total=data.bars.length,order=[],visitedRepeats=new Set();
+ const isStart=i=>['start','both'].includes(barDirective(i).repeat);
+ const isEnd=i=>['end','both'].includes(barDirective(i).repeat);
+ const repeatTarget=end=>{
+  for(let i=end;i>=0;i--)if(isStart(i))return i;
+  return 0;
+ };
+ const segno=Array.from({length:total},(_,i)=>i).find(i=>barDirective(i).sign==='segno');
+ let index=0,jumped=false;
+ const limit=Math.min(800,total*6+32);
+ while(index>=0&&index<total&&order.length<limit){
+  const d=barDirective(index);
+  if(d.ending==='1'&&!jumped){
+   let end=-1;
+   for(let i=index;i<total;i++)if(isEnd(i)){end=i;break}
+   if(end>=0&&visitedRepeats.has(end)){index=end+1;continue}
+  }
+  order.push(index);
+  if(jumped&&d.sign==='fine')break;
+  if(!jumped&&isEnd(index)&&!visitedRepeats.has(index)){
+   visitedRepeats.add(index);index=repeatTarget(index);continue;
+  }
+  if(!jumped&&(d.sign==='dc'||d.sign==='ds')){
+   jumped=true;
+   index=d.sign==='dc'?0:(segno??0);
+   continue;
+  }
+  index++;
+ }
+ return order;
+}
+function makeMusicPerformance(){
+ const order=expandBarPlayOrder(),links=musicalLinks();
+ const pulseTicks=data.meter==='6/8'?36:24;
+ let bpm=Math.max(30,Number(data.tempo)||96),volume=MUSICAL_DYNAMICS.mf,totalTime=0;
+ const events=[],clicks=[],bars=[];
+ const legato=new Set();
+ for(const [from,to] of links.slurs){
+  const a=links.indices.get(from),b=links.indices.get(to);
+  for(let k=a;k<b;k++)if(links.refs[k]?.e.kind==='note')legato.add(links.refs[k].e.id);
+ }
+ for(const barIndex of order){
+  const direction=barDirective(barIndex),startTime=totalTime,beatCap=cap(),source=data.bars[barIndex];
+  let nextBpm=bpm,nextGain=volume,beginGain=volume,firstForte=false;
+  if(CLASSROOM_TEMPOS[direction.tempo]){bpm=nextBpm=CLASSROOM_TEMPOS[direction.tempo];}
+  else if(direction.tempo==='a tempo')bpm=nextBpm=Math.max(30,Number(data.tempo)||96);
+  else if(direction.tempo==='ritenuto'||direction.tempo==='meno mosso')bpm=nextBpm=Math.max(30,bpm*(direction.tempo==='ritenuto'?.83:.86));
+  else if(direction.tempo==='più mosso')bpm=nextBpm=Math.min(220,bpm*1.16);
+  else if(direction.tempo==='accelerando')nextBpm=Math.min(220,bpm*1.2);
+  else if(['ritardando','rallentando','allargando'].includes(direction.tempo))
+   nextBpm=Math.max(30,bpm*(direction.tempo==='allargando'?.82:.80));
+  if(Object.prototype.hasOwnProperty.call(MUSICAL_DYNAMICS,direction.dynamic))
+   volume=nextGain=beginGain=MUSICAL_DYNAMICS[direction.dynamic];
+  else if(direction.dynamic==='fp'){firstForte=true;beginGain=1.13;nextGain=volume=.45;}
+  else if(direction.dynamic==='crescendo')nextGain=Math.min(1.3,volume*1.40);
+  else if(direction.dynamic==='diminuendo')nextGain=Math.max(.27,volume*.69);
+  const bpmAt=t=>bpm+(nextBpm-bpm)*Math.max(0,Math.min(1,t/beatCap));
+  const gainAt=t=>beginGain+(nextGain-beginGain)*Math.max(0,Math.min(1,t/beatCap));
+  const seconds=(a,b)=>{
+   if(b<=a)return 0;
+   const one=bpmAt(a),two=bpmAt(b),diff=nextBpm-bpm;
+   if(Math.abs(diff)<1e-6)return(b-a)*60/(pulseTicks*one);
+   return (60/pulseTicks)*(beatCap/diff)*Math.log(two/one);
+  };
+  let pos=0,extraPause=0,firstNote=true;
+  const localPauses=[];
+  for(let i=0;i<source.length;i++){
+   const e=source[i],length=ticks(e),sec=seconds(pos,pos+length);
+   const onset=startTime+seconds(0,pos)+extraPause;
+   const pause=e.kind==='note'&&e.fermata?Math.max(.24,sec*.65):0;
+   const midpoint=pos+length*.5;
+   const style=direction.expression||'';
+   const gain=(firstForte&&firstNote?beginGain:gainAt(midpoint))*
+      (style==='dolce'?.83:style==='grazioso'?.93:style==='espressivo'?1.10:1);
+   const exprLegato=['legato','cantabile'].includes(style);
+   let factor=e.staccatissimo?.32:e.staccato?.53:e.portato?.80:
+     e.tenuto?1:e.marcato?.92:legato.has(e.id)||exprLegato?1.03:.96;
+   if(style==='alla marcia'&&!e.tenuto&&!e.staccato&&!e.portato)factor*=.90;
+   if(style==='grazioso')factor*=.97;
+   events.push({e,id:e.id,bar:barIndex,index:i,onset,seconds:sec,
+    duration:e.kind==='note'?(e.fermata?sec+pause:Math.max(.07,sec*factor)):sec,
+    pitch:e.kind==='note'?midiFor(barIndex,i)+(direction.octave?12:0):null,
+    volume:Math.min(1.8,gain*(e.marcato?1.48:e.accent?1.27:1)),start:pos,end:pos+length});
+   if(e.kind==='note')firstNote=false;
+   pos+=length;
+   if(pause>0){extraPause+=pause;localPauses.push({tick:pos,pause});}
+  }
+  if(data.metronome){
+   const limit=data.playFlow?Math.min(pos,beatCap):beatCap;
+   for(let tick=0;tick<limit-.00001;tick+=pulseTicks){
+    const extra=localPauses.reduce((v,p)=>v+(p.tick<=tick+.001?p.pause:0),0);
+    clicks.push({onset:startTime+seconds(0,tick)+extra,accent:tick===0});
+   }
+  }
+  totalTime=startTime+seconds(0,data.playFlow?pos:beatCap)+extraPause;
+  bars.push({bar:barIndex,start:startTime,end:totalTime,startBpm:bpm,endBpm:nextBpm,dynamicStart:beginGain,dynamicEnd:nextGain});
+  bpm=nextBpm;volume=nextGain;
+ }
+ // A tie is one uninterrupted sound. Continuations only join in the actual
+ // expanded performance order, so navigation never falsely joins distant bars.
+ for(let i=0;i<events.length;i++){
+  const event=events[i];if(event.pitch===null||event.skip)continue;
+  let tail=i,count=0;
+  while(count++<200&&tail+1<events.length&&links.ties.get(events[tail].id)===events[tail+1].id
+    &&events[tail].pitch===events[tail+1].pitch){
+   tail++;events[tail].skip=true;
+  }
+  if(tail>i)event.duration=Math.max(event.duration,events[tail].onset+events[tail].duration-event.onset);
+ }
+ return {order,events,clicks,bars,total:totalTime};
+}
 async function play(){
  if(piano)return playPiano();
  if(playing){stopPlayback();return}
  if(!data.bars.some(b=>b.some(e=>e.kind==='note'))){flash('Add some notes first, or load the example.');return}
  try{context=context||new(window.AudioContext||window.webkitAudioContext)();await context.resume();ensureAudioBus()}
  catch(err){flash('Audio playback is not supported here.');return}
+ const performance=makeMusicPerformance();
  playing=true;$('play').textContent='❚❚ Playing';$('stop').disabled=false;
- const quarterSec=(60/data.tempo)*(data.meter==='6/8'?2/3:1);let cursor=0;const begin=context.currentTime+.12;
- const links=musicalLinks(),legato=new Set();
- for(const [from,to] of links.slurs){
-  const a=links.indices.get(from),b=links.indices.get(to);
-  for(let k=a;k<b;k++)if(links.refs[k].e.kind==='note')legato.add(links.refs[k].e.id);
+ const begin=context.currentTime+.12;
+ for(const event of performance.events){
+  if(event.pitch!==null&&!event.skip)tone(event.pitch,begin+event.onset,event.duration,event.volume);
+  const id=event.id,at=begin+event.onset;
+  playTimers.push(setTimeout(()=>{if(!playing)return;playingId=id;render()},Math.max(0,(at-context.currentTime)*1000)));
  }
- function tiedSeconds(startId){
-  let length=0,current=startId,steps=0;
-  while(current&&steps++<240){
-   const i=links.indices.get(current),ref=links.refs[i];
-   if(!ref)break;
-   length+=ticks(ref.e)/24*quarterSec;
-   current=links.ties.get(current);
-  }
-  return length;
- }
- for(let b=0;b<data.bars.length;b++){
-  const barStart=cursor;let tickPos=0;
-  for(let i=0;i<data.bars[b].length;i++){
-   const e=data.bars[b][i],sec=ticks(e)/24*quarterSec;
-   if(e.kind==='note'&&!links.tieEnds.has(e.id)){
-    const duration=links.ties.has(e.id)?tiedSeconds(e.id):
-      e.staccato?sec*.53:legato.has(e.id)?sec*1.045:sec*.96;
-    tone(midiFor(b,i),begin+cursor,Math.max(.07,duration),e.accent?1.27:1);
-   }
-   const id=e.id;
-   const at=begin+cursor;
-   const timer=setTimeout(()=>{if(!playing)return;playingId=id;render()},Math.max(0,(at-context.currentTime)*1000));
-   playTimers.push(timer);cursor+=sec;tickPos+=ticks(e);
-  }
-  if(data.metronome){
-   const beatTicks=data.meter==='6/8'?36:24;
-   for(let tick=0;tick<cap();tick+=beatTicks)
-    clickSound(begin+barStart+tick/24*quarterSec,tick===0);
-  }
-  if(!data.playFlow)cursor+=(cap()-tickPos)/24*quarterSec;
- }
- stopTimer=setTimeout(()=>{stopPlayback();updateStatus('Playback finished.')},(begin+cursor-context.currentTime)*1000+230);
- updateStatus('Playing with '+({piano:'warm piano',musicbox:'music box',flute:'gentle flute',pure:'pure reference tone'}[data.instrument]||'warm piano')+'…');
+ for(const click of performance.clicks)clickSound(begin+click.onset,click.accent);
+ stopTimer=setTimeout(()=>{stopPlayback();updateStatus('Playback finished.')},
+  (begin+performance.total-context.currentTime)*1000+290);
+ updateStatus('Playing '+performance.order.length+' bar visits with tempo, dynamics, articulations and repeat signs.');
 }
 async function soundDemo(){
  if(playing)stopPlayback();
