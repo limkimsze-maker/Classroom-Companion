@@ -2908,7 +2908,9 @@ function parseMusicXML(source){
    const measureTicks=measure.getAttribute('implicit')==='yes'&&maxCursor>0&&maxCursor<nominalTicks
     ?maxCursor:Math.max(nominalTicks,maxCursor);
    measureResults.push({items,length:measureTicks,signature:beats+'/'+beatType});
-   allMeasures[mi]=Math.max(allMeasures[mi]||0,measureTicks);
+   // An empty implicit pickup in a silent part must not pad the shared bar.
+   if(maxCursor>0||measure.getAttribute('implicit')!=='yes')
+    allMeasures[mi]=Math.max(allMeasures[mi]||0,measureTicks);
   }
   parsedParts.push({name:partName,measures:measureResults});
  }
@@ -3509,6 +3511,7 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
    for(const p of pauses){if(p.tick<=t+.0001)result+=p.delay;else break}
    return result;
   };
+  const visitIndex=segments.length;
   for(const {e,index} of entries){
    const onset=barStart+localTime(e.onset);
    const full=localSeconds(Math.min(length,e.onset+e.duration))-localSeconds(e.onset);
@@ -3522,14 +3525,32 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
    const volume=(score.notes.length>100?.53:.68)*baseGain*
       (e.marcato?1.48:e.accent?1.27:1)*(direction.expression==='dolce'?.83:1);
    const midi=e.midi+(direction.octave&&!direction.octaveEncoded?12:0);
-   notes.push({e,index,onset,duration,volume,midi});
-   events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
+   notes.push({e,index,onset,duration,volume,midi,visitIndex});
   }
   elapsed=barStart+localTime(length);
   segments.push({bar,start:barStart,end:elapsed,length,pauses,localSeconds,tempoStart:barBpm,tempoEnd:targetBpm});
   bpm=targetBpm;dynamic=endDynamic;
   if(notes.length>6500)throw Error('Too many repeated notes for a reliable classroom performance.');
  }
+ // The MusicXML parser merges a tied chain into one attack. Preserve its
+ // entire sustain across subsequent bar visits, including shortened pickups.
+ for(const played of notes){
+  const first=segments[played.visitIndex],remainingTicks=played.e.onset+played.e.duration-first.length;
+  if(remainingTicks<=0)continue;
+  let remaining=remainingTicks,end=first.end;
+  for(let i=played.visitIndex+1;i<segments.length&&remaining>0;i++){
+   const previous=segments[i-1],next=segments[i];
+   // A repeat or navigation jump must not extend a tie into another passage.
+   if(next.bar!==previous.bar+1)break;
+   const ticks=Math.min(remaining,next.length);
+   end+=next.localSeconds(ticks);
+   for(const pause of next.pauses)if(pause.tick<=ticks+.0001)end+=pause.delay;
+   remaining-=ticks;
+  }
+  played.duration=Math.max(played.duration,end-played.onset);
+ }
+ for(const {index,onset,duration} of notes)
+  events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
  events.sort((a,b)=>a.at-b.at||(a.on===b.on?0:a.on?1:-1));
  function tickAtSeconds(seconds){
   if(seconds<0)return seconds/secondsPerTick;
