@@ -1017,14 +1017,21 @@ function removeBrokenConnections(){
   if(e.slurTo&&!links.slurs.has(e.id))delete e.slurTo;
  }
 }
+const SHORT_MARKS=['staccato','staccatissimo','portato','tenuto'];
+const FORCE_MARKS=['accent','marcato'];
+const EXTRA_MARKS=[...SHORT_MARKS,...FORCE_MARKS,'fermata'];
 function toggleNoteMark(mark){
- const found=findSelected();if(!found||found.e.kind!=='note')return;
- const links=musicalLinks();
- if(mark==='staccato'&&(links.ties.has(found.e.id)||links.tieEnds.has(found.e.id))){
-  flash('Tied notes sustain as one sound. Remove the tie before adding staccato.');return;
+ const found=findSelected();if(!found||found.e.kind!=='note'||!EXTRA_MARKS.includes(mark))return;
+ const links=musicalLinks(),isShort=['staccato','staccatissimo','portato'].includes(mark);
+ if(isShort&&(links.ties.has(found.e.id)||links.tieEnds.has(found.e.id))){
+  flash('Tied notes are sustained. Remove the tie before selecting a detached articulation.');return;
  }
- change();found.e[mark]=!found.e[mark];commit();
- flash((found.e[mark]?'Added ':'Removed ')+mark+'.');
+ const active=!!found.e[mark];change();
+ for(const family of [SHORT_MARKS,FORCE_MARKS])if(family.includes(mark)){
+  for(const other of family)if(other!==mark)delete found.e[other];
+ }
+ if(active)delete found.e[mark];else found.e[mark]=true;
+ commit();flash((active?'Removed ':'Added ')+mark+'.');
 }
 function toggleNoteTie(){
  const found=findSelected();if(!found||found.e.kind!=='note')return;
@@ -1040,7 +1047,8 @@ function toggleNoteTie(){
  if(found.bar!==next.bar&&Math.abs(sumBar(data.bars[found.bar])-cap())>.001){
   flash('Complete the first bar before tying across its barline.');return;
  }
- change();found.e.tieTo=next.e.id;found.e.staccato=false;next.e.staccato=false;
+ change();found.e.tieTo=next.e.id;
+ for(const note of [found.e,next.e])for(const mark of ['staccato','staccatissimo','portato'])delete note[mark];
  commit();flash('Tie added. The two notes will sustain as one sound.');
 }
 function toggleNoteSlur(){
@@ -1073,8 +1081,13 @@ function addNoteMarkButtons(container,e){
   b.title=description;b.setAttribute('aria-pressed',String(!!pressed));
   b.onclick=action;container.append(b);
  }
- button((e.staccato?'✓ ':'')+'Staccato ·',e.staccato,'Shorten this note without changing its written value',()=>toggleNoteMark('staccato'));
+ button((e.staccato?'✓ ':'')+'Staccato ·',e.staccato,'Detached note',()=>toggleNoteMark('staccato'));
+ button((e.staccatissimo?'✓ ':'')+'Staccatissimo ▾',e.staccatissimo,'Very detached note',()=>toggleNoteMark('staccatissimo'));
+ button((e.portato?'✓ ':'')+'Portato –·',e.portato,'Gently separated notes',()=>toggleNoteMark('portato'));
+ button((e.tenuto?'✓ ':'')+'Tenuto –',e.tenuto,'Full length, slight weight',()=>toggleNoteMark('tenuto'));
  button((e.accent?'✓ ':'')+'Accent >',e.accent,'Give the note extra emphasis',()=>toggleNoteMark('accent'));
+ button((e.marcato?'✓ ':'')+'Marcato ^',e.marcato,'Strong accent',()=>toggleNoteMark('marcato'));
+ button((e.fermata?'✓ ':'')+'Fermata 𝄐',e.fermata,'Pause and hold the note beyond its written value',()=>toggleNoteMark('fermata'));
  button((e.slurTo?'✓ ':'')+'Slur ⌒',!!e.slurTo,'Start or remove a slur. Then choose its ending note.',toggleNoteSlur);
  button((e.tieTo?'✓ ':'')+'Tie ⌣',!!e.tieTo,'Join the immediately following same-pitch note',toggleNoteTie);
  if(pendingSlurStart===e.id){
@@ -1289,13 +1302,33 @@ if(e.acc){let glyph=e.acc==='#'?'♯':e.acc==='b'?'♭':'♮';textSvg(sym,x-34,y
 if(e.den!==1&&!beamed){const sx=x+(up?10:-10),ex=sx,ey=y+(up?-62:62);line(sym,sx,y-0.5,ex,ey,'#193a4a',2.3);if(e.den>=8)flag(sym,ex,ey,up,Math.log2(e.den)-2)}
 sym.append(el('ellipse',{cx:x,cy:y,rx:e.den===1?12.4:11.6,ry:e.den===1?6.9:7.5,transform:`rotate(-18 ${x} ${y})`,fill:filled?'#193a4a':'#fff',stroke:'#193a4a','stroke-width':filled?1.6:2.45}));
 if(e.dot)sym.append(el('circle',{cx:x+20,cy:y-3.5,r:2.8,fill:'#193a4a'}));
-// An articulation dot is above/below the note, not the duration dot on its right.
-const side=up?1:-1;
-if(e.staccato)sym.append(el('circle',{cx:x,cy:y+side*20,r:3.3,fill:'#193a4a','pointer-events':'none'}));
+// Articulation dots and lines are above or below the note, unlike duration dots.
+const side=up?1:-1,color='#193a4a';
+if(e.staccato||e.portato){
+ sym.append(el('circle',{cx:x,cy:y+side*(e.portato?32:20),r:3.3,fill:color,'pointer-events':'none'}));
+}
+if(e.staccatissimo){
+ const nearer=y+side*13,far=y+side*31;
+ sym.append(el('path',{d:`M ${x} ${nearer} L ${x-5} ${far} L ${x+5} ${far} Z`,fill:color,'pointer-events':'none'}));
+}
+if(e.tenuto||e.portato){
+ const ty=y+side*20;line(sym,x-8,ty,x+8,ty,color,2.6,{'pointer-events':'none'});
+}
 if(e.accent){
- const ay=y+side*(e.staccato?37:26);
+ const ay=y+side*((e.staccato||e.portato)?42:26);
  sym.append(el('path',{d:`M ${x-13} ${ay-6} L ${x+10} ${ay} L ${x-13} ${ay+6}`,
-  fill:'none',stroke:'#193a4a','stroke-width':2.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+  fill:'none',stroke:color,'stroke-width':2.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+}
+if(e.marcato){
+ const ay=y+side*((e.staccato||e.portato)?44:27);
+ sym.append(el('path',{d:`M ${x-10} ${ay+side*7} L ${x} ${ay-side*7} L ${x+10} ${ay+side*7}`,
+  fill:'none',stroke:color,'stroke-width':2.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+}
+if(e.fermata){
+ const fy=Math.max(12,y-46);
+ sym.append(el('path',{d:`M ${x-15} ${fy} Q ${x} ${fy-24} ${x+15} ${fy}`,
+  fill:'none',stroke:color,'stroke-width':2.6,'stroke-linecap':'round','pointer-events':'none'}));
+ sym.append(el('circle',{cx:x,cy:fy-2,r:3.4,fill:color,'pointer-events':'none'}));
 }
 if(data.pitchNames)textSvg(g,x,top+115,noteName(e),12,{'text-anchor':'middle',fill:'#047686','font-weight':750});
 return y;}
@@ -2072,7 +2105,13 @@ if(e.kind==='note'){
  if(links.ties.has(e.id))notations.push('<tied type="start"/>');
  if(links.slurEnds.has(e.id))notations.push('<slur number="1" type="stop"/>');
  if(links.slurs.has(e.id))notations.push('<slur number="1" type="start"/>');
- const arts=(e.staccato?'<staccato/>':'')+(e.accent?'<accent/>':'');
+ const arts=(e.staccato?'<staccato/>':'')
+ +(e.staccatissimo?'<staccatissimo/>':'')
+ +(e.portato?'<detached-legato/>':'')
+ +(e.tenuto?'<tenuto/>':'')
+ +(e.accent?'<accent/>':'')
+ +(e.marcato?'<strong-accent type="up"/>':'');
+ if(e.fermata)notations.push('<fermata type="upright"/>');
  if(arts)notations.push('<articulations>'+arts+'</articulations>');
  if(notations.length)xml+='<notations>'+notations.join('')+'</notations>';
 }
@@ -2087,7 +2126,7 @@ inputEvents.forEach((e,i)=>{
 const restoredOrder=new Map(restoredEvents.map((e,i)=>[e.id,i]));
 inputEvents.forEach((source,i)=>{
  const event=restoredEvents[i];if(event.kind!=='note')return;
- event.staccato=source.staccato===true;event.accent=source.accent===true;
+ for(const mark of EXTRA_MARKS)if(source[mark]===true)event[mark]=true;
  for(const field of ['slurTo','tieTo']){
   if(typeof source[field]!=='string')continue;
   const linked=idMap.get(source[field]),pos=restoredOrder.get(linked);
