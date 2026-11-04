@@ -243,3 +243,26 @@ for(const [beats,beatType,nominal] of [[2,4,1920],[3,4,2880],[6,8,2880]]){
   nearly(playback.total,1+nominal/960,'total pickup score at 60 BPM');
  });
 }
+
+for(const [beats,beatType,nominal] of [[2,4,1920],[3,4,2880],[6,8,2880]]){
+ test('trailing empty implicit '+beats+'/'+beatType+' bar is retained',()=>{
+  const score=onePart(bar(1,false,true,'C',4,[beats,beatType]),bar(0,true));
+  assert.deepEqual(score.measureLength,[nominal,nominal]);
+  assert.deepEqual(score.measureStart,[0,nominal]);
+  assert.equal(score.total,2*nominal);
+  const timing=timingFor(score);
+  nearly(timing.notes[0].onset,0,'original note onset');
+  nearly(timing.total,2*nominal/960,'full performance includes empty last bar');
+ });
+}
+test('all parts can end in a trailing empty implicit bar without losing it',()=>{
+ const score=parse([
+  {name:'Upper',bars:[bar(1,false,true,'C',4,[6,8]),bar(0,true)]},
+  {name:'Lower',bars:[bar(1,false,true,'G',3,[6,8]),bar(0,true)]}
+ ]);
+ assert.deepEqual(score.measureLength,[2880,2880]);
+ assert.deepEqual(score.measureStart,[0,2880]);
+ const timing=timingFor(score);
+ assert.equal(timing.notes.length,2);
+ nearly(timing.total,6);
+});
