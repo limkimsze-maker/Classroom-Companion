@@ -19,6 +19,8 @@
 .beautifyButtons{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .beautifyButtons button{flex:1;min-width:94px;padding:9px 7px}
 #beautifyInk{background:#087b86;color:#fff;border:1px solid #087b86}
+.quickDotted{display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.quickDotted input{accent-color:#087b86;width:17px;height:17px}
 #beautifyFeedback{font-size:11px;min-height:18px;color:#236368;margin-top:8px;line-height:1.4}
 .scoreSvg .selectedHalo{fill:#d2f4ef;opacity:.95}.scoreSvg .playingHalo{fill:#ffda85;opacity:.9}.scoreSvg .hoverTarget{opacity:0;pointer-events:none}.bottomline{padding:12px 17px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid #e5eded;background:#fdfefe}.status{font-size:12px;color:#526c79}.status strong{color:#136e7b}.editing{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.editLabel{font-size:12px;color:#5e7580;font-weight:720}.notice{margin-top:12px;padding:13px 16px;background:#eaf5f6;color:#355b6c;border-radius:12px;display:flex;gap:10px;align-items:flex-start;font-size:13px}.how{padding:17px 19px;margin-top:14px}.how h3{margin:0 0 9px;font-size:15px}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.step{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#526b78}.num{background:#dceff0;color:#076e7a;border-radius:9px;width:24px;height:24px;flex:0 0 24px;display:grid;place-items:center;font-weight:800}.footer{max-width:1560px;margin:2px auto 24px;padding:0 18px;color:#687e89;font-size:12px;text-align:center}.sr{position:absolute!important;clip:rect(0,0,0,0);clip-path:inset(50%);height:1px;width:1px;overflow:hidden;white-space:nowrap}.modalWrap{position:fixed;inset:0;background:rgba(9,34,49,.56);z-index:50;display:none;align-items:center;justify-content:center;padding:14px}.modalWrap.open{display:flex}.modal{background:white;border-radius:18px;max-width:560px;width:100%;padding:22px;box-shadow:0 25px 90px #112c3e55}.modal h2{margin:0 0 8px;font-size:21px}.modal p{font-size:13px;color:#506876}.modal .close{float:right;border:0;background:#eff5f5;border-radius:8px;font-size:20px;width:34px;height:34px}.modal li{margin:8px 0;font-size:13px}.modal kbd{background:#edf3f4;border:1px solid #d3e1e4;border-radius:4px;padding:2px 5px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99;background:#1a4552;color:white;border-radius:12px;box-shadow:0 12px 40px #0002;padding:10px 17px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}.toast.show{opacity:1}.barStatus{font-size:11px;font-weight:700}.barStatus.open{fill:#637d88}.barStatus.full{fill:#087d76}.barStatus.over{fill:#bb3b46}
 
@@ -319,6 +321,7 @@
    <button type="button" class="annotationBtn active" data-mode="select">↖ Select / Move</button>
    <button type="button" class="annotationBtn" id="musicBoxSelect" data-mode="box">▧ Box Select</button>
    <button type="button" class="annotationBtn" data-mode="rest">𝄽 Add Rests</button>
+   <label class="annotationBtn quickDotted" title="A dot lengthens the selected note by half its value"><input id="quickDotted" type="checkbox"> Dotted (+½)</label>
   </div>
   <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes, handwritten sketches and teacher annotations; confirmation required">⌫ Clear Score</button>
   <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Drag or tap a note to place it. Adjacent quavers and semiquavers automatically join into rhythmic beams. Right-click also works.</span>
@@ -378,12 +381,15 @@
 <div class="group"><div class="lab">Essential settings</div><div class="formGrid">
 <div class="field"><label for="clef">Clef</label><select id="clef"><option value="treble">𝄞 Treble</option><option value="bass">𝄢 Bass</option></select></div>
 <div class="field"><label for="meter">Time signature</label><select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></div>
-<div class="field"><label for="tempo">Tempo (BPM)</label><input id="tempo" type="number" min="40" max="220" step="1" value="96"></div>
+<div class="field"><label for="tempo" id="tempoLabel">Tempo (♩ = BPM)</label><input id="tempo" type="number" min="40" max="220" step="1" value="96"></div>
 <div class="field"><label for="instrument">Playback sound</label><select id="instrument" aria-label="Playback instrument"><option value="piano">Warm piano</option><option value="musicbox">Music box</option><option value="flute">Gentle flute</option><option value="pure">Pure reference tone</option></select></div>
 <div class="field"><label>Measures (bars)</label><div class="segrow"><button type="button" class="smallBtn" id="removeBar" title="Remove the last empty bar">−</button><button type="button" class="smallBtn" id="addBar" title="Add a new bar">＋ Add</button></div></div>
 </div>
 <label class="check"><input type="checkbox" id="pitchNames"> Show note names (C, D, E…)</label>
-<label class="check"><input type="checkbox" id="metronome"> Metronome during playback</label><div class="segrow" style="margin-top:9px"><button type="button" class="smallBtn" id="soundDemo">♫ Hear instrument sample</button></div><p class="hint">Warm piano is selected by default. These are built-in synthesised sounds (not recordings). If the sample sounds good but a scan sounds wrong, correct detected pitches, rhythms and missed rests.</p>
+<label class="check"><input type="checkbox" id="metronome"> Metronome during playback</label>
+<p class="hint" id="tempoGuide">Crotchet is the beat in 2/4, 3/4 and 4/4. In 6/8, the usual beat is a dotted crotchet (three quavers).</p>
+<label class="check"><input type="checkbox" id="completeBars" checked> Add missing rests to printed and exported scores</label>
+<p class="hint">The editor remains unchanged. Untick for an intentional incomplete bar or anacrusis (pickup).</p><div class="segrow" style="margin-top:9px"><button type="button" class="smallBtn" id="soundDemo">♫ Hear instrument sample</button></div><p class="hint">Warm piano is selected by default. These are built-in synthesised sounds (not recordings). If the sample sounds good but a scan sounds wrong, correct detected pitches, rhythms and missed rests.</p>
 </div>
 
 <details id="musicAdvancedSettings" class="musicAdvancedSettings">
@@ -769,7 +775,7 @@ const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16,32,64,128];
  // MusicXML requires whole/half/quarter/eighth even when the UI says otherwise.
 const MUSIC_DURATION_NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver',32:'Demisemiquaver',64:'Hemidemisemiquaver',128:'Semihemidemisemiquaver'};
 const MUSIC_BEAT_LABELS={1:'4 beats',2:'2 beats',4:'1 beat',8:'½ beat',16:'¼ beat',32:'⅛ beat',64:'¹⁄₁₆ beat',128:'¹⁄₃₂ beat'};
-const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
+const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,completeBars:true,bars:Array.from({length:4},()=>[]),strokes:[]});
 let piano=null;let data=blank(),tool='select',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
 let activeNoteStampDen=null,notePaletteDrag=null,notePaletteGhost=null,notePaletteScrollFrame=0;
@@ -795,7 +801,28 @@ function undo(){if(!history.length)return;if(playing)stopPlayback();future.push(
 function redo(){if(!future.length)return;if(playing)stopPlayback();history.push(snapshot());data=JSON.parse(future.pop());selected=null;syncConfig();commit();flash('Redone')}
 function updateHistoryButtons(){$('undo').disabled=!history.length;$('redo').disabled=!future.length}
 function meterString(){return data.meter}
-function syncConfig(){$('title').value=data.title;$('composer').value=data.composer;$('clef').value=data.clef;$('meter').value=data.meter;$('tempo').value=data.tempo;$('instrument').value=data.instrument||'piano';$('pitchNames').checked=!!data.pitchNames;$('metronome').checked=!!data.metronome}
+function syncConfig(){$('completeBars').checked=data.completeBars!==false;syncDotted(dot);updateTeachingLabels();$('title').value=data.title;$('composer').value=data.composer;$('clef').value=data.clef;$('meter').value=data.meter;$('tempo').value=data.tempo;$('instrument').value=data.instrument||'piano';$('pitchNames').checked=!!data.pitchNames;$('metronome').checked=!!data.metronome}
+
+function updateTeachingLabels(){
+ const compound=data.meter==='6/8';
+ $('tempoLabel').textContent=compound?'Tempo (♩. = BPM)':'Tempo (♩ = BPM)';
+ $('tempoGuide').textContent=compound
+  ?'6/8: two dotted-crotchet beats per bar; each beat has three quavers. The metronome clicks twice per bar.'
+  :'2/4, 3/4 and 4/4: one crotchet equals one beat. The metronome clicks once per crotchet beat.';
+ const quaverEquivalents={1:'8 quavers',2:'4 quavers',4:'2 quavers',8:'1 quaver',16:'½ quaver'};
+ document.querySelectorAll('[data-stamp-den]').forEach(button=>{
+  const value=Number(button.dataset.stampDen);
+  const caption=button.querySelector('.noteStampBeats');
+  if(caption)caption.textContent=compound?quaverEquivalents[value]:MUSIC_BEAT_LABELS[value];
+  button.title=(MUSIC_DURATION_NAMES[value]||'Note')+' · '+(compound?quaverEquivalents[value]+' in 6/8':MUSIC_BEAT_LABELS[value]+' in crotchet-beat time')+'. Dotted adds half its value.';
+ });
+}
+function syncDotted(value){
+ dot=!!value;
+ $('dotted').checked=dot;
+ $('quickDotted').checked=dot;
+}
+
 function musicPenCursor(){
  const xml='<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><g transform="rotate(30 24 24)"><rect x="16" y="3" width="17" height="30" rx="6" fill="#68d9c1" stroke="#156a71" stroke-width="2"/><path d="M16 12H33" stroke="#14868a" stroke-width="3"/><circle cx="21" cy="21" r="1.6" fill="#214a55"/><circle cx="28" cy="21" r="1.6" fill="#214a55"/><path d="M22 25Q24.5 28 27 25" fill="none" stroke="#214a55" stroke-width="1.5" stroke-linecap="round"/><path d="M17 33H32L24 46Z" fill="#f5d99c" stroke="#17666c" stroke-width="2"/><path d="M21 40L24 46L27 40Z" fill="#233c52"/></g></svg>';
  return 'url("data:image/svg+xml,'+encodeURIComponent(xml)+'") 24 45, crosshair';
@@ -1002,6 +1029,56 @@ else if(e.den===2)g.append(el('rect',{x:x-12,y:top+28,width:24,height:9,fill:'#1
 else if(e.den===4){g.append(el('path',{d:`M ${x+2} ${top+12} l -8 13 l 10 10 l -9 9 q 8 3 5 13 q 12 -14 -1 -23 l 8 -9 Z`,fill:'#1a394a'}))}
 else {const count=Math.max(1,Math.min(5,Math.log2(e.den)-2));line(g,x+7,top+12,x-1,top+69,'#1a394a',2.3);for(let i=0;i<count;i++){const y=top+19+i*(count>=4?9:12);g.append(el('path',{d:`M ${x+7} ${y} C ${x-10} ${y-12}, ${x-17} ${y+8}, ${x+2} ${y+10} C ${x-2} ${y+5}, ${x+3} ${y+1}, ${x+7} ${y}`,fill:'#1a394a'}))}}
 if(e.dot)g.append(el('circle',{cx:x+21,cy:top+33,r:2.8,fill:'#193a4a'}))}
+
+/* Prepare conventional rests only for print, PNG, SVG and MusicXML.
+   The editable bar, playback, saved projects and intentional pickups remain unchanged.
+   Whole-bar silence uses a whole-measure rest, regardless of the time signature. */
+function printBarEvents(bar){
+ if(data.completeBars===false)return bar;
+ const occupied=Math.round(sumBar(bar)*8),limit=Math.round(cap()*8);
+ if(occupied>=limit)return bar;
+ if(bar.length===0)return [{id:'print-whole-bar-rest',kind:'rest',den:1,dot:false,measureRest:true}];
+ const groups=data.meter==='6/8'?[0,36,72]:
+  data.meter==='4/4'?[0,48,96]:
+  data.meter==='3/4'?[0,24,72]:[0,24,48];
+ const restChoices=[];
+ for(const den of [1,2,4,8,16,32,64,128]){
+  for(const dotted of [false,true]){
+   const units=Math.round((TICKS/den)*(dotted?1.5:1)*8);
+   if(units>0)restChoices.push({den,dot:dotted,units});
+  }
+ }
+ restChoices.sort((a,b)=>b.units-a.units||Number(a.dot)-Number(b.dot));
+ function solve(units){
+  const best=Array(units+1).fill(null);
+  best[0]={cost:0,sequence:[]};
+  for(let n=1;n<=units;n++){
+   for(const option of restChoices){
+    if(option.units>n||!best[n-option.units])continue;
+    const previous=best[n-option.units],cost=previous.cost+1000+(option.dot?9:0)+Math.log2(option.den);
+    if(!best[n]||cost<best[n].cost){
+     best[n]={cost,sequence:[...previous.sequence,{kind:'rest',den:option.den,dot:option.dot,id:'print-rest-'+n}]};
+    }
+   }
+  }
+  return best[units]?.sequence||null;
+ }
+ let pos=occupied,added=[];
+ while(pos<limit){
+  const boundary=groups.find(x=>Math.round(x*8)>pos+0.01);
+  const end=Math.min(limit,boundary===undefined?limit:Math.round(boundary*8));
+  const span=end-pos;
+  const rests=solve(span);
+  if(!rests){
+   // Never invent a rhythm if extreme fractional values cannot be represented.
+   const remaining=solve(limit-occupied);
+   return remaining?bar.concat(remaining):bar;
+  }
+  added.push(...rests);pos=end;
+ }
+ return bar.concat(added);
+}
+
 function makeScore(exportMode=false){const layout=staffLayout(),{W,H}=layout;
 const svg=el('svg',{xmlns:NS,viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:'img','aria-label':'Music score'});
 svg.append(el('rect',{x:0,y:0,width:W,height:H,fill:'#fff'}));
@@ -1022,7 +1099,7 @@ if(sys===0){
 // begins the first measure directly. The measure-end and final barlines remain.
 for(let bi=0;bi<2;bi++){
 const idx=sys*2+bi;if(idx>=data.bars.length)continue;
-const x0=layout.left+bi*layout.barW;const bar=data.bars[idx],used=sumBar(bar),capacity=cap();const x1=x0+layout.barW;
+const x0=layout.left+bi*layout.barW;const bar=exportMode?printBarEvents(data.bars[idx]):data.bars[idx],used=sumBar(bar),capacity=cap();const x1=x0+layout.barW;
 if(!exportMode){svg.append(el('rect',{x:x0,y:top-37,width:layout.barW,height:149,fill:'transparent',class:'measureHit','data-bar':idx,'data-left':x0,'data-width':layout.barW,'data-top':top}));}
 const bstat=data.meter==='6/8'?`${Number((used/12).toFixed(3))}/6 eighths`:`${Number((used/24).toFixed(3))}/${Number((capacity/24).toFixed(3))} beats`;textSvg(svg,x0+12,top-17,`${idx+1}`,12,{'font-weight':800,fill:'#627b87'});
 if(!exportMode)textSvg(svg,x1-10,top-17,bstat,11,{'text-anchor':'end',class:used===capacity?'barStatus full':'barStatus open'});
@@ -1057,7 +1134,7 @@ if(!exportMode&&boxDraft){
  svg.append(el('rect',{x,y,width:Math.abs(boxDraft.x1-boxDraft.x0),height:Math.abs(boxDraft.y1-boxDraft.y0),fill:'#42a8c2','fill-opacity':.14,stroke:'#087b86','stroke-width':2,'stroke-dasharray':'10 5','pointer-events':'none'}));
 }
 return svg;}
-function render(){const svg=$('score'),fresh=makeScore();svg.setAttribute('viewBox',fresh.getAttribute('viewBox'));svg.replaceChildren(...[...fresh.childNodes]);$('counter').textContent=`· ${data.bars.length} bar${data.bars.length===1?'':'s'} · ${data.meter}`;let s=findSelected();const actions=$('selectedActions');actions.replaceChildren();
+function render(){updateTeachingLabels();const svg=$('score'),fresh=makeScore();svg.setAttribute('viewBox',fresh.getAttribute('viewBox'));svg.replaceChildren(...[...fresh.childNodes]);$('counter').textContent=`· ${data.bars.length} bar${data.bars.length===1?'':'s'} · ${data.meter}`;let s=findSelected();const actions=$('selectedActions');actions.replaceChildren();
 if(boxSelectedNotes.size||boxSelectedStrokes.size){
  const label=document.createElement('span');label.className='editLabel';label.textContent=boxSelectedNotes.size+' notes/rests + '+boxSelectedStrokes.size+' sketches selected';actions.append(label);
  const del=document.createElement('button');del.className='smallBtn';del.textContent='Delete selection';del.onclick=deleteBoxSelection;actions.append(del);
@@ -1635,7 +1712,7 @@ async function play(){
  try{context=context||new(window.AudioContext||window.webkitAudioContext)();await context.resume();ensureAudioBus()}
  catch(err){flash('Audio playback is not supported here.');return}
  playing=true;$('play').textContent='❚❚ Playing';$('stop').disabled=false;
- const quarterSec=60/data.tempo;let cursor=0;const begin=context.currentTime+.12;
+ const quarterSec=(60/data.tempo)*(data.meter==='6/8'?2/3:1);let cursor=0;const begin=context.currentTime+.12;
  for(let b=0;b<data.bars.length;b++){
   const barStart=cursor;let tickPos=0;
   for(let i=0;i<data.bars[b].length;i++){
@@ -1661,22 +1738,29 @@ async function soundDemo(){
  try{context=context||new(window.AudioContext||window.webkitAudioContext)();await context.resume();ensureAudioBus()}
  catch(err){flash('Audio playback is not supported here.');return}
  playing=true;$('play').textContent='❚❚ Sound sample';$('stop').disabled=false;
- const samples=[60,64,67,72,67,64,60],beat=60/Math.max(60,data.tempo),begin=context.currentTime+.07;
+ const samples=[60,64,67,72,67,64,60],beat=(60/Math.max(60,data.tempo))*(data.meter==='6/8'?2/3:1),begin=context.currentTime+.07;
  samples.forEach((pitch,i)=>tone(pitch,begin+i*beat*.75,beat*.68));
  stopTimer=setTimeout(()=>{stopPlayback();updateStatus('Sound sample finished.')},(begin+samples.length*beat*.75-context.currentTime)*1000+260);
  updateStatus('Instrument sound sample · If this sounds good but your scanned music does not, review the notes and rhythm.');
 }
 function filename(ext){return (data.title||'music-score').replace(/[^a-z0-9 _-]/gi,'').trim().replace(/\s+/g,'-').slice(0,55)||'music-score'}
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function refreshPrintEngraving(printMode){
+ const target=$('score'),fresh=makeScore(printMode);
+ target.setAttribute('viewBox',fresh.getAttribute('viewBox'));
+ target.replaceChildren(...[...fresh.childNodes]);
+}
+window.addEventListener('beforeprint',()=>{if(!piano)refreshPrintEngraving(true)});
+window.addEventListener('afterprint',()=>{if(!piano)render()});
 function vectorString(){const svg=makeScore(true);svg.setAttribute('xmlns',NS);return new XMLSerializer().serializeToString(svg)}
 function exportSVG(){download(new Blob([vectorString()],{type:'image/svg+xml;charset=utf-8'}),filename()+'.svg');flash('SVG image saved')}
 function exportPNG(){const svg=vectorString(),blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),img=new Image();img.onload=()=>{const canvas=document.createElement('canvas'),layout=staffLayout(),scale=2;canvas.width=layout.W*scale;canvas.height=layout.H*scale;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(b=>{if(b)download(b,filename()+'.png');else flash('Image export failed')},'image/png');URL.revokeObjectURL(url)};img.onerror=()=>{URL.revokeObjectURL(url);flash('PNG export could not complete. Try SVG instead.')};img.src=url}
 function xmlEscape(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&apos;'}[c]))}
-function exportMusicXML(){const [beats,beatType]=data.meter.split('/');let xml=`<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE score-partwise  PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n<score-partwise version="4.0">\n<work><work-title>${xmlEscape(data.title)}</work-title></work>\n<movement-title>${xmlEscape(data.title)}</movement-title>\n<identification><creator type="composer">${xmlEscape(data.composer)}</creator></identification>\n<defaults><scaling><millimeters>7</millimeters><tenths>40</tenths></scaling></defaults>\n<part-list><score-part id="P1"><part-name>Melody</part-name><part-abbreviation>Mel.</part-abbreviation><score-instrument id="I1"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part></part-list>\n<part id="P1">`;
-for(let b=0;b<data.bars.length;b++){const beamsForBar=rhythmBeamMetadata(data.bars[b],planRhythmBeams(data.bars[b]));xml+=`\n<measure implicit="no" number="${b+1}">`;if(b===0){xml+=`<attributes><divisions>192</divisions><key><fifths>0</fifths></key><time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time><clef><sign>${data.clef==='treble'?'G':'F'}</sign><line>${data.clef==='treble'?2:4}</line></clef></attributes><direction placement="above"><direction-type><metronome parentheses="no"><beat-unit>quarter</beat-unit><per-minute>${data.tempo}</per-minute></metronome></direction-type><sound tempo="${data.tempo}" /></direction>`}
-for(let i=0;i<data.bars[b].length;i++){const e=data.bars[b][i];xml+='<note>';if(e.kind==='rest'){xml+='<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave}</octave></pitch>`}xml+=`<duration>${Math.round(ticks(e)*8)}</duration><type>${({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th',32:'32nd',64:'64th',128:'128th'})[e.den]}</type>`;if(e.dot)xml+='<dot />';if(e.kind==='note'&&e.acc)xml+=`<accidental>${e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural'}</accidental>`;for(const beam of beamsForBar[i])xml+=`<beam number="${beam.number}">${beam.state}</beam>`;xml+='</note>'}xml+='</measure>'}
+function exportMusicXML(){const [beats,beatType]=data.meter.split('/');const compound=data.meter==='6/8';const soundTempo=Number((data.tempo*(compound?1.5:1)).toFixed(3));let xml=`<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE score-partwise  PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n<score-partwise version="4.0">\n<work><work-title>${xmlEscape(data.title)}</work-title></work>\n<movement-title>${xmlEscape(data.title)}</movement-title>\n<identification><creator type="composer">${xmlEscape(data.composer)}</creator></identification>\n<defaults><scaling><millimeters>7</millimeters><tenths>40</tenths></scaling></defaults>\n<part-list><score-part id="P1"><part-name>Melody</part-name><part-abbreviation>Mel.</part-abbreviation><score-instrument id="I1"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part></part-list>\n<part id="P1">`;
+for(let b=0;b<data.bars.length;b++){const exportBar=printBarEvents(data.bars[b]);const beamsForBar=rhythmBeamMetadata(exportBar,planRhythmBeams(exportBar));xml+=`\n<measure implicit="no" number="${b+1}">`;if(b===0){xml+=`<attributes><divisions>192</divisions><key><fifths>0</fifths></key><time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time><clef><sign>${data.clef==='treble'?'G':'F'}</sign><line>${data.clef==='treble'?2:4}</line></clef></attributes><direction placement="above"><direction-type><metronome parentheses="no"><beat-unit>quarter</beat-unit>${compound?'<beat-unit-dot/>':''}<per-minute>${data.tempo}</per-minute></metronome></direction-type><sound tempo="${soundTempo}" /></direction>`}
+for(let i=0;i<exportBar.length;i++){const e=exportBar[i];xml+='<note>';if(e.kind==='rest'){xml+=e.measureRest?'<rest measure="yes" />':'<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave}</octave></pitch>`}xml+=`<duration>${Math.round((e.measureRest?cap():ticks(e))*8)}</duration>`;if(!e.measureRest)xml+=`<type>${({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th',32:'32nd',64:'64th',128:'128th'})[e.den]}</type>`;if(e.dot&&!e.measureRest)xml+='<dot />';if(e.kind==='note'&&e.acc)xml+=`<accidental>${e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural'}</accidental>`;for(const beam of beamsForBar[i])xml+=`<beam number="${beam.number}">${beam.state}</beam>`;xml+='</note>'}xml+='</measure>'}
 xml+='\n</part>\n</score-partwise>';download(new Blob([xml],{type:'application/vnd.recordare.musicxml+xml'}),filename()+'.musicxml');flash('MusicXML saved')}
-function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}if(typeof e.posX==='number'&&Number.isFinite(e.posX)&&e.posX>=0&&e.posX<=1)ev.posX=e.posX;return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]]),...(VALID_DEN.includes(+s.den)?{den:+s.den}:{}),...(s.kind==='music'?{kind:'music'}:{}),...(Number.isFinite(s.headX)&&Number.isFinite(s.headY)?{headX:s.headX,headY:s.headY}:{})})):[];return result}
+function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.completeBars=raw.completeBars!==false;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}if(typeof e.posX==='number'&&Number.isFinite(e.posX)&&e.posX>=0&&e.posX<=1)ev.posX=e.posX;return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]]),...(VALID_DEN.includes(+s.den)?{den:+s.den}:{}),...(s.kind==='music'?{kind:'music'}:{}),...(Number.isFinite(s.headX)&&Number.isFinite(s.headY)?{headX:s.headX,headY:s.headY}:{})})):[];return result}
 function loadProject(raw,record=true){closePiano();const v=validateProject(raw);if(record)change();data=v;selected=null;syncConfig();commit()}
 function twinkle(){const q=(step,octave,den=4)=>({id:makeId(),kind:'note',step,octave,den,dot:false,acc:''});return {title:'Twinkle, Twinkle, Little Star',composer:'Traditional · Classroom example',clef:'treble',meter:'4/4',tempo:100,instrument:data.instrument||'piano',pitchNames:true,metronome:false,bars:[ [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)] ],strokes:[]}}
 function setBarsCount(add){if(add){if(data.bars.length>=40){flash('Maximum 40 bars in this classroom version.');return}change();data.bars.push([]);commit();updateStatus('A new blank bar has been added.')}else if(data.bars.length>1&&data.bars.at(-1).length===0){change();data.bars.pop();selected=null;commit()}else flash('You can remove only the final empty bar.')}
@@ -2424,11 +2508,11 @@ function wire(){
  document.getElementById('simpleNext').onclick=()=>{pianoSVG(simplePageStart+8);document.querySelector('.pianoScoreScroll').scrollTop=0;};
  document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
 document.querySelectorAll('[data-den]').forEach(b=>b.addEventListener('click',()=>{den=+b.dataset.den;document.querySelectorAll('[data-den]').forEach(v=>v.classList.toggle('active',v===b));updateStatus(`${b.title}. Click empty bar to insert a rest, or right-click a note to change it.`)}));
-$('dotted').onchange=ev=>{dot=ev.target.checked};$('accidental').onchange=ev=>{acc=ev.target.value};
+$('dotted').onchange=ev=>syncDotted(ev.target.checked);$('quickDotted').onchange=ev=>syncDotted(ev.target.checked);$('accidental').onchange=ev=>{acc=ev.target.value};
 for(const id of ['clef','meter'])$(id).addEventListener('change',ev=>{const key=id;const value=ev.target.value;if(id==='meter'){const [n,d]=value.split('/').map(Number),target=n*TICKS/d;if(data.bars.some(b=>sumBar(b)>target)){ev.target.value=data.meter;flash('Some existing bars are too long for that time signature. Shorten them first.');return}}change();data[key]=value;selected=null;commit();flash(`${id==='clef'?'Clef':'Time signature'} changed`)});
 $('tempo').addEventListener('change',ev=>{let v=Math.min(220,Math.max(40,Math.round(Number(ev.target.value)||96)));ev.target.value=v;if(data.tempo===v)return;change();data.tempo=v;commit()});
 $('instrument').addEventListener('change',ev=>{if(data.instrument===ev.target.value)return;change();data.instrument=ev.target.value;commit();flash('Playback sound changed · Press Play to listen');});
-for(const id of ['pitchNames','metronome'])$(id).addEventListener('change',ev=>{change();data[id]=ev.target.checked;commit()});
+for(const id of ['pitchNames','metronome','completeBars'])$(id).addEventListener('change',ev=>{change();data[id]=ev.target.checked;commit()});
 for(const id of ['title','composer'])$(id).addEventListener('change',ev=>{const v=ev.target.value.slice(0,100);if(v===data[id])return;change();data[id]=v;commit()});
 $('score').addEventListener('click',clicked);
 $('score').addEventListener('contextmenu',onMusicNoteRightClick);
