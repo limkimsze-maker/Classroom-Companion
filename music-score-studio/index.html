@@ -2917,7 +2917,7 @@ function parseMusicXML(source){
   parsedParts.push({name:partName,measures:measureResults});
  }
  const measureStart=[],measureLength=[];let total=0;
- for(let i=0;i<allMeasures.length;i++){measureStart[i]=total;measureLength[i]=allMeasures[i]||emptyImplicitNominals[i]||4*TPQ;total+=measureLength[i]}
+ for(let i=0;i<Math.max(allMeasures.length,emptyImplicitNominals.length);i++){measureStart[i]=total;measureLength[i]=allMeasures[i]||emptyImplicitNominals[i]||4*TPQ;total+=measureLength[i]}
  for(const part of parsedParts)for(const m of part.measures)for(const note of m.items){
   note.start=(measureStart[note.measure]||0)+note.onset;rawNotes.push(note)
  }
