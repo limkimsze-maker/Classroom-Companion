@@ -2756,22 +2756,27 @@ function moveEngravedPlaybackCursor(globalTick){
   }catch(e){slot.failed=true;try{cursor.hide()}catch(_){}}
  }
 }
-function startPianoTracking(audioStart,secondsPerTick){
+function startPianoTracking(audioStart,secondsPerTick,timing=null){
  resetPianoTracking();
  const token=pianoTrackingToken,events=[];
  piano.notes.forEach((note,i)=>{
-  events.push({tick:note.start,index:i,on:true});
-  events.push({tick:note.start+Math.max(note.duration*.98,.08/secondsPerTick),index:i,on:false});
+  const onset=timing?timing.secondsAt(note.start):note.start*secondsPerTick;
+  const off=note.fermata&&timing
+    ?timing.secondsAt(note.start+note.duration)
+    :onset+Math.max(note.duration*secondsPerTick*.98,.08);
+  events.push({at:onset,index:i,on:true});
+  events.push({at:off,index:i,on:false});
  });
- events.sort((a,b)=>a.tick-b.tick||(a.on===b.on?0:a.on?1:-1));
+ events.sort((a,b)=>a.at-b.at||(a.on===b.on?0:a.on?1:-1));
  let at=0,lastScroll=0,initial=true;
  const active=new Set();
  const frame=()=>{
   if(token!==pianoTrackingToken||!playing||!piano||!context)return;
-  const tick=(context.currentTime-audioStart)/secondsPerTick;
+  const elapsed=context.currentTime-audioStart;
+  const tick=timing?timing.tickAtSeconds(elapsed):elapsed/secondsPerTick;
   if(tick>=0){
    let newest=-1;
-   while(at<events.length&&events[at].tick<=tick+.25){
+   while(at<events.length&&events[at].at<=elapsed+.012){
     const event=events[at++],node=pianoNoteNodes.get(event.index);
     if(event.on){active.add(event.index);pianoActiveIndices.add(event.index);newest=event.index;node?.classList.add('is-playing');simpleNoteNodes.get(event.index)?.classList.add('active');}
     else{active.delete(event.index);pianoActiveIndices.delete(event.index);node?.classList.remove('is-playing');simpleNoteNodes.get(event.index)?.classList.remove('active');}
@@ -3008,6 +3013,33 @@ function wireProfessionalScanner(){
  $('omrImportButton').addEventListener('click',()=>$('omrImportInput').click());
  $('omrImportInput').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await loadRecognisedScore(file)});
 }
+
+function createImportedTiming(score,secondsPerTick){
+ const waits=new Map();
+ for(const e of score.notes){
+  if(!e.fermata)continue;
+  const tick=e.start+e.duration,extra=Math.min(4,Math.max(.25,e.duration*secondsPerTick*.65));
+  waits.set(tick,Math.max(waits.get(tick)||0,extra));
+ }
+ const pauses=[...waits].map(([tick,delay])=>({tick,delay})).sort((a,b)=>a.tick-b.tick);
+ function secondsAt(tick){
+  let elapsed=Math.max(0,tick)*secondsPerTick;
+  for(const pause of pauses){if(pause.tick<=tick+.0001)elapsed+=pause.delay;else break;}
+  return elapsed;
+ }
+ function tickAtSeconds(time){
+  let offset=0;
+  for(const pause of pauses){
+   const before=pause.tick*secondsPerTick+offset;
+   if(time<before)return (time-offset)/secondsPerTick;
+   if(time<before+pause.delay)return pause.tick;
+   offset+=pause.delay;
+  }
+  return (time-offset)/secondsPerTick;
+ }
+ return {pauses,secondsAt,tickAtSeconds,total:secondsAt(score.total)};
+}
+
 async function playPiano(){
  if(!piano)return;
  if(playing){stopPlayback();return}
@@ -3015,17 +3047,19 @@ async function playPiano(){
  catch(err){flash('Audio unavailable on this device.');return}
  const bpm=Math.max(30,Math.min(240,Number($('pianoTempo').value)||piano.tempo));
  piano.tempo=bpm;const secondsPerTick=60/bpm/piano.TPQ;
+ const timing=createImportedTiming(piano,secondsPerTick);
  const start=context.currentTime+.12;
  playing=true;$('play').textContent='❚❚ Playing both hands';$('stop').disabled=false;
  for(const e of piano.notes){
-  const offset=e.start*secondsPerTick,full=e.duration*secondsPerTick;
-  const dur=Math.max(.07,full*(e.fermata?1.7:e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:e.marcato?.92:e.legato?1.035:.98));
+  const offset=timing.secondsAt(e.start),full=e.duration*secondsPerTick;
+  const fermataDelay=e.fermata?(timing.pauses.find(p=>Math.abs(p.tick-(e.start+e.duration))<.001)?.delay||0):0;
+  const dur=Math.max(.07,e.fermata?full+fermataDelay:full*(e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:e.marcato?.92:e.legato?1.035:.98));
   const volume=(piano.notes.length>100?.53:.68)*(e.gain||.79)*(e.marcato?1.48:e.accent?1.27:1);
   // Both piano hands, simultaneous chords, ties and articulation play together.
   tone(e.midi,start+offset,dur,volume);
  }
- startPianoTracking(start,secondsPerTick);
- stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+piano.total*secondsPerTick-context.currentTime)*1000+300);
+ startPianoTracking(start,secondsPerTick,timing);
+ stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+timing.total-context.currentTime)*1000+300);
  updateStatus('Playing '+piano.parts+' part(s) at '+bpm+' BPM; piano chords and both hands are synchronised.');
 }
 
