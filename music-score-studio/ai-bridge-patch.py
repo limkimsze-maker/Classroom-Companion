@@ -97,6 +97,33 @@ window.addEventListener("message", async event => {
 });
 companionSend({type:"ready"});
 """
+# Restore the classroom-only printed-terms OCR bridge after every upstream rebuild.
+# The OCR module is maintained separately in ai/expression-ocr.js (AGPL-3.0);
+# Tesseract.js is loaded only on demand under its own Apache-2.0 licence.
+ocr_old = '''    const recognized = entry.pages.filter(p => typeof p === "string" && p.includes("score-partwise"));
+    if (recognized.length) companionSend({type:"result",pages:recognized,title:entry.title});
+    else companionSend({type:"error",message:"No readable music was found. Try a sharper, straight-on photo."});'''
+ocr_new = '''    const recognizedPages=pages.filter(p=>typeof p.xml==="string"&&p.xml.includes("score-partwise"));
+    const recognized=recognizedPages.map(p=>p.xml);
+    if(recognized.length){
+      // Partsong's trained OMR reads pitches and rhythm. A separate, optional
+      // browser-local OCR pass reads printed Italian words and dynamics.
+      // If a phone cannot download OCR, preserve the usable recognised music.
+      let detectedMarks=[],ocrWarning="";
+      try{
+        const {readScoreTextMarks}=await import('./expression-ocr.js');
+        detectedMarks=await readScoreTextMarks(recognizedPages.map(p=>p.blob),
+          detail=>companionSend({type:"status",message:detail}));
+      }catch(e){
+        ocrWarning="Text/sign recognition was unavailable; notes and rhythms are still playable. "+
+          String(e?.message||"Check the score manually.");
+      }
+      companionSend({type:"result",pages:recognized,title:entry.title,detectedMarks,ocrWarning});
+    }else companionSend({type:"error",message:"No readable music was found. Try a sharper, straight-on photo."});'''
+if code.count(ocr_old)!=1:
+    raise SystemExit("OCR bridge anchor mismatch; inspect upstream before publishing")
+code=code.replace(ocr_old,ocr_new,1)
+
 code="/* Partsong AI reader: original source © 2026 Paul Fremantle (AGPL-3.0).\n * Classroom Companion bridge and local modifications © 2026 Lim Kim Sze.\n * Modified 2026-11-04: same-origin score-photo/MusicXML integration, progress\n * reporting, diagnostic options, local classroom attribution and no analytics.\n * Modified source, build details and license: music-score-studio/ai/SOURCE.md\n * No warranty; upstream authors do not endorse this adaptation.\n */\n"+code
 SRC.write_text(code,encoding="utf-8")
 page=html.read_text(encoding="utf-8")
@@ -119,4 +146,17 @@ html.write_text(page,encoding="utf-8")
 license_file=AI/"LICENSE"
 license_file.write_text(license_file.read_text(encoding="utf-8").replace("&lt;","<").replace("&gt;",">"),encoding="utf-8")
 (AI/"SOURCE.md").write_text("# Music Score Studio – modified Partsong reader: source and license notices\n\nThis directory is the **Classroom Companion-adapted** on-device music recogniser. It is a modified copy of **Partsong**, © 2026 Paul Fremantle, which incorporates the **homr** and **homr-rs** projects. The reader and modifications are distributed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**, without warranty. Original authors retain their copyrights.\n\n## Source available to users\n\n- **This modified reader:** https://github.com/limkimsze-maker/Classroom-Companion/tree/main/music-score-studio/ai\n- **Entire Music Score Studio (including the calling score editor):** https://github.com/limkimsze-maker/Classroom-Companion/tree/main/music-score-studio\n- **License copy:** https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/ai/LICENSE\n- **Local integration patch:** https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/ai-bridge-patch.py\n- **Rebuild / distribution workflow:** https://github.com/limkimsze-maker/Classroom-Companion/blob/main/.github/workflows/build-music-studio-omr.yml\n- **Original Partsong source, fixed upstream revision:** https://github.com/pzfreo/partsong/tree/e7cbd9112763aa31e45abaea2d1bbe09159a8f1b\n- **homr (AGPL-3.0):** https://github.com/liebharc/homr\n- **homr-rs (AGPL-3.0):** https://github.com/pzfreo/homr-rs\n\n## Modifications to upstream Partsong (2026-11-04 notice update)\n\nBased on Partsong revision `e7cbd9112763aa31e45abaea2d1bbe09159a8f1b` (recorded in the build workflow). Changes made for Classroom Companion:\n\n1. Added a same-origin `postMessage` bridge that accepts classroom photos and returns recognised MusicXML to the host editor (`app.js`); recogniser still runs locally in the browser.\n2. Added reading-progress and error events, a CPU-only diagnostics option, and the simplified automatic scan entry point.\n3. Removed the upstream optional GoatCounter analytics script, changed the title for the embedded reader and updated About-screen attribution, source links and legal explanations.\n4. The separate hosting page (`../index.html`) imports the MusicXML and presents it with teacher-focused score editing and playback controls.\n\nThese edits are documented in `../ai-bridge-patch.py`, in the modified source files published in this directory, and in the Git history. Nothing in this notice claims authorship of Partsong, homr or their models.\n\n## How the published reader is assembled\n\n1. The GitHub Actions workflow checks out the fixed Partsong source commit above and copies selected web/OMR files to `music-score-studio/ai/`.\n2. `python3 music-score-studio/ai-bridge-patch.py` applies the local modifications to the upstream JavaScript, About screen and source notices.\n3. `bash music-score-studio/ai/scripts/fetch-models.sh` fetches the three official homr ONNX checkpoints from its `onnx_checkpoints` release. The published fork also contains the corresponding `.onnx` assets.\n4. The `omr/*.wasm` files come from that pinned Partsong revision. Its `omr-rs/` and `scripts/build-omr.sh` sources and build directions are available in the fixed upstream commit above, including its pinned homr-rs dependency. The build is not independently verified as bit-for-bit reproducible here.\n5. The workflow verifies required files and publishes the reader. The source links above provide the build scripts, patched source, upstream source and component references.\n\n## Other notices and caveats\n\n- **homr and homr-rs:** AGPL-3.0. homr's model-weight licensing and training-data limitations are described in https://github.com/liebharc/homr/blob/main/LICENSE_FAQ.md.\n- **ONNX Runtime Web:** MIT; **pdf.js:** Apache-2.0; **OpenSheetMusicDisplay:** BSD-3-Clause, as credited in the original Partsong About page.\n- **Noto Music engraved clefs in the main editor:** SIL Open Font License 1.1, documented separately in `../NOTO_MUSIC_OFL.txt`.\n- **No endorsement:** Partsong, homr and their contributors have not been represented as sponsors or maintainers of this adaptation.\n- The original Partsong `privacy.html` and `terms.html` are preserved as upstream files; they describe the original Partsong service and should not be treated as terms for this separately hosted classroom adaptation.\n\n**This notice is not a legal opinion.** A compliance review should still check complete corresponding build source for the precompiled WASM artifacts, software-license scope of the host integration and any model-training data rights.\n",encoding="utf-8")
+# Clarify on-demand OCR third-party notices in regenerated source text.
+notice=AI/"SOURCE.md"
+notice.write_text(notice.read_text(encoding="utf-8")+
+    "\n## Automatic printed-term recognition\n\n"
+    "- `ai/expression-ocr.js` is an AGPL-3.0 classroom-specific addition that "
+    "matches OCR text to musical directions; its source is distributed here.\n"
+    "- **Tesseract.js 5.1.1** (Apache-2.0): "
+    "https://github.com/naptha/tesseract.js ; loaded on demand from "
+    "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js .\n"
+    "- Photos are interpreted inside the browser. Script and language data "
+    "must be downloaded on the first use, but images are not uploaded.\n"
+    "- Printed directions and their estimated bar positions can be wrong, "
+    "and the underlying homr model still may miss small notation marks.\n",encoding="utf-8")
 print("Patched Partsong OMR bridge and preserved upstream licensing.")
