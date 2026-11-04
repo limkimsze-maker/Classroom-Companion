@@ -998,7 +998,8 @@ function musicalLinks(){
   const next=refs[i+1];
   if(next?.e.kind==='note'&&e.tieTo===next.e.id&&
     e.step===next.e.step&&e.octave===next.e.octave&&
-    midiFor(r.bar,r.index)===midiFor(next.bar,next.index)&&
+    midiFor(r.bar,r.index)+(barDirective(r.bar).octave?12:0)===
+    midiFor(next.bar,next.index)+(barDirective(next.bar).octave?12:0)&&
     (r.bar===next.bar||Math.abs(sumBar(data.bars[r.bar])-cap())<.001)){
    ties.set(e.id,next.e.id);tieEnds.add(next.e.id);
   }
@@ -2237,6 +2238,12 @@ function xmlDirectionsStart(bar,compound){
  const d=barDirective(bar),word=(str,place='above')=>
   '<direction placement="'+place+'"><direction-type><words font-style="italic">'+xmlEscape(str)+'</words></direction-type></direction>';
  let xml='';
+ if(['start','both'].includes(d.repeat)||d.ending){
+  xml+='<barline location="left">';
+  if(d.ending)xml+='<ending number="'+d.ending+'" type="start"/>';
+  if(['start','both'].includes(d.repeat))xml+='<repeat direction="forward"/>';
+  xml+='</barline>';
+ }
  if(d.tempo){
   xml+=word(d.tempo);
   const setTempo=CLASSROOM_TEMPOS[d.tempo]|| (d.tempo==='a tempo'?data.tempo:0);
@@ -2259,12 +2266,6 @@ function xmlDirectionsStart(bar,compound){
   const audio=d.sign==='dc'?'dacapo="yes"':d.sign==='ds'?'dalsegno="segno1"':'fine="yes"';
   xml+=word(label)+'<sound '+audio+'/>';
  }
- if(['start','both'].includes(d.repeat)||d.ending){
-  xml+='<barline location="left">';
-  if(d.ending)xml+='<ending number="'+d.ending+'" type="start"/>';
-  if(['start','both'].includes(d.repeat))xml+='<repeat direction="forward"/>';
-  xml+='</barline>';
- }
  return xml;
 }
 function xmlDirectionsEnd(bar){
@@ -2285,7 +2286,7 @@ function xmlDirectionsEnd(bar){
 function exportMusicXML(){const links=musicalLinks();const [beats,beatType]=data.meter.split('/');const compound=data.meter==='6/8';const soundTempo=Number((data.tempo*(compound?1.5:1)).toFixed(3));let xml=`<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE score-partwise  PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n<score-partwise version="4.0">\n<work><work-title>${xmlEscape(data.title)}</work-title></work>\n<movement-title>${xmlEscape(data.title)}</movement-title>\n<identification><creator type="composer">${xmlEscape(data.composer)}</creator></identification>\n<defaults><scaling><millimeters>7</millimeters><tenths>40</tenths></scaling></defaults>\n<part-list><score-part id="P1"><part-name>Melody</part-name><part-abbreviation>Mel.</part-abbreviation><score-instrument id="I1"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part></part-list>\n<part id="P1">`;
 for(let b=0;b<data.bars.length;b++){const exportBar=printBarEvents(data.bars[b]);const beamsForBar=rhythmBeamMetadata(exportBar,planRhythmBeams(exportBar));xml+=`\n<measure implicit="no" number="${b+1}">`;if(b===0){xml+=`<attributes><divisions>192</divisions><key><fifths>0</fifths></key><time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time><clef><sign>${data.clef==='treble'?'G':'F'}</sign><line>${data.clef==='treble'?2:4}</line></clef></attributes><direction placement="above"><direction-type><metronome parentheses="no"><beat-unit>quarter</beat-unit>${compound?'<beat-unit-dot/>':''}<per-minute>${data.tempo}</per-minute></metronome></direction-type><sound tempo="${soundTempo}" /></direction>`}
 xml+=xmlDirectionsStart(b,compound);
-for(let i=0;i<exportBar.length;i++){const e=exportBar[i];xml+='<note>';if(e.kind==='rest'){xml+=e.measureRest?'<rest measure="yes" />':'<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave}</octave></pitch>`;
+for(let i=0;i<exportBar.length;i++){const e=exportBar[i];xml+='<note>';if(e.kind==='rest'){xml+=e.measureRest?'<rest measure="yes" />':'<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave+(barDirective(b).octave?1:0)}</octave></pitch>`;
 if(links.tieEnds.has(e.id))xml+='<tie type="stop"/>';
 if(links.ties.has(e.id))xml+='<tie type="start"/>';
 }xml+=`<duration>${Math.round((e.measureRest?cap():ticks(e))*8)}</duration>`;if(!e.measureRest)xml+=`<type>${({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th',32:'32nd',64:'64th',128:'128th'})[e.den]}</type>`;if(e.dot&&!e.measureRest)xml+='<dot />';if(e.kind==='note'&&e.acc)xml+=`<accidental>${e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural'}</accidental>`;for(const beam of beamsForBar[i])xml+=`<beam number="${beam.number}">${beam.state}</beam>`;
