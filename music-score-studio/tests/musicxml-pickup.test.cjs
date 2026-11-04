@@ -111,3 +111,90 @@ test('imported playback starts the second bar one second after a 60 BPM crotchet
   assert.ok(Math.abs(next.onset - 1) < 1e-9);
   assert.ok(Math.abs(timing.total - 5) < 1e-9);
 });
+
+function tiedBar(duration, implicit, first, tieType, step='C', octave=4) {
+ const measure = bar(duration,implicit,first,step,octave);
+ const target = measure.children.find(n=>n.localName==='note');
+ target.children.push(element('tie',[],{type:tieType}));
+ return measure;
+}
+function timingFor(score,order=score.measureLength.map((_,i)=>i),bpm=60) {
+ const createTiming = new Function('MUSICAL_DYNAMICS','CLASSROOM_TEMPOS',
+  timingText+'\nreturn createImportedRepeatedTiming;')({mf:.79},{});
+ return createTiming(score,60/bpm/score.TPQ,order);
+}
+function nearly(actual,expected,label) {
+ assert.ok(Math.abs(actual-expected)<1e-7,(label||'timing')+': expected '+expected+' got '+actual);
+}
+
+test('tie from one-crotchet pickup sustains without reattack into the next bar',()=>{
+ const score=onePart(tiedBar(1,true,true,'start'),tiedBar(1,null,false,'stop'));
+ assert.deepEqual(score.measureStart,[0,960]);
+ assert.equal(score.notes.length,1,'one combined sounding note');
+ assert.equal(score.notes[0].duration,1920);
+ const timing=timingFor(score);
+ assert.equal(timing.notes.length,1);
+ nearly(timing.notes[0].onset,0,'tie onset');
+ nearly(timing.notes[0].duration,2,'two crotchets at 60 BPM');
+ nearly(timing.events.find(e=>!e.on).at,2,'visual note-off');
+ nearly(timing.total,5,'full two-bar performance length');
+});
+test('tie across pickup respects a tempo change in the following bar',()=>{
+ const score=onePart(tiedBar(1,true,true,'start'),tiedBar(1,null,false,'stop'));
+ score.barMarks[1]={tempoBpm:120};
+ const timing=timingFor(score);
+ nearly(timing.notes[0].duration,1.5,'one second plus half-second continuation');
+ nearly(timing.events.find(e=>!e.on).at,1.5,'tie release at changed tempo');
+});
+test('empty implicit accompaniment does not pad a one-crotchet pickup',()=>{
+ const score=parse([
+  {name:'Melody',bars:[bar(1,true,true,'G',4),bar(4,null,false,'C',5)]},
+  {name:'Silent bass pickup',bars:[bar(0,true,true),bar(4,null,false,'G',3)]}
+ ]);
+ assert.deepEqual(score.measureLength,[960,3840]);
+ assert.deepEqual(score.measureStart,[0,960]);
+ const notes=score.notes.filter(n=>n.measure===1);
+ assert.equal(notes.length,2);
+ assert.ok(notes.every(n=>n.start===960));
+ const timing=timingFor(score);
+ nearly(timing.notes.find(x=>x.e.part===0&&x.e.measure===1).onset,1);
+ nearly(timing.notes.find(x=>x.e.part===1&&x.e.measure===1).onset,1);
+});
+test('silent accompaniment appearing first still does not dictate pickup length',()=>{
+ const score=parse([
+  {name:'Silent bass pickup',bars:[bar(0,true,true),bar(4,null,false,'G',3)]},
+  {name:'Melody',bars:[bar(1,true,true,'G',4),bar(4,null,false,'C',5)]}
+ ]);
+ assert.deepEqual(score.measureLength,[960,3840]);
+ const timing=timingFor(score);
+ assert.equal(timing.notes.filter(x=>x.e.measure===1&&Math.abs(x.onset-1)<1e-8).length,2);
+});
+test('combined silent accompaniment and tied pickup maintain both parts in sync',()=>{
+ const score=parse([
+  {name:'Melody',bars:[tiedBar(1,true,true,'start','C',4),tiedBar(1,null,false,'stop','C',4)]},
+  {name:'Accompaniment',bars:[bar(0,true,true),bar(4,null,false,'G',3)]}
+ ]);
+ assert.deepEqual(score.measureStart,[0,960]);
+ const timing=timingFor(score);
+ const melody=timing.notes.find(x=>x.e.part===0);
+ const bass=timing.notes.find(x=>x.e.part===1);
+ assert.equal(timing.notes.length,2);
+ nearly(melody.onset,0);nearly(melody.duration,2);
+ nearly(bass.onset,1);nearly(timing.total,5);
+ assert.equal(timing.events.filter(x=>x.on).length,2);
+});
+test('repeated pickup visits sustain only into their contiguous following bar',()=>{
+ const score=onePart(tiedBar(1,true,true,'start'),tiedBar(1,null,false,'stop'));
+ const timing=timingFor(score,[0,1,0,1]);
+ assert.equal(timing.notes.length,2);
+ nearly(timing.notes[0].duration,2);
+ nearly(timing.notes[1].onset,5);
+ nearly(timing.notes[1].duration,2);
+});
+test('a navigation jump does not sustain a tie across non-adjacent bar visits',()=>{
+ const score=onePart(tiedBar(1,true,true,'start'),tiedBar(1,null,false,'stop'));
+ const timing=timingFor(score,[0,0,1]);
+ assert.equal(timing.notes.length,2);
+ nearly(timing.notes[0].duration,1);
+ nearly(timing.notes[1].duration,2);
+});
