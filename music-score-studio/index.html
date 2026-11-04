@@ -152,14 +152,14 @@
 .musicNoteValueGrid button:hover,.musicNoteValueGrid button:focus-visible{background:#e8f7f8;border-color:#087b86;outline:2px solid #8ac6cf;outline-offset:1px}
 .musicNoteValueGrid button[data-current="true"]{border:2px solid #087b86;background:#087b86;color:#fff}
 .musicNoteValueGrid .noteSymbol{display:block;font:33px/1.03 "Noto Music","Segoe UI Symbol","Arial Unicode MS",serif;min-height:34px}
-.musicNoteValueGrid .noteLabel{display:block;font-size:10px;font-weight:750;white-space:nowrap;letter-spacing:-.2px}
+.musicNoteValueGrid .noteLabel{display:block;font-size:10px;font-weight:750;white-space:normal;overflow-wrap:anywhere;line-height:1.15;letter-spacing:-.2px}
 @media(max-width:400px){.musicNoteContextMenu{padding:6px}.musicNoteValueGrid{gap:3px}.musicNoteValueGrid button{min-height:68px}.musicNoteValueGrid .noteSymbol{font-size:29px}}
 
 
 .musicAdvancedValues{margin-top:7px;border-top:1px solid #d4e8eb;padding-top:6px}
 .musicAdvancedValues summary{font-size:11px;font-weight:750;color:#476a77;cursor:pointer;padding:3px 4px}
 .musicAdvancedGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
-.musicAdvancedGrid button{border:1px solid #bed7e2;border-radius:8px;min-height:38px;background:#f8fcff;color:#234d5b;font-weight:800;cursor:pointer}
+.musicAdvancedGrid button{border:1px solid #bed7e2;border-radius:8px;min-height:50px;background:#f8fcff;color:#234d5b;font-weight:800;font-size:11px;line-height:1.2;overflow-wrap:anywhere;padding:5px 3px;cursor:pointer}
 .musicAdvancedGrid button small{display:block;font-size:10px;font-weight:600}
 .musicAdvancedGrid button[data-current="true"]{border:2px solid #087b86;background:#087b86;color:white}
 .musicDirectHint{font-size:12px;color:#194d5b;line-height:1.3;font-weight:600}
@@ -179,7 +179,7 @@
 .annotationToolbar .noteStampCard:hover,.annotationToolbar .noteStampCard:focus-visible{border-color:#0b8a99;background:#edf9f8;outline:2px solid #a6e2e6}
 .annotationToolbar .noteStampCard[aria-pressed="true"]{border:2.5px solid #087b86;background:#d7f3ee;box-shadow:0 0 0 2px #95d7cf}
 .noteStampGraphic{display:block;height:48px;width:48px;max-width:100%;flex-shrink:0;pointer-events:none}
-.noteStampName{display:block;font-size:11px;font-weight:850;line-height:1.15;pointer-events:none}
+.noteStampName{display:block;font-size:11px;font-weight:850;line-height:1.15;overflow-wrap:anywhere;pointer-events:none}
 .noteStampBeats{display:block;font-size:10px;color:#587785;line-height:1.1;pointer-events:none}
 .noteStampGhost{position:fixed;z-index:9000;pointer-events:none;border:2px solid #0c8594;border-radius:14px;background:#f2fffd;
  padding:4px 10px;display:flex;align-items:center;gap:7px;box-shadow:0 8px 24px #123b5066;white-space:nowrap;transform:translate(-50%,-50%)}
@@ -303,16 +303,16 @@
   <span class="musicDirectHint">Drag a note symbol onto a staff line or space; <b>right-click</b> also works.</span>
  <div id="noteStampPalette" class="noteStampPalette" role="group" aria-label="Drag a note symbol to add it to the staff">
    <div class="noteStampPaletteTitle">Drag a musical note onto the staff <span>or tap a note, then tap its position</span></div>
-   <div class="noteStampCards"><button type="button" class="noteStampCard" data-stamp-den="1" aria-pressed="false" title="Drag Whole (4 beats) onto the staff, or tap then tap the staff">
-    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#fff" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Whole</span><span class="noteStampBeats">4 beats</span></button>
-   <button type="button" class="noteStampCard" data-stamp-den="2" aria-pressed="false" title="Drag Half (2 beats) onto the staff, or tap then tap the staff">
-    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#fff" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Half</span><span class="noteStampBeats">2 beats</span></button>
-   <button type="button" class="noteStampCard" data-stamp-den="4" aria-pressed="false" title="Drag Quarter (1 beat) onto the staff, or tap then tap the staff">
-    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Quarter</span><span class="noteStampBeats">1 beat</span></button>
-   <button type="button" class="noteStampCard" data-stamp-den="8" aria-pressed="false" title="Drag Eighth (½ beat) onto the staff, or tap then tap the staff">
-    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><path d="M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z" fill="#183f54"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Eighth</span><span class="noteStampBeats">½ beat</span></button>
-   <button type="button" class="noteStampCard" data-stamp-den="16" aria-pressed="false" title="Drag 16th (¼ beat) onto the staff, or tap then tap the staff">
-    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><path d="M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z" fill="#183f54"/><path d="M33 18 C49 21 48 35 38 43 C44 31 43 26 33 30 Z" fill="#183f54"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">16th</span><span class="noteStampBeats">¼ beat</span></button></div>
+   <div class="noteStampCards"><button type="button" class="noteStampCard" data-stamp-den="1" aria-pressed="false" title="Drag Semibreve (4 beats) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#fff" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Semibreve</span><span class="noteStampBeats">4 beats</span></button>
+   <button type="button" class="noteStampCard" data-stamp-den="2" aria-pressed="false" title="Drag Minim (2 beats) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#fff" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Minim</span><span class="noteStampBeats">2 beats</span></button>
+   <button type="button" class="noteStampCard" data-stamp-den="4" aria-pressed="false" title="Drag Crotchet (1 beat) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Crotchet</span><span class="noteStampBeats">1 beat</span></button>
+   <button type="button" class="noteStampCard" data-stamp-den="8" aria-pressed="false" title="Drag Quaver (½ beat) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><path d="M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z" fill="#183f54"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Quaver</span><span class="noteStampBeats">½ beat</span></button>
+   <button type="button" class="noteStampCard" data-stamp-den="16" aria-pressed="false" title="Drag Semiquaver (¼ beat) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><path d="M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z" fill="#183f54"/><path d="M33 18 C49 21 48 35 38 43 C44 31 43 26 33 30 Z" fill="#183f54"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Semiquaver</span><span class="noteStampBeats">¼ beat</span></button></div>
  </div>
   <div id="toolRow" class="segrow musicDirectTools" role="group" aria-label="Music editing actions">
    <button type="button" class="annotationBtn active" data-mode="select">↖ Select / Move</button>
@@ -354,18 +354,18 @@
 <div id="musicNoteContextMenu" class="musicNoteContextMenu" role="group" aria-label="Choose a note value" hidden>
  <strong id="musicNoteMenuCaption">Choose note value</strong>
  <div class="musicNoteValueGrid" role="group" aria-label="Five note values">
-  <button type="button" data-note-duration="1" aria-pressed="false" title="Whole note · 4 beats"><span class="noteSymbol">𝅝</span><span class="noteLabel">Whole</span></button>
-  <button type="button" data-note-duration="2" aria-pressed="false" title="Half note · 2 beats"><span class="noteSymbol">𝅗𝅥</span><span class="noteLabel">Half</span></button>
-  <button type="button" data-note-duration="4" aria-pressed="false" title="Quarter note · 1 beat"><span class="noteSymbol">♩</span><span class="noteLabel">Quarter</span></button>
-  <button type="button" data-note-duration="8" aria-pressed="false" title="Eighth note · ½ beat"><span class="noteSymbol">♪</span><span class="noteLabel">Eighth</span></button>
-  <button type="button" data-note-duration="16" aria-pressed="false" title="Sixteenth note · ¼ beat"><span class="noteSymbol">♬</span><span class="noteLabel">16th</span></button>
+  <button type="button" data-note-duration="1" aria-pressed="false" title="Semibreve · 4 beats"><span class="noteSymbol">𝅝</span><span class="noteLabel">Semibreve</span></button>
+  <button type="button" data-note-duration="2" aria-pressed="false" title="Minim · 2 beats"><span class="noteSymbol">𝅗𝅥</span><span class="noteLabel">Minim</span></button>
+  <button type="button" data-note-duration="4" aria-pressed="false" title="Crotchet · 1 beat"><span class="noteSymbol">♩</span><span class="noteLabel">Crotchet</span></button>
+  <button type="button" data-note-duration="8" aria-pressed="false" title="Quaver · ½ beat"><span class="noteSymbol">♪</span><span class="noteLabel">Quaver</span></button>
+  <button type="button" data-note-duration="16" aria-pressed="false" title="Semiquaver · ¼ beat"><span class="noteSymbol">♬</span><span class="noteLabel">Semiquaver</span></button>
  </div>
  <details class="musicAdvancedValues" id="musicAdvancedValues">
   <summary>More note values (advanced)</summary>
   <div class="musicAdvancedGrid" role="group" aria-label="Additional short note values">
-   <button type="button" data-note-duration="32" aria-pressed="false" title="Thirty-second note · ⅛ beat">32nd <small>⅛ beat</small></button>
-   <button type="button" data-note-duration="64" aria-pressed="false" title="Sixty-fourth note · ¹⁄₁₆ beat">64th <small>¹⁄₁₆ beat</small></button>
-   <button type="button" data-note-duration="128" aria-pressed="false" title="Hundred twenty-eighth note · ¹⁄₃₂ beat">128th <small>¹⁄₃₂ beat</small></button>
+   <button type="button" data-note-duration="32" aria-pressed="false" title="Demisemiquaver · ⅛ beat">Demisemiquaver <small>⅛ beat</small></button>
+   <button type="button" data-note-duration="64" aria-pressed="false" title="Hemidemisemiquaver · ¹⁄₁₆ beat">Hemidemisemiquaver <small>¹⁄₁₆ beat</small></button>
+   <button type="button" data-note-duration="128" aria-pressed="false" title="Semihemidemisemiquaver · ¹⁄₃₂ beat">Semihemidemisemiquaver <small>¹⁄₃₂ beat</small></button>
   </div>
  </details>
 </div>
@@ -391,11 +391,11 @@
   <div class="group"><div class="lab">Rest values and notation details</div>
    <p class="intro">Choose a rest value when using <b>Add Rests</b>. Dots and accidentals apply to subsequent notes or a selected symbol.</p>
    <div class="values" id="values" role="group" aria-label="Note or rest value">
-<button class="valueBtn" data-den="1" title="Whole (4 quarter-note beats)"><span class="music">𝅝</span><small>Whole</small></button>
-<button class="valueBtn active" data-den="2" title="Half (2 quarter-note beats)"><span class="music">𝅗𝅥</span><small>Half</small></button>
-<button class="valueBtn" data-den="4" title="Quarter (1 quarter-note beat)"><span class="music">♩</span><small>Quarter</small></button>
-<button class="valueBtn" data-den="8" title="Eighth (half a quarter-note beat)"><span class="music">♪</span><small>Eighth</small></button>
-<button class="valueBtn" data-den="16" title="Sixteenth (quarter of a quarter-note beat)"><span class="music">♬</span><small>16th</small></button>
+<button class="valueBtn" data-den="1" title="Semibreve (4 crotchet beats in 4/4)"><span class="music">𝅝</span><small>Semibreve</small></button>
+<button class="valueBtn active" data-den="2" title="Minim (2 crotchet beats in 4/4)"><span class="music">𝅗𝅥</span><small>Minim</small></button>
+<button class="valueBtn" data-den="4" title="Crotchet (1 crotchet beat in 4/4)"><span class="music">♩</span><small>Crotchet</small></button>
+<button class="valueBtn" data-den="8" title="Quaver (½ crotchet beats in 4/4)"><span class="music">♪</span><small>Quaver</small></button>
+<button class="valueBtn" data-den="16" title="Semiquaver (¼ crotchet beats in 4/4)"><span class="music">♬</span><small>Semiquaver</small></button>
 </div>
 <label class="check"><input type="checkbox" id="dotted"> Dotted note / rest <span style="color:#607b85;font-size:12px">(+½ value)</span></label>
 <div class="field" style="margin-top:12px"><label for="accidental">Accidental (for notes)</label><select id="accidental"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></div>
@@ -409,7 +409,7 @@
 <main class="layout-main">
 <div class="paperCard" style="margin-top:0"><div class="toolbar"><div class="transport"><button class="btn primary" id="play">▶ Play score</button><button class="btn" id="openXML" title="Open a MusicXML file with both piano hands, chords, rests and ties">🎹 Open MusicXML</button><input type="file" id="musicXmlInput" class="sr" accept=".musicxml,.xml,text/xml,application/xml"><button class="btn" id="scanScore" title="Experimental simple-melody detector — for full printed piano scores use AI scanner above">🧪 Basic melody scan</button><button class="btn" id="stop" disabled>■ Stop</button><span class="divider"></span><button class="btn" id="undo" title="Undo (Ctrl+Z)" disabled>↶ Undo</button><button class="btn" id="redo" title="Redo (Ctrl+Y)" disabled>↷ Redo</button></div><div class="exports"><button class="btn" id="print">⎙ Print / PDF</button><button class="btn" id="savePNG">⇩ PNG</button><button class="btn" id="saveSVG">⇩ SVG</button><button class="btn" id="saveXML">⇩ MusicXML</button></div></div>
 <div class="meta"><div><label for="title">SCORE TITLE</label><input id="title" placeholder="e.g. Our Class Melody" value="My Music Score" maxlength="100"></div><div><label for="composer">COMPOSER / CLASS (OPTIONAL)</label><input id="composer" placeholder="e.g. Primary 3 Music" maxlength="100"></div></div></div>
-<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><span id="modeHint">Click a line or space to add a quarter note</span></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
+<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><span id="modeHint">Drag a note onto a line or space</span></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
 <div class="paperCard" id="pianoPanel" hidden>
   <div class="pianoTop"><div><h3 id="pianoTitle">Imported MusicXML piano score</h3><p id="pianoSubtitle">Two hands play together</p></div><button type="button" class="btn" id="closePiano">↩ Return to melody editor</button></div>
   <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span><label class="pianoFollowLabel"><input type="checkbox" id="followNotes" checked> Follow notes</label><span id="pianoNowPlaying" aria-live="off">Press Play to follow the notes.</span></div>
@@ -419,9 +419,9 @@
   <div class="pianoScoreScroll"><div id="simpleScoreGuide" class="simpleScoreGuide"><div class="simpleGuideNav"><button id="simplePrev" type="button">◀ Previous</button><strong id="simplePageLabel">Simplified score</strong><button id="simpleNext" type="button">Next ▶</button></div><div id="simpleNotes" class="simpleNotes" aria-label="Pitches in the current bar"></div></div><svg id="pianoScore" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MusicXML notes shown as grand staff with both hands"></svg></div>
 </div>
 <div class="notice"><span style="font-size:21px" aria-hidden="true">✦</span><span><strong>Teaching-friendly:</strong> Notes are automatically arranged into bars. When a bar is full, choose another bar. Your composition is saved automatically in this browser; export JSON to keep a portable copy.</span></div>
-<div class="panel how"><h3>Start in three simple steps</h3><div class="steps"><div class="step"><span class="num">1</span><span><strong>Choose a note.</strong> Select Quarter, Half or another value on the left.</span></div><div class="step"><span class="num">2</span><span><strong>Click the staff.</strong> Higher placement means a higher pitch.</span></div><div class="step"><span class="num">3</span><span><strong>Press Play.</strong> Listen, edit and print your own score.</span></div></div><div class="segrow" style="margin-top:13px"><button id="exportJSON" class="smallBtn">⇩ Save project (.json)</button><button id="importJSON" class="smallBtn">⇧ Open project (.json)</button><button id="clear" class="smallBtn" style="color:#aa434e">Start blank score</button><input id="importFile" type="file" accept="application/json,.json" class="sr"></div></div>
+<div class="panel how"><h3>Start in three simple steps</h3><div class="steps"><div class="step"><span class="num">1</span><span><strong>Choose a note.</strong> Choose Crotchet, Minim, Quaver or another symbol above.</span></div><div class="step"><span class="num">2</span><span><strong>Click the staff.</strong> Higher placement means a higher pitch.</span></div><div class="step"><span class="num">3</span><span><strong>Press Play.</strong> Listen, edit and print your own score.</span></div></div><div class="segrow" style="margin-top:13px"><button id="exportJSON" class="smallBtn">⇩ Save project (.json)</button><button id="importJSON" class="smallBtn">⇧ Open project (.json)</button><button id="clear" class="smallBtn" style="color:#aa434e">Start blank score</button><input id="importFile" type="file" accept="application/json,.json" class="sr"></div></div>
 </main></div><footer class="footer">Music Score Studio · Classroom Companion · Works entirely in your browser · Created for classroom teaching, not professional music publishing.</footer>
-<div class="modalWrap" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal"><button class="close" id="closeHelp" aria-label="Close">×</button><h2 id="helpTitle">Music Score Studio · Quick guide</h2><p>You do not need to understand musical notation to begin.</p><ol><li><strong>Five lines:</strong> Each line and each space represents a different pitch. Click higher to make a higher note.</li><li><strong>Duration:</strong> In 4/4 time, whole = 4 beats, half = 2, quarter = 1, eighth = ½ and sixteenth = ¼. A dot adds half the value.</li><li><strong>Rest:</strong> Choose Rest and click a bar to insert silence. A bar cannot contain more duration than its time signature allows.</li><li><strong>Edit:</strong> Click any note/rest to select it. Then use Move ↑ / ↓, Change Value, or Delete. You can drag notes vertically.</li><li><strong>Draw:</strong> Select Draw to annotate the staff freehand; Undo removes the latest change.</li><li><strong>Listen:</strong> Choose Warm piano, Music box, Gentle flute, or Pure reference tone in Score setup, then press Play. The sounds are synthesised locally. A scanned score may sound wrong if notes, rhythm or rests were recognised incorrectly.</li><li><strong>Save:</strong> Save Project exports an editable JSON backup. PNG and SVG export images. MusicXML imports into compatible music programs. Print / PDF uses your browser printer.</li><li><strong>Keyboard:</strong> <kbd>←</kbd>/<kbd>→</kbd> select previous/next note; <kbd>↑</kbd>/<kbd>↓</kbd> change pitch; <kbd>Del</kbd> delete; <kbd>Ctrl+Z</kbd> undo; <kbd>Space</kbd> play/stop.</li></ol><p><strong>Scope:</strong> This version writes a single melody staff, not chords or multi-part arrangements. It uses C major / no key signature by default and allows individual sharps/flats/naturals.</p></div></div>
+<div class="modalWrap" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal"><button class="close" id="closeHelp" aria-label="Close">×</button><h2 id="helpTitle">Music Score Studio · Quick guide</h2><p>You do not need to understand musical notation to begin.</p><ol><li><strong>Five lines:</strong> Each line and each space represents a different pitch. Click higher to make a higher note.</li><li><strong>Duration:</strong> In 4/4 time, semibreve = 4 crotchet beats, minim = 2, crotchet = 1, quaver = ½ and semiquaver = ¼. A dot adds half the value.</li><li><strong>Rest:</strong> Choose Add Rests and click a bar to insert silence. A bar cannot contain more duration than its time signature allows.</li><li><strong>Edit:</strong> Click any note/rest to select it. Then use Move ↑ / ↓, Change Value, or Delete. You can drag notes vertically.</li><li><strong>Draw:</strong> Use Teacher Annotations to mark the staff; Annotation Undo removes the latest mark.</li><li><strong>Listen:</strong> Choose Warm piano, Music box, Gentle flute, or Pure reference tone in Score setup, then press Play. The sounds are synthesised locally. A scanned score may sound wrong if notes, rhythm or rests were recognised incorrectly.</li><li><strong>Save:</strong> Save Project exports an editable JSON backup. PNG and SVG export images. MusicXML imports into compatible music programs. Print / PDF uses your browser printer.</li><li><strong>Keyboard:</strong> <kbd>←</kbd>/<kbd>→</kbd> select previous/next note; <kbd>↑</kbd>/<kbd>↓</kbd> change pitch; <kbd>Del</kbd> delete; <kbd>Ctrl+Z</kbd> undo; <kbd>Space</kbd> play/stop.</li></ol><p><strong>Scope:</strong> This version writes a single melody staff, not chords or multi-part arrangements. It uses C major / no key signature by default and allows individual sharps/flats/naturals.</p></div></div>
 
 <div class="modalWrap" id="scanModal" role="dialog" aria-modal="true" aria-labelledby="scanTitle" aria-hidden="true">
   <div class="modal scanModal">
@@ -447,7 +447,7 @@
              <div class="scanEditorGrid">
                <div class="field"><label for="scanEditPitch">Note</label><select id="scanEditPitch"><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>A</option><option>B</option></select></div>
                <div class="field"><label for="scanEditOctave">Octave</label><select id="scanEditOctave"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
-               <div class="field"><label for="scanEditDuration">Duration</label><select id="scanEditDuration"><option value="1">Whole · 4 beats</option><option value="2">Half · 2 beats</option><option value="4">Quarter · 1 beat</option><option value="8">Eighth · ½ beat</option><option value="16">Sixteenth · ¼ beat</option></select></div>
+               <div class="field"><label for="scanEditDuration">Duration</label><select id="scanEditDuration"><option value="1">Semibreve · 4 beats</option><option value="2">Minim · 2 beats</option><option value="4">Crotchet · 1 beat</option><option value="8">Quaver · ½ beat</option><option value="16">Semiquaver · ¼ beat</option></select></div>
                <div class="field"><label for="scanEditAcc">Accidental</label><select id="scanEditAcc"><option value="">Follow key signature</option><option value="#">Sharp ♯</option><option value="b">Flat ♭</option><option value="n">Natural ♮</option></select></div>
              </div>
              <label class="check"><input type="checkbox" id="scanEditDot"> Dotted note (adds half its duration)</label>
@@ -763,6 +763,11 @@ window.CCPhotoOMR={scan,estimateTilt,buildBars};
 (()=>{'use strict';
 const NS='http://www.w3.org/2000/svg', LS='cc-music-score-studio-v1';
 const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16,32,64,128]; const STEPS=['C','D','E','F','G','A','B']; const TICKS=96;
+// Display names follow the British notation terminology used in Singapore
+// schools. Keep note denominators and MusicXML <type> tokens unchanged:
+ // MusicXML requires whole/half/quarter/eighth even when the UI says otherwise.
+const MUSIC_DURATION_NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver',32:'Demisemiquaver',64:'Hemidemisemiquaver',128:'Semihemidemisemiquaver'};
+const MUSIC_BEAT_LABELS={1:'4 beats',2:'2 beats',4:'1 beat',8:'½ beat',16:'¼ beat',32:'⅛ beat',64:'¹⁄₁₆ beat',128:'¹⁄₃₂ beat'};
 const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
 let piano=null;let data=blank(),tool='select',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
@@ -815,7 +820,7 @@ function addEvent(bar,i,pitch){const e={id:makeId(),kind:tool,den,dot,...(tool==
 function removeSelected(){const s=findSelected();if(!s)return;change();data.bars[s.bar].splice(s.index,1);selected=null;commit();updateStatus('Symbol removed.')}
 function adjustPitch(n){const s=findSelected();if(!s||s.e.kind!=='note')return;let idx=noteIndex(s.e.step,s.e.octave)+n;if(idx<8||idx>48)return;change();Object.assign(s.e,fromIndex(idx));commit()}
 function applyValue(){const s=findSelected();if(!s)return;const n={...s.e,den,dot};if(sumBar(data.bars[s.bar])-ticks(s.e)+ticks(n)>cap()+.00001){flash('That note value would make this bar too long.');return}change();s.e.den=den;s.e.dot=dot;if(s.e.kind==='note')s.e.acc=acc;commit();flash('Selected symbol updated')}
-function selectEvent(id){selected=id;render();let s=findSelected();if(s)updateStatus(`${noteName(s.e)} · ${['','whole','half','','quarter','','','','eighth'][s.e.den]||'sixteenth'}${s.e.dot?' (dotted)':''} · Bar ${s.bar+1}`)}
+function selectEvent(id){selected=id;render();let s=findSelected();if(s)updateStatus(`${noteName(s.e)} · ${MUSIC_DURATION_NAMES[s.e.den]?.toLowerCase()||'note'}${s.e.dot?' (dotted)':''} · Bar ${s.bar+1}`)}
 function eventPositions(bar,left,width){
  const count=bar.length,pad=30,usable=width-pad*2;
  return bar.map((event,i)=>Number.isFinite(event.posX)&&event.posX>=0&&event.posX<=1
@@ -1211,7 +1216,7 @@ function setQuickNoteValue(value){
   const btn=$(id);btn.classList.toggle('is-current',den===d);btn.setAttribute('aria-pressed',String(den===d));
  }
  if(boxSelectedNotes.size||boxSelectedStrokes.size)changeBoxNoteValue(den);
- else $('beautifyFeedback').textContent=(den===2?'◯ Half · 2 beats':den===4?'● Quarter · 1 beat':'Value '+den)+'. Draw more notes; Beautify All converts them together.';
+ else $('beautifyFeedback').textContent=(den===2?'◯ Minim · 2 beats':den===4?'● Crotchet · 1 beat':'Value '+den)+'. Draw more notes; Beautify All converts them together.';
 }
 function changeBoxNoteValue(duration){
  let allowed=[],skipped=[];
@@ -1226,7 +1231,7 @@ function changeBoxNoteValue(duration){
  for(const b of allowed)for(const e of data.bars[b])if(boxSelectedNotes.has(e.id))e.den=duration;
  for(const i of boxSelectedStrokes)if(data.strokes[i])data.strokes[i].den=duration;
  commit();
- $('beautifyFeedback').textContent='Changed selection to '+(duration===2?'◯ Half, 2 beats':duration===4?'● Quarter, 1 beat':'value '+duration)+(skipped.length?'. Bars '+skipped.join(', ')+' were already too full.':'.');
+ $('beautifyFeedback').textContent='Changed selection to '+(duration===2?'◯ Minim, 2 beats':duration===4?'● Crotchet, 1 beat':'value '+duration)+(skipped.length?'. Bars '+skipped.join(', ')+' were already too full.':'.');
 }
 function selectInMusicBox(rect){
  boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=null;
@@ -1245,7 +1250,7 @@ function selectInMusicBox(rect){
  });
  render();
  const count=boxSelectedNotes.size+boxSelectedStrokes.size;
- const message=count?'Selected '+boxSelectedNotes.size+' musical symbols and '+boxSelectedStrokes.size+' sketches. Choose Quarter/Half to change value, or Delete selection.':'Nothing selected. Drag a larger box over notes or sketches.';
+ const message=count?'Selected '+boxSelectedNotes.size+' musical symbols and '+boxSelectedStrokes.size+' sketches. Choose Crotchet/Minim to change value, or Delete selection.':'Nothing selected. Drag a larger box over notes or sketches.';
  $('beautifyFeedback').textContent=message;updateStatus(message);
 }
 function deleteBoxSelection(){
@@ -1289,7 +1294,7 @@ function startMusicInk(){
   scorePanel.style.scrollMarginTop='150px';
   scorePanel.scrollIntoView({behavior:'smooth',block:'start'});
  }
- const message='✏️ Draw as many notes as you like. Auto recognition is ON; Half (2 beats) is the default. Right-click a note to choose Quarter.';
+ const message='✏️ Draw as many notes as you like. Auto recognition is ON; Minim (2 beats) is the default. Right-click a note to choose Crotchet.';
  $('beautifyFeedback').textContent=message;
  updateStatus(message);
  flash('✏️ Cute music pen ready · Draw all notes first');
@@ -1408,7 +1413,7 @@ function hideMusicNoteMenu(){
 function showMusicNoteMenu(target,clientX,clientY){
  if(!target)return;
  noteMenuTarget=target;const menu=$('musicNoteContextMenu');
- const names={1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th',32:'32nd',64:'64th',128:'128th'};
+ const names=MUSIC_DURATION_NAMES;
  $('musicNoteMenuCaption').textContent=target.type==='insert'
   ?'Place '+target.pitch.step+target.pitch.octave+' · Select note value'
   :target.pitch.step+target.pitch.octave+' · Change note value';
@@ -1430,7 +1435,7 @@ function updateMusicNoteDuration(next){
   const ok=insertNoteFromMenu(target,next);
   hideMusicNoteMenu();
   if(ok){
-   const label=({1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th',32:'32nd',64:'64th',128:'128th'})[next];
+   const label=MUSIC_DURATION_NAMES[next];
    const message=target.pitch.step+target.pitch.octave+' '+label+' note placed. Ready to play.';
    $('beautifyFeedback').textContent=message;updateStatus(message);flash('♪ '+message);
   }
@@ -1452,7 +1457,7 @@ function updateMusicNoteDuration(next){
   change();found.den=next;commit();
  }
  hideMusicNoteMenu();
- const labels={1:'𝅝 Whole · 4 beats',2:'𝅗𝅥 Half · 2 beats',4:'♩ Quarter · 1 beat',8:'♪ Eighth · ½ beat',16:'♬ 16th · ¼ beat',32:'32nd · ⅛ beat',64:'64th · ¹⁄₁₆ beat',128:'128th · ¹⁄₃₂ beat'};
+ const labels=Object.fromEntries(Object.entries(MUSIC_DURATION_NAMES).map(([value,name])=>[value,name+' · '+MUSIC_BEAT_LABELS[value]]));
  const message=labels[next];
  $('beautifyFeedback').textContent=message+' · Updated. Undo is available.';
  updateStatus(message);flash(message);
@@ -1719,7 +1724,7 @@ function refreshScanNotes(){
   const n=notes[i],chip=document.createElement('button');chip.type='button';chip.className='scanNoteChip'+(scanSelected===n.sid?' active':'')+(n.score<.55&&!n.manual?' low':'');
   const fifths=Number($('scanKey').value),altered=fifths<0?['B','E','A','D','G','C','F'].slice(0,-fifths):['F','C','G','D','A','E','B'].slice(0,fifths);
   const sounding=n.acc||(altered.includes(n.step)?fifths<0?'b':'#':'');
-  chip.textContent=`${i+1}. ${n.step}${sounding==='#'?'♯':sounding==='b'?'♭':sounding==='n'?'♮':''}${n.octave} · ${({1:'whole',2:'half',4:'¼',8:'⅛',16:'¹⁄₁₆'})[n.den]}${n.dot?' •':''}`;
+  chip.textContent=`${i+1}. ${n.step}${sounding==='#'?'♯':sounding==='b'?'♭':sounding==='n'?'♮':''}${n.octave} · ${MUSIC_DURATION_NAMES[n.den]?.toLowerCase()||'note'}${n.dot?' •':''}`;
   chip.onclick=()=>{scanSelected=n.sid;refreshScanNotes();drawScanPicture()};list.append(chip);
  }
  list.scrollTop=oldScroll;
@@ -2289,7 +2294,7 @@ async function playPiano(){
 /* Five pictured note stamps. Pointer events cover mouse, pen and touch.
    No browser HTML5 drag/drop dependence, so the same interaction works on
    school interactive whiteboards and mobile browsers. */
-const paletteNames={1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th'};
+const paletteNames=MUSIC_DURATION_NAMES;
 function selectPaletteNote(value){
  if(![1,2,4,8,16].includes(value))return;
  // Use the teacher's editable melody staff, never add phantom notes into an
