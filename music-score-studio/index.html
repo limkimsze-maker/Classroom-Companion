@@ -339,6 +339,9 @@ body{background:radial-gradient(circle at 7% 12%,#ecf7ff 0,transparent 24rem),
 .scoreSettingsDrawer>summary span{font-size:11px;font-weight:550;color:#6a8194;margin-left:6px}
 .scoreSettingsDrawer[open]>summary{border-bottom:1px solid #e0e9f2;margin-bottom:8px}
 .scoreSettingsDrawer .intro{padding-top:8px}
+.how>summary{cursor:pointer;color:#315b84;font-size:14px;font-weight:850;padding:0 0 2px}
+.how .howInner{padding-top:10px}
+.musicDirectHint[hidden]{display:none!important}
 .moreActions{position:relative}
 .moreActions>summary{cursor:pointer;list-style:none;border:1px solid #cbdfe9;color:#365b78;background:#f5f9fc;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:750;min-height:39px}
 .moreActions>summary::-webkit-details-marker{display:none}
@@ -422,7 +425,7 @@ body{background:radial-gradient(circle at 7% 12%,#ecf7ff 0,transparent 24rem),
 <section id="annotationToolbar" class="annotationToolbar" role="region" aria-label="Teacher annotation tools" data-active-tool="cursor">
  <div class="musicInkPinned" role="group" aria-label="Direct music editing tools">
   <span class="musicInkHeading">🎼 Music Writing</span>
-  <span class="musicDirectHint">Drag a note symbol onto a staff line or space; <b>right-click</b> also works.</span>
+  <span class="musicDirectHint" hidden>Tap a note, then tap a staff line or space.</span>
  <div id="noteStampPalette" class="noteStampPalette" role="group" aria-label="Drag a note symbol to add it to the staff">
    <div class="noteStampPaletteTitle">🎨 Pick a note, then make music! <span>Tap a note and place it on the staff</span></div>
    <div class="noteStampCards"><button type="button" class="noteStampCard" data-stamp-den="1" aria-pressed="false" title="Drag Semibreve (4 beats) onto the staff, or tap then tap the staff">
@@ -443,7 +446,7 @@ body{background:radial-gradient(circle at 7% 12%,#ecf7ff 0,transparent 24rem),
    <label class="annotationBtn quickDotted" title="A dot lengthens the selected note by half its value"><input id="quickDotted" type="checkbox"> Dotted (+½)</label>
   </div>
   <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes, handwritten sketches and teacher annotations; confirmation required">⌫ Clear Score</button>
-  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Drag or tap a note to place it. Adjacent quavers and semiquavers automatically join into rhythmic beams. Right-click also works.</span>
+  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Choose a note, tap the staff, then press Play to hear your tune!</span>
  </div>
  <details class="teacherDrawer" id="teacherDrawer"><summary>🖍 Teacher annotation tools <span>Pen · highlighter · arrows (optional)</span></summary>
  <div class="annotationToolbarInner">
@@ -622,7 +625,7 @@ body{background:radial-gradient(circle at 7% 12%,#ecf7ff 0,transparent 24rem),
   <div class="pianoScoreScroll"><div id="simpleScoreGuide" class="simpleScoreGuide"><div class="simpleGuideNav"><button id="simplePrev" type="button">◀ Previous</button><strong id="simplePageLabel">Simplified score</strong><button id="simpleNext" type="button">Next ▶</button></div><div id="simpleNotes" class="simpleNotes" aria-label="Pitches in the current bar"></div></div><svg id="pianoScore" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MusicXML notes shown as grand staff with both hands"></svg></div>
 </div>
 <div class="notice"><span style="font-size:21px" aria-hidden="true">✦</span><span><strong>Teaching-friendly:</strong> Notes are automatically arranged into bars. When a bar is full, choose another bar. Your composition is saved automatically in this browser; export JSON to keep a portable copy.</span></div>
-<div class="panel how"><h3>Start in three simple steps</h3><div class="steps"><div class="step"><span class="num">1</span><span><strong>Choose a note.</strong> Choose Crotchet, Minim, Quaver or another symbol above.</span></div><div class="step"><span class="num">2</span><span><strong>Click the staff.</strong> Higher placement means a higher pitch.</span></div><div class="step"><span class="num">3</span><span><strong>Press Play.</strong> Listen, edit and print your own score. Select a note for Staccato, Accent, Slur and Tie.</span></div></div><div class="segrow" style="margin-top:13px"><button id="exportJSON" class="smallBtn">⇩ Save project (.json)</button><button id="importJSON" class="smallBtn">⇧ Open project (.json)</button><button id="clear" class="smallBtn" style="color:#aa434e">Start blank score</button><input id="importFile" type="file" accept="application/json,.json" class="sr"></div></div>
+<details class="panel how" id="helpAndProjects"><summary>📖 Help &amp; project files</summary><div class="howInner"><h3>Start in three simple steps</h3><div class="steps"><div class="step"><span class="num">1</span><span><strong>Choose a note.</strong> Choose Crotchet, Minim, Quaver or another symbol above.</span></div><div class="step"><span class="num">2</span><span><strong>Click the staff.</strong> Higher placement means a higher pitch.</span></div><div class="step"><span class="num">3</span><span><strong>Press Play.</strong> Listen, edit and print your own score. Select a note for Staccato, Accent, Slur and Tie.</span></div></div><div class="segrow" style="margin-top:13px"><button id="exportJSON" class="smallBtn">⇩ Save project (.json)</button><button id="importJSON" class="smallBtn">⇧ Open project (.json)</button><button id="clear" class="smallBtn" style="color:#aa434e">Start blank score</button><input id="importFile" type="file" accept="application/json,.json" class="sr"></div></div></details>
 </main></div><footer class="footer">Music Score Studio · Classroom Companion · Works entirely in your browser · Created for classroom teaching, not professional music publishing.<div style="margin-top:7px">Developed by Lim Kim Sze · Special thanks to Mdm Hsu Yuh Fui for her valuable feedback and suggestions on music notation.</div><div style="margin-top:6px">This music studio is available under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a>. <a href="https://github.com/limkimsze-maker/Classroom-Companion/tree/main/music-score-studio" target="_blank" rel="noopener noreferrer">View source</a> · <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/OPEN_SOURCE_NOTICES.md" target="_blank" rel="noopener noreferrer">Open-source acknowledgments</a> · Provided without warranty.</div></footer>
 <div class="modalWrap" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><div class="modal"><button class="close" id="closeHelp" aria-label="Close">×</button><h2 id="helpTitle">Music Score Studio · Quick guide</h2><p>You do not need to understand musical notation to begin.</p><ol><li><strong>Five lines:</strong> Each line and each space represents a different pitch. Click higher to make a higher note.</li><li><strong>Duration:</strong> In 4/4 time, semibreve = 4 crotchet beats, minim = 2, crotchet = 1, quaver = ½ and semiquaver = ¼. A dot adds half the value.</li><li><strong>Rest:</strong> Choose Add Rests and click a bar to insert silence. A bar cannot contain more duration than its time signature allows.</li><li><strong>Edit:</strong> Click any note/rest to select it. Then use Move ↑ / ↓, Change Value, or Delete. You can drag notes vertically.</li><li><strong>Draw:</strong> Use Teacher Annotations to mark the staff; Annotation Undo removes the latest mark.</li><li><strong>Listen:</strong> Choose Warm piano, Music box, Gentle flute, or Pure reference tone in Score setup, then press Play. The sounds are synthesised locally. A scanned score may sound wrong if notes, rhythm or rests were recognised incorrectly.</li><li><strong>Save:</strong> Save Project exports an editable JSON backup. PNG and SVG export images. MusicXML imports into compatible music programs. Print / PDF uses your browser printer.</li><li><strong>Keyboard:</strong> <kbd>←</kbd>/<kbd>→</kbd> select previous/next note; <kbd>↑</kbd>/<kbd>↓</kbd> change pitch; <kbd>Del</kbd> delete; <kbd>Ctrl+Z</kbd> undo; <kbd>Space</kbd> play/stop.</li></ol><p><strong>Scope:</strong> This version writes a single melody staff, not chords or multi-part arrangements. It uses C major / no key signature by default and allows individual sharps/flats/naturals.</p></div></div>
 
@@ -3267,12 +3270,12 @@ function wireOneStepScanner(){
      return;
    }
    if(m.type==='error'){
-     busy=false;pending=null;job=null;bar.style.width='10%';document.body.classList.remove('scan-in-progress');
+     busy=false;pending=null;job=null;bar.style.width='10%';
      message('Could not recognise the score: '+String(m.message||'Unknown error')+'. Try a clearer photo or open the reader details.',true);
      detail.open=true;return;
    }
    if(m.type==='result'){
-     busy=false;pending=null;job=null;document.body.classList.remove('scan-in-progress');
+     busy=false;pending=null;job=null;
      try{
        if(!Array.isArray(m.pages)||!m.pages.length||m.pages.length>20)throw Error('No valid recognised music pages were returned.');
        const name=String(m.title||'Photographed music score').slice(0,120);
@@ -3280,7 +3283,7 @@ function wireOneStepScanner(){
        if(!parsed.notes.length)throw Error('The recogniser found no playable notes.');
        applyPhotoExpressionMarks(parsed,m.detectedMarks,m.ocrWarning||'');
        showPianoScore(parsed,'Photo-recognised '+m.pages.length+'-page score',m.pages);
-       bar.style.width='100%';running.hidden=true;
+       bar.style.width='100%';running.hidden=true;document.body.classList.remove('scan-in-progress');
        message('Reproduced '+parsed.notes.length+' notes and '+(parsed.autoMarks?.filter(a=>a.applied).length||0)+' printed directions. '+(parsed.autoTextWarning?'Text OCR unavailable; ':'' )+'Playing now — verify against the original.');
        try{await playPiano();}catch(err){flash('Press Play all parts to hear the score: '+err.message);}
      }catch(err){running.hidden=false;detail.open=true;message('The score could not be reproduced: '+err.message,true);}
