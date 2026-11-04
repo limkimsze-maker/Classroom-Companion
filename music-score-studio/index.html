@@ -1038,9 +1038,16 @@ function printBarEvents(bar){
  const occupied=Math.round(sumBar(bar)*8),limit=Math.round(cap()*8);
  if(occupied>=limit)return bar;
  if(bar.length===0)return [{id:'print-whole-bar-rest',kind:'rest',den:1,dot:false,measureRest:true}];
- const groups=data.meter==='6/8'?[0,36,72]:
-  data.meter==='4/4'?[0,48,96]:
-  data.meter==='3/4'?[0,24,72]:[0,24,48];
+ const beatUnit=data.meter==='6/8'?36:24;
+ function nextRestBoundary(position){
+  const current=position/8,limit=cap();
+  // Preserve simple-beat boundaries, while allowing an aligned minim rest
+  // over beats 3–4 of 4/4 or beats 2–3 of 3/4.
+  if(data.meter==='4/4'&&Math.abs(current-48)<1e-7)return 96*8;
+  if(data.meter==='3/4'&&Math.abs(current-24)<1e-7)return 72*8;
+  const next=(Math.floor((current+1e-7)/beatUnit)+1)*beatUnit;
+  return Math.round(Math.min(limit,next)*8);
+ }
  const restChoices=[];
  for(const den of [1,2,4,8,16,32,64,128]){
   for(const dotted of [false,true]){
@@ -1065,8 +1072,7 @@ function printBarEvents(bar){
  }
  let pos=occupied,added=[];
  while(pos<limit){
-  const boundary=groups.find(x=>Math.round(x*8)>pos+0.01);
-  const end=Math.min(limit,boundary===undefined?limit:Math.round(boundary*8));
+  const end=Math.min(limit,nextRestBoundary(pos));
   const span=end-pos;
   const rests=solve(span);
   if(!rests){
