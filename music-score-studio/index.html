@@ -236,28 +236,13 @@
 
 
 <section id="annotationToolbar" class="annotationToolbar" role="region" aria-label="Teacher annotation tools" data-active-tool="cursor">
- <div class="musicInkPinned" role="group" aria-label="Write and beautify music notes">
-  <span class="musicInkHeading">🎼 Write musical notes</span>
-  <button type="button" class="annotationBtn musicWriteBtn" id="startMusicInk" title="Draw multiple handwritten notes; then beautify them all together">✏️ Draw Notes</button>
-  <button type="button" class="annotationBtn musicValueBtn" id="quickQuarter" aria-pressed="false" title="Quarter note: filled head, 1 beat"><span class="musicValueSymbol filled">●</span> Quarter <b>1 beat</b></button>
-  <button type="button" class="annotationBtn musicValueBtn is-current" id="quickHalf" aria-pressed="true" title="Half note: hollow head, 2 beats"><span class="musicValueSymbol hollow">◯</span> Half <b>2 beats</b></button>
-  <label class="musicInkDuration" for="inkLengthMode">Recognition
-   <select id="inkLengthMode" title="Auto recognise drawn noteheads and staff pitch; duration defaults to Half">
-    <option value="auto" selected>Auto recognition · Half default</option>
-    <option value="4">Quarter · 1 beat</option>
-    <option value="2">Half · 2 beats</option>
-    <option value="1">Whole · 4 beats</option>
-    <option value="8">Eighth · ½ beat</option>
-    <option value="16">Sixteenth · ¼ beat</option>
-   </select>
-  </label>
-  <button type="button" class="annotationBtn musicBoxBtn" id="musicBoxSelect" title="Drag a rectangle over multiple music notes and sketches to select them">▧ Box Select</button>
-  <button type="button" class="annotationBtn musicBeautifyBtn" id="beautifyInk" title="Beautify ALL handwritten notes in one press">✦ Beautify All</button>
-  <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes and music handwriting, with confirmation and Undo">⌫ Clear Score</button>
-  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Auto recognition ON · Half by default. Right-click a note for Quarter.</span>
+ <div class="musicInkPinned" role="group" aria-label="Direct note entry tools">
+  <span class="musicInkHeading">🎼 Music writing</span>
+  <span class="musicDirectHint"><b>Right-click the staff</b> to add a note · <b>touch and hold</b> on tablet</span>
+  <button type="button" class="annotationBtn musicBoxBtn" id="musicBoxSelect" title="Drag a selection box around several existing notes">▧ Box Select</button>
+  <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear the musical score (Undo available)">⌫ Clear Score</button>
+  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">No drawing or Beautify step. Right-click a line or space, choose the note value, and it appears instantly.</span>
  </div>
-
-
  <div class="annotationToolbarInner">
   <strong>🖍 Teacher Annotations · marks only (not musical notes)</strong>
   <button type="button" class="annotationBtn active" data-annotation-tool="cursor" aria-pressed="true" title="Turn off annotation and interact with the original music score">↖ Cursor</button>
@@ -303,15 +288,16 @@
 <h2>Make music, one note at a time</h2><p class="intro">Create melodies on the staff, or use the AI scanner above for printed piano and ensemble scores.</p>
 <div class="lab">1 · What would you like to do?</div>
 <div class="segrow" id="toolRow" role="group" aria-label="Editing mode">
-<button type="button" class="tool active" data-mode="note">♪ Note</button><button type="button" class="tool" data-mode="rest">𝄽 Rest</button><button type="button" class="tool" data-mode="select">↖ Select</button><button type="button" class="tool" data-mode="box">▧ Box Select</button><button type="button" class="tool" data-mode="pen">✎ Write notes</button>
+<button type="button" class="tool active" data-mode="select">↖ Select / Move</button>
+<button type="button" class="tool" data-mode="box">▧ Box Select</button>
+<button type="button" class="tool" data-mode="rest">𝄽 Add rests</button>
 </div>
 <div class="beautifyPanel">
- <strong>Music writing · 2 easy steps</strong>
- <p><b>1.</b> Tap <b>✏️ Draw Notes</b> and draw all your notes on the staff. <b>2.</b> Press <b>✦ Beautify All</b> to recognise their noteheads and pitches automatically. Every note starts as <b>◯ Half (2 beats)</b>. <b>3.</b> Right-click a note (or touch and hold) to make it <b>● Quarter (1 beat)</b>.</p>
- <p><b>Auto recognition</b> is the default setting. Box Select can still edit several notes together. Teacher Annotations below never become notes. Drawings far from the staff are ignored.</p>
- <div class="beautifyButtons"><button class="smallBtn" id="clearInk" type="button" title="Clear musical handwriting only, without removing notation or annotation overlays">Clear handwritten notes</button></div>
+ <strong>Add notes directly to the staff</strong>
+ <p><b>Right-click</b> a line or space and select the note value. The note appears immediately, with the pitch chosen from that position. <b>Right-click an existing note</b> to change its duration.</p>
+ <p>On a touchscreen, <b>touch and hold</b>. Use <b>Select / Move</b> or <b>Box Select</b> to edit notes; use <b>Add rests</b> for rests. Teacher Annotations are separate.</p>
 </div>
-<div class="group"><div class="lab">2 · Choose a note value</div>
+<div class="group"><div class="lab">2 · Rest values / optional settings</div><p class="intro">For musical notes, use the right-click menu on the staff. These values apply when adding rests or editing a selected symbol.</p>
 <div class="values" id="values" role="group" aria-label="Note or rest value">
 <button class="valueBtn" data-den="1" title="Whole (4 quarter-note beats)"><span class="music">𝅝</span><small>Whole</small></button>
 <button class="valueBtn active" data-den="2" title="Half (2 quarter-note beats)"><span class="music">𝅗𝅥</span><small>Half</small></button>
@@ -337,7 +323,7 @@
 <main class="layout-main">
 <div class="paperCard" style="margin-top:0"><div class="toolbar"><div class="transport"><button class="btn primary" id="play">▶ Play score</button><button class="btn" id="openXML" title="Open a MusicXML file with both piano hands, chords, rests and ties">🎹 Open MusicXML</button><input type="file" id="musicXmlInput" class="sr" accept=".musicxml,.xml,text/xml,application/xml"><button class="btn" id="scanScore" title="Experimental simple-melody detector — for full printed piano scores use AI scanner above">🧪 Basic melody scan</button><button class="btn" id="stop" disabled>■ Stop</button><span class="divider"></span><button class="btn" id="undo" title="Undo (Ctrl+Z)" disabled>↶ Undo</button><button class="btn" id="redo" title="Redo (Ctrl+Y)" disabled>↷ Redo</button></div><div class="exports"><button class="btn" id="print">⎙ Print / PDF</button><button class="btn" id="savePNG">⇩ PNG</button><button class="btn" id="saveSVG">⇩ SVG</button><button class="btn" id="saveXML">⇩ MusicXML</button></div></div>
 <div class="meta"><div><label for="title">SCORE TITLE</label><input id="title" placeholder="e.g. Our Class Melody" value="My Music Score" maxlength="100"></div><div><label for="composer">COMPOSER / CLASS (OPTIONAL)</label><input id="composer" placeholder="e.g. Primary 3 Music" maxlength="100"></div></div></div>
-<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><span id="modeHint">Click a line or space to add a quarter note</span></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Interactive music staff. Click a bar to insert notes; click a note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Click the staff to place a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
+<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><span id="modeHint">Click a line or space to add a quarter note</span></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
 <div class="paperCard" id="pianoPanel" hidden>
   <div class="pianoTop"><div><h3 id="pianoTitle">Imported MusicXML piano score</h3><p id="pianoSubtitle">Two hands play together</p></div><button type="button" class="btn" id="closePiano">↩ Return to melody editor</button></div>
   <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span><label class="pianoFollowLabel"><input type="checkbox" id="followNotes" checked> Follow notes</label><span id="pianoNowPlaying" aria-live="off">Press Play to follow the notes.</span></div>
@@ -692,7 +678,7 @@ window.CCPhotoOMR={scan,estimateTilt,buildBars};
 const NS='http://www.w3.org/2000/svg', LS='cc-music-score-studio-v1';
 const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16]; const STEPS=['C','D','E','F','G','A','B']; const TICKS=96;
 const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
-let piano=null;let data=blank(),tool='note',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
+let piano=null;let data=blank(),tool='select',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
 let context=null,oscillators=[],playTimers=[],toastTimer=0,stopTimer=null,playing=false,audioBus=null;
 const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
@@ -724,13 +710,16 @@ function musicPenCursor(){
 function setMode(v){
  tool=v;
  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===v));
- $('score').classList.toggle('penMode',v==='pen');
+ $('score').classList.toggle('penMode',false);
  $('score').classList.toggle('boxMode',v==='box');
- $('score').style.cursor=v==='pen'?musicPenCursor():v==='box'?'crosshair':'';
- $('startMusicInk').classList.toggle('is-current',v==='pen');
+ $('score').style.cursor=v==='box'?'crosshair':'';
  $('musicBoxSelect').classList.toggle('is-current',v==='box');
- const hints={note:'Tap staff to add a note',rest:'Tap bar to add a rest',select:'Select a note',pen:'Draw as many noteheads as needed, then Beautify All',box:'Drag to draw a selection box around notes or sketches'};
- $('modeHint').textContent=hints[v]||'Edit score';
+ const hints={
+  select:'Right-click a staff line/space to add a note; click existing notes to select or move',
+  rest:'Click an empty bar to add a rest using the rest value below',
+  box:'Drag a rectangle around notes, then change duration or delete them'
+ };
+ $('modeHint').textContent=hints[v]||'Edit musical score';
 }
 function findSelected(){for(let b=0;b<data.bars.length;b++){let i=data.bars[b].findIndex(e=>e.id===selected);if(i!==-1)return {bar:b,index:i,e:data.bars[b][i]}}return null}
 function addEvent(bar,i,pitch){const e={id:makeId(),kind:tool,den,dot,...(tool==='note'?{step:pitch.step,octave:pitch.octave,acc}:{} )};if(sumBar(data.bars[bar])+ticks(e)>cap()+.00001){flash('This bar is full for that note value. Try a shorter note or another bar.');return}change();data.bars[bar].splice(i,0,e);selected=e.id;commit();updateStatus(`${noteName(e)} added to bar ${bar+1}.`)}
@@ -815,10 +804,16 @@ if(boxSelectedNotes.size||boxSelectedStrokes.size){
  const del=document.createElement('button');del.className='smallBtn';del.textContent='Delete selection';del.onclick=deleteBoxSelection;actions.append(del);
 }else if(s){const label=document.createElement('span');label.className='editLabel';label.textContent=`Selected: ${noteName(s.e)} · Bar ${s.bar+1}`;actions.append(label);if(s.e.kind==='note'){for(const [t,n] of [['↑ Higher',1],['↓ Lower',-1]]){const b=document.createElement('button');b.className='smallBtn';b.textContent=t;b.onclick=()=>adjustPitch(n);actions.append(b)}}const apply=document.createElement('button');apply.className='smallBtn';apply.textContent='Apply value';apply.title='Apply selected duration, dot and accidental to this symbol';apply.onclick=applyValue;actions.append(apply);const del=document.createElement('button');del.className='smallBtn';del.style.color='#ae4148';del.textContent='Delete';del.onclick=removeSelected;actions.append(del)}else{const l=document.createElement('span');l.className='editLabel';l.textContent='Select a symbol to move, edit or delete it';actions.append(l)}$('removeBar').disabled=data.bars.length<=1||data.bars[data.bars.length-1].length>0;updateHistoryButtons()}
 function svgPoint(ev){const svg=$('score'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const m=svg.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0}}
-function clicked(ev){if(suppressNoteClick){suppressNoteClick=false;return;}if(tool==='pen'||tool==='box'||drag?.moved)return;const target=ev.target.closest('[data-id], [data-bar]');if(!target)return;
-if(target.hasAttribute('data-id')){selectEvent(target.dataset.id);return}
-if(tool==='select')return;
-const bar=Number(target.dataset.bar),top=Number(target.dataset.top),left=Number(target.dataset.left),width=Number(target.dataset.width);if(bar<0||bar>=data.bars.length)return;const p=svgPoint(ev);const pitch=pitchOfY(p.y,top);const index=findInsertIndex(bar,p.x,left,width);addEvent(bar,index,pitch)}
+function clicked(ev){
+ if(suppressNoteClick){suppressNoteClick=false;return}
+ if(tool==='box'||drag?.moved)return;
+ const target=ev.target.closest('[data-id], [data-bar]');if(!target)return;
+ if(target.hasAttribute('data-id')){selectEvent(target.dataset.id);return}
+ if(tool!=='rest')return; // Notes are ONLY inserted from the right-click menu.
+ const bar=Number(target.dataset.bar),top=Number(target.dataset.top),left=Number(target.dataset.left),width=Number(target.dataset.width);
+ if(bar<0||bar>=data.bars.length)return;
+ const p=svgPoint(ev);addEvent(bar,findInsertIndex(bar,p.x,left,width),pitchOfY(p.y,top));
+}
 function inkBounds(points){
  if(!Array.isArray(points)||points.length<2)return null;
  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity,length=0;
@@ -1003,8 +998,8 @@ function clearScoreTop(){
  change();
  data.bars=data.bars.map(()=>[]);data.strokes=[];
  selected=null;boxSelectedNotes.clear();boxSelectedStrokes.clear();boxDraft=null;
- commit();setMode('pen');
- $('beautifyFeedback').textContent='Score cleared; you can draw new notes. Press Undo to restore the previous score.';
+ commit();setMode('select');
+ $('beautifyFeedback').textContent='Score cleared. Right-click the staff to add the first note; Undo restores the old score.';
  flash('Score cleared · Undo available');
 }
 
@@ -1977,18 +1972,12 @@ async function playPiano(){
 }
 
 function wire(){
- $('startMusicInk').onclick=startMusicInk;
- $('beautifyInk').onclick=beautifyInk;
- $('quickQuarter').onclick=()=>setQuickNoteValue(4);
- $('quickHalf').onclick=()=>setQuickNoteValue(2);
- $('inkLengthMode').onchange=e=>{if(e.target.value==='auto'){setQuickNoteValue(2);$('inkLengthMode').value='auto';$('beautifyFeedback').textContent='Auto recognition ON: every newly drawn note defaults to Half (2 beats). Right-click for Quarter.';}else setQuickNoteValue(e.target.value);};
  $('musicBoxSelect').onclick=()=>{document.querySelector('[data-annotation-tool="cursor"]')?.click();if(piano)closePiano();setMode('box');$('editorScorePanel').scrollIntoView({behavior:'smooth',block:'start'});};
  $('clearScoreTop').onclick=clearScoreTop;
- $('clearInk').onclick=clearInkStrokes;
  document.getElementById('simplePrev').onclick=()=>{pianoSVG(Math.max(0,simplePageStart-8));document.querySelector('.pianoScoreScroll').scrollTop=0;};
  document.getElementById('simpleNext').onclick=()=>{pianoSVG(simplePageStart+8);document.querySelector('.pianoScoreScroll').scrollTop=0;};
  document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
-document.querySelectorAll('[data-den]').forEach(b=>b.addEventListener('click',()=>{setQuickNoteValue(+b.dataset.den);updateStatus(`${b.title}. Click the staff to place it.`)}));
+document.querySelectorAll('[data-den]').forEach(b=>b.addEventListener('click',()=>{den=+b.dataset.den;document.querySelectorAll('[data-den]').forEach(v=>v.classList.toggle('active',v===b));updateStatus(`${b.title}. Click empty bar to insert a rest, or right-click a note to change it.`)}));
 $('dotted').onchange=ev=>{dot=ev.target.checked};$('accidental').onchange=ev=>{acc=ev.target.value};
 for(const id of ['clef','meter'])$(id).addEventListener('change',ev=>{const key=id;const value=ev.target.value;if(id==='meter'){const [n,d]=value.split('/').map(Number),target=n*TICKS/d;if(data.bars.some(b=>sumBar(b)>target)){ev.target.value=data.meter;flash('Some existing bars are too long for that time signature. Shorten them first.');return}}change();data[key]=value;selected=null;commit();flash(`${id==='clef'?'Clef':'Time signature'} changed`)});
 $('tempo').addEventListener('change',ev=>{let v=Math.min(220,Math.max(40,Math.round(Number(ev.target.value)||96)));ev.target.value=v;if(data.tempo===v)return;change();data.tempo=v;commit()});
@@ -2012,7 +2001,7 @@ $('guide').onclick=()=>$('helpModal').classList.add('open');$('closeHelp').oncli
 window.addEventListener('keydown',ev=>{if(ev.key==='Escape'){$('helpModal').classList.remove('open');showScan(false);return}const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ev.preventDefault();ev.shiftKey?redo():undo();return}if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ev.preventDefault();redo();return}if(ev.key===' '){ev.preventDefault();play();return}if((ev.key==='Delete'||ev.key==='Backspace')&&(selected||boxSelectedNotes.size||boxSelectedStrokes.size)){ev.preventDefault();if(boxSelectedNotes.size||boxSelectedStrokes.size)deleteBoxSelection();else removeSelected();return}if(['ArrowUp','ArrowDown'].includes(ev.key)&&selected){ev.preventDefault();adjustPitch(ev.key==='ArrowUp'?1:-1);return}if(['ArrowLeft','ArrowRight'].includes(ev.key)&&selected){ev.preventDefault();let all=data.bars.flat().map(e=>e.id),i=all.indexOf(selected);i=Math.max(0,Math.min(all.length-1,i+(ev.key==='ArrowRight'?1:-1)));if(all.length)selectEvent(all[i])}});
 window.addEventListener('beforeunload',()=>{if(playing)stopPlayback()});}
 try{const raw=localStorage.getItem(LS);if(raw)data=validateProject(JSON.parse(raw))}catch(e){data=blank()}
-wire();wireScanner();wireProfessionalScanner();wireOneStepScanner();syncConfig();$('inkLengthMode').value='auto';setMode('note');commit();updateStatus('Ready · Auto recognition on; all handwritten notes default to Half (2 beats). Right-click to choose Quarter.');
+wire();wireScanner();wireProfessionalScanner();wireOneStepScanner();syncConfig();setMode('select');commit();updateStatus('Ready · Right-click a staff line or space to choose and place a note.');
 })();
 </script>
 </body>
