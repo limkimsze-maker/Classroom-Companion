@@ -398,6 +398,27 @@ function clearAnnotations(){
  remember();state.items=[];state.selected=null;persist();render();
  say('Annotations cleared. Undo restores them.');
 }
+// Clear Score previously removed only musical events and legacy music-pen strokes.
+// Handwritten sketches from Teacher Annotations live in a separate persisted
+// SVG overlay, so that layer must also be cleared and saved in the same action.
+function clearAnnotationsWithScore(){
+ const view=activeView(),key=localKey(view);
+ if(state.key!==key)sync();
+ if(state.key===key){
+  if(state.items.length)remember(); // Annotation Undo can restore the marks.
+  state.items=[];state.selected=null;state.drawing=null;
+  persist();
+  // Remove ink immediately even when the layer was hidden.
+  if(state.layer?.isConnected)state.layer.replaceChildren();
+  render();updateButtons();
+ }else{
+  // A still-hidden engraving may not have a layout width yet. Clear its
+  // persistent drawing cache anyway so old marks cannot reappear later.
+  try{localStorage.setItem(key,JSON.stringify({version:2,items:[]}));}catch(_){}
+ }
+ say('Score annotations and handwritten marks cleared. Use Annotation Undo to restore them.');
+}
+document.addEventListener('music-score-studio:clear-annotations',clearAnnotationsWithScore);
 function exportAnnotations(){
  if(!state.items.length)return;
  const data={format:'classroom-companion-music-annotations',version:2,score:scoreName(),view:state.view,items:state.items};
