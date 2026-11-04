@@ -1,3 +1,10 @@
+/* Partsong AI reader: original source © 2026 Paul Fremantle (AGPL-3.0).
+ * Classroom Companion bridge and local modifications © 2026 Lim Kim Sze.
+ * Modified 2026-11-04: same-origin score-photo/MusicXML integration, progress
+ * reporting, diagnostic options, local classroom attribution and no analytics.
+ * Modified source, build details and license: music-score-studio/ai/SOURCE.md
+ * No warranty; upstream authors do not endorse this adaptation.
+ */
 import { buildScore, parsePage, playOrder } from "./score.js";
 import { Player } from "./player.js";
 import { AUDIO_RATE, audioFile } from "./audio.js";
