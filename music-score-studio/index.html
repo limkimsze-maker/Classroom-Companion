@@ -2902,8 +2902,13 @@ function parseMusicXML(source){
      if(tied.includes('start'))pendingTies.set(tieKey,item);
     }
    }
-   measureResults.push({items,length:Math.max(currentTicks(),maxCursor),signature:beats+'/'+beatType});
-   allMeasures[mi]=Math.max(allMeasures[mi]||0,Math.max(currentTicks(),maxCursor));
+   // Implicit MusicXML measures may be pickups: preserve their actual duration.
+   // Keep normal incomplete measures padded so existing playback is unchanged.
+   const nominalTicks=currentTicks();
+   const measureTicks=measure.getAttribute('implicit')==='yes'&&maxCursor>0&&maxCursor<nominalTicks
+    ?maxCursor:Math.max(nominalTicks,maxCursor);
+   measureResults.push({items,length:measureTicks,signature:beats+'/'+beatType});
+   allMeasures[mi]=Math.max(allMeasures[mi]||0,measureTicks);
   }
   parsedParts.push({name:partName,measures:measureResults});
  }
