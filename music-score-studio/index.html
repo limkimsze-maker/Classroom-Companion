@@ -870,7 +870,16 @@ function updateStatus(msg){$('status').innerHTML=escapeHTML(msg)}
 function snapshot(){return JSON.stringify(data)}
 function change(){history.push(snapshot());if(history.length>70)history.shift();future=[]; if(playing)stopPlayback()}
 function saved(){try{localStorage.setItem(LS,JSON.stringify(data))}catch(e){} updateHistoryButtons()}
-function commit(){removeBrokenConnections();saved();render()}
+function commit(){
+ removeBrokenConnections();
+ if(Array.isArray(data.barDirectives)){
+  for(let i=0;i<data.barDirectives.length;i++){
+   const d=data.barDirectives[i];
+   if(d?.multiRest==='2'&&!isTwoBarRest(i))delete d.multiRest;
+  }
+ }
+ saved();render();
+}
 function undo(){if(!history.length)return;pendingSlurStart=null;if(playing)stopPlayback();future.push(snapshot());data=JSON.parse(history.pop());selected=null;syncConfig();commit();flash('Undone')}
 function redo(){if(!future.length)return;pendingSlurStart=null;if(playing)stopPlayback();history.push(snapshot());data=JSON.parse(future.pop());selected=null;syncConfig();commit();flash('Redone')}
 function updateHistoryButtons(){$('undo').disabled=!history.length;$('redo').disabled=!future.length}
@@ -908,6 +917,10 @@ function cleanBarDirective(raw){
 }
 function changeBarMark(key,value){
  if(!DIRECTION_KEYS.includes(key))return;
+ if(isTwoBarRest(markedBar-1)&&key!=='multiRest'){
+  flash('Remove the consolidated rest from the previous bar before adding other markings here.');
+  syncBarMarkControls();return;
+ }
  if(key==='multiRest'&&value==='2'){
   if(markedBar%2||markedBar+1>=data.bars.length||
      data.bars[markedBar].length||data.bars[markedBar+1].length){
@@ -1463,7 +1476,7 @@ function drawBarDirections(svg,index,x0,x1,top,exportMode){
 
 
 function isTwoBarRest(index){
- return index%2===0&&index+1<data.bars.length&&
+ return index>=0&&index%2===0&&index+1<data.bars.length&&
   barDirective(index).multiRest==='2'&&
   data.bars[index].length===0&&data.bars[index+1].length===0;
 }
