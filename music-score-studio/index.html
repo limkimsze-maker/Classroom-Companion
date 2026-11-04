@@ -2107,7 +2107,7 @@ function parseMusicXML(source){
  for(let pi=0;pi<parts.length;pi++){
   const part=parts[pi],partName=names[part.getAttribute('id')]||'Part '+(pi+1),measures=children(part,'measure');
   if(measures.length>240)throw Error('This MusicXML contains too many measures.');
-  let divisions=1,beats=4,beatType=4,currentClefs={1:'treble'},measureResults=[],pendingTies=new Map();
+  let divisions=1,beats=4,beatType=4,currentClefs={1:'treble'},measureResults=[],pendingTies=new Map(),activeSlurs=new Set();
   for(let mi=0;mi<measures.length;mi++){
    let cursor=0,maxCursor=0,lastOnset=0,lastDuration=0;
    const items=[],measure=measures[mi];
@@ -2138,10 +2138,18 @@ function parseMusicXML(source){
      if(midi<18||midi>110)continue;
      const staff=Number(nodeText(node,'staff'))||1,voice=nodeText(node,'voice')||'1';
      const tied=children(node,'tie').map(x=>x.getAttribute('type'));
+     const notations=child(node,'notations'),arts=child(notations,'articulations');
+     const staccato=!!child(arts,'staccato'),accent=!!child(arts,'accent');
+     const marks=children(notations,'slur'),slurStart=marks.some(x=>x.getAttribute('type')==='start'),
+       slurStop=marks.some(x=>x.getAttribute('type')==='stop');
+     const voiceKey=[pi,staff,voice].join(':');
+     const legato=slurStart||(activeSlurs.has(voiceKey)&&!slurStop);
+     if(slurStart)activeSlurs.add(voiceKey);
+     if(slurStop)activeSlurs.delete(voiceKey);
      const tieKey=[pi,staff,voice,midi].join(':');
      const prev=pendingTies.get(tieKey);
      if(tied.includes('stop')&&prev){prev.duration+=dur;if(!tied.includes('start'))pendingTies.delete(tieKey);continue;}
-     const item={measure:mi,onset,duration:dur||lastDuration||TPQ,midi,step,octave:oct,alter,staff,part:pi,voice,clef:currentClefs[staff]||currentClefs[1]||'treble'};
+     const item={measure:mi,onset,duration:dur||lastDuration||TPQ,midi,step,octave:oct,alter,staff,part:pi,voice,staccato,accent,legato,clef:currentClefs[staff]||currentClefs[1]||'treble'};
      items.push(item);
      if(tied.includes('start'))pendingTies.set(tieKey,item);
     }
@@ -2201,6 +2209,11 @@ function pianoSVG(measureToShow=simplePageStart){
      svg.append(group);
      group.append(el('ellipse',{cx:x,cy:y,rx:20,ry:15,'class':'playbackHalo'}));
      group.append(el('ellipse',{cx:x,cy:y,rx:9.5,ry:6.2,transform:`rotate(-17 ${x} ${y})`,'class':'notehead',fill:filled?'#204757':'#fff',stroke:'#204757','stroke-width':1.8}));
+     const above=y<top+staffHeight*.5,side=above?-1:1;
+     if(e.staccato)group.append(el('circle',{cx:x,cy:y+side*17,r:3.1,fill:'#204757'}));
+     if(e.accent){const yy=y+side*(e.staccato?31:24);
+      group.append(el('path',{d:`M ${x-12} ${yy-5} L ${x+9} ${yy} L ${x-12} ${yy+5}`,
+        fill:'none',stroke:'#204757','stroke-width':2.2,'stroke-linecap':'round'}));}
      if(e.duration<piano.TPQ*3.2){const up=y>=top+staffHeight*.5;line(group,x+(up?8:-8),y,x+(up?8:-8),y+(up?-43:43),'#204757',1.6,{'class':'noteStem'})}
     }
    }
@@ -2562,9 +2575,11 @@ async function playPiano(){
  const start=context.currentTime+.12;
  playing=true;$('play').textContent='❚❚ Playing both hands';$('stop').disabled=false;
  for(const e of piano.notes){
-  const offset=e.start*secondsPerTick, dur=Math.max(.09,e.duration*secondsPerTick*.98);
-  // The left and right hands, chords, and overlapping voices play concurrently.
-  tone(e.midi,start+offset,dur,piano.notes.length>100?.53:.68);
+  const offset=e.start*secondsPerTick,full=e.duration*secondsPerTick;
+  const dur=Math.max(.07,full*(e.staccato?.53:e.legato?1.035:.98));
+  const volume=(piano.notes.length>100?.53:.68)*(e.accent?1.27:1);
+  // Both piano hands, simultaneous chords, ties and articulation play together.
+  tone(e.midi,start+offset,dur,volume);
  }
  startPianoTracking(start,secondsPerTick);
  stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+piano.total*secondsPerTick-context.currentTime)*1000+300);
