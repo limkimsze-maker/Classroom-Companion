@@ -2519,6 +2519,35 @@ function closePiano(){engravedSerial++;
 function child(node,tag){return Array.from(node?.children||[]).find(n=>n.localName===tag)||null}
 function children(node,tag){return Array.from(node?.children||[]).filter(n=>n.localName===tag)}
 function nodeText(node,tag){return (child(node,tag)?.textContent||'').trim()}
+
+function readImportedBarMarks(measure){
+ const d={};
+ for(const line of children(measure,'barline')){
+  const repeat=child(line,'repeat')?.getAttribute('direction');
+  if(repeat==='forward')d.repeat=d.repeat==='end'?'both':'start';
+  if(repeat==='backward')d.repeat=d.repeat==='start'?'both':'end';
+  const ending=child(line,'ending'),type=ending?.getAttribute('type');
+  const number=ending?.getAttribute('number');
+  if(type==='start'&&['1','2'].includes(number))d.ending=number;
+  if(child(line,'segno'))d.sign='segno';
+ }
+ for(const direction of children(measure,'direction')){
+  const snd=child(direction,'sound'),types=children(direction,'direction-type');
+  for(const node of types){
+   if(child(node,'segno'))d.sign='segno';
+   const words=children(node,'words').map(w=>(w.textContent||'').trim()).join(' ');
+   if(/\bD\.?\s*C\.?\b/i.test(words))d.sign='dc';
+   else if(/\bD\.?\s*S\.?\b/i.test(words))d.sign='ds';
+   else if(/\bFine\b/i.test(words))d.sign='fine';
+  }
+  if(snd?.hasAttribute('dacapo'))d.sign='dc';
+  else if(snd?.hasAttribute('dalsegno'))d.sign='ds';
+  else if(snd?.hasAttribute('segno'))d.sign='segno';
+  else if(snd?.hasAttribute('fine'))d.sign='fine';
+ }
+ return d;
+}
+
 function parseMusicXML(source){
  if(source.length>5*1024*1024)throw Error('MusicXML files must be smaller than 5 MB.');
  if(/<!ENTITY/i.test(source))throw Error('XML entity declarations are not supported.');
@@ -2529,7 +2558,7 @@ function parseMusicXML(source){
  if(!parts.length)throw Error('No musical parts were found in this MusicXML.');
  if(parts.length>12)throw Error('This score has too many parts for the classroom player.');
  const TPQ=960,steps={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
- const parsedParts=[],allMeasures=[],rawNotes=[],names={};let detectedTempo=null,signature='4/4';
+ const parsedParts=[],allMeasures=[],rawNotes=[],names={},importedMarks=[];let detectedTempo=null,signature='4/4';
  for(const scorePart of children(child(root.documentElement,'part-list'),'score-part'))names[scorePart.getAttribute('id')]=nodeText(scorePart,'part-name')||'Instrument';
  for(let pi=0;pi<parts.length;pi++){
   const part=parts[pi],partName=names[part.getAttribute('id')]||'Part '+(pi+1),measures=children(part,'measure');
@@ -2538,6 +2567,8 @@ function parseMusicXML(source){
   for(let mi=0;mi<measures.length;mi++){
    let cursor=0,maxCursor=0,lastOnset=0,lastDuration=0;
    const items=[],measure=measures[mi];
+   if(!importedMarks[mi])importedMarks[mi]={};
+   Object.assign(importedMarks[mi],readImportedBarMarks(measure));
    const currentTicks=()=>Math.max(1,Math.round(beats*TPQ*4/beatType));
    const durationFor=el=>Math.max(0,Math.round((Number(nodeText(el,'duration'))||0)/Math.max(1,divisions)*TPQ));
    for(const node of Array.from(measure.children)){
@@ -2615,7 +2646,7 @@ function parseMusicXML(source){
  for(const e of rawNotes){const key=e.part+':'+e.staff;if(!lanesMap.has(key))lanesMap.set(key,{id:key,part:e.part,staff:e.staff,clef:e.clef,label:parsedParts[e.part].name+(e.staff>1?' · staff '+e.staff:'')});}
  const lanes=[...lanesMap.values()].sort((a,b)=>a.part-b.part||a.staff-b.staff);
  return {title:nodeText(child(root.documentElement,'work'),'work-title')||nodeText(root.documentElement,'movement-title')||'Imported score',
-  tempo:detectedTempo||96,signature,parts:parsedParts.length,measureStart,measureLength,notes:rawNotes,lanes,total,TPQ};
+  tempo:detectedTempo||96,signature,parts:parsedParts.length,measureStart,measureLength,notes:rawNotes,lanes,barMarks:importedMarks,total,TPQ};
 }
 function pianoSVG(measureToShow=simplePageStart){
  if(!piano)return;
@@ -2921,11 +2952,11 @@ async function extractPartsongPages(file){
 }
 function combineMusicPages(pages,title){
  const items=pages.map(xml=>parseMusicXML(xml));
- const merged={...items[0],title,measureStart:[],measureLength:[],notes:[],lanes:[],total:0};
+ const merged={...items[0],title,measureStart:[],measureLength:[],notes:[],lanes:[],barMarks:[],total:0};
  const laneMap=new Map();let measureOffset=0,tickOffset=0;
  for(const item of items){
   for(const x of item.measureStart)merged.measureStart.push(x+tickOffset);
-  merged.measureLength.push(...item.measureLength);
+  merged.measureLength.push(...item.measureLength);merged.barMarks.push(...(item.barMarks||item.measureLength.map(()=>({}))));
   for(const l of item.lanes){const k=l.part+':'+l.staff;if(!laneMap.has(k))laneMap.set(k,{...l})}
   for(const n of item.notes)merged.notes.push({...n,start:n.start+tickOffset,measure:n.measure+measureOffset});
   measureOffset+=item.measureLength.length;tickOffset+=item.total;
