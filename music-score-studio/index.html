@@ -1113,6 +1113,36 @@ function renderRhythmBeams(svg,bar,positions,top,groups){
  }
 }
 
+
+function drawMusicConnections(svg,positions){
+ const links=musicalLinks(),layout=staffLayout();
+ const paint=(from,to,kind,side)=>{
+  const color='#193a4a',isTie=kind==='tie',dist=to.x-from.x;
+  const x1=from.x+(isTie?11:10),x2=to.x-(isTie?11:10);
+  if(x2<=x1)return;
+  const y1=from.y+side*(isTie?6:14),y2=to.y+side*(isTie?6:14);
+  const bend=side*(isTie?Math.min(17,Math.max(11,dist*.11)):Math.min(38,Math.max(21,dist*.13)));
+  const d=`M ${x1} ${y1} C ${x1+dist*.24} ${y1+bend}, ${x2-dist*.24} ${y2+bend}, ${x2} ${y2}`;
+  svg.append(el('path',{d,fill:'none',stroke:color,'stroke-width':isTie?2.3:2.65,
+    'stroke-linecap':'round','pointer-events':'none',class:isTie?'musicTie':'musicSlur'}));
+ };
+ function connect(startId,endId,kind){
+  const a=positions.get(startId),b=positions.get(endId);if(!a||!b||a.sys>b.sys)return;
+  const side=a.y>=a.top+36?1:-1;
+  if(a.sys===b.sys){paint(a,b,kind,side);return}
+  // On a new line, split the slur/tie into conventional continuation arcs.
+  paint(a,{x:layout.right-9,y:a.y,top:a.top,sys:a.sys},kind,side);
+  for(let sys=a.sys+1;sys<=b.sys;sys++){
+   const top=layout.top(sys),last=sys===b.sys;
+   const y=last?b.y:top+(a.y-a.top);
+   const end=last?b:{x:layout.right-9,y,top,sys};
+   paint({x:layout.left+9,y,top,sys},end,kind,side);
+  }
+ }
+ for(const [a,b] of links.slurs)connect(a,b,'slur');
+ for(const [a,b] of links.ties)connect(a,b,'tie');
+}
+
 function drawNote(g,e,x,top,isSelected,beamed=false){const y=top+72-(noteIndex(e.step,e.octave)-bottomIndex())*9;const up=y>=top+36;const filled=e.den>=4;drawLedger(g,x,y,top);
 if(isSelected||boxSelectedNotes.has(e.id))g.append(el('ellipse',{cx:x,cy:y,rx:22,ry:18,class:'selectedHalo'}));if(playingId===e.id)g.append(el('ellipse',{cx:x,cy:y,rx:23,ry:19,class:'playingHalo'}));
 const sym=el('g',{});g.append(sym);
@@ -1120,6 +1150,14 @@ if(e.acc){let glyph=e.acc==='#'?'♯':e.acc==='b'?'♭':'♮';textSvg(sym,x-34,y
 if(e.den!==1&&!beamed){const sx=x+(up?10:-10),ex=sx,ey=y+(up?-62:62);line(sym,sx,y-0.5,ex,ey,'#193a4a',2.3);if(e.den>=8)flag(sym,ex,ey,up,Math.log2(e.den)-2)}
 sym.append(el('ellipse',{cx:x,cy:y,rx:e.den===1?12.4:11.6,ry:e.den===1?6.9:7.5,transform:`rotate(-18 ${x} ${y})`,fill:filled?'#193a4a':'#fff',stroke:'#193a4a','stroke-width':filled?1.6:2.45}));
 if(e.dot)sym.append(el('circle',{cx:x+20,cy:y-3.5,r:2.8,fill:'#193a4a'}));
+// An articulation dot is above/below the note, not the duration dot on its right.
+const side=up?1:-1;
+if(e.staccato)sym.append(el('circle',{cx:x,cy:y+side*20,r:3.3,fill:'#193a4a','pointer-events':'none'}));
+if(e.accent){
+ const ay=y+side*(e.staccato?37:26);
+ sym.append(el('path',{d:`M ${x-13} ${ay-6} L ${x+10} ${ay} L ${x-13} ${ay+6}`,
+  fill:'none',stroke:'#193a4a','stroke-width':2.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
+}
 if(data.pitchNames)textSvg(g,x,top+115,noteName(e),12,{'text-anchor':'middle',fill:'#047686','font-weight':750});
 return y;}
 function drawRest(g,e,x,top,isSelected){const cy=top+35;if(isSelected||boxSelectedNotes.has(e.id))g.append(el('ellipse',{cx:x,cy:cy+5,rx:22,ry:24,class:'selectedHalo'}));if(playingId===e.id)g.append(el('ellipse',{cx:x,cy:cy+5,rx:23,ry:25,class:'playingHalo'}));
@@ -1185,7 +1223,7 @@ function printBarEvents(bar){
 }
 
 function makeScore(exportMode=false){const layout=staffLayout(),{W,H}=layout;
-const svg=el('svg',{xmlns:NS,viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:'img','aria-label':'Music score'});
+const svg=el('svg',{xmlns:NS,viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:'img','aria-label':'Music score'});const notePositions=new Map();
 svg.append(el('rect',{x:0,y:0,width:W,height:H,fill:'#fff'}));
 // Print-friendly title, part of the score itself.
 textSvg(svg,W/2,37,data.title||'Untitled score',21,{'text-anchor':'middle','font-weight':750,fill:'#183b50'});
@@ -1215,13 +1253,14 @@ let xx=eventPositions(bar,x0,layout.barW);
 const beamGroups=planRhythmBeams(bar),beamedNotes=rhythmBeamLookup(beamGroups);
 for(let i=0;i<bar.length;i++){
 const e=bar[i],x=xx[i],group=el('g',{'data-id':e.id});svg.append(group);
-if(e.kind==='note')drawNote(group,e,x,top,!exportMode&&selected===e.id,beamedNotes.has(i));else drawRest(group,e,x,top,!exportMode&&selected===e.id);
+if(e.kind==='note'){drawNote(group,e,x,top,!exportMode&&selected===e.id,beamedNotes.has(i));notePositions.set(e.id,{x,y:top+72-(noteIndex(e.step,e.octave)-bottomIndex())*9,top,sys,bar:idx});}else drawRest(group,e,x,top,!exportMode&&selected===e.id);
 if(!exportMode){const hit=el('rect',{x:x-24,y:top-53,width:48,height:158,fill:'transparent',class:'notehit','data-id':e.id,'data-bar':idx,'data-top':top});group.append(hit)}
 }
 renderRhythmBeams(svg,bar,xx,top,beamGroups);
 if(idx===data.bars.length-1){line(svg,x1+5,top,x1+5,top+72,'#263d49',4)}
 }
 }
+drawMusicConnections(svg,notePositions);
 for(let i=0;i<data.strokes.length;i++){
  const stroke=data.strokes[i];if(!stroke.points||stroke.points.length<2)continue;
  const pts=stroke.points.map(p=>p[0]+','+p[1]).join(' ');
@@ -1820,11 +1859,30 @@ async function play(){
  catch(err){flash('Audio playback is not supported here.');return}
  playing=true;$('play').textContent='❚❚ Playing';$('stop').disabled=false;
  const quarterSec=(60/data.tempo)*(data.meter==='6/8'?2/3:1);let cursor=0;const begin=context.currentTime+.12;
+ const links=musicalLinks(),legato=new Set();
+ for(const [from,to] of links.slurs){
+  const a=links.indices.get(from),b=links.indices.get(to);
+  for(let k=a;k<b;k++)if(links.refs[k].e.kind==='note')legato.add(links.refs[k].e.id);
+ }
+ function tiedSeconds(startId){
+  let length=0,current=startId,steps=0;
+  while(current&&steps++<240){
+   const i=links.indices.get(current),ref=links.refs[i];
+   if(!ref)break;
+   length+=ticks(ref.e)/24*quarterSec;
+   current=links.ties.get(current);
+  }
+  return length;
+ }
  for(let b=0;b<data.bars.length;b++){
   const barStart=cursor;let tickPos=0;
   for(let i=0;i<data.bars[b].length;i++){
    const e=data.bars[b][i],sec=ticks(e)/24*quarterSec;
-   if(e.kind==='note')tone(midiFor(b,i),begin+cursor,Math.max(.07,sec*.96));
+   if(e.kind==='note'&&!links.tieEnds.has(e.id)){
+    const duration=links.ties.has(e.id)?tiedSeconds(e.id):
+      e.staccato?sec*.53:legato.has(e.id)?sec*1.045:sec*.96;
+    tone(midiFor(b,i),begin+cursor,Math.max(.07,duration),e.accent?1.27:1);
+   }
    const id=e.id;
    const at=begin+cursor;
    const timer=setTimeout(()=>{if(!playing)return;playingId=id;render()},Math.max(0,(at-context.currentTime)*1000));
