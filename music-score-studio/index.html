@@ -1394,6 +1394,58 @@ function printBarEvents(bar){
  return bar.concat(added);
 }
 
+
+function drawBarDirections(svg,index,x0,x1,top,exportMode){
+ const mark=barDirective(index),color='#263d49';
+ const words=[];
+ if(mark.tempo)words.push(mark.tempo);
+ if(mark.expression)words.push(mark.expression);
+ if(words.length)textSvg(svg,x0+21,top-44,words.join(' · '),14,
+   {'font-style':'italic','font-weight':650,fill:color,'pointer-events':'none'});
+ if(mark.dynamic){
+  if(['crescendo','diminuendo'].includes(mark.dynamic)){
+   const left=x0+22,right=x1-25,y=top+100,spread=11;
+   const crescendo=mark.dynamic==='crescendo';
+   svg.append(el('path',{d:crescendo
+    ?`M ${left} ${y} L ${right} ${y-spread} M ${left} ${y} L ${right} ${y+spread}`
+    :`M ${left} ${y-spread} L ${right} ${y} M ${left} ${y+spread} L ${right} ${y}`,
+    fill:'none',stroke:color,'stroke-width':1.8,'pointer-events':'none'}));
+   textSvg(svg,x0+20,top+124,mark.dynamic==='crescendo'?'cresc.':'dim.',12,
+    {'font-style':'italic',fill:color,'pointer-events':'none'});
+  }else textSvg(svg,x0+20,top+103,mark.dynamic,22,
+    {'font-family':'Georgia, serif','font-style':'italic','font-weight':750,fill:color,'pointer-events':'none'});
+ }
+ if(mark.octave){
+  textSvg(svg,x0+19,top-29,'8va',13,{'font-style':'italic','font-weight':750,fill:color,'pointer-events':'none'});
+  line(svg,x0+52,top-33,x1-19,top-33,color,1.3,{'stroke-dasharray':'6 4','pointer-events':'none'});
+  line(svg,x1-19,top-33,x1-19,top-26,color,1.3,{'pointer-events':'none'});
+ }
+ if(mark.sign){
+  const names={segno:'𝄋 Segno',fine:'Fine',dc:'D.C. al Fine',ds:'D.S. al Fine'};
+  textSvg(svg,x0+20,top-58,names[mark.sign],13,
+   {'font-weight':750,fill:color,'pointer-events':'none'});
+ }
+ if(mark.ending){
+  const yy=top-25;
+  line(svg,x0+8,yy,x1-10,yy,color,1.6,{'pointer-events':'none'});
+  line(svg,x0+8,yy,x0+8,yy+11,color,1.6,{'pointer-events':'none'});
+  textSvg(svg,x0+21,yy-2,mark.ending+'.',13,
+   {'font-weight':750,fill:color,'pointer-events':'none'});
+ }
+ if(['start','both'].includes(mark.repeat)){
+  line(svg,x0+3,top,x0+3,top+72,color,4,{'pointer-events':'none'});
+  line(svg,x0+11,top,x0+11,top+72,color,1.4,{'pointer-events':'none'});
+  for(const y of [top+28,top+46])
+   svg.append(el('circle',{cx:x0+19,cy:y,r:3.4,fill:color,'pointer-events':'none'}));
+ }
+ if(['end','both'].includes(mark.repeat)){
+  line(svg,x1-4,top,x1-4,top+72,color,4,{'pointer-events':'none'});
+  line(svg,x1-12,top,x1-12,top+72,color,1.4,{'pointer-events':'none'});
+  for(const y of [top+28,top+46])
+   svg.append(el('circle',{cx:x1-20,cy:y,r:3.4,fill:color,'pointer-events':'none'}));
+ }
+}
+
 function makeScore(exportMode=false){const layout=staffLayout(),{W,H}=layout;
 const svg=el('svg',{xmlns:NS,viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:'img','aria-label':'Music score'});const notePositions=new Map();
 svg.append(el('rect',{x:0,y:0,width:W,height:H,fill:'#fff'}));
@@ -1418,7 +1470,7 @@ for(let bi=0;bi<2;bi++){
 const idx=sys*2+bi;if(idx>=data.bars.length)continue;
 const x0=layout.left+bi*layout.barW;const printEvents=exportMode?printBarEvents(data.bars[idx]):null;const bar=exportMode&&printEvents.length>data.bars[idx].length?printEvents.map(e=>({...e,posX:undefined})):exportMode?printEvents:data.bars[idx],used=sumBar(bar),capacity=cap();const x1=x0+layout.barW;
 if(!exportMode){svg.append(el('rect',{x:x0,y:top-37,width:layout.barW,height:149,fill:'transparent',class:'measureHit','data-bar':idx,'data-left':x0,'data-width':layout.barW,'data-top':top}));}
-const bstat=data.meter==='6/8'?`${Number((used/12).toFixed(3))}/6 eighths`:`${Number((used/24).toFixed(3))}/${Number((capacity/24).toFixed(3))} beats`;textSvg(svg,x0+12,top-17,`${idx+1}`,12,{'font-weight':800,fill:'#627b87'});
+const bstat=data.meter==='6/8'?`${Number((used/12).toFixed(3))}/6 eighths`:`${Number((used/24).toFixed(3))}/${Number((capacity/24).toFixed(3))} beats`;textSvg(svg,x0+12,top-17,`${idx+1}`,12,{'font-weight':800,fill:'#627b87'});drawBarDirections(svg,idx,x0,x1,top,exportMode);
 if(!exportMode)textSvg(svg,x1-10,top-17,bstat,11,{'text-anchor':'end',class:used===capacity?'barStatus full':'barStatus open'});
 line(svg,x1,top,x1,top+72,'#263d49',idx===data.bars.length-1?2.1:1.4);
 let xx=eventPositions(bar,x0,layout.barW);
