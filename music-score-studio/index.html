@@ -2926,8 +2926,8 @@ function parseMusicXML(source){
       for(const mark of Array.from(type.children)){
        if(mark.localName==='words'&&!hasWedge){
         const words=(mark.textContent||'').trim();
-        if(/^(?:cresc|crescendo)\\.?$/i.test(words))record('wordRamp','crescendo');
-        else if(/^(?:dim|diminuendo|decresc|decrescendo)\\.?$/i.test(words))record('wordRamp','diminuendo');
+        if(/^(?:cresc|crescendo)\.?$/i.test(words))record('wordRamp','crescendo');
+        else if(/^(?:dim|diminuendo|decresc|decrescendo)\.?$/i.test(words))record('wordRamp','diminuendo');
        }
        if(mark.localName==='dynamics')for(const dyn of Array.from(mark.children)){
         if(Object.prototype.hasOwnProperty.call(MUSICAL_DYNAMICS,dyn.localName))
