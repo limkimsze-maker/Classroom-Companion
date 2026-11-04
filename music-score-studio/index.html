@@ -227,10 +227,11 @@
  <div class="musicInkPinned" role="group" aria-label="Write and beautify music notes">
   <span class="musicInkHeading">🎼 Write musical notes</span>
   <button type="button" class="annotationBtn musicWriteBtn" id="startMusicInk" title="Draw multiple handwritten notes; then beautify them all together">✏️ Draw Notes</button>
-  <button type="button" class="annotationBtn musicValueBtn is-current" id="quickQuarter" aria-pressed="true" title="Quarter note: filled head, 1 beat"><span class="musicValueSymbol filled">●</span> Quarter <b>1 beat</b></button>
-  <button type="button" class="annotationBtn musicValueBtn" id="quickHalf" aria-pressed="false" title="Half note: hollow head, 2 beats"><span class="musicValueSymbol hollow">◯</span> Half <b>2 beats</b></button>
-  <label class="musicInkDuration" for="inkLengthMode">More
-   <select id="inkLengthMode" title="Choose other note lengths, with each handwritten note remembering its value">
+  <button type="button" class="annotationBtn musicValueBtn" id="quickQuarter" aria-pressed="false" title="Quarter note: filled head, 1 beat"><span class="musicValueSymbol filled">●</span> Quarter <b>1 beat</b></button>
+  <button type="button" class="annotationBtn musicValueBtn is-current" id="quickHalf" aria-pressed="true" title="Half note: hollow head, 2 beats"><span class="musicValueSymbol hollow">◯</span> Half <b>2 beats</b></button>
+  <label class="musicInkDuration" for="inkLengthMode">Recognition
+   <select id="inkLengthMode" title="Auto recognise drawn noteheads and staff pitch; duration defaults to Half">
+    <option value="auto" selected>Auto recognition · Half default</option>
     <option value="4">Quarter · 1 beat</option>
     <option value="2">Half · 2 beats</option>
     <option value="1">Whole · 4 beats</option>
@@ -241,7 +242,7 @@
   <button type="button" class="annotationBtn musicBoxBtn" id="musicBoxSelect" title="Drag a rectangle over multiple music notes and sketches to select them">▧ Box Select</button>
   <button type="button" class="annotationBtn musicBeautifyBtn" id="beautifyInk" title="Beautify ALL handwritten notes in one press">✦ Beautify All</button>
   <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes and music handwriting, with confirmation and Undo">⌫ Clear Score</button>
-  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Draw several notes → Beautify All. Half and quarter stay distinct.</span>
+  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Auto recognition ON · Half by default. Right-click a note for Quarter.</span>
  </div>
  <div class="annotationToolbarInner">
   <strong>🖍 Teacher Annotations · marks only (not musical notes)</strong>
@@ -281,15 +282,15 @@
 </div>
 <div class="beautifyPanel">
  <strong>Music writing · 2 easy steps</strong>
- <p><b>1.</b> Tap <b>✏️ Draw Notes</b>, choose <b>● Quarter (1 beat)</b> or <b>◯ Half (2 beats)</b>, and draw all your notes. <b>2.</b> Tap <b>✦ Beautify All</b> once to convert everything.</p>
- <p>Each sketch remembers the beat value selected when it was drawn. <b>Box Select</b> lets you drag around several notes for editing. Teacher Annotations below are separate and will not be converted. Drawings far from the staff are ignored.</p>
+ <p><b>1.</b> Tap <b>✏️ Draw Notes</b> and draw all your notes on the staff. <b>2.</b> Press <b>✦ Beautify All</b> to recognise their noteheads and pitches automatically. Every note starts as <b>◯ Half (2 beats)</b>. <b>3.</b> Right-click a note (or touch and hold) to make it <b>● Quarter (1 beat)</b>.</p>
+ <p><b>Auto recognition</b> is the default setting. Box Select can still edit several notes together. Teacher Annotations below never become notes. Drawings far from the staff are ignored.</p>
  <div class="beautifyButtons"><button class="smallBtn" id="clearInk" type="button" title="Clear musical handwriting only, without removing notation or annotation overlays">Clear handwritten notes</button></div>
 </div>
 <div class="group"><div class="lab">2 · Choose a note value</div>
 <div class="values" id="values" role="group" aria-label="Note or rest value">
 <button class="valueBtn" data-den="1" title="Whole (4 quarter-note beats)"><span class="music">𝅝</span><small>Whole</small></button>
-<button class="valueBtn" data-den="2" title="Half (2 quarter-note beats)"><span class="music">𝅗𝅥</span><small>Half</small></button>
-<button class="valueBtn active" data-den="4" title="Quarter (1 quarter-note beat)"><span class="music">♩</span><small>Quarter</small></button>
+<button class="valueBtn active" data-den="2" title="Half (2 quarter-note beats)"><span class="music">𝅗𝅥</span><small>Half</small></button>
+<button class="valueBtn" data-den="4" title="Quarter (1 quarter-note beat)"><span class="music">♩</span><small>Quarter</small></button>
 <button class="valueBtn" data-den="8" title="Eighth (half a quarter-note beat)"><span class="music">♪</span><small>Eighth</small></button>
 <button class="valueBtn" data-den="16" title="Sixteenth (quarter of a quarter-note beat)"><span class="music">♬</span><small>16th</small></button>
 </div>
@@ -666,7 +667,7 @@ window.CCPhotoOMR={scan,estimateTilt,buildBars};
 const NS='http://www.w3.org/2000/svg', LS='cc-music-score-studio-v1';
 const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16]; const STEPS=['C','D','E','F','G','A','B']; const TICKS=96;
 const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
-let piano=null;let data=blank(),tool='note',den=4,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
+let piano=null;let data=blank(),tool='note',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
 let context=null,oscillators=[],playTimers=[],toastTimer=0,stopTimer=null,playing=false,audioBus=null;
 const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
@@ -993,7 +994,7 @@ function startMusicInk(){
   scorePanel.style.scrollMarginTop='150px';
   scorePanel.scrollIntoView({behavior:'smooth',block:'start'});
  }
- const message='✏️ Cute pen active. Draw several noteheads, choose Quarter or Half as needed, then tap ✦ Beautify All once.';
+ const message='✏️ Draw as many notes as you like. Auto recognition is ON; Half (2 beats) is the default. Right-click a note to choose Quarter.';
  $('beautifyFeedback').textContent=message;
  updateStatus(message);
  flash('✏️ Cute music pen ready · Draw all notes first');
@@ -1010,7 +1011,7 @@ function beautifyInk(){
  }
  const found=inkRecognizeStrokes(data.strokes,staffLayout(),data.bars.length);
  if(!found.length){
-  say('No noteheads found on the staff. Draw a small oval ON a line or space. Doodles outside the staff are ignored; your drawing is safe.');
+  say('Auto recognition found no noteheads on the staff. Draw small oval noteheads near staff lines; marks outside are kept without conversion.');
   return;
  }
  const value=$('inkLengthMode').value;
@@ -1024,7 +1025,7 @@ function beautifyInk(){
   if(barNotes.some((event,i)=>event.kind==='note'&&event.step===pitch.step&&event.octave===pitch.octave&&Math.abs(oldX[i]-mark.head.x)<22)){
    duplicates++;continue;
   }
-  const chosen=mark.den||(auto?(mark.hasStem?(mark.filled?4:2):1):Number(value));
+  const chosen=mark.den||(auto?2:Number(value));
   const dotted=dot||mark.hasDot;
   const event={id:makeId(),kind:'note',step:pitch.step,octave:pitch.octave,acc,den:chosen,dot:dotted};
   if(countByBar[bar]+ticks(event)>cap()+.001){skipped++;continue;}
@@ -1856,7 +1857,7 @@ function wire(){
  $('beautifyInk').onclick=beautifyInk;
  $('quickQuarter').onclick=()=>setQuickNoteValue(4);
  $('quickHalf').onclick=()=>setQuickNoteValue(2);
- $('inkLengthMode').onchange=e=>setQuickNoteValue(e.target.value);
+ $('inkLengthMode').onchange=e=>{if(e.target.value==='auto'){setQuickNoteValue(2);$('inkLengthMode').value='auto';$('beautifyFeedback').textContent='Auto recognition ON: every newly drawn note defaults to Half (2 beats). Right-click for Quarter.';}else setQuickNoteValue(e.target.value);};
  $('musicBoxSelect').onclick=()=>{document.querySelector('[data-annotation-tool="cursor"]')?.click();if(piano)closePiano();setMode('box');$('editorScorePanel').scrollIntoView({behavior:'smooth',block:'start'});};
  $('clearScoreTop').onclick=clearScoreTop;
  $('clearInk').onclick=clearInkStrokes;
