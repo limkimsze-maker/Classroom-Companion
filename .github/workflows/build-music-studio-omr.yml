@@ -74,8 +74,11 @@ jobs:
         run: |
           set -euo pipefail
           node --check music-score-studio/ai/app.js
+          node --check music-score-studio/ai/expression-ocr.js
           node --check music-score-studio/ai/omr-worker.js
           grep -q 'cc-music-omr-v1' music-score-studio/ai/app.js
+          grep -q 'readScoreTextMarks' music-score-studio/ai/app.js
+          test -s music-score-studio/ai/expression-ocr.js
           test -s music-score-studio/ai/LICENSE
           test -s music-score-studio/ai/omr/partsong_omr.wasm
           test -s music-score-studio/ai/sw.js
