@@ -37,7 +37,7 @@ function classifyMusicTerm(source){
  if(TEMPO_WORDS.has(text))return {kind:'tempo',value:text};
  if(EXPRESSION_WORDS.has(text))return {kind:'expression',value:text};
  if(/^(?:accel(?:erando)?|accel\.)\.?$/.test(text))return {kind:'tempo',value:'accelerando'};
- if(/^ritard(?:ando)?\.?$/.test(text))return {kind:'tempo',value:'ritardando'};
+ if(/^rit(?:ard(?:ando)?)?\.?$/.test(text))return {kind:'tempo',value:'ritardando',ambiguous:/^rit\.?$/.test(text)};
  if(/^rall(?:entando)?\.?$/.test(text))return {kind:'tempo',value:'rallentando'};
  if(/^riten(?:uto)?\.?$/.test(text))return {kind:'tempo',value:'ritenuto'};
  if(/^allargando$/.test(text))return {kind:'tempo',value:'allargando'};
@@ -80,7 +80,7 @@ function extractMusicTermMatches(words,imageWidth,imageHeight){
     found={...term,confidence:+confidence.toFixed(1),text:part.map(w=>w.text).join(' '),
       x:Math.max(0,Math.min(1,part[0].bbox.x0/imageWidth)),
       y:Math.max(0,Math.min(1,(part[0].bbox.y0+part[0].bbox.y1)/(2*imageHeight))),
-      needsReview:confidence<(single?91:80),source:'image text'};
+      needsReview:!!term.ambiguous||confidence<(single?91:80),source:'image text'};
     i+=size;break;
    }
    if(found)matches.push(found);else i++;
@@ -151,7 +151,12 @@ async function readScoreTextMarks(blobs,onStatus=()=>{}){
    const words=Array.isArray(result.data.words)?result.data.words:[];
    const systems=detectMusicSystems(canvas);
    output.push(extractMusicTermMatches(words,canvas.width,canvas.height)
-    .map(m=>({...m,...locateSystem(m,systems),page:i})));
+    .map(m=>{
+      const placed=locateSystem(m,systems),staff=systems[placed.system];
+      const directionAbove=m.kind==='tempo'||m.kind==='tempoBpm'||m.kind==='expression'||m.kind==='sign'||m.kind==='octave';
+      const wrongSide=staff&&(directionAbove?m.y>(staff.top+staff.bottom)/2:m.y<staff.bottom);
+      return {...m,...placed,page:i,needsReview:!!m.needsReview||!!wrongSide};
+     }));
    canvas.width=0;canvas.height=0;
   }
  }finally{await worker.terminate().catch(()=>{});}
