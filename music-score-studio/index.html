@@ -2850,7 +2850,7 @@ function parseMusicXML(source){
      const time=child(node,'time');if(time){beats=Number(nodeText(time,'beats'))||beats;beatType=Number(nodeText(time,'beat-type'))||beatType;if(beats>0&&beats<20&&[1,2,4,8,16].includes(beatType))signature=beats+'/'+beatType;}
      for(const clef of children(node,'clef')){const number=Number(clef.getAttribute('number'))||1;currentClefs[number]=nodeText(clef,'sign')==='F'?'bass':'treble';}
     }else if(tag==='direction'){
-     const beatsPer=directionQuarterBpm(node);
+     const snd=child(node,'sound'),beatsPer=directionQuarterBpm(node);
      if(beatsPer>=30&&beatsPer<=240&&detectedTempo===null)detectedTempo=beatsPer;
      const type=child(node,'direction-type'),dyn=child(type,'dynamics');
      if(dyn){
