@@ -766,6 +766,7 @@ const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16,32,64,128];
 const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
 let piano=null;let data=blank(),tool='select',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
+let activeNoteStampDen=null,notePaletteDrag=null,notePaletteGhost=null,notePaletteScrollFrame=0;
 let context=null,oscillators=[],playTimers=[],toastTimer=0,stopTimer=null,playing=false,audioBus=null;
 const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
 const ticks=e=>(TICKS/e.den)*(e.dot?1.5:1);
@@ -794,6 +795,8 @@ function musicPenCursor(){
  return 'url("data:image/svg+xml,'+encodeURIComponent(xml)+'") 24 45, crosshair';
 }
 function setMode(v){
+ activeNoteStampDen=null;
+ document.querySelectorAll('[data-stamp-den]').forEach(b=>b.setAttribute('aria-pressed','false'));
  tool=v;
  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===v));
  $('score').classList.toggle('penMode',false);
@@ -949,12 +952,22 @@ function svgPoint(ev){const svg=$('score'),p=svg.createSVGPoint();p.x=ev.clientX
 function clicked(ev){
  if(suppressNoteClick){suppressNoteClick=false;return}
  if(tool==='box'||drag?.moved)return;
- const target=ev.target.closest('[data-id], [data-bar]');if(!target)return;
+ const target=ev.target.closest('[data-id], [data-bar]');
+ if(!target)return;
+ const p=svgPoint(ev);
+ // Tap a picture first, then tap a blank line or space to stamp it.
+ if(activeNoteStampDen&&tool==='select'){
+  if(target.hasAttribute('data-id')&&nearestMusicNote(p)){selectEvent(target.dataset.id);return;}
+  const location=staffNotePosition(p);
+  if(location)placePaletteNote(location,activeNoteStampDen);
+  else flash('Choose a staff line or space to place the note.');
+  return;
+ }
  if(target.hasAttribute('data-id')){selectEvent(target.dataset.id);return}
- if(tool!=='rest')return; // Notes are ONLY inserted from the right-click menu.
+ if(tool!=='rest')return;
  const bar=Number(target.dataset.bar),top=Number(target.dataset.top),left=Number(target.dataset.left),width=Number(target.dataset.width);
  if(bar<0||bar>=data.bars.length)return;
- const p=svgPoint(ev);addEvent(bar,findInsertIndex(bar,p.x,left,width),pitchOfY(p.y,top));
+ addEvent(bar,findInsertIndex(bar,p.x,left,width),pitchOfY(p.y,top));
 }
 function inkBounds(points){
  if(!Array.isArray(points)||points.length<2)return null;
@@ -2162,7 +2175,133 @@ async function playPiano(){
  updateStatus('Playing '+piano.parts+' part(s) at '+bpm+' BPM; piano chords and both hands are synchronised.');
 }
 
+
+/* Five pictured note stamps. Pointer events cover mouse, pen and touch.
+   No browser HTML5 drag/drop dependence, so the same interaction works on
+   school interactive whiteboards and mobile browsers. */
+const paletteNames={1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th'};
+function selectPaletteNote(value){
+ if(![1,2,4,8,16].includes(value))return;
+ // Use the teacher's editable melody staff, never add phantom notes into an
+ // imported MusicXML/engraved page that this editor cannot modify.
+ if(piano){
+  const message='Return to the editable melody staff before placing notes. Imported scores are view-only here.';
+  $('beautifyFeedback').textContent=message;flash(message);return;
+ }
+ document.querySelector('[data-annotation-tool="cursor"]')?.click();
+ setMode('select');
+ activeNoteStampDen=value;
+ document.querySelectorAll('[data-stamp-den]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.stampDen)===value)));
+ const message=paletteNames[value]+' selected. Tap a staff line or space to place it, or drag its picture directly onto the score.';
+ $('beautifyFeedback').textContent=message;updateStatus(message);
+}
+function paletteLocation(clientX,clientY){
+ if(piano||!$('score')?.isConnected)return null;
+ const svg=$('score');
+ const rect=svg.getBoundingClientRect();
+ if(!rect.width||!rect.height||clientX<rect.left||clientX>rect.right||clientY<rect.top||clientY>rect.bottom)return null;
+ return staffNotePosition(svgPoint({clientX,clientY}));
+}
+function placePaletteNote(location,value){
+ if(!location||!VALID_DEN.includes(value))return false;
+ if(!insertNoteFromMenu(location,value))return false;
+ const message='✓ '+location.pitch.step+location.pitch.octave+' '+paletteNames[value]+' placed on bar '+(location.bar+1)+' · Play to hear it. Undo is available.';
+ $('beautifyFeedback').textContent=message;updateStatus(message);flash('♪ '+paletteNames[value]+' note placed');
+ return true;
+}
+function removePaletteGhost(){
+ if(notePaletteGhost?.isConnected)notePaletteGhost.remove();
+ notePaletteGhost=null;
+ if(notePaletteScrollFrame)cancelAnimationFrame(notePaletteScrollFrame);
+ notePaletteScrollFrame=0;
+}
+function paletteGhostAt(clientX,clientY){
+ const drag=notePaletteDrag;
+ if(!drag||!drag.moved)return;
+ if(!notePaletteGhost){
+  const ghost=document.createElement('div');
+  ghost.className='noteStampGhost';ghost.setAttribute('aria-hidden','true');
+  const icon=drag.button.querySelector('.noteStampGraphic')?.cloneNode(true);
+  if(icon)ghost.append(icon);
+  const caption=document.createElement('strong');caption.textContent=paletteNames[drag.value];ghost.append(caption);
+  document.body.append(ghost);notePaletteGhost=ghost;
+ }
+ const loc=paletteLocation(clientX,clientY);
+ notePaletteGhost.style.left=Math.max(40,Math.min(window.innerWidth-40,clientX))+'px';
+ notePaletteGhost.style.top=Math.max(40,Math.min(window.innerHeight-40,clientY-24))+'px';
+ notePaletteGhost.classList.toggle('valid',!!loc);
+ notePaletteGhost.classList.toggle('invalid',!loc);
+ notePaletteGhost.querySelector('strong').textContent=loc
+  ?paletteNames[drag.value]+' · '+loc.pitch.step+loc.pitch.octave
+  :paletteNames[drag.value]+' · move to staff';
+}
+function paletteAutoScroll(){
+ notePaletteScrollFrame=0;
+ const drag=notePaletteDrag;
+ if(!drag||!drag.moved)return;
+ const edge=66,y=drag.y;
+ if(y>window.innerHeight-edge)window.scrollBy(0,Math.min(18,(y-(window.innerHeight-edge))*.5));
+ else if(y<edge)window.scrollBy(0,-Math.min(14,(edge-y)*.4));
+ paletteGhostAt(drag.x,drag.y);
+ notePaletteScrollFrame=requestAnimationFrame(paletteAutoScroll);
+}
+function palettePointerDown(ev){
+ if(ev.button!==0||ev.isPrimary===false)return;
+ const button=ev.currentTarget,value=Number(button.dataset.stampDen);
+ if(![1,2,4,8,16].includes(value))return;
+ if(notePaletteDrag)return;
+ ev.preventDefault();
+ notePaletteDrag={id:ev.pointerId,button,value,startX:ev.clientX,startY:ev.clientY,x:ev.clientX,y:ev.clientY,moved:false};
+ try{button.setPointerCapture(ev.pointerId);}catch(_){}
+}
+function palettePointerMove(ev){
+ const drag=notePaletteDrag;
+ if(!drag||drag.id!==ev.pointerId)return;
+ ev.preventDefault();
+ drag.x=ev.clientX;drag.y=ev.clientY;
+ if(Math.hypot(drag.x-drag.startX,drag.y-drag.startY)>9)drag.moved=true;
+ if(!drag.moved)return;
+ paletteGhostAt(drag.x,drag.y);
+ if(!notePaletteScrollFrame)notePaletteScrollFrame=requestAnimationFrame(paletteAutoScroll);
+}
+function palettePointerEnd(ev){
+ const drag=notePaletteDrag;
+ if(!drag||drag.id!==ev.pointerId)return;
+ ev.preventDefault();
+ notePaletteDrag=null;
+ try{drag.button.releasePointerCapture(ev.pointerId);}catch(_){}
+ removePaletteGhost();
+ if(ev.type==='pointercancel')return;
+ if(!drag.moved){
+  selectPaletteNote(drag.value);
+  return;
+ }
+ const location=paletteLocation(ev.clientX,ev.clientY);
+ if(!location){
+  const message=piano
+   ?'Return to the editable melody staff to add musical notes.'
+   :'Drop the note picture inside a bar, on or near a staff line. You can also tap a picture, then tap the staff.';
+  $('beautifyFeedback').textContent=message;updateStatus(message);flash('Move the note onto the staff');
+  return;
+ }
+ document.querySelector('[data-annotation-tool="cursor"]')?.click();
+ setMode('select');
+ placePaletteNote(location,drag.value);
+}
+function wirePalette(){
+ document.querySelectorAll('[data-stamp-den]').forEach(button=>{
+  button.addEventListener('pointerdown',palettePointerDown);
+  button.addEventListener('pointermove',palettePointerMove);
+  button.addEventListener('pointerup',palettePointerEnd);
+  button.addEventListener('pointercancel',palettePointerEnd);
+  // Space/Enter keyboard activation: browser-generated click has detail=0.
+  button.addEventListener('click',event=>{if(event.detail===0)selectPaletteNote(Number(button.dataset.stampDen));});
+  button.addEventListener('dragstart',event=>event.preventDefault());
+ });
+}
+
 function wire(){
+ wirePalette();
  $('musicBoxSelect').onclick=()=>{document.querySelector('[data-annotation-tool="cursor"]')?.click();if(piano)closePiano();setMode('box');$('editorScorePanel').scrollIntoView({behavior:'smooth',block:'start'});};
  $('clearScoreTop').onclick=clearScoreTop;
  document.getElementById('simplePrev').onclick=()=>{pianoSVG(Math.max(0,simplePageStart-8));document.querySelector('.pianoScoreScroll').scrollTop=0;};
