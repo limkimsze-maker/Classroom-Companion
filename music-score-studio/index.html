@@ -166,6 +166,24 @@
 .musicDirectHint b{font-weight:850}
 @media(max-width:700px){.musicDirectHint{grid-column:1/-1}}
 
+
+/* Clear primary workflow: only score setup remains in sidebar. */
+.musicAdvancedSettings{margin:12px 0 8px;border:1px solid #bdd5d9;border-radius:11px;background:#f6fbfa;overflow:hidden}
+.musicAdvancedSettings>summary{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:13px 11px;cursor:pointer;color:#174c5b;font-weight:800;font-size:13px;list-style:revert}
+.musicAdvancedSettings>summary span{font-size:10px;color:#647e84;font-weight:550;line-height:1.3;text-align:right}
+.musicAdvancedSettings[open]>summary{border-bottom:1px solid #bdd5d9}
+.musicAdvancedSettingsInner{padding:4px 9px 11px}
+.musicAdvancedSettingsInner .group{border:0;padding:12px 2px}
+.musicDirectTools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:100%}
+.annotationToolbar .musicDirectTools .annotationBtn{white-space:nowrap;min-height:38px;padding:8px 10px}
+.annotationToolbar .musicDirectTools .annotationBtn.active{background:#087b86;border-color:#087b86;color:white}
+@media(max-width:700px){
+ .musicDirectTools{grid-column:1/-1}
+ .musicDirectTools .annotationBtn{flex:1 1 auto}
+ .musicInkMessage{grid-column:1/-1}
+ .musicAdvancedSettings>summary{flex-wrap:wrap}
+}
+
 /* Draw notes first, Beautify All once. Distinct note values and subtool separation. */
 .annotationToolbar .musicValueBtn{display:flex;align-items:center;gap:4px;border:2px solid #aacbd1;min-height:42px;font-weight:750}
 .annotationToolbar .musicValueBtn.is-current,.annotationToolbar .musicWriteBtn.is-current,.annotationToolbar .musicBoxBtn.is-current{background:#d9f1ed;color:#065664;border-color:#087b86;box-shadow:inset 0 0 0 1px #087b86}
@@ -231,7 +249,7 @@
 @media(max-width:700px){.annotationToolbar{padding:7px 8px}.annotationToolbar strong{font-size:11px}.annotationToolbar .annotationBtn{font-size:11px;min-height:37px;padding:7px 9px}}
 @media print{.annotationToolbar{display:none!important}.annotationLayer{pointer-events:none!important}}
 </style>
-<script src="./annotation-tools.js?v=098fd7a" defer></script>
+<script src="./annotation-tools.js?v=a754a293" defer></script>
 </head>
 <body>
 <header class="topbar"><div class="brand"><div class="logo" aria-hidden="true">♫</div><div><h1>Music Score Studio</h1><p>Classroom Companion · A friendly music notation board</p></div></div><span class="top-pill">Free · No account · Made for teaching</span></header>
@@ -247,12 +265,16 @@
 
 
 <section id="annotationToolbar" class="annotationToolbar" role="region" aria-label="Teacher annotation tools" data-active-tool="cursor">
- <div class="musicInkPinned" role="group" aria-label="Direct note entry tools">
-  <span class="musicInkHeading">🎼 Music writing</span>
-  <span class="musicDirectHint"><b>Right-click the staff</b> to add a note · <b>touch and hold</b> on tablet</span>
-  <button type="button" class="annotationBtn musicBoxBtn" id="musicBoxSelect" title="Drag a selection box around several existing notes">▧ Box Select</button>
-  <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear the musical score (Undo available)">⌫ Clear Score</button>
-  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">No drawing or Beautify step. Right-click a line or space, choose the note value, and it appears instantly.</span>
+ <div class="musicInkPinned" role="group" aria-label="Direct music editing tools">
+  <span class="musicInkHeading">🎼 Music Writing</span>
+  <span class="musicDirectHint"><b>Right-click staff → select note value.</b> Touch and hold on tablets.</span>
+  <div id="toolRow" class="segrow musicDirectTools" role="group" aria-label="Music editing actions">
+   <button type="button" class="annotationBtn active" data-mode="select">↖ Select / Move</button>
+   <button type="button" class="annotationBtn" id="musicBoxSelect" data-mode="box">▧ Box Select</button>
+   <button type="button" class="annotationBtn" data-mode="rest">𝄽 Add Rests</button>
+  </div>
+  <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes, handwritten sketches and teacher annotations; confirmation required">⌫ Clear Score</button>
+  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">No drawing or Beautify step. Select a note value from the right-click menu to place it immediately.</span>
  </div>
  <div class="annotationToolbarInner">
   <strong>🖍 Teacher Annotations · marks only (not musical notes)</strong>
@@ -303,31 +325,10 @@
 </div>
 
 <div class="shell">
-<aside class="panel" aria-label="Notation tools">
-<h2>Make music, one note at a time</h2><p class="intro">Create melodies on the staff, or use the AI scanner above for printed piano and ensemble scores.</p>
-<div class="lab">1 · What would you like to do?</div>
-<div class="segrow" id="toolRow" role="group" aria-label="Editing mode">
-<button type="button" class="tool active" data-mode="select">↖ Select / Move</button>
-<button type="button" class="tool" data-mode="box">▧ Box Select</button>
-<button type="button" class="tool" data-mode="rest">𝄽 Add rests</button>
-</div>
-<div class="beautifyPanel">
- <strong>Add notes directly to the staff</strong>
- <p><b>Right-click</b> a line or space and select the note value. The note appears immediately, with the pitch chosen from that position. <b>Right-click an existing note</b> to change its duration.</p>
- <p>On a touchscreen, <b>touch and hold</b>. Use <b>Select / Move</b> or <b>Box Select</b> to edit notes; use <b>Add rests</b> for rests. Teacher Annotations are separate.</p>
-</div>
-<div class="group"><div class="lab">2 · Rest values / optional settings</div><p class="intro">For musical notes, use the right-click menu on the staff. These values apply when adding rests or editing a selected symbol.</p>
-<div class="values" id="values" role="group" aria-label="Note or rest value">
-<button class="valueBtn" data-den="1" title="Whole (4 quarter-note beats)"><span class="music">𝅝</span><small>Whole</small></button>
-<button class="valueBtn active" data-den="2" title="Half (2 quarter-note beats)"><span class="music">𝅗𝅥</span><small>Half</small></button>
-<button class="valueBtn" data-den="4" title="Quarter (1 quarter-note beat)"><span class="music">♩</span><small>Quarter</small></button>
-<button class="valueBtn" data-den="8" title="Eighth (half a quarter-note beat)"><span class="music">♪</span><small>Eighth</small></button>
-<button class="valueBtn" data-den="16" title="Sixteenth (quarter of a quarter-note beat)"><span class="music">♬</span><small>16th</small></button>
-</div>
-<label class="check"><input type="checkbox" id="dotted"> Dotted note / rest <span style="color:#607b85;font-size:12px">(+½ value)</span></label>
-<div class="field" style="margin-top:12px"><label for="accidental">Accidental (for notes)</label><select id="accidental"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></div>
-</div>
-<div class="group"><div class="lab">3 · Score setup</div><div class="formGrid">
+<aside class="panel" aria-label="Score setup">
+<h2>Score Setup</h2>
+<p class="intro">Choose the clef, time signature and playback settings. Right-click the staff to add or edit musical notes.</p>
+<div class="group"><div class="lab">Essential settings</div><div class="formGrid">
 <div class="field"><label for="clef">Clef</label><select id="clef"><option value="treble">𝄞 Treble</option><option value="bass">𝄢 Bass</option></select></div>
 <div class="field"><label for="meter">Time signature</label><select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></div>
 <div class="field"><label for="tempo">Tempo (BPM)</label><input id="tempo" type="number" min="40" max="220" step="1" value="96"></div>
@@ -337,7 +338,27 @@
 <label class="check"><input type="checkbox" id="pitchNames"> Show note names (C, D, E…)</label>
 <label class="check"><input type="checkbox" id="metronome"> Metronome during playback</label><div class="segrow" style="margin-top:9px"><button type="button" class="smallBtn" id="soundDemo">♫ Hear instrument sample</button></div><p class="hint">Warm piano is selected by default. These are built-in synthesised sounds (not recordings). If the sample sounds good but a scan sounds wrong, correct detected pitches, rhythms and missed rests.</p>
 </div>
-<div class="group"><div class="lab">4 · Teacher's extras</div><div class="segrow"><button class="smallBtn" id="sample">♫ Load example</button><button class="smallBtn" id="guide">? Quick guide</button></div><p class="hint">In Draw mode, use your mouse, finger or stylus to circle or annotate a note.</p><div class="field" style="margin-top:10px"><label for="penColor">Annotation colour</label><select id="penColor"><option value="#df654d">Coral red</option><option value="#127f9b">Ocean blue</option><option value="#2e9657">Green</option><option value="#262f43">Black</option></select></div></div>
+
+<details id="musicAdvancedSettings" class="musicAdvancedSettings">
+ <summary>⚙ Advanced Options <span>rest values, dots, accidentals, extras</span></summary>
+ <div class="musicAdvancedSettingsInner">
+  <div class="group"><div class="lab">Rest values and notation details</div>
+   <p class="intro">Choose a rest value when using <b>Add Rests</b>. Dots and accidentals apply to subsequent notes or a selected symbol.</p>
+   <div class="values" id="values" role="group" aria-label="Note or rest value">
+<button class="valueBtn" data-den="1" title="Whole (4 quarter-note beats)"><span class="music">𝅝</span><small>Whole</small></button>
+<button class="valueBtn active" data-den="2" title="Half (2 quarter-note beats)"><span class="music">𝅗𝅥</span><small>Half</small></button>
+<button class="valueBtn" data-den="4" title="Quarter (1 quarter-note beat)"><span class="music">♩</span><small>Quarter</small></button>
+<button class="valueBtn" data-den="8" title="Eighth (half a quarter-note beat)"><span class="music">♪</span><small>Eighth</small></button>
+<button class="valueBtn" data-den="16" title="Sixteenth (quarter of a quarter-note beat)"><span class="music">♬</span><small>16th</small></button>
+</div>
+<label class="check"><input type="checkbox" id="dotted"> Dotted note / rest <span style="color:#607b85;font-size:12px">(+½ value)</span></label>
+<div class="field" style="margin-top:12px"><label for="accidental">Accidental (for notes)</label><select id="accidental"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></div>
+</div>
+
+  <div class="group"><div class="lab">Other classroom tools</div><div class="segrow"><button class="smallBtn" id="sample">♫ Load example</button><button class="smallBtn" id="guide">? Quick guide</button></div><p class="hint">Use the Teacher Annotations toolbar above for pen, highlighter, arrows and circles.</p><div class="field" style="margin-top:10px"><label for="penColor">Annotation colour</label><select id="penColor"><option value="#df654d">Coral red</option><option value="#127f9b">Ocean blue</option><option value="#2e9657">Green</option><option value="#262f43">Black</option></select></div></div>
+
+ </div>
+</details>
 </aside>
 <main class="layout-main">
 <div class="paperCard" style="margin-top:0"><div class="toolbar"><div class="transport"><button class="btn primary" id="play">▶ Play score</button><button class="btn" id="openXML" title="Open a MusicXML file with both piano hands, chords, rests and ties">🎹 Open MusicXML</button><input type="file" id="musicXmlInput" class="sr" accept=".musicxml,.xml,text/xml,application/xml"><button class="btn" id="scanScore" title="Experimental simple-melody detector — for full printed piano scores use AI scanner above">🧪 Basic melody scan</button><button class="btn" id="stop" disabled>■ Stop</button><span class="divider"></span><button class="btn" id="undo" title="Undo (Ctrl+Z)" disabled>↶ Undo</button><button class="btn" id="redo" title="Redo (Ctrl+Y)" disabled>↷ Redo</button></div><div class="exports"><button class="btn" id="print">⎙ Print / PDF</button><button class="btn" id="savePNG">⇩ PNG</button><button class="btn" id="saveSVG">⇩ SVG</button><button class="btn" id="saveXML">⇩ MusicXML</button></div></div>
@@ -1019,14 +1040,24 @@ function deleteBoxSelection(){
  commit();flash('Deleted '+count+' items. Undo restores them.');
 }
 function clearScoreTop(){
- if(!confirm('Clear all notes and handwritten sketches from this score? Your settings remain, and Undo restores the notes.'))return;
+ if(!confirm('Clear ALL musical notes, legacy handwritten sketches, and Teacher Annotation drawings on this score?\n\nMusical-note Undo and Annotation Undo can restore their respective content.'))return;
+ const importedWasActive=!!piano;
+ // Annotations are stored independently from the playable score. Clear them
+ // while their imported score view is still active, if applicable.
+ if(importedWasActive)document.dispatchEvent(new Event('music-score-studio:clear-annotations'));
  if(piano)closePiano();
  change();
  data.bars=data.bars.map(()=>[]);data.strokes=[];
- selected=null;boxSelectedNotes.clear();boxSelectedStrokes.clear();boxDraft=null;
+ penDraft=null;drag=null;boxDraft=null;
+ selected=null;boxSelectedNotes.clear();boxSelectedStrokes.clear();
  commit();setMode('select');
- $('beautifyFeedback').textContent='Score cleared. Right-click the staff to add the first note; Undo restores the old score.';
- flash('Score cleared · Undo available');
+ // Clear the editor's overlay after its music notes are gone; the annotation
+ // module removes saved marks as well, preventing reappearance on reload.
+ document.dispatchEvent(new Event('music-score-studio:clear-annotations'));
+ const message='Score cleared: musical notes, handwritten sketches and teacher annotations. Main Undo restores notes; Annotation Undo restores drawn marks.';
+ $('beautifyFeedback').textContent=message;
+ updateStatus(message);
+ flash('Score and sketches cleared');
 }
 
 function startMusicInk(){
