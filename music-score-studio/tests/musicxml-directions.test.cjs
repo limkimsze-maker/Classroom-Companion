@@ -225,3 +225,76 @@ test('playPiano dispatch honours sound dynamics and omits silent oscillators',as
  assert.equal(calls.length,1,'a zero-dynamic note should never reach the oscillator');
  near(calls[0][3],scaled(.5),'actual tone dispatch volume');
 });
+
+test('scheduled zero-volume notes do not produce visual note-on or note-off events',()=>{
+ const x=scheduled([[[dir([dyn('f')],{sound:0}),note('C'),
+  dir([],{sound:45}),note('D')]]]);
+ assert.equal(x.notes.length,2,'silent note remains in the parsed score');
+ near(gainBy(x.notes,'C'),0);
+ near(gainBy(x.notes,'D'),scaled(.5));
+ assert.equal(x.timing.events.filter(e=>e.on).length,1,'only audible note is highlighted');
+ assert.equal(x.timing.events.filter(e=>!e.on).length,1,'only audible note gets an off event');
+ assert.equal(x.timing.events[0].index,x.score.notes.findIndex(e=>e.step==='D'));
+});
+test('silent-only imported score does not schedule visual sounding events',()=>{
+ const x=scheduled([[[dir([],{sound:0}),note('C'),note('D')]]]);
+ assert.equal(x.timing.notes.length,2);
+ assert.equal(x.timing.events.length,0);
+ assert.ok(x.timing.total>0,'the silent measure still has timeline duration');
+});
+test('tracking keeps the cursor moving through silence and highlights only audible notes',()=>{
+ const x=scheduled([[[dir([],{sound:0}),note('C'),
+  dir([],{sound:45}),note('D')]]]);
+ const classes=()=>({items:new Set(),add(x){this.items.add(x)},remove(x){this.items.delete(x)},contains(x){return this.items.has(x)}});
+ const displays=x.score.notes.map(()=>({classList:classes()}));
+ const chips=x.score.notes.map(()=>({classList:classes()}));
+ const paneStatus={textContent:''},cursorTicks=[],scheduledFrames=[];
+ const context={currentTime:0};
+ const trackingCode=slice('function startPianoTracking(', 'function ensureOSMD(');
+ const makeTracking=new Function(
+  'resetPianoTracking','pianoTrackingToken','pianoTrackingFrame',
+  'piano','playing','context','pianoNoteNodes','simpleNoteNodes','pianoActiveIndices',
+  'document','requestAnimationFrame','performance','moveEngravedPlaybackCursor',
+  'pianoSVG','renderSimpleNoteStrip','followPianoElement','simplePageStart','simpleCurrentMeasure',
+  trackingCode+'\nreturn startPianoTracking;'
+ );
+ const document={
+  getElementById(id){return id==='pianoNowPlaying'?paneStatus:id==='followNotes'?{checked:false}:null;},
+  querySelector(){return null;}
+ };
+ const active=new Set();
+ const startTracking=makeTracking(
+  ()=>{},1,0,x.score,true,context,
+  new Map(displays.map((e,i)=>[i,e])),
+  new Map(chips.map((e,i)=>[i,e])),
+  active,document,fn=>{scheduledFrames.push(fn);return scheduledFrames.length},
+  {now:()=>0},tick=>cursorTicks.push(tick),()=>{},()=>{},()=>{},0,0
+ );
+ startTracking(0,60/96/x.score.TPQ,x.timing);
+ const frameAt=time=>{
+  assert.ok(scheduledFrames.length>0,'expected a tracking frame');
+  context.currentTime=time;scheduledFrames.shift()();
+ };
+ const silentIndex=x.score.notes.findIndex(e=>e.step==='C');
+ const audibleIndex=x.score.notes.findIndex(e=>e.step==='D');
+ frameAt(.10);
+ assert.equal(paneStatus.textContent,'Following the score · no notes sounding');
+ assert.equal(displays[silentIndex].classList.contains('is-playing'),false);
+ assert.equal(chips[silentIndex].classList.contains('active'),false);
+ const ticksBefore=cursorTicks.length;
+ frameAt(.35);
+ assert.ok(cursorTicks.length>ticksBefore,'cursor must advance without note-on events');
+ assert.ok(cursorTicks.at(-1)>cursorTicks[0]);
+ frameAt(.70);
+ assert.equal(displays[audibleIndex].classList.contains('is-playing'),true);
+ assert.equal(chips[audibleIndex].classList.contains('active'),true);
+ assert.match(paneStatus.textContent,/1 note sounding/);
+ assert.equal(displays[silentIndex].classList.contains('is-playing'),false);
+ frameAt(1.50);
+ assert.equal(displays[audibleIndex].classList.contains('is-playing'),false);
+ assert.equal(chips[audibleIndex].classList.contains('active'),false);
+ assert.equal(paneStatus.textContent,'Following the score · no notes sounding');
+ const afterRelease=cursorTicks.length;
+ frameAt(1.80);
+ assert.ok(cursorTicks.length>afterRelease,'cursor must advance after audible notes release');
+});
