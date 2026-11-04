@@ -167,6 +167,39 @@
 @media(max-width:700px){.musicDirectHint{grid-column:1/-1}}
 
 
+
+/* Five large, tactile music-picture stamps. All graphics are native SVG. */
+.noteStampPalette{width:100%;max-width:690px;flex:1 0 100%;min-width:0;padding:5px 1px 9px}
+.noteStampPaletteTitle{font-size:12px;font-weight:850;color:#215465;margin:0 0 7px 3px}
+.noteStampPaletteTitle span{font-size:11px;font-weight:550;color:#5a7781}
+.noteStampCards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;width:100%}
+.annotationToolbar .noteStampCard{min-width:0;border:1.8px solid #b5d1da;border-radius:12px;background:#fff;color:#1a475d;padding:7px 3px 6px;
+ min-height:97px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;white-space:normal;
+ box-shadow:0 2px 6px #18486614;transition:border-color .14s,background .14s}
+.annotationToolbar .noteStampCard:hover,.annotationToolbar .noteStampCard:focus-visible{border-color:#0b8a99;background:#edf9f8;outline:2px solid #a6e2e6}
+.annotationToolbar .noteStampCard[aria-pressed="true"]{border:2.5px solid #087b86;background:#d7f3ee;box-shadow:0 0 0 2px #95d7cf}
+.noteStampGraphic{display:block;height:48px;width:48px;max-width:100%;flex-shrink:0;pointer-events:none}
+.noteStampName{display:block;font-size:11px;font-weight:850;line-height:1.15;pointer-events:none}
+.noteStampBeats{display:block;font-size:10px;color:#587785;line-height:1.1;pointer-events:none}
+.noteStampGhost{position:fixed;z-index:9000;pointer-events:none;border:2px solid #0c8594;border-radius:14px;background:#f2fffd;
+ padding:4px 10px;display:flex;align-items:center;gap:7px;box-shadow:0 8px 24px #123b5066;white-space:nowrap;transform:translate(-50%,-50%)}
+.noteStampGhost .noteStampGraphic{height:46px;width:42px}
+.noteStampGhost strong{font-size:13px;color:#104b5b}
+.noteStampGhost.valid{background:#e0fae6;border-color:#21955e}
+.noteStampGhost.invalid{background:#fff0ec;border-color:#c36a58}
+.noteStampGhost[hidden]{display:none!important}
+.scoreSvg .noteStampPreview{pointer-events:none}
+@media(max-width:700px){
+ .noteStampPalette{grid-column:1/-1;max-width:none}
+ .noteStampPaletteTitle{font-size:11px}
+ .noteStampPaletteTitle span{display:block;margin-top:2px}
+ .noteStampCards{gap:4px}
+ .annotationToolbar .noteStampCard{min-height:83px;padding:4px 2px;border-radius:9px}
+ .noteStampGraphic{height:41px;width:42px}
+ .noteStampName{font-size:10px}
+ .noteStampBeats{font-size:9px}
+}
+
 /* Clear primary workflow: only score setup remains in sidebar. */
 .musicAdvancedSettings{margin:12px 0 8px;border:1px solid #bdd5d9;border-radius:11px;background:#f6fbfa;overflow:hidden}
 .musicAdvancedSettings>summary{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:13px 11px;cursor:pointer;color:#174c5b;font-weight:800;font-size:13px;list-style:revert}
@@ -267,14 +300,27 @@
 <section id="annotationToolbar" class="annotationToolbar" role="region" aria-label="Teacher annotation tools" data-active-tool="cursor">
  <div class="musicInkPinned" role="group" aria-label="Direct music editing tools">
   <span class="musicInkHeading">🎼 Music Writing</span>
-  <span class="musicDirectHint"><b>Right-click staff → select note value.</b> Touch and hold on tablets.</span>
+  <span class="musicDirectHint">Drag a note symbol onto a staff line or space; <b>right-click</b> also works.</span>
+ <div id="noteStampPalette" class="noteStampPalette" role="group" aria-label="Drag a note symbol to add it to the staff">
+   <div class="noteStampPaletteTitle">Drag a musical note onto the staff <span>or tap a note, then tap its position</span></div>
+   <div class="noteStampCards"><button type="button" class="noteStampCard" data-stamp-den="1" aria-pressed="false" title="Drag Whole (4 beats) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#fff" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Whole</span><span class="noteStampBeats">4 beats</span></button>
+   <button type="button" class="noteStampCard" data-stamp-den="2" aria-pressed="false" title="Drag Half (2 beats) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#fff" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Half</span><span class="noteStampBeats">2 beats</span></button>
+   <button type="button" class="noteStampCard" data-stamp-den="4" aria-pressed="false" title="Drag Quarter (1 beat) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Quarter</span><span class="noteStampBeats">1 beat</span></button>
+   <button type="button" class="noteStampCard" data-stamp-den="8" aria-pressed="false" title="Drag Eighth (½ beat) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><path d="M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z" fill="#183f54"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">Eighth</span><span class="noteStampBeats">½ beat</span></button>
+   <button type="button" class="noteStampCard" data-stamp-den="16" aria-pressed="false" title="Drag 16th (¼ beat) onto the staff, or tap then tap the staff">
+    <svg viewBox="0 0 54 68" class="noteStampGraphic" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><line x1="33" y1="42" x2="33" y2="6" stroke="#183f54" stroke-width="3" stroke-linecap="round"/><path d="M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z" fill="#183f54"/><path d="M33 18 C49 21 48 35 38 43 C44 31 43 26 33 30 Z" fill="#183f54"/><ellipse cx="22" cy="43" rx="12" ry="7.3" transform="rotate(-18 22 43)" fill="#183f54" stroke="#183f54" stroke-width="2.8"/></svg><span class="noteStampName">16th</span><span class="noteStampBeats">¼ beat</span></button></div>
+ </div>
   <div id="toolRow" class="segrow musicDirectTools" role="group" aria-label="Music editing actions">
    <button type="button" class="annotationBtn active" data-mode="select">↖ Select / Move</button>
    <button type="button" class="annotationBtn" id="musicBoxSelect" data-mode="box">▧ Box Select</button>
    <button type="button" class="annotationBtn" data-mode="rest">𝄽 Add Rests</button>
   </div>
   <button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes, handwritten sketches and teacher annotations; confirmation required">⌫ Clear Score</button>
-  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">No drawing or Beautify step. Select a note value from the right-click menu to place it immediately.</span>
+  <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Drag a note to place it, or tap a symbol and tap the staff. Right-click opens the full note menu.</span>
  </div>
  <div class="annotationToolbarInner">
   <strong>🖍 Teacher Annotations · marks only (not musical notes)</strong>
@@ -327,7 +373,7 @@
 <div class="shell">
 <aside class="panel" aria-label="Score setup">
 <h2>Score Setup</h2>
-<p class="intro">Choose the clef, time signature and playback settings. Right-click the staff to add or edit musical notes.</p>
+<p class="intro">Choose the clef, time signature and playback settings. Drag musical notes from the toolbar onto the staff, or right-click a staff line or space.</p>
 <div class="group"><div class="lab">Essential settings</div><div class="formGrid">
 <div class="field"><label for="clef">Clef</label><select id="clef"><option value="treble">𝄞 Treble</option><option value="bass">𝄢 Bass</option></select></div>
 <div class="field"><label for="meter">Time signature</label><select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></div>
@@ -767,8 +813,57 @@ function removeSelected(){const s=findSelected();if(!s)return;change();data.bars
 function adjustPitch(n){const s=findSelected();if(!s||s.e.kind!=='note')return;let idx=noteIndex(s.e.step,s.e.octave)+n;if(idx<8||idx>48)return;change();Object.assign(s.e,fromIndex(idx));commit()}
 function applyValue(){const s=findSelected();if(!s)return;const n={...s.e,den,dot};if(sumBar(data.bars[s.bar])-ticks(s.e)+ticks(n)>cap()+.00001){flash('That note value would make this bar too long.');return}change();s.e.den=den;s.e.dot=dot;if(s.e.kind==='note')s.e.acc=acc;commit();flash('Selected symbol updated')}
 function selectEvent(id){selected=id;render();let s=findSelected();if(s)updateStatus(`${noteName(s.e)} · ${['','whole','half','','quarter','','','','eighth'][s.e.den]||'sixteenth'}${s.e.dot?' (dotted)':''} · Bar ${s.bar+1}`)}
-function eventPositions(bar,left,width){const count=bar.length;let pad=30,usable=width-pad*2;return bar.map((e,i)=>left+pad+(i+.5)*usable/Math.max(1,count))}
-function findInsertIndex(barIndex,x,left,width){let arr=eventPositions(data.bars[barIndex],left,width),index=0;while(index<arr.length&&x>arr[index])index++;return index}
+function eventPositions(bar,left,width){
+ const count=bar.length,pad=30,usable=width-pad*2;
+ return bar.map((event,i)=>Number.isFinite(event.posX)&&event.posX>=0&&event.posX<=1
+  ?left+Math.max(pad,Math.min(width-pad,event.posX*width))
+  :left+pad+(i+.5)*usable/Math.max(1,count));
+}
+function findInsertIndex(barIndex,x,left,width){
+ const arr=eventPositions(data.bars[barIndex],left,width);
+ let index=0;while(index<arr.length&&x>arr[index])index++;return index;
+}
+// Keep placed notes where they were dropped, while preserving the familiar
+// automatic spacing for older scores until their first manual placement.
+function placedNoteX(bar,left,width,desired){
+ const used=eventPositions(bar,left,width).map(x=>x-left);
+ const clamp=x=>Math.max(30,Math.min(width-30,x));
+ let best=clamp(desired-left);
+ if(used.some(x=>Math.abs(x-best)<24)){
+  let bestDistance=Infinity,free=null;
+  for(let d=0;d<=width;d+=6){
+   for(const candidate of [best-d,best+d]){
+    const x=clamp(candidate);
+    if(used.some(p=>Math.abs(p-x)<23))continue;
+    const distance=Math.abs(x-best);
+    if(distance<bestDistance){free=x;bestDistance=distance;}
+   }
+   if(free!==null)break;
+  }
+  if(free!==null)best=free;
+ }
+ return best;
+}
+function insertPlacedMusicEvent(target,denominator){
+ if(!target||target.type!=='insert'||!VALID_DEN.includes(denominator))return false;
+ const location=staffNotePosition({x:target.x,y:target.y});
+ if(!location||location.bar!==target.bar)return false;
+ const {bar,left,width,pitch}=location;
+ const event={id:makeId(),kind:'note',step:pitch.step,octave:pitch.octave,acc,den:denominator,dot:!!dot};
+ if(sumBar(data.bars[bar])+ticks(event)>cap()+.00001){
+  const message='Bar '+(bar+1)+' is too full for that note. Choose a shorter note or another bar.';
+  $('beautifyFeedback').textContent=message;updateStatus(message);flash(message);return false;
+ }
+ const old=data.bars[bar],oldXs=eventPositions(old,left,width);
+ const placement=placedNoteX(old,left,width,location.x);
+ change();
+ for(let i=0;i<old.length;i++)if(!Number.isFinite(old[i].posX))old[i].posX=(oldXs[i]-left)/width;
+ event.posX=placement/width;
+ old.push(event);
+ old.sort((a,b)=>(a.posX??0)-(b.posX??0));
+ boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=event.id;
+ commit();return true;
+}
 function staffLayout(){const systems=Math.ceil(data.bars.length/2),H=94+systems*202;return {W:1120,H,sys:systems,top:s=>104+s*202,left:144,right:1096,barW:(1096-144)/2}}
 function el(name,attrs={},textValue){const n=document.createElementNS(NS,name);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(textValue!==undefined)n.textContent=String(textValue);return n}
 function line(g,x1,y1,x2,y2,stroke='#273844',sw=1.35,more={}){g.append(el('line',{x1,y1,x2,y2,stroke,'stroke-width':sw,...more}))}
@@ -1203,21 +1298,7 @@ function showMusicNoteMenu(target,clientX,clientY){
  if(target.type!=='insert')menu.querySelector('[data-note-duration="'+(VALID_DEN.includes(+target.den)?target.den:2)+'"]')?.focus({preventScroll:true});
 }
 function insertNoteFromMenu(target,value){
- if(!target||target.type!=='insert'||!VALID_DEN.includes(value))return false;
- const location=staffNotePosition({x:target.x,y:target.y});
- if(!location||location.bar!==target.bar)return false;
- const {bar,left,width,x,pitch}=location;
- const event={id:makeId(),kind:'note',step:pitch.step,octave:pitch.octave,acc,den:value,dot:!!dot};
- if(sumBar(data.bars[bar])+ticks(event)>cap()+.00001){
-  const message='Bar '+(bar+1)+' is too full for this note value. Try a shorter duration.';
-  $('beautifyFeedback').textContent=message;updateStatus(message);flash(message);return false;
- }
- change(); // One Undo returns to the exact prior score.
- const index=findInsertIndex(bar,x,left,width);
- data.bars[bar].splice(index,0,event);
- boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=event.id;
- commit();
- return true;
+ return insertPlacedMusicEvent(target,value);
 }
 
 function updateMusicNoteDuration(next){
@@ -1466,7 +1547,7 @@ function exportMusicXML(){const [beats,beatType]=data.meter.split('/');let xml=`
 for(let b=0;b<data.bars.length;b++){xml+=`\n<measure implicit="no" number="${b+1}">`;if(b===0){xml+=`<attributes><divisions>192</divisions><key><fifths>0</fifths></key><time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time><clef><sign>${data.clef==='treble'?'G':'F'}</sign><line>${data.clef==='treble'?2:4}</line></clef></attributes><direction placement="above"><direction-type><metronome parentheses="no"><beat-unit>quarter</beat-unit><per-minute>${data.tempo}</per-minute></metronome></direction-type><sound tempo="${data.tempo}" /></direction>`}
 for(let i=0;i<data.bars[b].length;i++){const e=data.bars[b][i];xml+='<note>';if(e.kind==='rest'){xml+='<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave}</octave></pitch>`}xml+=`<duration>${Math.round(ticks(e)*8)}</duration><type>${({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th',32:'32nd',64:'64th',128:'128th'})[e.den]}</type>`;if(e.dot)xml+='<dot />';if(e.kind==='note'&&e.acc)xml+=`<accidental>${e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural'}</accidental>`;xml+='</note>'}xml+='</measure>'}
 xml+='\n</part>\n</score-partwise>';download(new Blob([xml],{type:'application/vnd.recordare.musicxml+xml'}),filename()+'.musicxml');flash('MusicXML saved')}
-function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]]),...(VALID_DEN.includes(+s.den)?{den:+s.den}:{}),...(s.kind==='music'?{kind:'music'}:{}),...(Number.isFinite(s.headX)&&Number.isFinite(s.headY)?{headX:s.headX,headY:s.headY}:{})})):[];return result}
+function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}if(typeof e.posX==='number'&&Number.isFinite(e.posX)&&e.posX>=0&&e.posX<=1)ev.posX=e.posX;return ev})});const [n,d]=result.meter.split('/').map(Number),capacity=n*TICKS/d;for(const bar of result.bars)if(sumBar(bar)>capacity+.001)throw Error('A bar exceeds its time signature');result.strokes=Array.isArray(raw.strokes)?raw.strokes.slice(0,150).filter(s=>Array.isArray(s.points)&&s.points.length<2000).map(s=>({color:/^#[0-9a-f]{6}$/i.test(s.color)?s.color:'#df654d',points:s.points.filter(p=>Array.isArray(p)&&p.length===2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[+p[0],+p[1]]),...(VALID_DEN.includes(+s.den)?{den:+s.den}:{}),...(s.kind==='music'?{kind:'music'}:{}),...(Number.isFinite(s.headX)&&Number.isFinite(s.headY)?{headX:s.headX,headY:s.headY}:{})})):[];return result}
 function loadProject(raw,record=true){closePiano();const v=validateProject(raw);if(record)change();data=v;selected=null;syncConfig();commit()}
 function twinkle(){const q=(step,octave,den=4)=>({id:makeId(),kind:'note',step,octave,den,dot:false,acc:''});return {title:'Twinkle, Twinkle, Little Star',composer:'Traditional · Classroom example',clef:'treble',meter:'4/4',tempo:100,instrument:data.instrument||'piano',pitchNames:true,metronome:false,bars:[ [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('G',4),q('G',4),q('F',4),q('F',4)], [q('E',4),q('E',4),q('D',4,2)], [q('C',4),q('C',4),q('G',4),q('G',4)], [q('A',4),q('A',4),q('G',4,2)], [q('F',4),q('F',4),q('E',4),q('E',4)], [q('D',4),q('D',4),q('C',4,2)] ],strokes:[]}}
 function setBarsCount(add){if(add){if(data.bars.length>=40){flash('Maximum 40 bars in this classroom version.');return}change();data.bars.push([]);commit();updateStatus('A new blank bar has been added.')}else if(data.bars.length>1&&data.bars.at(-1).length===0){change();data.bars.pop();selected=null;commit()}else flash('You can remove only the final empty bar.')}
