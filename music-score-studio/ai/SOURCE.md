@@ -44,7 +44,7 @@ These edits are documented in `../ai-bridge-patch.py`, in the modified source fi
 
 ## Automatic printed-term recognition
 
-- The new `ai/expression-ocr.js` is an AGPL-3.0 classroom-specific addition that matches OCR text to recognised musical directions; its source is distributed here.
-- **Tesseract.js 5.1.1** (Apache-2.0): https://github.com/naptha/tesseract.js ; loaded only when a photo needs OCR from https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js .
-- Photos are interpreted in the user's browser. The JavaScript library and language data must be downloaded initially, but images are not uploaded.
-- Printed words and estimated bar positions can be incorrect, and the underlying homr model can still miss small note-level signs. Users can review and correct suggestions in the score player.
+- `ai/expression-ocr.js` is an AGPL-3.0 classroom-specific addition that matches OCR text to musical directions; its source is distributed here.
+- **Tesseract.js 5.1.1** (Apache-2.0): https://github.com/naptha/tesseract.js ; loaded on demand from https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js .
+- Photos are interpreted inside the browser. Script and language data must be downloaded on the first use, but images are not uploaded.
+- Printed directions and their estimated bar positions can be wrong, and the underlying homr model still may miss small notation marks.
