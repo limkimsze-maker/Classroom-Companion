@@ -3648,8 +3648,10 @@ async function playPiano(){
  }));
  for(const {e,onset,duration,volume,midi} of performanceNotes){
   // Repeated visits, chords, tempo, dynamics, fermatas and octave signs.
-  tone(Number.isFinite(midi)?midi:e.midi,start+onset,duration,
-    Number.isFinite(volume)?volume:(piano.notes.length>100?.53:.68)*(e.gain||.79));
+  const scheduledVolume=Number.isFinite(volume)?volume:
+    (piano.notes.length>100?.53:.68)*(Number.isFinite(e.gain)?e.gain:.79);
+  // An explicit zero-dynamic MusicXML note must not produce an oscillator.
+  if(scheduledVolume>0)tone(Number.isFinite(midi)?midi:e.midi,start+onset,duration,scheduledVolume);
  }
  startPianoTracking(start,secondsPerTick,timing);
  stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+timing.total-context.currentTime)*1000+300);
