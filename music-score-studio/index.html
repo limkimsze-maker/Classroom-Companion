@@ -155,6 +155,17 @@
 .musicNoteValueGrid .noteLabel{display:block;font-size:10px;font-weight:750;white-space:nowrap;letter-spacing:-.2px}
 @media(max-width:400px){.musicNoteContextMenu{padding:6px}.musicNoteValueGrid{gap:3px}.musicNoteValueGrid button{min-height:68px}.musicNoteValueGrid .noteSymbol{font-size:29px}}
 
+
+.musicAdvancedValues{margin-top:7px;border-top:1px solid #d4e8eb;padding-top:6px}
+.musicAdvancedValues summary{font-size:11px;font-weight:750;color:#476a77;cursor:pointer;padding:3px 4px}
+.musicAdvancedGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
+.musicAdvancedGrid button{border:1px solid #bed7e2;border-radius:8px;min-height:38px;background:#f8fcff;color:#234d5b;font-weight:800;cursor:pointer}
+.musicAdvancedGrid button small{display:block;font-size:10px;font-weight:600}
+.musicAdvancedGrid button[data-current="true"]{border:2px solid #087b86;background:#087b86;color:white}
+.musicDirectHint{font-size:12px;color:#194d5b;line-height:1.3;font-weight:600}
+.musicDirectHint b{font-weight:850}
+@media(max-width:700px){.musicDirectHint{grid-column:1/-1}}
+
 /* Draw notes first, Beautify All once. Distinct note values and subtool separation. */
 .annotationToolbar .musicValueBtn{display:flex;align-items:center;gap:4px;border:2px solid #aacbd1;min-height:42px;font-weight:750}
 .annotationToolbar .musicValueBtn.is-current,.annotationToolbar .musicWriteBtn.is-current,.annotationToolbar .musicBoxBtn.is-current{background:#d9f1ed;color:#065664;border-color:#087b86;box-shadow:inset 0 0 0 1px #087b86}
@@ -281,6 +292,14 @@
   <button type="button" data-note-duration="8" aria-pressed="false" title="Eighth note · ½ beat"><span class="noteSymbol">♪</span><span class="noteLabel">Eighth</span></button>
   <button type="button" data-note-duration="16" aria-pressed="false" title="Sixteenth note · ¼ beat"><span class="noteSymbol">♬</span><span class="noteLabel">16th</span></button>
  </div>
+ <details class="musicAdvancedValues" id="musicAdvancedValues">
+  <summary>More note values (advanced)</summary>
+  <div class="musicAdvancedGrid" role="group" aria-label="Additional short note values">
+   <button type="button" data-note-duration="32" aria-pressed="false" title="Thirty-second note · ⅛ beat">32nd <small>⅛ beat</small></button>
+   <button type="button" data-note-duration="64" aria-pressed="false" title="Sixty-fourth note · ¹⁄₁₆ beat">64th <small>¹⁄₁₆ beat</small></button>
+   <button type="button" data-note-duration="128" aria-pressed="false" title="Hundred twenty-eighth note · ¹⁄₃₂ beat">128th <small>¹⁄₃₂ beat</small></button>
+  </div>
+ </details>
 </div>
 
 <div class="shell">
@@ -676,7 +695,7 @@ window.CCPhotoOMR={scan,estimateTilt,buildBars};
 <script>
 (()=>{'use strict';
 const NS='http://www.w3.org/2000/svg', LS='cc-music-score-studio-v1';
-const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16]; const STEPS=['C','D','E','F','G','A','B']; const TICKS=96;
+const $=id=>document.getElementById(id); const VALID_DEN=[1,2,4,8,16,32,64,128]; const STEPS=['C','D','E','F','G','A','B']; const TICKS=96;
 const blank=()=>({title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,bars:Array.from({length:4},()=>[]),strokes:[]});
 let piano=null;let data=blank(),tool='select',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
@@ -1108,23 +1127,73 @@ function nearestMusicNote(p){
  }
  return result;
 }
+function staffNotePosition(p){
+ const layout=staffLayout();
+ if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return null;
+ for(let sys=0;sys<layout.sys;sys++){
+  const top=layout.top(sys);
+  // Notes must be on the staff or within one ledger line.
+  if(p.y<top-18||p.y>top+90)continue;
+  if(p.x<layout.left+18||p.x>layout.right-18)continue;
+  const slot=Math.floor((p.x-layout.left)/layout.barW);
+  if(slot!==0&&slot!==1)continue;
+  const bar=sys*2+slot;
+  if(bar>=data.bars.length)continue;
+  const left=layout.left+slot*layout.barW;
+  if(p.x<left+18||p.x>left+layout.barW-18)continue;
+  return {type:'insert',bar,top,left,width:layout.barW,x:p.x,y:p.y,pitch:pitchOfY(p.y,top),den:null};
+ }
+ return null;
+}
+
 function hideMusicNoteMenu(){
  $('musicNoteContextMenu').hidden=true;noteMenuTarget=null;
 }
 function showMusicNoteMenu(target,clientX,clientY){
  if(!target)return;
  noteMenuTarget=target;const menu=$('musicNoteContextMenu');
- const names={1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th'};
- $('musicNoteMenuCaption').textContent=target.pitch.step+target.pitch.octave+' · Select note value';
+ const names={1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th',32:'32nd',64:'64th',128:'128th'};
+ $('musicNoteMenuCaption').textContent=target.type==='insert'
+  ?'Place '+target.pitch.step+target.pitch.octave+' · Select note value'
+  :target.pitch.step+target.pitch.octave+' · Change note value';
+ $('musicAdvancedValues').open=target.den>=32;
  menu.querySelectorAll('[data-note-duration]').forEach(btn=>{const active=Number(btn.dataset.noteDuration)===target.den;btn.dataset.current=String(active);btn.setAttribute('aria-pressed',String(active));});
  menu.hidden=false;
  const width=menu.offsetWidth||372,height=menu.offsetHeight||125;
  menu.style.left=Math.max(5,Math.min(clientX,window.innerWidth-width-6))+'px';
  menu.style.top=Math.max(5,Math.min(clientY,window.innerHeight-height-6))+'px';
- menu.querySelector('[data-note-duration="'+(VALID_DEN.includes(+target.den)?target.den:2)+'"]')?.focus({preventScroll:true});
+ if(target.type!=='insert')menu.querySelector('[data-note-duration="'+(VALID_DEN.includes(+target.den)?target.den:2)+'"]')?.focus({preventScroll:true});
 }
+function insertNoteFromMenu(target,value){
+ if(!target||target.type!=='insert'||!VALID_DEN.includes(value))return false;
+ const location=staffNotePosition({x:target.x,y:target.y});
+ if(!location||location.bar!==target.bar)return false;
+ const {bar,left,width,x,pitch}=location;
+ const event={id:makeId(),kind:'note',step:pitch.step,octave:pitch.octave,acc,den:value,dot:!!dot};
+ if(sumBar(data.bars[bar])+ticks(event)>cap()+.00001){
+  const message='Bar '+(bar+1)+' is too full for this note value. Try a shorter duration.';
+  $('beautifyFeedback').textContent=message;updateStatus(message);flash(message);return false;
+ }
+ change(); // One Undo returns to the exact prior score.
+ const index=findInsertIndex(bar,x,left,width);
+ data.bars[bar].splice(index,0,event);
+ boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=event.id;
+ commit();
+ return true;
+}
+
 function updateMusicNoteDuration(next){
  const target=noteMenuTarget;if(!target||!VALID_DEN.includes(next))return;
+ if(target.type==='insert'){
+  const ok=insertNoteFromMenu(target,next);
+  hideMusicNoteMenu();
+  if(ok){
+   const label=({1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th',32:'32nd',64:'64th',128:'128th'})[next];
+   const message=target.pitch.step+target.pitch.octave+' '+label+' note added instantly. Ready to play.';
+   $('beautifyFeedback').textContent=message;updateStatus(message);flash('♪ '+message);
+  }
+  return;
+ }
  if(target.type==='ink'){
   const stroke=data.strokes[target.index];if(!stroke||stroke.kind!=='music'){hideMusicNoteMenu();return;}
   if(stroke.den===next){hideMusicNoteMenu();return;}
@@ -1141,13 +1210,15 @@ function updateMusicNoteDuration(next){
   change();found.den=next;commit();
  }
  hideMusicNoteMenu();
- const labels={1:'𝅝 Whole · 4 beats',2:'𝅗𝅥 Half · 2 beats',4:'♩ Quarter · 1 beat',8:'♪ Eighth · ½ beat',16:'♬ 16th · ¼ beat'};
+ const labels={1:'𝅝 Whole · 4 beats',2:'𝅗𝅥 Half · 2 beats',4:'♩ Quarter · 1 beat',8:'♪ Eighth · ½ beat',16:'♬ 16th · ¼ beat',32:'32nd · ⅛ beat',64:'64th · ¹⁄₁₆ beat',128:'128th · ¹⁄₃₂ beat'};
  const message=labels[next];
  $('beautifyFeedback').textContent=message+' · Updated. Undo is available.';
  updateStatus(message);flash(message);
 }
 function onMusicNoteRightClick(ev){
- const match=nearestMusicNote(svgPoint(ev));
+ if(piano)return;
+ const p=svgPoint(ev);
+ const match=nearestMusicNote(p)||staffNotePosition(p);
  if(!match)return;
  ev.preventDefault();ev.stopPropagation();showMusicNoteMenu(match,ev.clientX,ev.clientY);
 }
@@ -1156,7 +1227,8 @@ function clearMusicLongPress(){
 }
 function beginMusicLongPress(ev,p){
  if(!['touch','pen'].includes(ev.pointerType)||ev.button!==0)return;
- const target=nearestMusicNote(p);if(!target)return;
+ if(piano)return;
+ const target=nearestMusicNote(p)||staffNotePosition(p);if(!target)return;
  clearMusicLongPress();
  const hold={id:ev.pointerId,x:ev.clientX,y:ev.clientY,target};
  noteHoldStart=hold;
