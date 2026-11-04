@@ -1105,7 +1105,7 @@ if(sys===0){
 // begins the first measure directly. The measure-end and final barlines remain.
 for(let bi=0;bi<2;bi++){
 const idx=sys*2+bi;if(idx>=data.bars.length)continue;
-const x0=layout.left+bi*layout.barW;const bar=exportMode?printBarEvents(data.bars[idx]):data.bars[idx],used=sumBar(bar),capacity=cap();const x1=x0+layout.barW;
+const x0=layout.left+bi*layout.barW;const printEvents=exportMode?printBarEvents(data.bars[idx]):null;const bar=exportMode&&printEvents.length>data.bars[idx].length?printEvents.map(e=>({...e,posX:undefined})):exportMode?printEvents:data.bars[idx],used=sumBar(bar),capacity=cap();const x1=x0+layout.barW;
 if(!exportMode){svg.append(el('rect',{x:x0,y:top-37,width:layout.barW,height:149,fill:'transparent',class:'measureHit','data-bar':idx,'data-left':x0,'data-width':layout.barW,'data-top':top}));}
 const bstat=data.meter==='6/8'?`${Number((used/12).toFixed(3))}/6 eighths`:`${Number((used/24).toFixed(3))}/${Number((capacity/24).toFixed(3))} beats`;textSvg(svg,x0+12,top-17,`${idx+1}`,12,{'font-weight':800,fill:'#627b87'});
 if(!exportMode)textSvg(svg,x1-10,top-17,bstat,11,{'text-anchor':'end',class:used===capacity?'barStatus full':'barStatus open'});
