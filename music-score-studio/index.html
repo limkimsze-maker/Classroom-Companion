@@ -3182,34 +3182,73 @@ function createImportedTiming(score,secondsPerTick){
 
 
 function createImportedRepeatedTiming(score,secondsPerTick,order){
+ // The imported score's MusicXML gives note timings; OCR supplies additional
+ // bar-level performance directions. Both play through one shared audio clock.
  const byBar=Array.from({length:score.measureLength.length},()=>[]);
  score.notes.forEach((e,index)=>{if(byBar[e.measure])byBar[e.measure].push({e,index})});
  const notes=[],events=[],segments=[];
- let elapsed=0;
+ const initialBpm=Math.max(30,Math.min(240,60/(secondsPerTick*score.TPQ)));
+ let bpm=initialBpm,dynamic=MUSICAL_DYNAMICS.mf,elapsed=0;
+ const fraction=(n,len)=>Math.max(0,Math.min(1,n/Math.max(1,len)));
  for(const bar of order){
   const length=score.measureLength[bar],barStart=elapsed,entries=byBar[bar]||[];
+  const direction=score.barMarks?.[bar]||{};
+  let targetBpm=bpm;
+  if(Number.isInteger(direction.tempoBpm)&&direction.tempoBpm>=40&&direction.tempoBpm<=220){
+   bpm=targetBpm=direction.tempoBpm;
+  }else if(CLASSROOM_TEMPOS[direction.tempo])bpm=targetBpm=CLASSROOM_TEMPOS[direction.tempo];
+  else if(direction.tempo==='a tempo')bpm=targetBpm=initialBpm;
+  else if(direction.tempo==='ritenuto'||direction.tempo==='meno mosso')
+   bpm=targetBpm=Math.max(30,bpm*(direction.tempo==='ritenuto'?.83:.86));
+  else if(direction.tempo==='più mosso')bpm=targetBpm=Math.min(240,bpm*1.16);
+  else if(direction.tempo==='accelerando')targetBpm=Math.min(240,bpm*1.2);
+  else if(['ritardando','rallentando','allargando'].includes(direction.tempo))
+   targetBpm=Math.max(30,bpm*(direction.tempo==='allargando'?.82:.80));
+  let endDynamic=dynamic,beginDynamic=dynamic;
+  const hasDynamic=typeof direction.dynamic==='string'&&direction.dynamic!=='';
+  if(Object.prototype.hasOwnProperty.call(MUSICAL_DYNAMICS,direction.dynamic)){
+   dynamic=beginDynamic=endDynamic=MUSICAL_DYNAMICS[direction.dynamic];
+  }else if(direction.dynamic==='fp')beginDynamic=1.13,endDynamic=.45;
+  else if(direction.dynamic==='crescendo')endDynamic=Math.min(1.3,dynamic*1.4);
+  else if(direction.dynamic==='diminuendo')endDynamic=Math.max(.25,dynamic*.7);
+  const gainAt=t=>beginDynamic+(endDynamic-beginDynamic)*fraction(t,length);
+  const localSeconds=t=>{
+   const clamped=Math.max(0,Math.min(length,t)),delta=targetBpm-bpm;
+   if(Math.abs(delta)<.00001)return clamped*60/(score.TPQ*bpm);
+   return 60/score.TPQ*length/delta*Math.log((bpm+delta*fraction(clamped,length))/bpm);
+  };
   const pauseMap=new Map();
   for(const {e} of entries)if(e.fermata){
-   const t=Math.min(length,e.onset+e.duration);
-   pauseMap.set(t,Math.max(pauseMap.get(t)||0,Math.max(.25,Math.min(4,e.duration*secondsPerTick*.65))));
+   const tick=Math.min(length,e.onset+e.duration);
+   const hold=Math.max(.25,Math.min(4,(localSeconds(tick)-localSeconds(e.onset))*.65));
+   pauseMap.set(tick,Math.max(pauseMap.get(tick)||0,hold));
   }
   const pauses=[...pauseMap].sort((a,b)=>a[0]-b[0]).map(([tick,delay])=>({tick,delay}));
   const localTime=t=>{
-   let result=t*secondsPerTick;
+   let result=localSeconds(t);
    for(const p of pauses){if(p.tick<=t+.0001)result+=p.delay;else break}
    return result;
   };
   for(const {e,index} of entries){
    const onset=barStart+localTime(e.onset);
-   const full=e.duration*secondsPerTick;
+   const full=localSeconds(Math.min(length,e.onset+e.duration))-localSeconds(e.onset);
    const fermataDelay=e.fermata?(pauseMap.get(Math.min(length,e.onset+e.duration))||0):0;
-   const duration=e.fermata?full+fermataDelay:Math.max(.07,full*(e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:e.marcato?.92:e.legato?1.035:.98));
-   notes.push({e,index,onset,duration});
+   const legato=e.legato||['cantabile','legato'].includes(direction.expression);
+   let factor=e.staccatissimo?.32:e.staccato?.53:e.portato?.80:
+      e.tenuto?1:e.marcato?.92:legato?1.035:.98;
+   if(direction.expression==='alla marcia'&&!e.staccato&&!e.staccatissimo)factor*=.90;
+   const duration=e.fermata?full+fermataDelay:Math.max(.07,full*factor);
+   const baseGain=hasDynamic?gainAt(e.onset):Number(e.gain)||dynamic;
+   const volume=(score.notes.length>100?.53:.68)*baseGain*
+      (e.marcato?1.48:e.accent?1.27:1)*(direction.expression==='dolce'?.83:1);
+   const midi=e.midi+(direction.octave?12:0);
+   notes.push({e,index,onset,duration,volume,midi});
    events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
   }
-  elapsed+=localTime(length);
-  segments.push({bar,start:barStart,end:elapsed,length,pauses});
-  if(notes.length>6500)throw Error('Repeats produce too many notes for classroom playback. Shorten this score.');
+  elapsed=barStart+localTime(length);
+  segments.push({bar,start:barStart,end:elapsed,length,pauses,localSeconds,tempoStart:bpm,tempoEnd:targetBpm});
+  bpm=targetBpm;dynamic=endDynamic;
+  if(notes.length>6500)throw Error('Too many repeated notes for a reliable classroom performance.');
  }
  events.sort((a,b)=>a.at-b.at||(a.on===b.on?0:a.on?1:-1));
  function tickAtSeconds(seconds){
@@ -3218,12 +3257,15 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
   if(!segment)return score.total;
   const local=seconds-segment.start;let wait=0;
   for(const pause of segment.pauses){
-   const before=pause.tick*secondsPerTick+wait;
-   if(local<before)return score.measureStart[segment.bar]+(local-wait)/secondsPerTick;
+   const before=segment.localSeconds(pause.tick)+wait;
+   if(local<before)break;
    if(local<before+pause.delay)return score.measureStart[segment.bar]+pause.tick;
    wait+=pause.delay;
   }
-  return score.measureStart[segment.bar]+Math.min(segment.length,(local-wait)/secondsPerTick);
+  const sought=Math.max(0,local-wait);
+  let lo=0,hi=segment.length;
+  for(let i=0;i<25;i++){const mid=(lo+hi)/2;if(segment.localSeconds(mid)<sought)lo=mid;else hi=mid}
+  return score.measureStart[segment.bar]+(lo+hi)/2;
  }
  return {notes,events,segments,tickAtSeconds,total:elapsed,order};
 }
@@ -3238,7 +3280,7 @@ async function playPiano(){
  const order=expandMarkedBarOrder(piano.measureLength.length,i=>piano.barMarks?.[i]||{});
  const repeats=order.length!==piano.measureLength.length||order.some((x,i)=>x!==i);
  let timing;
- try{timing=repeats?createImportedRepeatedTiming(piano,secondsPerTick,order):createImportedTiming(piano,secondsPerTick);}
+ try{timing=createImportedRepeatedTiming(piano,secondsPerTick,order);}
  catch(e){flash(e.message);return;}
  const start=context.currentTime+.12;
  playing=true;$('play').textContent='❚❚ Playing both hands';$('stop').disabled=false;
@@ -3247,14 +3289,14 @@ async function playPiano(){
    duration:Math.max(.07,e.fermata?timing.secondsAt(e.start+e.duration)-timing.secondsAt(e.start):
      e.duration*secondsPerTick*(e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:e.marcato?.92:e.legato?1.035:.98))
  }));
- for(const {e,onset,duration} of performanceNotes){
-  const volume=(piano.notes.length>100?.53:.68)*(e.gain||.79)*(e.marcato?1.48:e.accent?1.27:1);
-  // Repeated bar visits, chords, fermatas and piano voices share one audio clock.
-  tone(e.midi,start+onset,duration,volume);
+ for(const {e,onset,duration,volume,midi} of performanceNotes){
+  // Repeated visits, chords, tempo, dynamics, fermatas and octave signs.
+  tone(Number.isFinite(midi)?midi:e.midi,start+onset,duration,
+    Number.isFinite(volume)?volume:(piano.notes.length>100?.53:.68)*(e.gain||.79));
  }
  startPianoTracking(start,secondsPerTick,timing);
  stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+timing.total-context.currentTime)*1000+300);
- updateStatus('Playing '+piano.parts+' part(s) at '+bpm+' BPM; '+(repeats?'repeat signs and endings are included; ':'')+'piano chords and both hands are synchronised.');
+ updateStatus('Playing '+piano.parts+' part(s); '+(repeats?'repeats, ':'')+'recognised tempo, dynamics and note articulations are included where available.');
 }
 
 
