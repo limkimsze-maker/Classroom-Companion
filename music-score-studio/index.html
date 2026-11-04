@@ -2131,19 +2131,19 @@ function clickSound(at,accent=false){
 
 /* Traverse repeat signs and D.C./D.S. al Fine safely.
    A maximum expansion prevents malformed scores causing endless playback. */
-function expandBarPlayOrder(){
- const total=data.bars.length,order=[],visitedRepeats=new Set();
- const isStart=i=>['start','both'].includes(barDirective(i).repeat);
- const isEnd=i=>['end','both'].includes(barDirective(i).repeat);
+function expandMarkedBarOrder(total,getBarMark){
+ const order=[],visitedRepeats=new Set();
+ const isStart=i=>['start','both'].includes(getBarMark(i).repeat);
+ const isEnd=i=>['end','both'].includes(getBarMark(i).repeat);
  const repeatTarget=end=>{
   for(let i=end;i>=0;i--)if(isStart(i))return i;
   return 0;
  };
- const segno=Array.from({length:total},(_,i)=>i).find(i=>barDirective(i).sign==='segno');
+ const segno=Array.from({length:total},(_,i)=>i).find(i=>getBarMark(i).sign==='segno');
  let index=0,jumped=false;
  const limit=Math.min(800,total*6+32);
  while(index>=0&&index<total&&order.length<limit){
-  const d=barDirective(index);
+  const d=getBarMark(index);
   if(d.ending==='1'&&!jumped){
    let end=-1;
    for(let i=index;i<total;i++)if(isEnd(i)){end=i;break}
@@ -2163,6 +2163,7 @@ function expandBarPlayOrder(){
  }
  return order;
 }
+function expandBarPlayOrder(){return expandMarkedBarOrder(data.bars.length,barDirective)}
 function makeMusicPerformance(){
  const order=expandBarPlayOrder(),links=musicalLinks();
  const pulseTicks=data.meter==='6/8'?36:24;
