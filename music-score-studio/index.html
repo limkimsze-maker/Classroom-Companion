@@ -406,6 +406,49 @@ body{background:radial-gradient(circle at 7% 12%,#ecf7ff 0,transparent 24rem),
  body{background:#fff}
 }
 
+
+/* Full-page music view; same button minimises it again on phone or desktop. */
+.fullPageControls{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.fullPageToggle{background:#e9f3ff!important;color:#194e86!important;border:1px solid #9dc8ed!important;font-weight:800!important}
+.fullPageToggle:hover,.fullPageToggle:focus-visible{background:#d2e9ff!important}
+.fullPageMusic{position:fixed!important;inset:0!important;width:100%!important;height:100vh!important;height:100dvh!important;max-height:100dvh!important;z-index:3500!important;margin:0!important;border:0!important;border-radius:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;background:#fff!important;box-shadow:none!important}
+body.scoreFullPageActive{overflow:hidden!important}
+.fullPageMusic .paperTop,.fullPageMusic .pianoTop{position:relative;z-index:2;flex-shrink:0;background:linear-gradient(100deg,#e7f6ff,#f3f0ff)!important;box-shadow:0 3px 12px #14375f17}
+.fullPageMusic .paperTop #modeHint{display:none}
+.fullPageMusic .fullPagePlay[hidden],.fullPageMusic .fullPageZoom[hidden]{display:inline-flex!important}
+.fullPageMusic .fullPagePlay,.fullPageMusic .fullPageZoom{min-height:40px;align-items:center;justify-content:center}
+.fullPageMusic .paperScroll{flex:1 1 auto!important;min-height:0!important;overflow:auto!important;overscroll-behavior:contain;background:#fff}
+.fullPageMusic .scoreSvg{min-width:0!important;width:100%!important;height:auto!important}
+.fullPageMusic.pageZoomed .scoreSvg{min-width:880px!important}
+.fullPageMusic .bottomline{flex:0 0 auto;max-height:29vh;overflow:auto;border-top:1px solid #dae8f1;background:#f7fbff}
+.fullPageMusic #selectedActions{max-width:100%}
+#pianoPanel.fullPageMusic .pianoTopActions>:not(.fullPageToggle):not(.fullPagePlay):not(.fullPageZoom){display:none!important}
+#pianoPanel.fullPageMusic .pianoHint,#pianoPanel.fullPageMusic #autoExpressionReview{display:none!important}
+#pianoPanel.fullPageMusic .omrNotationHeader{flex-shrink:0}
+#pianoPanel.fullPageMusic #engravedScore,#pianoPanel.fullPageMusic .pianoScoreScroll{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:auto!important;overscroll-behavior:contain}
+#pianoPanel.fullPageMusic .omrRenderedPage{min-width:0!important;max-width:100%!important}
+#pianoPanel.fullPageMusic .omrRenderedPage svg{width:100%!important;height:auto!important;max-width:100%!important}
+#pianoPanel.fullPageMusic #pianoScore{min-width:0!important;width:100%!important;height:auto!important}
+#pianoPanel.fullPageMusic.pageZoomed .omrRenderedPage{min-width:690px!important;max-width:none!important}
+#pianoPanel.fullPageMusic.pageZoomed .omrRenderedPage svg{width:auto!important;max-width:none!important}
+#pianoPanel.fullPageMusic.pageZoomed #pianoScore{min-width:760px!important}
+#pianoPanel.fullPageMusic .pianoInfo{flex:0 0 auto;padding:8px 14px;gap:10px}
+#pianoPanel.fullPageMusic .pianoInfo #pianoCounts{display:none}
+@media(max-width:700px){
+ .fullPageMusic .paperTop,.fullPageMusic .pianoTop{padding:10px!important;gap:7px!important}
+ .fullPageMusic .paperTop #counter{display:none}
+ .fullPageMusic .paperTop b{font-size:14px}
+ .fullPageMusic .fullPageControls{gap:5px}
+ .fullPageMusic .fullPageControls .smallBtn{min-height:39px;padding:7px 8px;font-size:12px}
+ #pianoPanel.fullPageMusic .pianoTop h3{font-size:16px!important}
+ #pianoPanel.fullPageMusic .pianoTop .pianoEyebrow,#pianoPanel.fullPageMusic .pianoSubtitle{display:none}
+ #pianoPanel.fullPageMusic .pianoTopActions{width:auto!important;margin-left:auto}
+ #pianoPanel.fullPageMusic .pianoTopActions .btn{font-size:12px;min-height:40px;padding:7px!important;flex:0 0 auto}
+ #pianoPanel.fullPageMusic .pianoInfo{padding:7px 10px}
+ #pianoPanel.fullPageMusic .pianoInfo #pianoNowPlaying{display:none}
+ .fullPageMusic .bottomline{max-height:24vh}
+}
+@media print{.fullPageMusic{position:static!important;height:auto!important;max-height:none!important}.fullPageMusic .fullPagePlay,.fullPageMusic .fullPageZoom,.fullPageMusic .fullPageToggle{display:none!important}}
 </style>
 <script src="./annotation-tools.js?v=a754a293" defer></script>
 </head>
@@ -611,9 +654,9 @@ body{background:radial-gradient(circle at 7% 12%,#ecf7ff 0,transparent 24rem),
  </details>
  </div>
 </details>
-<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><span id="modeHint">Drag a note onto a line or space</span></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
+<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><div class="fullPageControls"><span id="modeHint">Drag a note onto a line or space</span><button type="button" class="smallBtn fullPagePlay" id="fullPagePlayEditor" hidden>▶ Play</button><button type="button" class="smallBtn fullPageZoom" id="fullPageZoomEditor" hidden>🔎 Larger</button><button type="button" class="smallBtn fullPageToggle" id="fullPageEditor" aria-pressed="false" title="Show the music sheet across the screen">⛶ Full page</button></div></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
 <div class="paperCard" id="pianoPanel" hidden>
-  <div class="pianoTop"><div><span class="pianoEyebrow">🎵 LISTEN &amp; LEARN</span><h3 id="pianoTitle">Your music is ready!</h3><p id="pianoSubtitle">Both hands play together</p></div><div class="pianoTopActions"><button type="button" class="btn primary" id="scanAnother">📷 Another song</button><button type="button" class="btn" id="closePiano">✏ Compose instead</button></div></div>
+  <div class="pianoTop"><div><span class="pianoEyebrow">🎵 LISTEN &amp; LEARN</span><h3 id="pianoTitle">Your music is ready!</h3><p id="pianoSubtitle">Both hands play together</p></div><div class="pianoTopActions"><button type="button" class="btn primary" id="scanAnother">📷 Another song</button><button type="button" class="btn" id="closePiano">✏ Compose instead</button><button type="button" class="btn fullPagePlay" id="fullPagePlayImported" hidden>▶ Play</button><button type="button" class="btn fullPageZoom" id="fullPageZoomImported" hidden>🔎 Larger</button><button type="button" class="btn fullPageToggle" id="fullPageImported" aria-pressed="false" title="View the recognised sheet music across the screen">⛶ Full page</button></div></div>
   <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span><label class="pianoFollowLabel"><input type="checkbox" id="followNotes" checked> Follow notes</label><span id="pianoNowPlaying" aria-live="off">Press Play to follow the notes.</span></div>
   <div class="pianoHint">Playback reads the recognised MusicXML pitches, chords and rhythms together with printed musical terms when detected. The photo reader may miss small articulation signs; please verify against the original score.</div>
   <details id="autoExpressionReview" hidden><summary id="autoExpressionSummary">Recognised musical terms and signs</summary>
@@ -2217,7 +2260,7 @@ function stopPlayback(){
  // Cancel future notes too; a new playback may begin immediately.
  for(const node of oscillators){try{node.stop(0)}catch(e){}}
  oscillators=[];playing=false;playingId=null;
- $('play').textContent=piano?'▶ Play both hands':'▶ Play score';$('stop').disabled=true;render();
+ $('play').textContent=piano?'▶ Play both hands':'▶ Play score';$('stop').disabled=true;updateScoreFocusButtons();render();
 }
 function tone(midi,start,duration,volume=1){
  const instrument=data.instrument||'piano';
@@ -2377,7 +2420,7 @@ async function play(){
  try{context=context||new(window.AudioContext||window.webkitAudioContext)();await context.resume();ensureAudioBus()}
  catch(err){flash('Audio playback is not supported here.');return}
  const performance=makeMusicPerformance();
- playing=true;$('play').textContent='❚❚ Playing';$('stop').disabled=false;
+ playing=true;$('play').textContent='❚❚ Playing';$('stop').disabled=false;updateScoreFocusButtons();
  const begin=context.currentTime+.12;
  for(const event of performance.events){
   if(event.pitch!==null&&!event.skip)tone(event.pitch,begin+event.onset,event.duration,event.volume);
@@ -2636,7 +2679,71 @@ function looksLikeGrandStaff(staves){
  const median=v=>v.slice().sort((a,b)=>a-b)[Math.floor(v.length/2)];
  return close.length>=2&&far.length>=1&&median(far)>median(close)*1.3;
 }
+
+/* Screen-filling music sheet. A CSS overlay is intentional: iOS and school
+   browsers do not consistently support the Fullscreen API for arbitrary elements. */
+function updateScoreFocusButtons(){
+ for(const [panelId,buttonId,playId,zoomId] of [
+  ['editorScorePanel','fullPageEditor','fullPagePlayEditor','fullPageZoomEditor'],
+  ['pianoPanel','fullPageImported','fullPagePlayImported','fullPageZoomImported']
+ ]){
+  const panel=$(panelId),on=panel.classList.contains('fullPageMusic');
+  $(buttonId).textContent=on?'⊟ Minimise':'⛶ Full page';
+  $(buttonId).setAttribute('aria-pressed',String(on));
+  $(buttonId).title=on?'Return to normal page view':'Show the music sheet across the whole screen';
+  $(playId).hidden=!on;$(playId).textContent=playing?'■ Stop':'▶ Play';
+  $(zoomId).hidden=!on;$(zoomId).textContent=panel.classList.contains('pageZoomed')?'↔ Fit page':'🔎 Larger';
+ }
+}
+let scoreFocusScroll=0;
+function setScoreFullPage(panelId,on){
+ const selected=$(panelId);
+ if(!selected)return;
+ const active=document.querySelector('.fullPageMusic');
+ if(on&&active&&active!==selected){
+  active.classList.remove('fullPageMusic','pageZoomed');
+ }
+ const wasOn=selected.classList.contains('fullPageMusic');
+ if(on&&!wasOn)scoreFocusScroll=window.scrollY||0;
+ selected.classList.toggle('fullPageMusic',on);
+ if(!on)selected.classList.remove('pageZoomed');
+ document.body.classList.toggle('scoreFullPageActive',!!document.querySelector('.fullPageMusic'));
+ updateScoreFocusButtons();
+ if(on){
+  const scroller=panelId==='editorScorePanel'?$('scrollZone'):
+   (!$('engravedScore').hidden?$('engravedScore'):document.querySelector('#pianoPanel .pianoScoreScroll'));
+  if(scroller){scroller.scrollLeft=0;scroller.scrollTop=0;}
+  $(panelId==='editorScorePanel'?'fullPageEditor':'fullPageImported').focus({preventScroll:true});
+ }else if(wasOn){
+  window.scrollTo({top:scoreFocusScroll,behavior:'instant'});
+  $(panelId==='editorScorePanel'?'fullPageEditor':'fullPageImported').focus({preventScroll:true});
+ }
+}
+function toggleScoreFullPage(panelId){
+ setScoreFullPage(panelId,!$(panelId).classList.contains('fullPageMusic'));
+}
+function toggleScorePageZoom(panelId){
+ const panel=$(panelId);if(!panel.classList.contains('fullPageMusic'))return;
+ panel.classList.toggle('pageZoomed');updateScoreFocusButtons();
+}
+function closeScoreFullPage(){
+ for(const id of ['editorScorePanel','pianoPanel']){
+  if($(id).classList.contains('fullPageMusic')){setScoreFullPage(id,false);return true;}
+ }
+ return false;
+}
+function wireScoreFullPage(){
+ $('fullPageEditor').onclick=()=>toggleScoreFullPage('editorScorePanel');
+ $('fullPageImported').onclick=()=>toggleScoreFullPage('pianoPanel');
+ $('fullPageZoomEditor').onclick=()=>toggleScorePageZoom('editorScorePanel');
+ $('fullPageZoomImported').onclick=()=>toggleScorePageZoom('pianoPanel');
+ $('fullPagePlayEditor').onclick=()=>play();
+ $('fullPagePlayImported').onclick=()=>play();
+ updateScoreFocusButtons();
+}
+
 function closePiano(){engravedSerial++;
+ setScoreFullPage('pianoPanel',false);
  if(!piano)return;
  if(playing)stopPlayback();piano=null;
  document.body.classList.remove('piano-active');$('pianoPanel').hidden=true;
@@ -3148,6 +3255,7 @@ function renderPhotoMarkReview(){
 }
 
 function showPianoScore(parsed, origin, sourcePages=[]){
+ setScoreFullPage('editorScorePanel',false);
  if(playing)stopPlayback();
  resetPianoTracking();
  piano=parsed;simplePageStart=0;simpleCurrentMeasure=0;document.body.classList.add('piano-active');$('pianoPanel').hidden=false;
@@ -3428,7 +3536,7 @@ async function playPiano(){
  try{timing=createImportedRepeatedTiming(piano,secondsPerTick,order);}
  catch(e){flash(e.message);return;}
  const start=context.currentTime+.12;
- playing=true;$('play').textContent='❚❚ Playing both hands';$('stop').disabled=false;
+ playing=true;$('play').textContent='❚❚ Playing both hands';$('stop').disabled=false;updateScoreFocusButtons();
  const performanceNotes=timing.notes||piano.notes.map(e=>({
    e,onset:timing.secondsAt(e.start),
    duration:Math.max(.07,e.fermata?timing.secondsAt(e.start+e.duration)-timing.secondsAt(e.start):
@@ -3601,12 +3709,12 @@ $('importJSON').onclick=()=>$('importFile').click();$('importFile').onchange=asy
 $('sample').onclick=()=>{if(data.bars.some(b=>b.length)||data.strokes.length){if(!confirm('Replace the current score with the example? You can use Undo to restore it.'))return}change();data=twinkle();markedBar=0;pendingSlurStart=null;selected=null;syncConfig();commit();flash('Example loaded: Twinkle, Twinkle, Little Star')};
 $('clear').onclick=()=>{if(!confirm('Start a new blank score? Your current score can still be restored with Undo, or export it first.'))return;change();data=blank();markedBar=0;pendingSlurStart=null;selected=null;syncConfig();commit();flash('Blank score ready')};
 $('guide').onclick=()=>$('helpModal').classList.add('open');$('closeHelp').onclick=()=>$('helpModal').classList.remove('open');$('helpModal').addEventListener('click',e=>{if(e.target===$('helpModal'))$('helpModal').classList.remove('open')});
-window.addEventListener('keydown',ev=>{if(ev.key==='Escape'){$('helpModal').classList.remove('open');showScan(false);return}const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ev.preventDefault();ev.shiftKey?redo():undo();return}if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ev.preventDefault();redo();return}if(ev.key===' '){ev.preventDefault();play();return}if((ev.key==='Delete'||ev.key==='Backspace')&&(selected||boxSelectedNotes.size||boxSelectedStrokes.size)){ev.preventDefault();if(boxSelectedNotes.size||boxSelectedStrokes.size)deleteBoxSelection();else removeSelected();return}if(['ArrowUp','ArrowDown'].includes(ev.key)&&selected){ev.preventDefault();adjustPitch(ev.key==='ArrowUp'?1:-1);return}if(['ArrowLeft','ArrowRight'].includes(ev.key)&&selected){ev.preventDefault();let all=data.bars.flat().map(e=>e.id),i=all.indexOf(selected);i=Math.max(0,Math.min(all.length-1,i+(ev.key==='ArrowRight'?1:-1)));if(all.length)selectEvent(all[i])}});
+window.addEventListener('keydown',ev=>{if(ev.key==='Escape'){if(closeScoreFullPage()){ev.preventDefault();return}$('helpModal').classList.remove('open');showScan(false);return}const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ev.preventDefault();ev.shiftKey?redo():undo();return}if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ev.preventDefault();redo();return}if(ev.key===' '){ev.preventDefault();play();return}if((ev.key==='Delete'||ev.key==='Backspace')&&(selected||boxSelectedNotes.size||boxSelectedStrokes.size)){ev.preventDefault();if(boxSelectedNotes.size||boxSelectedStrokes.size)deleteBoxSelection();else removeSelected();return}if(['ArrowUp','ArrowDown'].includes(ev.key)&&selected){ev.preventDefault();adjustPitch(ev.key==='ArrowUp'?1:-1);return}if(['ArrowLeft','ArrowRight'].includes(ev.key)&&selected){ev.preventDefault();let all=data.bars.flat().map(e=>e.id),i=all.indexOf(selected);i=Math.max(0,Math.min(all.length-1,i+(ev.key==='ArrowRight'?1:-1)));if(all.length)selectEvent(all[i])}});
 window.addEventListener('beforeunload',()=>{if(playing)stopPlayback()});}
 try{const raw=localStorage.getItem(LS);if(raw)data=validateProject(JSON.parse(raw))}catch(e){data=blank()}
 if(window.matchMedia('(max-width: 1020px)').matches)$('scoreSettingsDrawer').open=false;
 $('teacherDrawer').addEventListener('toggle',ev=>{if(!ev.currentTarget.open)document.querySelector('[data-annotation-tool="cursor"]')?.click()});
-wire();wireScanner();wireProfessionalScanner();wireOneStepScanner();syncConfig();setMode('select');commit();updateStatus('Ready · Right-click a staff line or space to choose and place a note.');
+wire();wireScoreFullPage();wireScanner();wireProfessionalScanner();wireOneStepScanner();syncConfig();setMode('select');commit();updateStatus('Ready · Right-click a staff line or space to choose and place a note.');
 })();
 </script>
 </body>
