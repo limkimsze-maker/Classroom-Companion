@@ -73,6 +73,14 @@
 .pianoInfo label{display:flex;gap:7px;align-items:center;font-size:13px;font-weight:700}
 .pianoInfo input{max-width:80px;padding:7px;border-radius:8px;border:1px solid #bdcfd4}
 .pianoHint{margin:12px 17px;padding:10px 14px;background:#fff7e7;color:#78571d;border-radius:9px;font-size:12px}
+#autoExpressionReview{margin:12px 17px;border:1px solid #b9d9d9;border-radius:12px;background:#f7fcfc;padding:11px 14px}
+#autoExpressionReview[hidden]{display:none}
+#autoExpressionReview summary{font-weight:800;cursor:pointer;color:#15566b}
+#autoExpressionReview p{margin:8px 0;font-size:12px;color:#405f6d}
+.autoTermRow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;border-top:1px solid #d5e6e8;padding:8px 0;font-size:12px}
+.autoTermRow strong{min-width:145px}.autoTermRow select{border:1px solid #b5d0d7;border-radius:7px;padding:6px;background:#fff;color:#183d4a;max-width:115px}
+.autoTermRow .autoTermStatus{font-size:11px;color:#666;flex:1;min-width:120px}.autoTermRow button{min-height:33px}
+@media print{#autoExpressionReview{display:none!important}}
 .pianoScoreScroll{overflow:auto;max-height:72vh;background:white}
 #pianoScore{display:block;width:100%;min-width:760px;height:auto;background:#fff}
 .pianoScoreScroll[hidden],#engravedScore[hidden]{display:none!important}
@@ -493,7 +501,11 @@
 <div class="paperCard" id="pianoPanel" hidden>
   <div class="pianoTop"><div><h3 id="pianoTitle">Imported MusicXML piano score</h3><p id="pianoSubtitle">Two hands play together</p></div><button type="button" class="btn" id="closePiano">↩ Return to melody editor</button></div>
   <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span><label class="pianoFollowLabel"><input type="checkbox" id="followNotes" checked> Follow notes</label><span id="pianoNowPlaying" aria-live="off">Press Play to follow the notes.</span></div>
-  <div class="pianoHint">Playback uses the recognised MusicXML pitches, chords, rhythms and simultaneous parts. Verify it against the original score: recognition is never guaranteed perfect.</div>
+  <div class="pianoHint">Playback reads the recognised MusicXML pitches, chords and rhythms together with printed musical terms when detected. The photo reader may miss small articulation signs; please verify against the original score.</div>
+  <details id="autoExpressionReview" hidden><summary id="autoExpressionSummary">Recognised musical terms and signs</summary>
+   <p id="autoExpressionNotice">Detected directions are applied automatically when recognition confidence is sufficient. Bar positions are estimated from the printed page; review them before classroom use.</p>
+   <div id="autoExpressionRows"></div>
+  </details>
   <div id="notationHeader" class="omrNotationHeader"><strong id="notationStatus">Preparing the sheet music…</strong><button id="notationViewToggle" type="button" class="smallBtn" hidden>Show simplified view</button></div>
   <div id="engravedScore" class="omrEngravedScore" hidden></div>
   <div class="pianoScoreScroll"><div id="simpleScoreGuide" class="simpleScoreGuide"><div class="simpleGuideNav"><button id="simplePrev" type="button">◀ Previous</button><strong id="simplePageLabel">Simplified score</strong><button id="simpleNext" type="button">Next ▶</button></div><div id="simpleNotes" class="simpleNotes" aria-label="Pitches in the current bar"></div></div><svg id="pianoScore" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MusicXML notes shown as grand staff with both hands"></svg></div>
@@ -2900,6 +2912,100 @@ async function renderEngravedPages(pages){
  }
 }
 
+
+const OCR_ALLOWED_KINDS=new Set(['tempo','tempoBpm','dynamic','expression','sign','octave']);
+function normalisedAutoMark(raw,range,score,pageNumber){
+ if(!raw||typeof raw!=='object'||!OCR_ALLOWED_KINDS.has(raw.kind)||!range?.count)return null;
+ let val;
+ if(raw.kind==='tempoBpm'){
+  const bpm=Number(raw.value);if(!Number.isInteger(bpm)||bpm<40||bpm>220)return null;
+  val=bpm;
+ }else{
+  val=raw.kind==='octave'?raw.value===true:String(raw.value||'');
+  if(raw.kind!=='octave'&&cleanBarDirective({[raw.kind]:val})[raw.kind]!==val)return null;
+ }
+ const confidence=Math.max(0,Math.min(100,Number(raw.confidence)||0));
+ if(confidence<60)return null;
+ const count=Math.max(1,Math.min(30,Number(raw.systemCount)||1));
+ const sys=Math.max(0,Math.min(count-1,Math.floor(Number(raw.system)||0)));
+ // Approximate bar positions from stave group and horizontal placement.
+ // OMR's MusicXML has pitches and measures but does not carry reliable
+ // page-relative bar coordinates for image-to-MusicXML alignment.
+ const first=Math.floor(range.count*sys/count),last=Math.max(first+1,Math.floor(range.count*(sys+1)/count));
+ const frac=Math.min(.9999,Math.max(0,(Number(raw.x||.14)-.14)/.74));
+ const local=Math.max(0,Math.min(range.count-1,first+Math.floor(frac*(last-first))));
+ const bar=range.start+local;
+ if(bar<0||bar>=score.measureLength.length)return null;
+ return {page:pageNumber,kind:raw.kind,value:val,bar,confidence,
+  text:String(raw.text||val).slice(0,90),needsReview:!!raw.needsReview,
+  approximate:true,applied:false};
+}
+function applyPhotoExpressionMarks(score,detectedPages,warning=''){
+ score.autoTextWarning=String(warning||'').slice(0,350);
+ score.autoMarks=[];
+ if(!Array.isArray(detectedPages)||!detectedPages.length)return;
+ if(!Array.isArray(score.barMarks))score.barMarks=[];
+ for(let page=0;page<detectedPages.length;page++){
+  const range=score.pageRanges?.[page];if(!range||!Array.isArray(detectedPages[page]))continue;
+  for(const original of detectedPages[page].slice(0,140)){
+   const entry=normalisedAutoMark(original,range,score,page);
+   if(!entry)continue;
+   if(score.autoMarks.some(x=>x.kind===entry.kind&&x.bar===entry.bar&&x.value===entry.value))continue;
+   const data=score.barMarks[entry.bar]||{};
+   if(!entry.needsReview&&!data[entry.kind]){
+    data[entry.kind]=entry.value;score.barMarks[entry.bar]=data;entry.applied=true;
+   }
+   score.autoMarks.push(entry);
+  }
+ }
+}
+function changePhotoMark(entry,bar,shouldApply){
+ if(!piano||!piano.autoMarks?.includes(entry))return;
+ const previous=piano.barMarks?.[entry.bar];
+ if(entry.applied&&previous?.[entry.kind]===entry.value)delete previous[entry.kind];
+ entry.applied=false;
+ if(shouldApply){
+  const next=piano.barMarks[bar]||{};
+  if(next[entry.kind]&&next[entry.kind]!==entry.value){
+   flash('That bar already has a different '+entry.kind+' marking. Remove it first.');renderPhotoMarkReview();return;
+  }
+  next[entry.kind]=entry.value;piano.barMarks[bar]=next;entry.bar=bar;entry.applied=true;
+ }
+ if(playing)stopPlayback();
+ renderPhotoMarkReview();
+}
+function renderPhotoMarkReview(){
+ const panel=$('autoExpressionReview'),summary=$('autoExpressionSummary'),
+  notice=$('autoExpressionNotice'),rows=$('autoExpressionRows');
+ if(!piano){panel.hidden=true;return}
+ const entries=piano.autoMarks||[];
+ const warned=!!piano.autoTextWarning;
+ panel.hidden=!entries.length&&!warned;
+ if(!entries.length&&!warned)return;
+ summary.textContent='Automatic score directions · '+entries.filter(e=>e.applied).length+' applied, '+entries.filter(e=>!e.applied).length+' to review';
+ notice.textContent=piano.autoTextWarning||
+  'Printed tempo, dynamics and navigation words were read on your device. High-confidence matches were applied automatically. Staff/bar alignment is estimated. Small slurs, ties, accents and repeats may still be missed.';
+ rows.replaceChildren();
+ for(const item of entries.slice(0,80)){
+  const row=document.createElement('div');row.className='autoTermRow';
+  const title=document.createElement('strong');
+  title.textContent=(item.kind==='tempoBpm'?'Tempo':item.kind)+': '+item.value;
+  const select=document.createElement('select');select.setAttribute('aria-label','Bar for recognised '+item.text);
+  for(let i=0;i<piano.measureLength.length;i++){
+   const option=document.createElement('option');option.value=String(i);
+   option.textContent='Bar '+(i+1);select.append(option);
+  }
+  select.value=String(item.bar);
+  select.onchange=()=>changePhotoMark(item,Math.max(0,Math.min(piano.measureLength.length-1,Number(select.value))),true);
+  const state=document.createElement('span');state.className='autoTermStatus';
+  state.textContent='Page '+(item.page+1)+' · '+item.confidence.toFixed(0)+'% OCR · '+(item.applied?'automatic':'needs review')+' · bar estimated';
+  const button=document.createElement('button');button.className='smallBtn';
+  button.textContent=item.applied?'Remove':'Apply';button.title=item.applied?'Exclude this OCR guess from playback':'Use the recognised term for this bar';
+  button.onclick=()=>changePhotoMark(item,item.bar,!item.applied);
+  row.append(title,select,state,button);rows.append(row);
+ }
+}
+
 function showPianoScore(parsed, origin, sourcePages=[]){
  if(playing)stopPlayback();
  resetPianoTracking();
@@ -2909,7 +3015,7 @@ function showPianoScore(parsed, origin, sourcePages=[]){
  $('pianoCounts').textContent=parsed.notes.length+' notes · '+parsed.measureLength.length+' bars · simultaneous playback';
  $('pianoTempo').value=parsed.tempo;
  $('play').textContent='▶ Play all parts';$('play').title='Play all instruments and piano voices together';
- pianoSVG();$('pianoPanel').scrollIntoView({behavior:'smooth',block:'start'});
+ pianoSVG();renderPhotoMarkReview();$('pianoPanel').scrollIntoView({behavior:'smooth',block:'start'});
  renderEngravedPages(sourcePages);
  updateStatus(origin+' opened. Pitches and rhythms play together; verify against the original.');
  flash(origin+' opened — press Play all parts');
@@ -2952,9 +3058,10 @@ async function extractPartsongPages(file){
 }
 function combineMusicPages(pages,title){
  const items=pages.map(xml=>parseMusicXML(xml));
- const merged={...items[0],title,measureStart:[],measureLength:[],notes:[],lanes:[],barMarks:[],total:0};
+ const merged={...items[0],title,measureStart:[],measureLength:[],notes:[],lanes:[],barMarks:[],pageRanges:[],total:0};
  const laneMap=new Map();let measureOffset=0,tickOffset=0;
  for(const item of items){
+  merged.pageRanges.push({start:measureOffset,count:item.measureLength.length});
   for(const x of item.measureStart)merged.measureStart.push(x+tickOffset);
   merged.measureLength.push(...item.measureLength);merged.barMarks.push(...(item.barMarks||item.measureLength.map(()=>({}))));
   for(const l of item.lanes){const k=l.part+':'+l.staff;if(!laneMap.has(k))laneMap.set(k,{...l})}
@@ -3032,9 +3139,10 @@ function wireOneStepScanner(){
        const name=String(m.title||'Photographed music score').slice(0,120);
        const parsed=combineMusicPages(m.pages,name);
        if(!parsed.notes.length)throw Error('The recogniser found no playable notes.');
+       applyPhotoExpressionMarks(parsed,m.detectedMarks,m.ocrWarning||'');
        showPianoScore(parsed,'Photo-recognised '+m.pages.length+'-page score',m.pages);
        bar.style.width='100%';running.hidden=true;
-       message('Reproduced '+parsed.notes.length+' notes across '+parsed.lanes.length+' staves. Playing now — verify against the original.');
+       message('Reproduced '+parsed.notes.length+' notes and '+(parsed.autoMarks?.filter(a=>a.applied).length||0)+' printed directions. Playing now — verify against the original.');
        try{await playPiano();}catch(err){flash('Press Play all parts to hear the score: '+err.message);}
      }catch(err){running.hidden=false;detail.open=true;message('The score could not be reproduced: '+err.message,true);}
    }
