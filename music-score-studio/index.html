@@ -2476,7 +2476,7 @@ function parseMusicXML(source){
  for(let pi=0;pi<parts.length;pi++){
   const part=parts[pi],partName=names[part.getAttribute('id')]||'Part '+(pi+1),measures=children(part,'measure');
   if(measures.length>240)throw Error('This MusicXML contains too many measures.');
-  let divisions=1,beats=4,beatType=4,currentClefs={1:'treble'},measureResults=[],pendingTies=new Map(),activeSlurs=new Set();
+  let divisions=1,beats=4,beatType=4,currentClefs={1:'treble'},measureResults=[],pendingTies=new Map(),activeSlurs=new Set(),currentVolume=.79,wedge=null;
   for(let mi=0;mi<measures.length;mi++){
    let cursor=0,maxCursor=0,lastOnset=0,lastDuration=0;
    const items=[],measure=measures[mi];
@@ -2491,6 +2491,19 @@ function parseMusicXML(source){
     }else if(tag==='direction'){
      const snd=child(node,'sound'),beatsPer=Number(snd?.getAttribute('tempo')||nodeText(child(child(node,'direction-type'),'metronome'),'per-minute'));
      if(beatsPer>=30&&beatsPer<=240&&detectedTempo===null)detectedTempo=beatsPer;
+     const type=child(node,'direction-type'),dyn=child(type,'dynamics');
+     if(dyn){
+      const name=Array.from(dyn.children)[0]?.localName;
+      if(name&&Object.prototype.hasOwnProperty.call(MUSICAL_DYNAMICS,name))currentVolume=MUSICAL_DYNAMICS[name];
+      else if(name==='fp')currentVolume=.46;
+     }
+     const soundLevel=Number(snd?.getAttribute('dynamics'));
+     if(Number.isFinite(soundLevel)&&soundLevel>0&&soundLevel<=160)currentVolume=Math.min(1.6,soundLevel/90);
+     const mark=child(type,'wedge')?.getAttribute('type');
+     if(mark==='crescendo'||mark==='diminuendo')wedge={type:mark,initial:currentVolume};
+     else if(mark==='stop'&&wedge){
+      currentVolume=wedge.type==='crescendo'?Math.min(1.3,currentVolume*1.32):Math.max(.2,currentVolume*.7);wedge=null;
+     }
     }else if(tag==='backup'){
      cursor=Math.max(0,cursor-durationFor(node));
     }else if(tag==='forward'){
@@ -2508,7 +2521,9 @@ function parseMusicXML(source){
      const staff=Number(nodeText(node,'staff'))||1,voice=nodeText(node,'voice')||'1';
      const tied=children(node,'tie').map(x=>x.getAttribute('type'));
      const notations=child(node,'notations'),arts=child(notations,'articulations');
-     const staccato=!!child(arts,'staccato'),accent=!!child(arts,'accent');
+     const staccato=!!child(arts,'staccato'),accent=!!child(arts,'accent'),
+      staccatissimo=!!child(arts,'staccatissimo'),portato=!!child(arts,'detached-legato'),
+      tenuto=!!child(arts,'tenuto'),marcato=!!child(arts,'strong-accent'),fermata=!!child(notations,'fermata');
      const marks=children(notations,'slur'),slurStart=marks.some(x=>x.getAttribute('type')==='start'),
        slurStop=marks.some(x=>x.getAttribute('type')==='stop');
      const voiceKey=[pi,staff,voice].join(':');
@@ -2517,8 +2532,10 @@ function parseMusicXML(source){
      if(slurStop)activeSlurs.delete(voiceKey);
      const tieKey=[pi,staff,voice,midi].join(':');
      const prev=pendingTies.get(tieKey);
-     if(tied.includes('stop')&&prev){prev.duration+=dur;if(!tied.includes('start'))pendingTies.delete(tieKey);continue;}
-     const item={measure:mi,onset,duration:dur||lastDuration||TPQ,midi,step,octave:oct,alter,staff,part:pi,voice,staccato,accent,legato,clef:currentClefs[staff]||currentClefs[1]||'treble'};
+     if(tied.includes('stop')&&prev){prev.duration+=dur;prev.fermata=prev.fermata||fermata;if(!tied.includes('start'))pendingTies.delete(tieKey);continue;}
+     const item={measure:mi,onset,duration:dur||lastDuration||TPQ,midi,step,octave:oct,alter,staff,part:pi,voice,staccato,accent,staccatissimo,portato,tenuto,marcato,fermata,
+      gain:currentVolume*(wedge?(wedge.type==='crescendo'?1.10:.9):1),
+      legato,clef:currentClefs[staff]||currentClefs[1]||'treble'};
      items.push(item);
      if(tied.includes('start'))pendingTies.set(tieKey,item);
     }
@@ -2945,8 +2962,8 @@ async function playPiano(){
  playing=true;$('play').textContent='❚❚ Playing both hands';$('stop').disabled=false;
  for(const e of piano.notes){
   const offset=e.start*secondsPerTick,full=e.duration*secondsPerTick;
-  const dur=Math.max(.07,full*(e.staccato?.53:e.legato?1.035:.98));
-  const volume=(piano.notes.length>100?.53:.68)*(e.accent?1.27:1);
+  const dur=Math.max(.07,full*(e.fermata?1.7:e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:e.marcato?.92:e.legato?1.035:.98));
+  const volume=(piano.notes.length>100?.53:.68)*(e.gain||.79)*(e.marcato?1.48:e.accent?1.27:1);
   // Both piano hands, simultaneous chords, ties and articulation play together.
   tone(e.midi,start+offset,dur,volume);
  }
