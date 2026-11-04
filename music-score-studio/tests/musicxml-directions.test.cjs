@@ -158,10 +158,34 @@ test('dynamics in one musical part do not leak into another',()=>{
  near(gainBy(x.notes,'C',1,0),scaled(1.2));
  near(gainBy(x.notes,'G',1,1),scaled(.79));
 });
-test('word-only crescendo still uses the established bar-level direction',()=>{
+test('word-only crescendo still plays automatically at its written position',()=>{
  const x=scheduled([[[dir([word('words','cresc.')]),note('C'),note('D')]]]);
- assert.equal(x.score.barMarks[0].dynamic,'crescendo');
- assert.ok(gainBy(x.notes,'D')>gainBy(x.notes,'C'));
+ assert.equal(x.score.barMarks[0].dynamic,undefined);
+ near(gainBy(x.notes,'C'),scaled(.79));
+ near(gainBy(x.notes,'D'),scaled(.79+(.79*1.4-.79)*.25));
+});
+test('word-only dynamic stays within the named staff and part',()=>{
+ const x=scheduled([
+  [[dir([word('words','cresc.')],{staff:1}),note('C',1),note('D',1),
+    backup(8),note('G',2),note('A',2)]],
+  [[note('C'),note('D')]]
+ ]);
+ assert.ok(gainBy(x.notes,'D',1,0)>gainBy(x.notes,'C',1,0));
+ near(gainBy(x.notes,'A',2,0),scaled(.79));
+ near(gainBy(x.notes,'D',1,1),scaled(.79));
+});
+test('word-only diminuendo begins at a mid-bar position',()=>{
+ const x=scheduled([[[note('C'),dir([word('words','dim.')]),note('D'),note('E')]]]);
+ near(gainBy(x.notes,'C'),scaled(.79));
+ near(gainBy(x.notes,'D'),scaled(.79));
+ assert.ok(gainBy(x.notes,'E')<gainBy(x.notes,'D'));
+});
+test('sound dynamics after a wedge stop determines the ramp endpoint',()=>{
+ const x=scheduled([[[dir([dyn('p'),wedge('crescendo')]),note('C'),note('D'),
+  dir([[wedge('stop'),dyn('f')]],{sound:90}),note('E')]]]);
+ near(gainBy(x.notes,'C'),scaled(.4));
+ near(gainBy(x.notes,'D'),scaled(.7));
+ near(gainBy(x.notes,'E'),scaled(1));
 });
 test('an incomplete wedge retains the previous conservative playback behaviour',()=>{
  const x=scheduled([[[dir([wedge('crescendo')]),note('C')]]]);
