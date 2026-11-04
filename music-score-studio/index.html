@@ -144,14 +144,16 @@
 
 
 
-.musicNoteContextMenu{position:fixed;z-index:2500;width:235px;padding:10px;border-radius:13px;background:#fff;box-shadow:0 14px 42px #142f4b45;border:2px solid #77abb5;display:flex;flex-direction:column;gap:6px;font:13px/1.3 system-ui,sans-serif}
+.musicNoteContextMenu{position:fixed;z-index:2500;width:min(372px,calc(100vw - 12px));padding:9px;border-radius:13px;background:#fff;box-shadow:0 14px 42px #142f4b45;border:2px solid #b8d7de;font:13px/1.3 system-ui,sans-serif}
 .musicNoteContextMenu[hidden]{display:none!important}
-.musicNoteContextMenu strong{color:#1c4b5b;font-size:13px;padding:2px 4px 7px}
-.musicNoteContextMenu button{min-height:43px;border:1px solid #b7cfd4;border-radius:9px;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:8px 11px;font-weight:800;color:#214658;background:#f9fcfc;text-align:left;cursor:pointer}
-.musicNoteContextMenu button:hover,.musicNoteContextMenu button:focus-visible{background:#e6f6f2;outline:2px solid #54aeb1}
-.musicNoteContextMenu button[data-current="true"]{border-color:#087b86;background:#dcf4ee}
-.musicNoteContextMenu button span{color:#496474;font-size:11px;font-weight:650}
-.musicNoteContextMenu small{font-size:10px;padding:3px 4px;color:#61747c}
+.musicNoteContextMenu strong{display:block;color:#345766;font-size:12px;font-weight:800;margin:0 0 8px 3px}
+.musicNoteValueGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.musicNoteValueGrid button{min-width:0;min-height:74px;border:1px solid #bed7e2;border-radius:10px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:5px 2px;background:#fff;color:#133f52;text-align:center;cursor:pointer}
+.musicNoteValueGrid button:hover,.musicNoteValueGrid button:focus-visible{background:#e8f7f8;border-color:#087b86;outline:2px solid #8ac6cf;outline-offset:1px}
+.musicNoteValueGrid button[data-current="true"]{border:2px solid #087b86;background:#087b86;color:#fff}
+.musicNoteValueGrid .noteSymbol{display:block;font:33px/1.03 "Noto Music","Segoe UI Symbol","Arial Unicode MS",serif;min-height:34px}
+.musicNoteValueGrid .noteLabel{display:block;font-size:10px;font-weight:750;white-space:nowrap;letter-spacing:-.2px}
+@media(max-width:400px){.musicNoteContextMenu{padding:6px}.musicNoteValueGrid{gap:3px}.musicNoteValueGrid button{min-height:68px}.musicNoteValueGrid .noteSymbol{font-size:29px}}
 
 /* Draw notes first, Beautify All once. Distinct note values and subtool separation. */
 .annotationToolbar .musicValueBtn{display:flex;align-items:center;gap:4px;border:2px solid #aacbd1;min-height:42px;font-weight:750}
@@ -285,11 +287,15 @@
  <div id="annotationStatus" role="status" aria-live="polite">Choose 👆 Pointing hand, ➜ Arrow or ▣ Selector to mark the score during teaching. Cursor restores the note editor.</div>
 </section>
 
-<div id="musicNoteContextMenu" class="musicNoteContextMenu" role="menu" aria-label="Choose note duration" hidden>
- <strong id="musicNoteMenuCaption">Musical note</strong>
- <button type="button" data-note-duration="2" role="menuitem">◯ Half note <span>2 beats</span></button>
- <button type="button" data-note-duration="4" role="menuitem">● Quarter note <span>1 beat</span></button>
- <small>Right-click a note to change its duration.</small>
+<div id="musicNoteContextMenu" class="musicNoteContextMenu" role="group" aria-label="Choose a note value" hidden>
+ <strong id="musicNoteMenuCaption">Choose note value</strong>
+ <div class="musicNoteValueGrid" role="group" aria-label="Five note values">
+  <button type="button" data-note-duration="1" aria-pressed="false" title="Whole note · 4 beats"><span class="noteSymbol">𝅝</span><span class="noteLabel">Whole</span></button>
+  <button type="button" data-note-duration="2" aria-pressed="false" title="Half note · 2 beats"><span class="noteSymbol">𝅗𝅥</span><span class="noteLabel">Half</span></button>
+  <button type="button" data-note-duration="4" aria-pressed="false" title="Quarter note · 1 beat"><span class="noteSymbol">♩</span><span class="noteLabel">Quarter</span></button>
+  <button type="button" data-note-duration="8" aria-pressed="false" title="Eighth note · ½ beat"><span class="noteSymbol">♪</span><span class="noteLabel">Eighth</span></button>
+  <button type="button" data-note-duration="16" aria-pressed="false" title="Sixteenth note · ¼ beat"><span class="noteSymbol">♬</span><span class="noteLabel">16th</span></button>
+ </div>
 </div>
 
 <div class="shell">
@@ -1092,7 +1098,7 @@ function nearestMusicNote(p){
   const place=inkLocateHead(head,layout,data.bars.length);
   if(!place)continue;
   const distance=Math.hypot(p.x-head.x,p.y-head.y);
-  if(distance<best){best=distance;result={type:'ink',index:i,den:[2,4].includes(+stroke.den)?+stroke.den:2,pitch:pitchOfY(head.y,place.top)};}
+  if(distance<best){best=distance;result={type:'ink',index:i,den:VALID_DEN.includes(+stroke.den)?+stroke.den:2,pitch:pitchOfY(head.y,place.top)};}
  }
  // Then match actual beautified notation, using the notehead centre rather than the broad hitbox.
  for(let bar=0;bar<data.bars.length;bar++){
@@ -1113,20 +1119,21 @@ function hideMusicNoteMenu(){
 function showMusicNoteMenu(target,clientX,clientY){
  if(!target)return;
  noteMenuTarget=target;const menu=$('musicNoteContextMenu');
- $('musicNoteMenuCaption').textContent=target.pitch.step+target.pitch.octave+' · '+(target.den===4?'Quarter (1 beat)':'Half (2 beats)');
- menu.querySelectorAll('[data-note-duration]').forEach(btn=>btn.dataset.current=String(Number(btn.dataset.noteDuration)===target.den));
+ const names={1:'Whole',2:'Half',4:'Quarter',8:'Eighth',16:'16th'};
+ $('musicNoteMenuCaption').textContent=target.pitch.step+target.pitch.octave+' · Select note value';
+ menu.querySelectorAll('[data-note-duration]').forEach(btn=>{const active=Number(btn.dataset.noteDuration)===target.den;btn.dataset.current=String(active);btn.setAttribute('aria-pressed',String(active));});
  menu.hidden=false;
- const width=menu.offsetWidth||235,height=menu.offsetHeight||155;
+ const width=menu.offsetWidth||372,height=menu.offsetHeight||125;
  menu.style.left=Math.max(5,Math.min(clientX,window.innerWidth-width-6))+'px';
  menu.style.top=Math.max(5,Math.min(clientY,window.innerHeight-height-6))+'px';
- menu.querySelector('[data-note-duration="'+(target.den===4?4:2)+'"]')?.focus({preventScroll:true});
+ menu.querySelector('[data-note-duration="'+(VALID_DEN.includes(+target.den)?target.den:2)+'"]')?.focus({preventScroll:true});
 }
 function updateMusicNoteDuration(next){
- const target=noteMenuTarget;if(!target||![2,4].includes(next))return;
+ const target=noteMenuTarget;if(!target||!VALID_DEN.includes(next))return;
  if(target.type==='ink'){
   const stroke=data.strokes[target.index];if(!stroke||stroke.kind!=='music'){hideMusicNoteMenu();return;}
   if(stroke.den===next){hideMusicNoteMenu();return;}
-  change();stroke.den=next;stroke.color=next===2?'#2876ac':'#c45c34';commit();
+  change();stroke.den=next;stroke.color=next===2?'#2876ac':next===4?'#c45c34':'#8c6ac3';commit();
  }else{
   let found=null,bar=-1;
   for(let b=0;b<data.bars.length;b++){const e=data.bars[b].find(x=>x.id===target.id);if(e){found=e;bar=b;break;}}
@@ -1134,12 +1141,13 @@ function updateMusicNoteDuration(next){
   if(found.den===next){hideMusicNoteMenu();return;}
   const proposed={...found,den:next};
   if(sumBar(data.bars[bar])-ticks(found)+ticks(proposed)>cap()+.001){
-   hideMusicNoteMenu();flash('This bar does not have room for a half note.');return;
+   hideMusicNoteMenu();flash('This bar is too full for the selected note value. Try a shorter value.');return;
   }
   change();found.den=next;commit();
  }
  hideMusicNoteMenu();
- const message=next===4?'● Quarter note · 1 beat':'◯ Half note · 2 beats';
+ const labels={1:'𝅝 Whole · 4 beats',2:'𝅗𝅥 Half · 2 beats',4:'♩ Quarter · 1 beat',8:'♪ Eighth · ½ beat',16:'♬ 16th · ¼ beat'};
+ const message=labels[next];
  $('beautifyFeedback').textContent=message+' · Updated. Undo is available.';
  updateStatus(message);flash(message);
 }
