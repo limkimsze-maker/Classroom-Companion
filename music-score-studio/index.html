@@ -473,6 +473,9 @@
    <option value="dc">D.C. al Fine — return to start</option><option value="ds">D.S. al Fine — return to segno</option>
   </select></div>
   <div class="field"><label for="markOctave">Octave indication</label><label class="check"><input id="markOctave" type="checkbox"> 8va — play this bar one octave higher</label></div>
+  <div class="field"><label for="markMultiRest">Multiple-bar rest</label><select id="markMultiRest">
+   <option value="">Normal bars</option><option value="2">2 empty bars — consolidated rest</option>
+  </select></div>
  </div>
  <div class="segrow"><button type="button" id="clearBarMarks" class="smallBtn">Remove this bar's markings</button><span id="markFeedback" role="status" aria-live="polite" class="hint">Select a bar to edit its markings.</span></div>
  <details class="termsGlossary"><summary>📖 Vocabulary and symbols from the reference pages</summary>
@@ -878,17 +881,17 @@ const CLASSROOM_TEMPOS={
 };
 const TEMPO_CHANGES=['a tempo','accelerando','ritardando','rallentando','ritenuto','allargando','meno mosso','più mosso','con moto'];
 const MUSICAL_DYNAMICS={pp:.32,p:.45,mp:.61,mf:.79,f:1,ff:1.18};
-const DIRECTION_KEYS=['tempo','dynamic','expression','repeat','ending','sign','octave'];
+const DIRECTION_KEYS=['tempo','dynamic','expression','repeat','ending','sign','octave','multiRest'];
 const ALLOWED_MARKS={
  tempo:['',...Object.keys(CLASSROOM_TEMPOS),...TEMPO_CHANGES],
  dynamic:['','pp','p','mp','mf','f','ff','fp','crescendo','diminuendo'],
  expression:['','cantabile','dolce','alla marcia','espressivo','grazioso','legato'],
  repeat:['','start','end','both'],
- ending:['','1','2'],sign:['','segno','fine','dc','ds'],octave:[false,true]
+ ending:['','1','2'],sign:['','segno','fine','dc','ds'],octave:[false,true],multiRest:['','2']
 };
 const DIRECTION_UI={
  tempo:'markTempo',dynamic:'markDynamic',expression:'markExpression',
- repeat:'markRepeat',ending:'markEnding',sign:'markSign',octave:'markOctave'
+ repeat:'markRepeat',ending:'markEnding',sign:'markSign',octave:'markOctave',multiRest:'markMultiRest'
 };
 function barDirective(index){
  const value=data.barDirectives?.[index];
@@ -905,6 +908,17 @@ function cleanBarDirective(raw){
 }
 function changeBarMark(key,value){
  if(!DIRECTION_KEYS.includes(key))return;
+ if(key==='multiRest'&&value==='2'){
+  if(markedBar%2||markedBar+1>=data.bars.length||
+     data.bars[markedBar].length||data.bars[markedBar+1].length){
+   flash('Choose an even-positioned pair of consecutive empty bars (1–2, 3–4, etc.).');
+   syncBarMarkControls();return;
+  }
+  const other=barDirective(markedBar+1);
+  if(Object.keys(other).length){
+   flash('Clear markings from the second empty bar before grouping.');syncBarMarkControls();return;
+  }
+ }
  const clean=cleanBarDirective({[key]:value});
  change();
  if(!Array.isArray(data.barDirectives))data.barDirectives=[];
@@ -1447,6 +1461,26 @@ function drawBarDirections(svg,index,x0,x1,top,exportMode){
  }
 }
 
+
+function isTwoBarRest(index){
+ return index%2===0&&index+1<data.bars.length&&
+  barDirective(index).multiRest==='2'&&
+  data.bars[index].length===0&&data.bars[index+1].length===0;
+}
+function drawTwoBarRest(svg,index,left,top,width,exportMode){
+ const color='#263d49',right=left+width,center=left+width*.5;
+ if(!exportMode)svg.append(el('rect',{
+  x:left,y:top-28,width,height:140,fill:'transparent',class:'measureHit',
+  'data-bar':index,'data-left':left,'data-width':width,'data-top':top
+ }));
+ textSvg(svg,center,top+17,'2',23,{'text-anchor':'middle','font-weight':750,fill:color,'pointer-events':'none'});
+ svg.append(el('rect',{x:center-49,y:top+33,width:98,height:7,fill:color,'pointer-events':'none'}));
+ line(svg,center-49,top+24,center-49,top+49,color,2.4,{'pointer-events':'none'});
+ line(svg,center+49,top+24,center+49,top+49,color,2.4,{'pointer-events':'none'});
+ line(svg,right,top,right,top+72,color,2,{'pointer-events':'none'});
+ if(index+1===data.bars.length-1)line(svg,right+5,top,right+5,top+72,color,4,{'pointer-events':'none'});
+}
+
 function makeScore(exportMode=false){const layout=staffLayout(),{W,H}=layout;
 const svg=el('svg',{xmlns:NS,viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:'img','aria-label':'Music score'});const notePositions=new Map();
 svg.append(el('rect',{x:0,y:0,width:W,height:H,fill:'#fff'}));
@@ -1469,6 +1503,11 @@ if(sys===0){
 // begins the first measure directly. The measure-end and final barlines remain.
 for(let bi=0;bi<2;bi++){
 const idx=sys*2+bi;if(idx>=data.bars.length)continue;
+if(idx%2===1&&isTwoBarRest(idx-1))continue;
+if(isTwoBarRest(idx)){
+ drawTwoBarRest(svg,idx,layout.left+bi*layout.barW,top,layout.barW*2,exportMode);
+ continue;
+}
 const x0=layout.left+bi*layout.barW;const printEvents=exportMode?printBarEvents(data.bars[idx]):null;const bar=exportMode&&printEvents.length>data.bars[idx].length?printEvents.map(e=>({...e,posX:undefined})):exportMode?printEvents:data.bars[idx],used=sumBar(bar),capacity=cap();const x1=x0+layout.barW;
 if(!exportMode){svg.append(el('rect',{x:x0,y:top-37,width:layout.barW,height:149,fill:'transparent',class:'measureHit','data-bar':idx,'data-left':x0,'data-width':layout.barW,'data-top':top}));}
 const bstat=data.meter==='6/8'?`${Number((used/12).toFixed(3))}/6 eighths`:`${Number((used/24).toFixed(3))}/${Number((capacity/24).toFixed(3))} beats`;textSvg(svg,x0+12,top-17,`${idx+1}`,12,{'font-weight':800,fill:'#627b87'});drawBarDirections(svg,idx,x0,x1,top,exportMode);
@@ -2287,7 +2326,9 @@ function xmlDirectionsEnd(bar){
 }
 
 function exportMusicXML(){const links=musicalLinks();const [beats,beatType]=data.meter.split('/');const compound=data.meter==='6/8';const soundTempo=Number((data.tempo*(compound?1.5:1)).toFixed(3));let xml=`<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE score-partwise  PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n<score-partwise version="4.0">\n<work><work-title>${xmlEscape(data.title)}</work-title></work>\n<movement-title>${xmlEscape(data.title)}</movement-title>\n<identification><creator type="composer">${xmlEscape(data.composer)}</creator></identification>\n<defaults><scaling><millimeters>7</millimeters><tenths>40</tenths></scaling></defaults>\n<part-list><score-part id="P1"><part-name>Melody</part-name><part-abbreviation>Mel.</part-abbreviation><score-instrument id="I1"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part></part-list>\n<part id="P1">`;
-for(let b=0;b<data.bars.length;b++){const exportBar=printBarEvents(data.bars[b]);const beamsForBar=rhythmBeamMetadata(exportBar,planRhythmBeams(exportBar));xml+=`\n<measure implicit="no" number="${b+1}">`;xml+=xmlLeftBarline(b);if(b===0){xml+=`<attributes><divisions>192</divisions><key><fifths>0</fifths></key><time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time><clef><sign>${data.clef==='treble'?'G':'F'}</sign><line>${data.clef==='treble'?2:4}</line></clef></attributes><direction placement="above"><direction-type><metronome parentheses="no"><beat-unit>quarter</beat-unit>${compound?'<beat-unit-dot/>':''}<per-minute>${data.tempo}</per-minute></metronome></direction-type><sound tempo="${soundTempo}" /></direction>`}
+for(let b=0;b<data.bars.length;b++){const exportBar=printBarEvents(data.bars[b]);const beamsForBar=rhythmBeamMetadata(exportBar,planRhythmBeams(exportBar));xml+=`\n<measure implicit="no" number="${b+1}">`;xml+=xmlLeftBarline(b);
+if(isTwoBarRest(b))xml+='<attributes><measure-style><multiple-rest>2</multiple-rest></measure-style></attributes>';
+if(b===0){xml+=`<attributes><divisions>192</divisions><key><fifths>0</fifths></key><time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time><clef><sign>${data.clef==='treble'?'G':'F'}</sign><line>${data.clef==='treble'?2:4}</line></clef></attributes><direction placement="above"><direction-type><metronome parentheses="no"><beat-unit>quarter</beat-unit>${compound?'<beat-unit-dot/>':''}<per-minute>${data.tempo}</per-minute></metronome></direction-type><sound tempo="${soundTempo}" /></direction>`}
 xml+=xmlDirectionsStart(b,compound);
 for(let i=0;i<exportBar.length;i++){const e=exportBar[i];xml+='<note>';if(e.kind==='rest'){xml+=e.measureRest?'<rest measure="yes" />':'<rest />'}else{xml+=`<pitch><step>${e.step}</step>${currentAccidental(b,i)!==0?`<alter>${currentAccidental(b,i)}</alter>`:''}<octave>${e.octave+(barDirective(b).octave?1:0)}</octave></pitch>`;
 if(links.tieEnds.has(e.id))xml+='<tie type="stop"/>';
