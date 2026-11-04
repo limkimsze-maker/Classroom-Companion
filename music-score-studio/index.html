@@ -952,17 +952,19 @@ function svgPoint(ev){const svg=$('score'),p=svg.createSVGPoint();p.x=ev.clientX
 function clicked(ev){
  if(suppressNoteClick){suppressNoteClick=false;return}
  if(tool==='box'||drag?.moved)return;
- const target=ev.target.closest('[data-id], [data-bar]');
- if(!target)return;
  const p=svgPoint(ev);
- // Tap a picture first, then tap a blank line or space to stamp it.
+ const target=ev.target.closest('[data-id], [data-bar]');
+ // The staff lines themselves sit above the measure hitbox in the SVG.
+ // A tap on the line is still valid even when its target has no data-bar.
  if(activeNoteStampDen&&tool==='select'){
-  if(target.hasAttribute('data-id')&&nearestMusicNote(p)){selectEvent(target.dataset.id);return;}
+  const existing=nearestMusicNote(p);
+  if(existing?.type==='note'){selectEvent(existing.id);return;}
   const location=staffNotePosition(p);
   if(location)placePaletteNote(location,activeNoteStampDen);
   else flash('Choose a staff line or space to place the note.');
   return;
  }
+ if(!target)return;
  if(target.hasAttribute('data-id')){selectEvent(target.dataset.id);return}
  if(tool!=='rest')return;
  const bar=Number(target.dataset.bar),top=Number(target.dataset.top),left=Number(target.dataset.left),width=Number(target.dataset.width);
