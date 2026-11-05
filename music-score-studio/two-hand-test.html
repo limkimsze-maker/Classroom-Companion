@@ -57,7 +57,7 @@ h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0
 </div>
 </section>
 <section class="panel scorePanel" id="paper">
-<div class="scorehead"><h2>3 · Music sheet <span id="count" class="muted"></span></h2><div class="controls"><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<div class="scorehead"><h2>3 · Music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
 <p class="quickHelp" id="composeHint"><strong>Right hand ↑</strong> Treble stave · <strong>Left hand ↓</strong> Bass stave · Tap empty space to add · Select a note to edit or drag it higher/lower · Right-click for note values</p>
 <div id="editPanel" hidden><span class="editPanelLabel">Edit selected note</span><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button><div id="articulations" class="articulations" role="group" aria-label="Expression and articulation for selected note"></div></div>
 <div id="sheetViewport"><svg id="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" role="img" aria-label="Editable two-hand piano score. Tap on a stave to add notes or rests."></svg></div>
@@ -572,12 +572,19 @@ function setPlayingNotes(ids){
  if(top<viewport.scrollTop||bottom>viewport.scrollTop+viewport.clientHeight)
   viewport.scrollTop=Math.max(0,top);
 }
+function syncPlayButtons(){
+ $('play').disabled=playing;$('stop').disabled=!playing;
+ $('sheetPlay').textContent=playing?'■ Stop':'▶ Play';
+ $('sheetPlay').setAttribute('aria-label',playing?'Stop piano playback':'Play both piano hands');
+ $('sheetPlay').setAttribute('aria-pressed',String(playing));
+ $('sheetPlay').classList.toggle('primary',!playing);
+}
 async function play(){
- if(playing)stop();
+ if(playing)return;
  try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();ensureMaster()}catch(e){info('Audio could not start in this browser.');return}
  const perf=performance(),start=ctx.currentTime+.08;playing=true;
  for(const e of perf.events)oscillator(e.pitch,start+e.at,e.duration,e.hand,e.gain);
- $('play').disabled=true;$('stop').disabled=false;
+ syncPlayButtons();
  info('Playing both hands · Gold rings show notes currently sounding.');
  timers.push(setInterval(()=>{
   if(!playing)return;
@@ -596,7 +603,7 @@ async function play(){
 function stop(){
  for(const s of sounds)try{s.stop()}catch(_){}
  sounds=[];timers.forEach(clearInterval);timers=[];playing=false;
- setPlayingNotes(new Set());$('play').disabled=false;$('stop').disabled=true;info('Stopped.');
+ setPlayingNotes(new Set());syncPlayButtons();info('Stopped.');
 }
 function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
 function typeName(den){return ({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[den]}
@@ -669,7 +676,8 @@ function bind(){
  document.addEventListener('pointerdown',e=>{if(!$('noteContext').hidden&&!e.target.closest('#noteContext'))closeNoteContext()});
  window.addEventListener('scroll',closeNoteContext,{capture:true,passive:true});
  $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();if(!finishSlur(id)){selected=id;render()}}});
- $('play').onclick=play;$('stop').onclick=stop;$('undo').onclick=undo;$('redo').onclick=redo;
+ $('play').onclick=play;$('stop').onclick=stop;$('sheetPlay').onclick=()=>playing?stop():play();$('undo').onclick=undo;$('redo').onclick=redo;
+ syncPlayButtons();
  $('volume').oninput=e=>setVolume(e.target.value);
  setVolume(volume);
  $('addBar').onclick=()=>{if(data.bars.length>=40){info('Maximum 40 bars.');return}snapshot();data.bars.push({right:[],left:[]});commit('Added Bar '+data.bars.length+'.')};
