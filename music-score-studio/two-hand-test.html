@@ -52,7 +52,7 @@ footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
 </section>
 <section class="panel">
 <div class="toolbar">
-<div class="controls"><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><button id="undo" disabled>↶ Undo</button><button id="redo" disabled>↷ Redo</button><button id="addBar">+ Bar</button><button id="removeBar">− Empty bar</button></div>
+<div class="controls"><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label><button id="undo" disabled>↶ Undo</button><button id="redo" disabled>↷ Redo</button><button id="addBar">+ Bar</button><button id="removeBar">− Empty bar</button></div>
 <div class="controls"><button id="save">Save JSON</button><button id="open">Open JSON</button><input id="openFile" type="file" accept=".json,application/json" hidden><button id="musicxml">MusicXML</button><button id="print">Print / PDF</button></div>
 </div>
 </section>
@@ -70,7 +70,7 @@ const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-
 const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
 const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
 const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]}))});
-let data=newProject(),chosen=4,selected=null,history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false;
+let data=newProject(),chosen=4,selected=null,history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
 const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
 const meterCap=()=>{let [a,b]=data.meter.split('/').map(Number);return a*96/b};
 const barSum=events=>events.reduce((n,e)=>n+ticks(e),0);
@@ -232,14 +232,30 @@ function changeValue(sign){
 function remove(){const ref=locate(selected);if(!ref)return;snapshot();data.bars[ref.b][ref.hand].splice(ref.i,1);selected=null;commit('Note or rest deleted.')}
 function undo(){if(!history.length)return;if(playing)stop();future.push(clone(data));data=history.pop();selected=null;commit('Undone.')}
 function redo(){if(!future.length)return;if(playing)stop();history.push(clone(data));data=future.pop();selected=null;commit('Redone.')}
+// One shared output bus supports classroom volume and gentle peak limiting.
+function ensureMaster(){
+ if(!ctx)return null;
+ if(masterGain)return masterGain;
+ const limiter=ctx.createDynamicsCompressor();
+ limiter.threshold.value=-16;limiter.knee.value=12;limiter.ratio.value=4;
+ limiter.attack.value=.005;limiter.release.value=.18;
+ masterGain=ctx.createGain();masterGain.gain.value=volume/100;
+ masterGain.connect(limiter);limiter.connect(ctx.destination);
+ return masterGain;
+}
+function setVolume(value){
+ volume=Math.max(0,Math.min(100,Number(value)||0));
+ $('volume').value=String(volume);$('volumeValue').textContent=volume+'%';
+ if(masterGain&&ctx)masterGain.gain.setTargetAtTime(volume/100,ctx.currentTime,.015);
+}
 function oscillator(midi,at,duration,hand){
  if(!ctx)return;const root=ctx.createOscillator(),gain=ctx.createGain(),harm=ctx.createOscillator(),hGain=ctx.createGain();
  const hz=440*Math.pow(2,(midi-69)/12);root.type='triangle';harm.type='sine';
  root.frequency.setValueAtTime(hz,at);harm.frequency.setValueAtTime(hz*2,at);
- const amp=hand==='left'?.09:.075,hold=Math.max(.1,duration*.91),end=at+hold;
+ const amp=hand==='left'?.18:.15,hold=Math.max(.1,duration*.91),end=at+hold;
  gain.gain.setValueAtTime(.00001,at);gain.gain.exponentialRampToValueAtTime(amp,at+.012);gain.gain.exponentialRampToValueAtTime(.00001,end+.12);
  hGain.gain.setValueAtTime(.00001,at);hGain.gain.exponentialRampToValueAtTime(amp*.18,at+.012);hGain.gain.exponentialRampToValueAtTime(.00001,end+.07);
- root.connect(gain);gain.connect(ctx.destination);harm.connect(hGain);hGain.connect(ctx.destination);
+ root.connect(gain);gain.connect(ensureMaster());harm.connect(hGain);hGain.connect(ensureMaster());
  root.start(at);harm.start(at);root.stop(end+.15);harm.stop(end+.10);sounds.push(root,harm);
 }
 function midi(e,bar,index){
@@ -262,7 +278,7 @@ function performance(){
 }
 async function play(){
  if(playing)stop();
- try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();await ctx.resume()}catch(e){info('Audio could not start in this browser.');return}
+ try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();ensureMaster()}catch(e){info('Audio could not start in this browser.');return}
  const perf=performance(),start=ctx.currentTime+.08;playing=true;
  for(const e of perf.events)oscillator(e.pitch,start+e.at,e.length,e.hand);
  $('play').disabled=true;$('stop').disabled=false;info('Playing right and left hands together.');
@@ -310,6 +326,8 @@ function bind(){
  $('sheet').addEventListener('click',clickSheet);
  $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();selected=id;render()}});
  $('play').onclick=play;$('stop').onclick=stop;$('undo').onclick=undo;$('redo').onclick=redo;
+ $('volume').oninput=e=>setVolume(e.target.value);
+ setVolume(volume);
  $('addBar').onclick=()=>{if(data.bars.length>=40){info('Maximum 40 bars.');return}snapshot();data.bars.push({right:[],left:[]});commit('Added Bar '+data.bars.length+'.')};
  $('removeBar').onclick=()=>{const last=data.bars.at(-1);if(data.bars.length<=1||last.right.length||last.left.length){info('Only the final empty bar can be removed.');return}snapshot();data.bars.pop();selected=null;commit('Removed final bar.')};
  $('shorter').onclick=()=>changeValue(1);$('longer').onclick=()=>changeValue(-1);$('delete').onclick=remove;
