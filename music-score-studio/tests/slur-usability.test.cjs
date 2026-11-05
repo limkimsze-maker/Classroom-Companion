@@ -64,3 +64,20 @@ test('slur mode switches to cursor selection and retains musical links',()=>{
  assert.match(html,/setMode\('select'\);\s*pendingSlurStart=found\.e\.id/);
  assert.match(html,/links\.refs\[a\]\.e\.slurTo=endId/);
 });
+
+test('slur creation works whether the first or last note is tapped first',()=>{
+ const fn=extract('function finishNoteSlur(','function addNoteMarkButtons(');
+ for(const [start,end] of [['first','last'],['last','first']]){
+  const one={id:'first',kind:'note'},two={id:'last',kind:'note'};
+  const refs=[{e:one},{e:two}],indices=new Map([['first',0],['last',1]]);
+  const output=new Function('refs','indices','start','end',fn+
+   '\nlet pendingSlurStart=start,selected=null;'+
+   '\nconst musicalLinks=()=>({refs,indices,slurs:new Map()});'+
+   '\nfunction change(){} function commit(){} function render(){} function flash(){}'+
+   '\nconst handled=finishNoteSlur(end);return {handled,first:refs[0].e.slurTo,selected};'
+  )(refs,indices,start,end);
+  assert.equal(output.handled,true);
+  assert.equal(output.first,'last');
+  assert.equal(output.selected,end);
+ }
+});
