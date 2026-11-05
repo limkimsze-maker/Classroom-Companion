@@ -366,9 +366,10 @@ function startPointer(ev){
   return;
  }
  if(tool==='eraser'){
-  state.drawing={kind:'erase',changed:false};
-  const before=clone(state.items);
-  if(eraseNear(point)){state.history.push(before);state.future=[];state.drawing.changed=true;persist();render();}
+  state.drawing={kind:'erase',changed:false,before:clone(state.items)};
+  if(eraseNear(point)){
+   rememberEraseStart(state.drawing);persist();render();
+  }
   try{state.layer.setPointerCapture(ev.pointerId)}catch(_){}
   return;
  }
@@ -404,12 +405,20 @@ function resizeShape(original,down,here){
   Math.max(-.1,Math.min(1.1,min0[1]+(p[1]-min0[1])*sy))
  ]);
 }
+function rememberEraseStart(d){
+ if(d.changed)return;
+ // The original gesture snapshot is taken before the FIRST deletion,
+ // regardless of whether the eraser started on ink or on blank paper.
+ state.history.push(d.before);
+ if(state.history.length>45)state.history.shift();
+ state.future=[];d.changed=true;
+}
 function movePointer(ev){
  if(!state.drawing)return;
  const pt=position(ev),d=state.drawing;
  if(d.kind==='erase'){
   if(eraseNear(pt)){
-   if(!d.changed){remember();d.changed=true;}
+   rememberEraseStart(d);
    persist();render();
   }
  }else if(d.kind==='draw'){
