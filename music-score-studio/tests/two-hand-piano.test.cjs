@@ -15,7 +15,7 @@ function setup(initial){
  const code=extract('const ticks=','function bind(');
  const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
   code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
-  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,annotationAnchor,annotationXY,annotationHit,annotationPointerDown,annotationPointerMove,annotationPointerEnd,annotationPointerCancel,deleteAnnotation,resizeAnnotation,undo,redo,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},setPointerY:y=>{point=()=>({x:200,y})},setPoint:p=>{point=()=>p},setAnnotationToolDirect:tool=>{annotationTool=tool},setSelectedAnnotation:id=>{selectedAnnotation=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,annotationAnchor,annotationXY,attachAnnotationToNote,linkTeacherMark,notePosition,annotationHit,annotationPointerDown,annotationPointerMove,annotationPointerEnd,annotationPointerCancel,deleteAnnotation,resizeAnnotation,undo,redo,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},setPointerY:y=>{point=()=>({x:200,y})},setPoint:p=>{point=()=>p},setAnnotationToolDirect:tool=>{annotationTool=tool},setSelectedAnnotation:id=>{selectedAnnotation=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
  )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:'',hidden:id==='noteContext',
   setPointerCapture(){},releasePointerCapture(){}}),
  {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
@@ -481,4 +481,90 @@ test('full page annotation tools stay inside score and Escape restores note-edit
  assert.match(html,/if\(e\.key==='Escape'&&annotationTool!=='cursor'\)/);
  assert.match(html,/if\(\$\('paper'\)\.classList\.contains\('fullpage'\)\)\$\('full'\)\.click\(\)/);
  assert.match(html,/@media print\{\.teacherAnnotations\{display:none!important\}\}/);
+});
+
+test('teacher circles follow stable note IDs when a crotchet is inserted before the note in its bar',()=>{
+ const noteA=note('G',4),noteB=note('C',5),p=setup(project([noteA],[note('G',2)]));
+ const before=p.notePosition(noteA.id);
+ const circle={id:'ring',tool:'circle',color:'#df654d',points:[
+  p.annotationAnchor({x:before.x-20,y:before.y-19}),p.annotationAnchor({x:before.x+20,y:before.y+19})]};
+ p.linkTeacherMark(circle);
+ assert.equal(circle.points[0].noteId,noteA.id);
+ assert.equal(circle.points[1].noteId,noteA.id);
+ const ringBefore=p.annotationXY(circle.points[0]);
+ // Insert earlier in the same bar: existing note shifts right by engraving.
+ const bar=p.getData().bars[0].right;bar.unshift(noteB);
+ const after=p.notePosition(noteA.id),ringAfter=p.annotationXY(circle.points[0]);
+ assert.ok(after.x>before.x);
+ assert.ok(Math.abs((ringAfter.x-ringBefore.x)-(after.x-before.x))<.001);
+ assert.equal(ringAfter.y-ringBefore.y,after.y-before.y);
+});
+test('note-attached arrows follow bass notes independently of treble events',()=>{
+ const right=note('C',5),left=note('G',2),p=setup(project([right],[left]));
+ const target=p.notePosition(left.id);
+ const arrow={id:'arrow',tool:'arrow',color:'#127f9b',points:[
+  p.annotationAnchor({x:target.x-50,y:target.y-50}),
+  p.annotationAnchor({x:target.x,y:target.y+2})]};
+ p.linkTeacherMark(arrow);
+ assert.equal(arrow.points.at(-1).noteId,left.id);
+ const initial=p.annotationXY(arrow.points.at(-1));
+ p.getData().bars[0].right.unshift(note('D',5));
+ assert.deepEqual(p.annotationXY(arrow.points.at(-1)),initial);
+ p.getData().bars[0].left.unshift(note('A',2));
+ assert.ok(p.annotationXY(arrow.points.at(-1)).x>initial.x);
+});
+test('note-linked teacher marks survive JSON roundtrip, and deleted notes get safe fallback',()=>{
+ const a=note('G',4),p=setup(project([a],[])),xy=p.notePosition(a.id);
+ const attached=p.attachAnnotationToNote({x:xy.x+8,y:xy.y-8},a.id);
+ const projectData=p.getData();
+ projectData.annotations.push({id:'inkOne',tool:'hand',color:'#df654d',size:38,points:[attached]});
+ const copy=p.validate(JSON.parse(JSON.stringify(projectData)));
+ assert.equal(copy.annotations[0].points[0].noteId,a.id);
+ assert.equal(copy.annotations[0].size,38);
+ const before=p.annotationXY(attached);
+ projectData.bars[0].right.splice(0,1);
+ assert.ok(Number.isFinite(p.annotationXY(attached).x));
+ assert.ok(Number.isFinite(before.x));
+});
+test('full page FIT stays readable and horizontally scrollable on small phones',()=>{
+ assert.match(html,/\.fullpage #sheet\{min-width:880px!important;width:100%!important/);
+ assert.match(html,/\.fullpage #sheet\.zoomed\{min-width:1160px!important;width:135%!important/);
+ assert.match(html,/\.fullpage #sheetViewport\{overflow:auto!important/);
+ assert.match(html,/\.fullpage>.teacherAnnotations\{flex:0 0 auto;max-height:29dvh;overflow:auto\}/);
+});
+test('keyboard focus is restored to note after SVG rerender only for keyboard interaction',()=>{
+ assert.match(html,/keyboardNoteFocus\?document\.activeElement\?\.closest\?\.\('\[data-id\]'\)/);
+ assert.match(html,/next\?\.focus\?\.\(\{preventScroll:true\}\)/);
+ assert.match(html,/keyboardNoteFocus=true;if\(!finishSlur\(id\)\)/);
+ assert.match(html,/keyboardNoteFocus=false/);
+ assert.match(html,/\.addEventListener\('pointerdown',\(\)=>\{keyboardNoteFocus=false\}\)/);
+});
+test('standard Noto SVG treble and bass clef outlines are used, not device fonts',()=>{
+ assert.match(html,/const CLEF_TREBLE_PATH='M/);
+ assert.match(html,/const CLEF_BASS_PATH='M/);
+ assert.match(html,/drawClef\(svg,'right',49,top\)/);
+ assert.match(html,/drawClef\(svg,'left',49,top\+SEPARATION\)/);
+ assert.match(html,/scale\(0\.072 -0\.072\)/);
+});
+test('annotation and note history work together without separate inconsistent undo stacks',()=>{
+ const p=setup(project([note('C',5)],[]));
+ const draw={button:0,pointerId:5,preventDefault(){},target:{closest:()=>null}};
+ p.setAnnotationToolDirect('pen');p.setPoint({x:190,y:135});p.annotationPointerDown(draw);
+ p.setPoint({x:220,y:142});p.annotationPointerMove(draw);p.annotationPointerEnd(draw);
+ assert.equal(p.getData().annotations.length,1);
+ p.setSelected(p.getData().bars[0].right[0].id);p.adjustPitch(1);
+ assert.equal(p.getData().bars[0].right[0].step,'D');
+ p.undo();assert.equal(p.getData().bars[0].right[0].step,'C');
+ assert.equal(p.getData().annotations.length,1);
+ p.undo();assert.equal(p.getData().annotations.length,0);
+ p.redo();assert.equal(p.getData().annotations.length,1);
+ p.redo();assert.equal(p.getData().bars[0].right[0].step,'D');
+});
+test('advanced musical expression can collapse while pitch and slur/tie remain visible',()=>{
+ assert.match(html,/className='expressionMore'/);
+ assert.match(html,/⋯ More musical expression/);
+ assert.match(html,/for\(const mark of \['staccato','tenuto','accent'\]\)/);
+ assert.match(html,/mk\(pendingSlur\?/);
+ assert.match(html,/mk\(ref\.event\.tieTo\?/);
+ assert.match(html,/\.articulations button\{min-height:42px/);
 });
