@@ -15,7 +15,7 @@ function setup(initial){
  const code=extract('const ticks=','function bind(');
  const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
   code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
-  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
  )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:''}),
  {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
  return {...result,get downloaded(){return result.getDownloaded()}};
@@ -234,4 +234,45 @@ test('right-click menu can be dismissed and does not override normal note select
  assert.match(html,/if\(e\.key==='Escape'&&!\$\('noteContext'\)\.hidden\)/);
  assert.match(html,/if\(id\)\{if\(finishSlur\(id\)\)return;selected=id;render\(\);return\}/);
  assert.match(html,/menu\.querySelector\('button'\)\?\.focus\(\)/);
+});
+
+test('Higher and Lower buttons follow single-stave British editing conventions',()=>{
+ assert.match(html,/for\(const \[label,direction\] of \[\['↑ Higher',1\],\['↓ Lower',-1\]\]\)/);
+ const rh=note('C',5),lh=note('G',2),p=setup(project([rh],[lh]));
+ p.setSelected(rh.id);
+ assert.equal(p.adjustPitch(1),true);
+ assert.equal(p.getData().bars[0].right[0].step,'D');
+ assert.equal(p.getData().bars[0].right[0].octave,5);
+ assert.equal(p.getData().bars[0].left[0].step,'G');
+ p.setSelected(lh.id);
+ assert.equal(p.adjustPitch(-1),true);
+ assert.equal(p.getData().bars[0].left[0].step,'F');
+ assert.equal(p.getData().bars[0].left[0].octave,2);
+ assert.equal(p.getData().bars[0].right[0].step,'D');
+});
+test('pitch changes preserve duration, hand, bar and expression markings',()=>{
+ const original=note('B',4,8,{dot:true,accent:true,staccato:true,acc:'#'});
+ const p=setup(project([original],[]));p.setSelected(original.id);
+ p.adjustPitch(1);const moved=p.getData().bars[0].right[0];
+ assert.equal(moved.step,'C');assert.equal(moved.octave,5);
+ assert.equal(moved.den,8);assert.equal(moved.dot,true);
+ assert.equal(moved.accent,true);assert.equal(moved.staccato,true);
+ assert.equal(moved.acc,'#');assert.equal(p.getData().bars[0].left.length,0);
+ assert.equal(moved.id,original.id);
+});
+test('pointer drag uses snapped stave steps, stable SVG pointer capture and one Undo change',()=>{
+ assert.match(html,/setPointerCapture\?\.\(ev\.pointerId\)/);
+ assert.match(html,/Math\.round\(delta\/9\)/);
+ assert.match(html,/if\(!drag\.changed\)\{snapshot\(\);drag\.changed=true\}/);
+ assert.match(html,/pointercancel',pitchPointerEnd/);
+ assert.match(html,/if\(suppressDragClick\)\{suppressDragClick=false;return\}/);
+ const a=note('A',4);const p=setup(project([a],[]));
+ p.setSelected(a.id);
+ p.adjustPitch(1);p.adjustPitch(-1);
+ assert.equal(p.getData().bars[0].right[0].step,'A');
+});
+test('notes at the supported pitch boundary cannot be moved beyond range',()=>{
+ const lo=note('B',1),hi=note('G',6);const p=setup(project([lo,hi],[]));
+ p.setSelected(lo.id);assert.equal(p.adjustPitch(-1),false);
+ p.setSelected(hi.id);assert.equal(p.adjustPitch(1),false);
 });
