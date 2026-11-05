@@ -127,11 +127,11 @@ function anchorForItem(it,g){
  // annotations are anchored to their bar instead of guessing a note identity.
  if(it.type!=='highlighter'&&radius<=27&&notes[0]?.d<=27&&
   (!notes[1]||notes[1].d-notes[0].d>12))
-  return {type:'note',id:notes[0].n.id,base:[notes[0].n.x,notes[0].n.y]};
+  return {type:'note',id:notes[0].n.id,base:[notes[0].n.x,notes[0].n.y],size:[g.width,g.height]};
  const bars=(g.bars||[]).map((b,i)=>({i,b,d:Math.hypot((b.left+b.width/2-mid[0])*g.width,
   (b.top+36/g.height-mid[1])*g.height)})).sort((a,b)=>a.d-b.d);
  if(!bars.length)return null;
- return {type:'bar',index:bars[0].i,base:[bars[0].b.left,bars[0].b.top]};
+ return {type:'bar',index:bars[0].i,base:[bars[0].b.left,bars[0].b.top],size:[g.width,g.height]};
 }
 function reflowTeacherMarks(){
  const g=scoreGeometry();if(!g||!state.items.length)return;
@@ -145,10 +145,19 @@ function reflowTeacherMarks(){
    const b=g.bars[it.anchor.index];if(b)next=[b.left,b.top];
   }
   if(!next||!Array.isArray(it.anchor.base))continue;
-  const dx=next[0]-it.anchor.base[0],dy=next[1]-it.anchor.base[1];
-  if(Math.abs(dx)>1e-7||Math.abs(dy)>1e-7){
-   it.points=it.points.map(p=>[Math.max(-1,Math.min(2,p[0]+dx)),Math.max(-1,Math.min(2,p[1]+dy))]);
-   it.anchor.base=next;changed=true;
+  // Preserve note/bar-local *SVG units*, not proportions of the entire
+  // score height. A system break may grow H from 296 to 498 while a mark
+  // must remain e.g. 18 units above its notehead.
+  const oldSize=it.anchor.size||[g.width,g.height];
+  const ox=it.anchor.base[0]*oldSize[0],oy=it.anchor.base[1]*oldSize[1];
+  const nx=next[0]*g.width,ny=next[1]*g.height;
+  if(Math.abs(nx-ox)>1e-7||Math.abs(ny-oy)>1e-7||
+     oldSize[0]!==g.width||oldSize[1]!==g.height){
+   it.points=it.points.map(p=>[
+    Math.max(-1,Math.min(2,(nx+p[0]*oldSize[0]-ox)/g.width)),
+    Math.max(-1,Math.min(2,(ny+p[1]*oldSize[1]-oy)/g.height))
+   ]);
+   it.anchor.base=next;it.anchor.size=[g.width,g.height];changed=true;
   }
  }
  if(changed){persist();render()}
