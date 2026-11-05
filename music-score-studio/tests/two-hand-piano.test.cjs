@@ -326,3 +326,30 @@ test('full page and fit, play and stop, accessible buttons are preserved',()=>{
  assert.match(html,/\.moreTools>summary:focus-visible/);
  assert.match(html,/active\?\.closest\('button,a,summary'\)/);
 });
+
+test('two-hand score has its own discoverable Play/Stop button beside zoom/full page',()=>{
+ const header=html.match(/<div class="scorehead">([\s\S]*?)<\/div><\/div>/)?.[0]||'';
+ assert.match(header,/id="sheetPlay"/);
+ assert.match(header,/id="zoom"/);
+ assert.match(header,/id="full"/);
+ assert.match(header,/▶ Play/);
+});
+test('score Play button and transport share exactly the same playback state',()=>{
+ assert.match(html,/function syncPlayButtons\(\)/);
+ assert.match(html,/\$\('sheetPlay'\)\.textContent=playing\?'■ Stop':'▶ Play'/);
+ assert.match(html,/\$\('sheetPlay'\)\.setAttribute\('aria-pressed',String\(playing\)\)/);
+ assert.match(html,/\$\('sheetPlay'\)\.onclick=\(\)=>playing\?stop\(\):play\(\)/);
+ assert.match(html,/function stop\(\)\{[\s\S]*?syncPlayButtons\(\);info\('Stopped\.'\)/);
+ assert.match(html,/async function play\(\)\{\s*if\(playing\)return/);
+});
+test('play state is synchronized from both play and stop transitions',()=>{
+ const sync=extract('function syncPlayButtons(){','async function play(){');
+ let state=false;
+ const elems={play:{disabled:null},stop:{disabled:null},sheetPlay:{
+   textContent:'',attrs:{},classes:{},setAttribute(k,v){this.attrs[k]=v},classList:{toggle(k,v){this.owner.classes[k]=v}}}};
+ elems.sheetPlay.classList.owner=elems.sheetPlay;
+ const make=new Function('$','state',sync+'\nreturn value=>{playing=value;syncPlayButtons();return {play:$(\'play\').disabled,stop:$(\'stop\').disabled,label:$(\'sheetPlay\').textContent,pressed:$(\'sheetPlay\').attrs[\'aria-pressed\']}}');
+ const update=make(id=>elems[id],state);
+ assert.deepEqual(update(false),{play:false,stop:true,label:'▶ Play',pressed:'false'});
+ assert.deepEqual(update(true),{play:true,stop:false,label:'■ Stop',pressed:'true'});
+});
