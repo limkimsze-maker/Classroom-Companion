@@ -452,7 +452,7 @@ function validate(raw){
    const end=indices.get(e.slurTo);
    if(end===undefined||end<=i||refs[end].e.kind!=='note')delete e.slurTo;
    const next=refs[i+1];
-   if(!next||e.tieTo!==next.e.id||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||midi(e,out.bars[refs[i].b][hand],refs[i].i)!==midi(next.e,out.bars[next.b][hand],next.i))delete e.tieTo;
+   if(!next||e.tieTo!==next.e.id||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||!tiePitchMatches(e,out.bars[refs[i].b][hand],refs[i].i,next.e,out.bars[next.b][hand],next.i,out))delete e.tieTo;
   }
  }
  return out;
@@ -468,7 +468,7 @@ function handLinks(hand){
   if(j!==undefined&&j>i&&refs[j].e.kind==='note'){slurs.push([e.id,refs[j].e.id]);slurEnds.add(refs[j].e.id)}
   const next=refs[i+1];
   if(next?.e.kind==='note'&&next.e.id===e.tieTo&&e.step===next.e.step&&e.octave===next.e.octave&&
-   midi(e,data.bars[a.b][hand],a.i)===midi(next.e,data.bars[next.b][hand],next.i)&&
+   tiePitchMatches(e,data.bars[a.b][hand],a.i,next.e,data.bars[next.b][hand],next.i)&&
    (a.b===next.b||Math.abs(barSum(data.bars[a.b][hand])-meterCap())<.001)){
    ties.push([e.id,next.e.id]);tieEnds.add(next.e.id)
   }
@@ -502,7 +502,7 @@ function toggleTie(){
  const e=ref.event;if(e.tieTo){snapshot();delete e.tieTo;commit('Tie removed.');return}
  const refs=handRefs(ref.hand),n=refs.findIndex(r=>r.e.id===e.id),next=refs[n+1];
  if(!next||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||
-  midi(e,data.bars[ref.b][ref.hand],ref.i)!==midi(next.e,data.bars[next.b][ref.hand],next.i)||
+  !tiePitchMatches(e,data.bars[ref.b][ref.hand],ref.i,next.e,data.bars[next.b][ref.hand],next.i)||
   (ref.b!==next.b&&Math.abs(barSum(data.bars[ref.b][ref.hand])-meterCap())>.001)){
   info('A tie joins the next same-pitch note in the same hand.');return
  }
@@ -1085,11 +1085,45 @@ function oscillator(midi,at,duration,hand,strength=1){
  root.connect(gain);gain.connect(ensureMaster());harm.connect(hGain);hGain.connect(ensureMaster());
  root.start(at);harm.start(at);root.stop(end+.15);harm.stop(end+.10);sounds.push(root,harm);
 }
-function midi(e,bar,index){
+function midi(e,bar,index,score=data){
  const semis={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
  let alter=e.acc==='#'?1:e.acc==='b'?-1:0;
- if(!e.acc){for(let i=index-1;i>=0;i--){const p=bar[i];if(p.kind==='note'&&p.step===e.step&&p.octave===e.octave&&p.acc){alter=p.acc==='#'?1:p.acc==='b'?-1:0;break}}}
+ if(!e.acc){
+  let writtenEarlier=false;
+  for(let i=index-1;i>=0;i--){
+   const p=bar[i];
+   if(p.kind==='note'&&p.step===e.step&&p.octave===e.octave&&p.acc){
+    alter=p.acc==='#'?1:p.acc==='b'?-1:0;writtenEarlier=true;break
+   }
+  }
+  // Conventional tied continuation across a barline retains the source
+  // accidental even when the new bar does not display another sharp/flat.
+  // Only the connected first note inherits pitch; later re-struck notes
+  // in this bar return to the bar's ordinary accidental state.
+  if(!writtenEarlier&&index===0){
+   const location=score.bars.findIndex(b=>b.right===bar||b.left===bar);
+   if(location>0){
+    const hand=score.bars[location].right===bar?'right':'left';
+    const previousBar=score.bars[location-1][hand];
+    const previous=previousBar.at(-1);
+    if(previous?.kind==='note'&&previous.tieTo===e.id&&
+       previous.step===e.step&&previous.octave===e.octave&&
+       Math.abs(barSum(previousBar)-meterCap())<.001)
+     return midi(previous,previousBar,previousBar.length-1,score);
+   }
+  }
+ }
  return 12*(e.octave+1)+semis[e.step]+alter;
+}
+// Compare written notes and their actual sounding pitch. Across a barline,
+// an unmarked continuation is allowed to inherit an accidental only through
+// the explicit tie; a newly struck note never inherits that alteration.
+function tiePitchMatches(from,fromBar,fromIndex,to,toBar,toIndex,score=data){
+ if(from.kind!=='note'||to.kind!=='note'||
+    from.step!==to.step||from.octave!==to.octave)return false;
+ const start=midi(from,fromBar,fromIndex,score);
+ if(fromBar!==toBar&&toIndex===0&&!to.acc)return true;
+ return start===midi(to,toBar,toIndex,score);
 }
 function performance(){
  const pulse=data.meter==='6/8'?36:24;
