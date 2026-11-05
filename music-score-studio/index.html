@@ -449,12 +449,167 @@ body.scoreFullPageActive{overflow:hidden!important}
  .fullPageMusic .bottomline{max-height:24vh}
 }
 @media print{.fullPageMusic{position:static!important;height:auto!important;max-height:none!important}.fullPageMusic .fullPagePlay,.fullPageMusic .fullPageZoom,.fullPageMusic .fullPageToggle{display:none!important}}
+
+/* TEST VERSION only — score-first workspace. Playback, notation and recognition are unchanged. */
+.testScoreDock{position:sticky;top:0;z-index:300;background:rgba(248,252,255,.98);backdrop-filter:blur(15px);border-bottom:1px solid #bdd9e7;box-shadow:0 5px 18px rgba(18,52,75,.12)}
+.testDockInner{max-width:1680px;margin:auto;padding:8px clamp(8px,1.3vw,20px);display:flex;gap:9px;align-items:center;min-height:62px}
+.testDockTitle{font-size:13px;font-weight:850;color:#225276;white-space:nowrap}
+.testDockPlay{display:flex;align-items:center;gap:7px;min-width:0}
+.testDockPlay #play{font-size:16px;font-weight:850;min-height:44px;border-radius:13px;padding:8px 20px;box-shadow:0 5px 13px #1f71a52b}
+.testDockPlay #stop{font-size:14px;min-height:44px;border-radius:12px}
+.testDockSpacer{flex:1;min-width:0}
+.testDockAction,.testScoreTools>summary{min-height:44px;border:1px solid #b9d3e4;border-radius:12px;padding:9px 14px;background:#fff;color:#234c6a;font-size:13px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.testDockAction:hover,.testScoreTools>summary:hover{background:#eaf6fc}
+.testScoreTools>summary{list-style:none;user-select:none}
+.testScoreTools>summary::-webkit-details-marker{display:none}
+.testScoreTools[open]>summary{background:#e8f5ff;border-color:#7ab5d6}
+.testScoreTools{position:relative}
+.testToolsPanel{position:absolute;right:0;top:calc(100% + 12px);width:min(560px,calc(100vw - 16px));max-height:calc(100dvh - 82px);overflow:auto;overscroll-behavior:contain;background:#fff;border:1px solid #bfdaea;box-shadow:0 22px 50px #12354b35;border-radius:18px;padding:16px;z-index:301}
+.testToolsPanel h3{margin:11px 0 7px;font-size:15px;color:#225276}
+.testToolsPanel .omrHero{max-width:none;margin:0;padding:0}
+.testToolsPanel .omrCard{padding:12px;border-radius:12px;box-shadow:none}
+.testToolsPanel .omrHeading h2{font-size:17px}
+.testToolsPanel .omrHeading p{font-size:12px;line-height:1.4}
+.testToolsPanel .omrDetails{font-size:11px}
+.testToolsPanel .oneTapControls{margin:10px 0;display:flex;flex-wrap:wrap;gap:7px}
+.testToolsPanel .oneTapControls .btn{min-height:42px}
+.testToolsPanel .panel,.testToolsPanel .paperCard{margin:9px 0;border:1px solid #e0ebf3;box-shadow:none;padding:12px;border-radius:13px}
+.testToolsPanel .toolbar{padding:0;gap:8px}
+.testToolsPanel .transport,.testToolsPanel .exports{gap:6px}
+.testToolsPanel .meta{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:9px}
+.testToolsPanel #teacherDrawer{position:relative;margin:9px 0}
+.testToolsPanel #helpAndProjects{margin:9px 0}
+.testToolsPanel .musicDirectTools{margin:9px 0}
+.testToolsPanel .musicClearBtn{margin-top:8px}
+.testDockCompose{display:none}
+.piano-active .testDockCompose{display:inline-flex}
+.piano-active .testToolsPanel .omrHero{display:block!important}
+.piano-active .testToolsPanel .panel{display:block}
+body:not(.piano-active) .testToolsPanel .importOnly{display:none}
+.topbar{padding:8px max(12px,calc((100vw - 1560px)/2));min-height:55px}
+.topbar .logo{width:36px;height:36px;font-size:26px}
+.topbar .brand h1{font-size:18px}
+.topbar .brand p{font-size:11px;margin:0}
+.topbar .top-pill{font-size:11px}
+#annotationToolbar{position:sticky;top:62px;z-index:260;width:100%;padding:5px max(9px,calc((100vw - 1680px)/2));background:#f7fbffed;box-shadow:0 3px 12px #12354b0a}
+#annotationToolbar .musicInkPinned{padding:5px 9px;border-radius:12px;gap:5px}
+#annotationToolbar .musicInkHeading{display:none}
+#annotationToolbar .noteStampPalette{flex:1 1 auto;max-width:840px;padding:0;min-width:0}
+#annotationToolbar .noteStampPaletteTitle{font-size:11px;margin:0 0 3px 2px}
+#annotationToolbar .noteStampPaletteTitle span{font-size:10px}
+#annotationToolbar .noteStampCards{gap:5px}
+#annotationToolbar .noteStampCard{min-height:62px;padding:2px 4px;border-radius:10px;gap:0}
+#annotationToolbar .noteStampGraphic{width:35px;height:33px}
+#annotationToolbar .noteStampName{font-size:10px}
+#annotationToolbar .noteStampBeats{display:none}
+.piano-active #annotationToolbar{display:none!important}
+.shell{max-width:1680px;margin:auto;display:block;padding:9px clamp(8px,1.3vw,20px);min-height:0}
+.shell .layout-main{width:100%;min-width:0}
+#editorScorePanel,#pianoPanel{margin:0;width:100%;border-radius:16px;box-shadow:0 5px 25px #1e53731a}
+#editorScorePanel .paperTop,#pianoPanel .pianoTop{padding:10px 15px}
+#editorScorePanel .paperScroll{height:clamp(340px,calc(100dvh - 255px),1100px);min-height:340px;overflow:auto;overscroll-behavior:contain;background:#fff}
+#editorScorePanel .scoreSvg{min-width:690px;width:100%;height:auto}
+#editorScorePanel .bottomline{padding:7px 12px;min-height:38px}
+#editorScorePanel #modeHint{display:none}
+#pianoPanel .pianoTop{min-height:64px}
+#pianoPanel .pianoTop h3{font-size:18px;margin:0}
+#pianoPanel .pianoTop p{font-size:11px}
+#pianoPanel .pianoTopActions .btn{min-height:40px}
+#pianoPanel .pianoHint{display:none}
+#pianoPanel .pianoInfo{padding:7px 12px;gap:12px}
+#pianoPanel #engravedScore,#pianoPanel .pianoScoreScroll{height:clamp(340px,calc(100dvh - 232px),1100px);max-height:none;min-height:340px;overflow:auto;overscroll-behavior:contain}
+#pianoPanel #engravedScore[hidden],#pianoPanel .pianoScoreScroll[hidden]{display:none!important}
+#pianoPanel .omrRenderedPage{margin:0 auto 8px;max-width:1260px;border:0;min-width:660px}
+#pianoPanel .omrRenderedPage[hidden]{display:none!important}
+#pianoPanel .omrNotationHeader{padding:7px 12px;gap:10px}
+#pianoPanel .simpleScoreGuide{display:block!important;padding:7px 12px}
+#pianoPanel #autoExpressionReview{margin:8px 10px}
+#pianoPanel #autoExpressionReview[hidden]{display:none!important}
+#pianoPanel.fullPageMusic .omrRenderedPage[hidden]{display:none!important}
+.testEngravedNav{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.testEngravedNav[hidden]{display:none!important}
+.testEngravedNav button{min-height:38px;border:1px solid #bbd4e4;border-radius:10px;background:#f6fbff;color:#25506e;font-weight:750;padding:7px 11px;cursor:pointer}
+.testEngravedNav button:disabled{opacity:.42;cursor:default}
+.testEngravedNav strong{font-size:12px;color:#2c5979;white-space:nowrap}
+.testToolsPanel :focus-visible,.testDockInner :focus-visible,.testEngravedNav :focus-visible{outline:3px solid #53a6c8;outline-offset:2px}
+@media(max-width:700px){
+ .topbar{padding:5px 9px;min-height:46px}
+ .topbar .logo{width:30px;height:30px;font-size:23px}
+ .topbar .brand h1{font-size:15px}
+ .topbar .brand p{font-size:10px}
+ .testDockInner{min-height:55px;padding:5px 6px;gap:5px}
+ .testDockTitle{display:none}
+ .testDockPlay{gap:4px}
+ .testDockPlay #play{min-height:44px;padding:7px 10px;font-size:13px}
+ .testDockPlay #stop{min-height:44px;padding:7px 9px;font-size:13px}
+ .testDockAction,.testScoreTools>summary{min-height:44px;padding:7px 9px;font-size:12px}
+ .testDockSpacer{flex:0 1 2px}
+ .testToolsPanel{position:fixed;top:57px;right:6px;width:calc(100vw - 12px);max-height:calc(100dvh - 63px);padding:10px;border-radius:14px}
+ .testToolsPanel .meta{grid-template-columns:1fr}
+ #annotationToolbar{top:55px;padding:4px 5px}
+ #annotationToolbar .musicInkPinned{padding:4px;display:block}
+ #annotationToolbar .noteStampPaletteTitle{font-size:11px;margin:1px 3px}
+ #annotationToolbar .noteStampPaletteTitle span{display:none}
+ #annotationToolbar .noteStampCards{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+ #annotationToolbar .noteStampCard{min-height:56px;padding:2px 0;border-radius:7px}
+ #annotationToolbar .noteStampGraphic{width:29px;height:29px}
+ #annotationToolbar .noteStampName{font-size:9px}
+ .shell{padding:5px}
+ #editorScorePanel .paperTop,#pianoPanel .pianoTop{padding:8px}
+ #editorScorePanel .paperTop b{font-size:12px}
+ #editorScorePanel .paperScroll{height:calc(100dvh - 232px);min-height:280px}
+ #editorScorePanel .scoreSvg{min-width:640px}
+ #pianoPanel .pianoTop h3{font-size:15px}
+ #pianoPanel .pianoTopActions{width:auto;gap:4px}
+ #pianoPanel .pianoTopActions .btn{flex:0 1 auto;font-size:11px;padding:6px 8px;min-height:36px}
+ #pianoPanel .pianoTopActions #scanAnother{display:none}
+ #pianoPanel .pianoTopActions #closePiano{display:none}
+ #pianoPanel .pianoInfo{gap:7px;padding:6px 9px}
+ #pianoPanel #pianoCounts{display:none}
+ #pianoPanel #engravedScore,#pianoPanel .pianoScoreScroll{height:calc(100dvh - 205px);min-height:280px}
+ #pianoPanel .omrRenderedPage{min-width:620px}
+ #pianoPanel .omrNotationHeader{padding:6px 8px}
+ #pianoPanel .simpleScoreGuide{padding:5px 8px}
+ .testEngravedNav button{font-size:11px;padding:6px 7px}
+}
+@media(max-width:380px){
+ .testDockPlay #play{padding:6px 7px;font-size:12px}
+ .testDockPlay #stop{padding:6px 6px}
+ .testDockAction,.testScoreTools>summary{padding:6px}
+}
+@media print{
+ .testScoreDock,#annotationToolbar,.testEngravedNav{display:none!important}
+ #editorScorePanel .paperScroll,#pianoPanel #engravedScore,#pianoPanel .pianoScoreScroll{height:auto!important;max-height:none!important;overflow:visible!important}
+ #pianoPanel .omrRenderedPage[hidden]{display:block!important}
+ .shell{padding:0!important}
+}
+
 </style>
 <script src="./annotation-tools.js?v=a754a293" defer></script>
 </head>
 <body>
 <div role="status" aria-label="Test website notice" style="background:#fff0bd;color:#4b3500;padding:8px 16px;text-align:center;font-size:14px;font-weight:800;letter-spacing:.01em;border-bottom:2px solid #c48b16">TEST VERSION — PR #64 + PR #65 · QA preview only · Not the live classroom site</div>
 <header class="topbar"><div class="brand"><div class="logo" aria-hidden="true">♫</div><div><h1>Music Score Studio</h1><p>Compose · Listen · Explore</p></div></div><span class="top-pill">Free · No account · Made for teaching</span></header>
+
+<div class="testScoreDock" id="testScoreDock" role="region" aria-label="Music Score Studio main controls">
+ <div class="testDockInner">
+  <span class="testDockTitle" aria-hidden="true">🎼 My music</span>
+  <div class="testDockPlay" id="testDockPlay" role="group" aria-label="Play and stop"></div>
+  <span class="testDockSpacer"></span>
+  <button type="button" class="testDockAction testDockCompose" id="testDockCompose">✎ Compose</button>
+  <button type="button" class="testDockAction" id="testDockOpen">＋ Open score</button>
+  <details class="testScoreTools" id="testScoreTools">
+   <summary aria-label="Open music tools and teacher options">⚙ Tools</summary>
+   <div class="testToolsPanel" id="testToolsPanel">
+    <h3>Open or scan music</h3><div id="testToolImport"></div>
+    <h3>Score &amp; settings</h3><div id="testToolSetup"></div>
+    <h3>Editing and files</h3><div id="testToolFiles"></div>
+    <h3>Teacher tools</h3><div id="testToolTeacher"></div>
+    <div id="testToolHelp"></div>
+   </div>
+  </details>
+ </div>
+</div>
 
 <section class="omrHero" aria-label="Photo to score and playback"><div class="omrCard">
   <div class="omrHeading"><div><div class="omrEyebrow">Trained optical music recognition · Classroom Companion</div><h2>🎶 Your sheet music, brought to life!</h2><p>Take a photo or upload the pages of a song. Hear the notes, rhythm and recognised musical expressions! You can check uncertain markings before teaching.</p></div><span class="omrStatusFlag">On-device photo reading</span></div>
@@ -664,7 +819,7 @@ body.scoreFullPageActive{overflow:hidden!important}
    <p id="autoExpressionNotice">Detected directions are applied automatically when recognition confidence is sufficient. Bar positions are estimated from the printed page; review them before classroom use.</p>
    <div id="autoExpressionRows"></div>
   </details>
-  <div id="notationHeader" class="omrNotationHeader"><strong id="notationStatus">Preparing the sheet music…</strong><button id="notationViewToggle" type="button" class="smallBtn" hidden>Show simplified view</button></div>
+  <div id="notationHeader" class="omrNotationHeader"><strong id="notationStatus">Preparing the sheet music…</strong><div id="testEngravedNav" class="testEngravedNav" role="group" aria-label="Engraved score page navigation" hidden><button type="button" id="testEngravedPrev" aria-label="Previous score page">◀ Previous</button><strong id="testEngravedPageLabel" aria-live="polite">Page 1</strong><button type="button" id="testEngravedNext" aria-label="Next score page">Next ▶</button></div><button id="notationViewToggle" type="button" class="smallBtn" hidden>Show simplified view</button></div>
   <div id="engravedScore" class="omrEngravedScore" hidden></div>
   <div class="pianoScoreScroll"><div id="simpleScoreGuide" class="simpleScoreGuide"><div class="simpleGuideNav"><button id="simplePrev" type="button">◀ Previous</button><strong id="simplePageLabel">Simplified score</strong><button id="simpleNext" type="button">Next ▶</button></div><div id="simpleNotes" class="simpleNotes" aria-label="Pitches in the current bar"></div></div><svg id="pianoScore" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MusicXML notes shown as grand staff with both hands"></svg></div>
 </div>
