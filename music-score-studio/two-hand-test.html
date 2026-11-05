@@ -70,7 +70,7 @@ const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-
 const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
 const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
 const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]}))});
-let data=newProject(),chosen=4,selected=null,pendingSlur=null,history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
+let data=newProject(),chosen=4,selected=null,pendingSlur=null,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
 const MARKS=['staccato','staccatissimo','portato','tenuto','accent','marcato','fermata'];
 const MARK_LABELS={staccato:'Staccato ·',staccatissimo:'Staccatissimo ▾',portato:'Portato –·',tenuto:'Tenuto –',accent:'Accent >',marcato:'Marcato ^',fermata:'Fermata 𝄐'};
 const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
@@ -89,7 +89,7 @@ function drawText(svg,x,y,text,size=13,attrs={}){svg.append(el('text',{x,y,fill:
 function clone(v){return JSON.parse(JSON.stringify(v))}
 function snapshot(){history.push(clone(data));if(history.length>60)history.shift();future=[];if(playing)stop()}
 function store(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){}}
-function commit(message){store();render();if(message)info(message)}
+function commit(message){pruneLinks();store();render();if(message)info(message)}
 function locate(id){for(let b=0;b<data.bars.length;b++)for(const hand of ['right','left']){const i=data.bars[b][hand].findIndex(e=>e.id===id);if(i>=0)return {b,hand,i,event:data.bars[b][hand][i]}}return null}
 function validate(raw){
  if(!raw||raw.format!=='cc-music-score-studio-twohand'||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>40)throw Error('Invalid two-hand project (maximum 40 bars).');
@@ -128,6 +128,91 @@ function validate(raw){
  }
  return out;
 }
+
+function handRefs(hand){return data.bars.flatMap((bar,b)=>bar[hand].map((e,i)=>({e,b,i})))}
+function handLinks(hand){
+ const refs=handRefs(hand),indices=new Map(refs.map((r,i)=>[r.e.id,i]));
+ const slurs=[],ties=[],slurEnds=new Set(),tieEnds=new Set();
+ for(let i=0;i<refs.length;i++){
+  const a=refs[i],e=a.e;if(e.kind!=='note')continue;
+  const j=indices.get(e.slurTo);
+  if(j!==undefined&&j>i&&refs[j].e.kind==='note'){slurs.push([e.id,refs[j].e.id]);slurEnds.add(refs[j].e.id)}
+  const next=refs[i+1];
+  if(next?.e.kind==='note'&&next.e.id===e.tieTo&&e.step===next.e.step&&e.octave===next.e.octave&&
+   midi(e,data.bars[a.b][hand],a.i)===midi(next.e,data.bars[next.b][hand],next.i)&&
+   (a.b===next.b||Math.abs(barSum(data.bars[a.b][hand])-meterCap())<.001)){
+   ties.push([e.id,next.e.id]);tieEnds.add(next.e.id)
+  }
+ }
+ return {refs,indices,slurs,ties,slurEnds,tieEnds};
+}
+function pruneLinks(){
+ for(const hand of ['right','left']){
+  const links=handLinks(hand);
+  for(const {e} of links.refs)if(e.kind==='note'){
+   if(e.slurTo&&!links.slurs.some(pair=>pair[0]===e.id))delete e.slurTo;
+   if(e.tieTo&&!links.ties.some(pair=>pair[0]===e.id))delete e.tieTo;
+  }
+ }
+}
+function toggleMark(mark){
+ const ref=locate(selected);if(!ref||ref.event.kind!=='note'||!MARKS.includes(mark))return;
+ const links=handLinks(ref.hand),e=ref.event;
+ if(['staccato','staccatissimo','portato'].includes(mark)&&
+  (links.ties.some(pair=>pair[0]===e.id)||links.tieEnds.has(e.id))){
+  info('A tied note must sustain. Remove its tie first.');return
+ }
+ snapshot();const on=!!e[mark];
+ if(['staccato','staccatissimo','portato','tenuto'].includes(mark))
+  for(const key of ['staccato','staccatissimo','portato','tenuto'])delete e[key];
+ if(['accent','marcato'].includes(mark))for(const key of ['accent','marcato'])delete e[key];
+ if(!on)e[mark]=true;commit((on?'Removed ':'Added ')+mark+'.');
+}
+function toggleTie(){
+ const ref=locate(selected);if(!ref||ref.event.kind!=='note')return;
+ const e=ref.event;if(e.tieTo){snapshot();delete e.tieTo;commit('Tie removed.');return}
+ const refs=handRefs(ref.hand),n=refs.findIndex(r=>r.e.id===e.id),next=refs[n+1];
+ if(!next||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||
+  midi(e,data.bars[ref.b][ref.hand],ref.i)!==midi(next.e,data.bars[next.b][ref.hand],next.i)||
+  (ref.b!==next.b&&Math.abs(barSum(data.bars[ref.b][ref.hand])-meterCap())>.001)){
+  info('A tie joins the next same-pitch note in the same hand.');return
+ }
+ snapshot();e.tieTo=next.e.id;
+ for(const v of [e,next.e])for(const key of ['staccato','staccatissimo','portato'])delete v[key];
+ commit('Tie added: one sustained sound.');
+}
+function toggleSlur(){
+ const ref=locate(selected);if(!ref||ref.event.kind!=='note')return;
+ if(pendingSlur){pendingSlur=null;render();info('Slur cancelled.');return}
+ if(ref.event.slurTo){snapshot();delete ref.event.slurTo;commit('Slur removed.');return}
+ pendingSlur={id:ref.event.id,hand:ref.hand};
+ render();info('Tap the other note on the same hand. Escape cancels.');
+}
+function finishSlur(id){
+ if(!pendingSlur)return false;
+ const pending=pendingSlur,ref=locate(id);
+ if(!ref||ref.hand!==pending.hand||ref.event.kind!=='note'){
+  info('Tap another note on the same hand.');return true;
+ }
+ pendingSlur=null;
+ if(id===pending.id){render();info('Slur cancelled.');return true}
+ const links=handLinks(ref.hand),i=links.indices.get(pending.id),j=links.indices.get(id);
+ if(i===undefined||j===undefined){render();return true}
+ const a=Math.min(i,j),b=Math.max(i,j);
+ if(links.slurs.some(([from,to])=>a<links.indices.get(to)&&links.indices.get(from)<b)){
+  render();info('Overlapping slurs are not supported.');return true
+ }
+ snapshot();links.refs[a].e.slurTo=links.refs[b].e.id;selected=id;commit('Musical slur added.');
+ return true;
+}
+function renderArticulations(ref){
+ const dock=$('articulations');dock.replaceChildren();if(!ref||ref.event.kind!=='note')return;
+ const mk=(label,pressed,fn)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.className=pressed?'active':'';button.setAttribute('aria-pressed',String(!!pressed));button.onclick=fn;dock.append(button)};
+ for(const mark of MARKS)mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark));
+ mk(pendingSlur?'✕ Cancel slur':ref.event.slurTo?'Remove slur':'Slur ⌒',!!pendingSlur,()=>toggleSlur());
+ mk(ref.event.tieTo?'Remove tie':'Tie ⌣',!!ref.event.tieTo,()=>toggleTie());
+ if(pendingSlur){const hint=document.createElement('span');hint.className='muted';hint.textContent='Tap the other note (same hand)';dock.append(hint)}
+}
 function drawClef(svg,hand,x,top){
  // Built-in musical glyphs are display-only; pitch and playback use exact diatonic mapping.
  const clef=hand==='right'?'𝄞':'𝄢';
@@ -137,6 +222,8 @@ function drawEvent(svg,e,x,top,hand,isSelected,beamed=false){
  const y=e.kind==='note'?yAt(e,top,hand):top+38,fill='#204451';
  const group=el('g',{'data-id':e.id,role:'button',tabindex:0,'aria-label':(hand==='right'?'Right':'Left')+' hand '+(e.kind==='rest'?'rest':e.step+e.octave)+' '+NAMES[e.den]});svg.append(group);
  if(isSelected)group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:20,fill:'#c3f1e7'}));
+ if(activeNotes.has(e.id))group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:18,fill:'#ffc64b','fill-opacity':.55,stroke:'#e19a23','stroke-width':3,'pointer-events':'none'}));
+ if(pendingSlur?.id===e.id)group.append(el('ellipse',{cx:x,cy:y,rx:27,ry:21,class:'slurStart'}));
  if(e.kind==='rest'){
   drawText(group,x-9,y+6,e.den===1?'𝄻':e.den===2?'𝄼':e.den===4?'𝄽':e.den===8?'𝄾':'𝄿',30,{'font-family':'Noto Music,Segoe UI Symbol,serif'});
  }else{
@@ -149,6 +236,16 @@ function drawEvent(svg,e,x,top,hand,isSelected,beamed=false){
   }
  }
  if(e.dot)group.append(el('circle',{cx:x+19,cy:y-4,r:2.9,fill}));
+ if(e.kind==='note'){
+  const above=hand==='left'?y+19:y-17;
+  if(e.staccato)group.append(el('circle',{cx:x,cy:above,r:2.6,fill}));
+  if(e.staccatissimo)drawText(group,x-5,above+4,'▾',13);
+  if(e.tenuto)drawLine(group,x-8,above,x+8,above,fill,2.2);
+  if(e.portato){drawLine(group,x-8,above,x+8,above,fill,2);group.append(el('circle',{cx:x,cy:above+(hand==='left'?6:-6),r:2.4,fill}))}
+  if(e.accent)drawText(group,x-10,above+5,'>',21,{'font-weight':800});
+  if(e.marcato)drawText(group,x-9,above+5,'^',22,{'font-weight':800});
+  if(e.fermata)drawText(group,x-13,hand==='left'?y+36:y-28,'𝄐',23,{'font-family':'Noto Music,Segoe UI Symbol,serif'});
+ }
  group.append(el('rect',{x:x-20,y:y-21,width:40,height:42,fill:'transparent',class:'noteHit','data-id':e.id}));
  return group;
 }
@@ -223,7 +320,7 @@ function render(){
  }
  $('count').textContent='· '+data.bars.length+' bar'+(data.bars.length===1?'':'s');
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
- const found=locate(selected);$('editPanel').hidden=!found;
+ const found=locate(selected);$('editPanel').hidden=!found;renderArticulations(found);
  if(found){$('selection').textContent=(found.hand==='right'?'Right':'Left')+' hand · Bar '+(found.b+1)+' · '+(found.event.kind==='rest'?'Rest':found.event.step+found.event.octave)+' · '+NAMES[found.event.den]+(found.event.dot?' dotted':'')}
  $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;
 }
@@ -241,7 +338,7 @@ function insert(b,hand,x,y){
 function clickSheet(ev){
  const target=ev.target.closest('[data-id],[data-bar]');if(!target)return;
  const id=target.dataset.id;
- if(id){selected=id;render();return}
+ if(id){if(finishSlur(id))return;selected=id;render();return}
  const b=Number(target.dataset.bar),hand=target.dataset.hand;if(!data.bars[b]||!['right','left'].includes(hand))return;
  const p=point(ev);insert(b,hand,p.x,p.y);
 }
@@ -252,9 +349,9 @@ function changeValue(sign){
  if(barSum(bar)-ticks(ref.event)+ticks({...ref.event,den})>meterCap()+1e-4){info('Not enough beats in this bar.');return}
  snapshot();ref.event.den=den;commit('Changed to '+NAMES[den]+'.')
 }
-function remove(){const ref=locate(selected);if(!ref)return;snapshot();data.bars[ref.b][ref.hand].splice(ref.i,1);selected=null;commit('Note or rest deleted.')}
-function undo(){if(!history.length)return;if(playing)stop();future.push(clone(data));data=history.pop();selected=null;commit('Undone.')}
-function redo(){if(!future.length)return;if(playing)stop();history.push(clone(data));data=future.pop();selected=null;commit('Redone.')}
+function remove(){const ref=locate(selected);if(!ref)return;snapshot();data.bars[ref.b][ref.hand].splice(ref.i,1);pendingSlur=null;selected=null;commit('Note or rest deleted.')}
+function undo(){if(!history.length)return;pendingSlur=null;if(playing)stop();future.push(clone(data));data=history.pop();selected=null;commit('Undone.')}
+function redo(){if(!future.length)return;pendingSlur=null;if(playing)stop();history.push(clone(data));data=future.pop();selected=null;commit('Redone.')}
 // One shared output bus supports classroom volume and gentle peak limiting.
 function ensureMaster(){
  if(!ctx)return null;
@@ -347,7 +444,7 @@ function bind(){
  for(const den of DENS){const b=document.createElement('button');b.type='button';b.innerHTML='<b>'+GLYPHS[den]+'</b>'+NAMES[den];b.dataset.den=den;b.onclick=()=>{chosen=den;refreshValues();info(NAMES[den]+' selected. Tap a stave to insert.')};$('values').append(b)}
  refreshValues();
  $('sheet').addEventListener('click',clickSheet);
- $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();selected=id;render()}});
+ $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();if(!finishSlur(id)){selected=id;render()}}});
  $('play').onclick=play;$('stop').onclick=stop;$('undo').onclick=undo;$('redo').onclick=redo;
  $('volume').oninput=e=>setVolume(e.target.value);
  setVolume(volume);
@@ -363,6 +460,7 @@ function bind(){
  $('zoom').onclick=()=>{zoomed=!zoomed;$('sheet').classList.toggle('zoomed',zoomed);$('zoom').textContent=zoomed?'↘ Fit page':'🔎 Larger'};
  $('full').onclick=()=>{const full=$('paper').classList.toggle('fullpage');$('full').textContent=full?'⊟ Minimise':'⛶ Full page';$('full').setAttribute('aria-pressed',String(full))};
  window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&pendingSlur){pendingSlur=null;render();info('Slur cancelled.');e.preventDefault();return}
   if(e.key==='Escape'&&$('paper').classList.contains('fullpage')){$('full').click();e.preventDefault();return}
   const active=document.activeElement;if(['INPUT','TEXTAREA','SELECT'].includes(active?.tagName)||active?.closest('button,a,summary'))return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}
