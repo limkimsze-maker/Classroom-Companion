@@ -1263,6 +1263,7 @@ let pendingSlurStart=null,markedBar=0;
 let piano=null;let data=blank(),tool='select',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
 let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
 let activeNoteStampDen=null,notePaletteDrag=null,notePaletteGhost=null,notePaletteScrollFrame=0;
+let quickKeyboardOn=false,quickCursor=null,quickHover=null;
 let context=null,oscillators=[],playTimers=[],toastTimer=0,stopTimer=null,playing=false,audioBus=null;
 const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
 const ticks=e=>(TICKS/e.den)*(e.dot?1.5:1);
@@ -1405,7 +1406,8 @@ function musicPenCursor(){
  return 'url("data:image/svg+xml,'+encodeURIComponent(xml)+'") 24 45, crosshair';
 }
 function setMode(v){
- activeNoteStampDen=null;
+ if(v!=='select'&&quickKeyboardOn){quickKeyboardOn=false;syncQuickKeyboardButton();}
+ quickHover=null;activeNoteStampDen=null;
  document.querySelectorAll('[data-stamp-den]').forEach(b=>b.setAttribute('aria-pressed','false'));
  tool=v;
  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===v));
@@ -1569,24 +1571,23 @@ function placedNoteX(bar,left,width,desired){
  }
  return best;
 }
-function insertPlacedMusicEvent(target,denominator){
- if(!target||target.type!=='insert'||!VALID_DEN.includes(denominator))return false;
+function insertPlacedMusicEvent(target,denominator,kind='note'){
+ if(!target||target.type!=='insert'||!VALID_DEN.includes(denominator)||!['note','rest'].includes(kind))return false;
  const location=staffNotePosition({x:target.x,y:target.y});
  if(!location||location.bar!==target.bar)return false;
  const {bar,left,width,pitch}=location;
- const event={id:makeId(),kind:'note',step:pitch.step,octave:pitch.octave,acc,den:denominator,dot:!!dot};
+ const event={id:makeId(),kind,den:denominator,dot:!!dot,...(kind==='note'?{step:pitch.step,octave:pitch.octave,acc}:{})};
  if(sumBar(data.bars[bar])+ticks(event)>cap()+.00001){
-  const message='Bar '+(bar+1)+' is too full for that note. Choose a shorter note or another bar.';
+  const message='Bar '+(bar+1)+' is too full for that '+kind+'. Choose a shorter value or another bar.';
   $('beautifyFeedback').textContent=message;updateStatus(message);flash(message);return false;
  }
- const old=data.bars[bar],oldXs=eventPositions(old,left,width);
- const placement=placedNoteX(old,left,width,location.x);
+ const old=data.bars[bar],oldXs=eventPositions(old,left,width),placement=placedNoteX(old,left,width,location.x);
  change();
+ // Keep previously placed notes at their recorded position; the new note alone may be nudged.
  for(let i=0;i<old.length;i++)if(!Number.isFinite(old[i].posX))old[i].posX=(oldXs[i]-left)/width;
- event.posX=placement/width;
- old.push(event);
- old.sort((a,b)=>(a.posX??0)-(b.posX??0));
+ event.posX=placement/width;old.push(event);old.sort((a,b)=>(a.posX??0)-(b.posX??0));
  boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=event.id;
+ if(activeNoteStampDen||quickKeyboardOn)advanceQuickCursor(bar,event,pitch);
  commit();return true;
 }
 function staffLayout(){const systems=Math.ceil(data.bars.length/2),H=94+systems*202;return {W:1120,H,sys:systems,top:s=>104+s*202,left:144,right:1096,barW:(1096-144)/2}}
@@ -1971,7 +1972,7 @@ function render(){updateTeachingLabels();syncBarMarkControls();const svg=$('scor
 if(boxSelectedNotes.size||boxSelectedStrokes.size){
  const label=document.createElement('span');label.className='editLabel';label.textContent=boxSelectedNotes.size+' notes/rests + '+boxSelectedStrokes.size+' sketches selected';actions.append(label);
  const del=document.createElement('button');del.className='smallBtn';del.textContent='Delete selection';del.onclick=deleteBoxSelection;actions.append(del);
-}else if(s){const label=document.createElement('span');label.className='editLabel';label.textContent=`Selected: ${noteName(s.e)} · Bar ${s.bar+1}`;actions.append(label);if(s.e.kind==='note'){for(const [t,n] of [['↑ Higher',1],['↓ Lower',-1]]){const b=document.createElement('button');b.className='smallBtn';b.textContent=t;b.onclick=()=>adjustPitch(n);actions.append(b)}addNoteMarkButtons(actions,s.e)}const apply=document.createElement('button');apply.className='smallBtn';apply.textContent='Apply value';apply.title='Apply selected duration, dot and accidental to this symbol';apply.onclick=applyValue;actions.append(apply);const del=document.createElement('button');del.className='smallBtn';del.style.color='#ae4148';del.textContent='Delete';del.onclick=removeSelected;actions.append(del)}else{const l=document.createElement('span');l.className='editLabel';l.textContent='Select a note to add staccato, accent, slur or tie, or edit its value';actions.append(l)}$('removeBar').disabled=data.bars.length<=1||data.bars[data.bars.length-1].length>0;updateHistoryButtons()}
+}else if(s){const label=document.createElement('span');label.className='editLabel';label.textContent=`Selected: ${noteName(s.e)} · Bar ${s.bar+1}`;actions.append(label);if(s.e.kind==='note'){for(const [t,n] of [['↑ Higher',1],['↓ Lower',-1]]){const b=document.createElement('button');b.className='smallBtn';b.textContent=t;b.onclick=()=>adjustPitch(n);actions.append(b)}addNoteMarkButtons(actions,s.e)}const apply=document.createElement('button');apply.className='smallBtn';apply.textContent='Apply value';apply.title='Apply selected duration, dot and accidental to this symbol';apply.onclick=applyValue;actions.append(apply);const del=document.createElement('button');del.className='smallBtn';del.style.color='#ae4148';del.textContent='Delete';del.onclick=removeSelected;actions.append(del)}else{const l=document.createElement('span');l.className='editLabel';l.textContent='Select a note to add staccato, accent, slur or tie, or edit its value';actions.append(l)}$('removeBar').disabled=data.bars.length<=1||data.bars[data.bars.length-1].length>0;updateHistoryButtons();drawQuickOverlay()}
 function svgPoint(ev){const svg=$('score'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const m=svg.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0}}
 function clicked(ev){
  if(suppressNoteClick){suppressNoteClick=false;return}
