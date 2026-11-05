@@ -1528,6 +1528,9 @@ function toggleNoteSlur(){
  const found=findSelected();if(!found||found.e.kind!=='note')return;
  if(found.e.slurTo){change();delete found.e.slurTo;pendingSlurStart=null;commit();flash('Slur removed.');return;}
  if(pendingSlurStart===found.e.id){cancelNoteSlur();return;}
+ // Make the next tap a note selection, not a note stamp or drawing gesture.
+ document.querySelector('[data-annotation-tool="cursor"]')?.click();
+ setMode('select');
  pendingSlurStart=found.e.id;render();
  updateStatus('Slur: tap the last note (or press Escape to cancel).');
  flash('Tap the last note. Escape cancels.');
@@ -2514,6 +2517,19 @@ function cancelMusicLongPressOnMovement(ev){
  if(hold&&hold.id===ev.pointerId&&Math.hypot(ev.clientX-hold.x,ev.clientY-hold.y)>10)clearMusicLongPress();
 }
 
+// Handle slur targets on pointerdown, before score re-render removes the
+// clicked SVG note element (which can prevent the later click from firing).
+// Capture on the scrolling paper also supports note taps beneath the
+// separate teacher-annotation overlay.
+function captureSlurNoteTap(ev){
+ if(!pendingSlurStart||piano||ev.button!==0)return;
+ const p=svgPoint(ev),hit=nearestMusicNote(p);
+ if(hit?.type!=='note')return;
+ ev.preventDefault();
+ ev.stopImmediatePropagation();
+ clearMusicLongPress();
+ selectEvent(hit.id);
+}
 function pointerDown(ev){
  if(ev.button===2)return;
  const p=svgPoint(ev);beginMusicLongPress(ev,p);
@@ -4361,7 +4377,8 @@ $('musicNoteContextMenu').querySelectorAll('[data-note-duration]').forEach(b=>b.
 document.addEventListener('pointerdown',ev=>{if(!$('musicNoteContextMenu').hidden&&!ev.target.closest('#musicNoteContextMenu'))hideMusicNoteMenu();},{capture:true});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape')hideMusicNoteMenu();});
 window.addEventListener('scroll',hideMusicNoteMenu,{capture:true,passive:true});
-$('score').addEventListener('pointerdown',pointerDown);$('score').addEventListener('pointermove',pointerMove);$('score').addEventListener('pointerup',pointerUp);$('score').addEventListener('pointercancel',pointerUp);
+$('scrollZone').addEventListener('pointerdown',captureSlurNoteTap,true);
+ $('score').addEventListener('pointerdown',pointerDown);$('score').addEventListener('pointermove',pointerMove);$('score').addEventListener('pointerup',pointerUp);$('score').addEventListener('pointercancel',pointerUp);
 $('addBar').onclick=()=>setBarsCount(true);$('removeBar').onclick=()=>setBarsCount(false);$('undo').onclick=undo;$('redo').onclick=redo;
 $('play').onclick=play;$('stop').onclick=stopPlayback;$('soundDemo').onclick=soundDemo;$('print').onclick=()=>{window.print()};$('saveSVG').onclick=exportSVG;$('savePNG').onclick=exportPNG;$('saveXML').onclick=exportMusicXML;
 $('exportJSON').onclick=()=>{download(new Blob([JSON.stringify({...data,format:'cc-music-score-studio',version:1},null,2)],{type:'application/json'}),filename()+'.json');flash('Editable project saved')};
