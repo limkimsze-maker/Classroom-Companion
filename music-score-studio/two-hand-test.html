@@ -507,12 +507,14 @@ function exportXml(){
     if(e.kind==='rest')xml+=e.measureRest?'<rest measure="yes"/>':'<rest/>';
     else xml+='<pitch><step>'+e.step+'</step>'+(e.acc&&e.acc!=='n'?'<alter>'+(e.acc==='#'?1:-1)+'</alter>':'')+'<octave>'+e.octave+'</octave></pitch>';
     xml+='<duration>'+Math.round(e.measureRest?meterCap():ticks(e))+'</duration>';
+    if(e.kind==='note'){
+     if(links.tieEnds.has(e.id))xml+='<tie type="stop"/>';
+     if(tieStarts.has(e.id))xml+='<tie type="start"/>';
+    }
     if(!e.measureRest)xml+='<type>'+typeName(e.den)+'</type>';
     if(e.dot&&!e.measureRest)xml+='<dot/>';
     if(e.kind==='note'&&e.acc)xml+='<accidental>'+(e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural')+'</accidental>';
     if(e.kind==='note'){
-     if(links.tieEnds.has(e.id))xml+='<tie type="stop"/>';
-     if(tieStarts.has(e.id))xml+='<tie type="start"/>';
      const notations=[];
      if(links.tieEnds.has(e.id))notations.push('<tied type="stop"/>');
      if(tieStarts.has(e.id))notations.push('<tied type="start"/>');
