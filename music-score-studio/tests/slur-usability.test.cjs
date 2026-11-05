@@ -37,3 +37,30 @@ test('musical slurs still link note IDs, remain separate from ties and export in
  assert.match(html,/for\(const \[a,b\] of links\.slurs\)connect\(a,b,'slur'\)/);
  assert.match(html,/for\(const \[a,b\] of links\.ties\)connect\(a,b,'tie'\)/);
 });
+
+test('tap a slur endpoint completes before pointerdown redraw can detach note target',()=>{
+ const fn=extract('function captureSlurNoteTap(','function pointerDown(');
+ let completed=null,blocked=false,prevented=false,cleared=false;
+ const handler=new Function('pendingSlurStart','piano','svgPoint','nearestMusicNote',
+  'clearMusicLongPress','selectEvent',fn+'\nreturn captureSlurNoteTap;')(
+  'start',null,()=>({x:210,y:130}),()=>({type:'note',id:'end'}),
+  ()=>{cleared=true},id=>{completed=id});
+ handler({button:0,preventDefault(){prevented=true},stopImmediatePropagation(){blocked=true}});
+ assert.equal(completed,'end');assert.ok(prevented&&blocked&&cleared);
+ assert.match(html,/\$\('scrollZone'\)\.addEventListener\('pointerdown',captureSlurNoteTap,true\)/);
+});
+test('slur target tap ignores empty staff and keeps the pending slur',()=>{
+ const fn=extract('function captureSlurNoteTap(','function pointerDown(');
+ let chosen=null;
+ const handler=new Function('pendingSlurStart','piano','svgPoint','nearestMusicNote',
+  'clearMusicLongPress','selectEvent',fn+'\nreturn captureSlurNoteTap;')(
+  'start',null,()=>({x:210,y:130}),()=>null,()=>{},id=>{chosen=id});
+ handler({button:0,preventDefault(){throw Error('unexpected preventDefault')},
+  stopImmediatePropagation(){throw Error('unexpected stop')}});
+ assert.equal(chosen,null);
+});
+test('slur mode switches to cursor selection and retains musical links',()=>{
+ assert.match(html,/document\.querySelector\('\[data-annotation-tool="cursor"\]'\)\?\.click\(\)/);
+ assert.match(html,/setMode\('select'\);\s*pendingSlurStart=found\.e\.id/);
+ assert.match(html,/links\.refs\[a\]\.e\.slurTo=endId/);
+});
