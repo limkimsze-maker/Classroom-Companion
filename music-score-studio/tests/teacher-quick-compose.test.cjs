@@ -9,7 +9,7 @@ function extract(a,b){
  assert.ok(i>=0&&j>i,'Source region unavailable: '+a);return html.slice(i,j);
 }
 const functions=[
- extract('function eventPositions(','function insertPlacedMusicEvent('),
+ extract('function engravingGap(','function insertPlacedMusicEvent('),
  extract('function insertPlacedMusicEvent(','function el('),
  extract('function staffNotePosition(','function hideMusicNoteMenu('),
  extract('function selectPaletteNote(','/* Teacher quick-entry state'),
@@ -28,6 +28,7 @@ function harnessFactory(ids,document,window,hooks){
  const paletteNames=MUSIC_DURATION_NAMES,EXTRA_MARKS=['staccato','accent'];
  const boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
  const CLASSROOM_TEMPOS={},MUSICAL_DYNAMICS={mf:.79};
+ const isTwoBarRest=()=>false;
  const blank=()=>({barDirectives:[],title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,
   instrument:'piano',pitchNames:false,metronome:false,playFlow:false,completeBars:true,
   bars:Array.from({length:4},()=>[]),strokes:[]});
@@ -96,10 +97,10 @@ function mock(options={}){
  return {api,$,hooks};
 }
 function loc(api,bar,step='C',octave=4,fraction=.15){
- const l=api.staffLayout(),top=l.top(Math.floor(bar/2)),left=l.left+(bar%2)*l.barW;
+ const l=api.staffLayout(),cell=l.cells[bar],top=cell.top,left=cell.left;
  const bottom=api.data.clef==='treble'?4*7+2:2*7+4;
  const pitch=octave*7+'CDEFGAB'.indexOf(step);
- return api.staffNotePosition({x:left+l.barW*fraction,y:top+72-(pitch-bottom)*9});
+ return api.staffNotePosition({x:left+cell.width*fraction,y:top+72-(pitch-bottom)*9});
 }
 function key(api,name,target={tagName:'DIV',closest:()=>null},flags={}){
  const ev={key:name,target,defaultPrevented:false,isComposing:false,repeat:false,
@@ -116,7 +117,8 @@ test('change selected values and keep the same composition method',()=>{
  const {api}=mock();api.selectPaletteNote(4);
  assert.equal(api.placePaletteNote(loc(api,0,'C',4,.15),4),true);
  api.selectPaletteNote(8);
- assert.equal(api.placePaletteNote(loc(api,0,'D',4,.45),8),true);
+ // Insert to the right of the sole visible notehead (centred in its bar).
+ assert.equal(api.placePaletteNote(loc(api,0,'D',4,.75),8),true);
  assert.deepEqual(api.data.bars[0].map(e=>e.den),[4,8]);
  assert.equal(api.active,8);
 });
@@ -150,7 +152,7 @@ test('reject overflowing measure without committing any change',()=>{
 test('preserve 40-bar limit during automatic advancement',()=>{
  const {api}=mock({bars:40,meter:'2/4'});
  const l=api.staffLayout();api.selectPaletteNote(4);
- api.setCursor({bar:39,x:l.left+l.barW+50,pitch:{step:'C',octave:4}});
+ api.setCursor({bar:39,x:l.cells[39].left+50,pitch:{step:'C',octave:4}});
  api.setQuickKeyboard(true);assert.equal(api.quickEnter('note','C'),true);
  assert.equal(api.quickEnter('note','D'),true);
  assert.equal(api.data.bars.length,40);
