@@ -170,7 +170,7 @@ function actualEraserHarness(){
  const source=[
   extract('function remember(){','function updateButtons(){'),
   extract('function eraseNear(','function translateShape('),
-  extract('function rememberEraseStart(','function endPointer('),
+  extract('function rememberEraseStart(','function cancelPointer('),
   extract('function undo(){','function clearAnnotations()')
  ].join('\n');
  const state={tool:'eraser',hidden:false,items:[
