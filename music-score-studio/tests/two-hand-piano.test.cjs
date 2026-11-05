@@ -171,12 +171,12 @@ test('saved two-hand JSON retains note expression marks and stable links',()=>{
  assert.equal(reopened.bars[0].right[0].accent,true);
 });
 test('score highlights active noteheads in gold and clears them on Stop',()=>{
- assert.match(html,/if\(activeNotes\.has\(e\.id\)\)group\.append\(el\('ellipse'/);
- assert.match(html,/fill:'#ffc64b'/);
+ assert.match(html,/class:'playHalo'/);
+ assert.match(html,/\.isPlaying \.playHalo\{opacity:1\}/);
  assert.match(html,/function setPlayingNotes\(ids\)/);
  assert.match(html,/setInterval\(\(\)=>\{/);
  assert.match(html,/for\(const e of perf\.events\)\{/);
- assert.match(html,/activeNotes\.clear\(\);render\(\)/);
+ assert.match(html,/setPlayingNotes\(new Set\(\)\)/);
 });
 test('both hands can be highlighted together and all highlights can be cleared',()=>{
  const rh=note('C',5,4),lh=note('G',2,4),p=setup(project([rh],[lh]));
@@ -193,4 +193,11 @@ test('expression controls remain visible above the scrolling piano sheet',()=>{
  const edit=html.indexOf('id="editPanel"'),sheet=html.indexOf('id="sheetViewport"');
  assert.ok(edit>=0&&sheet>edit);
  assert.match(html,/id="articulations"/);
+});
+
+test('playback highlights update existing note symbols instead of redrawing the score',()=>{
+ const body=extract('function setPlayingNotes(ids){','async function play(){');
+ assert.match(body,/querySelectorAll\?\.\('g\[data-id\]'\)/);
+ assert.match(body,/classList\.toggle\('isPlaying'/);
+ assert.ok(!body.includes('render()'),'Playback highlight must not recreate the score SVG');
 });
