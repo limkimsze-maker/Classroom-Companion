@@ -301,3 +301,28 @@ test('horizontal-only drag and wrong-pointer movement do not change notes',()=>{
  p.pitchPointerEnd(ev);
  assert.equal(p.getData().bars[0].right[0].step,'E');
 });
+
+test('simple score-first interface shows Compose, Listen and Music sheet in order',()=>{
+ const compose=html.indexOf('1 · Compose'),listen=html.indexOf('2 · Listen'),sheet=html.indexOf('3 · Music sheet');
+ assert.ok(compose>=0&&listen>compose&&sheet>listen);
+ assert.match(html,/id="composeHint"/);
+ assert.match(html,/Right-click for note values/);
+});
+test('secondary tools remain available inside one clearly named disclosure',()=>{
+ assert.match(html,/<details class="moreTools" id="moreTools">/);
+ assert.match(html,/<summary aria-label="Save, open, export and more score tools">/);
+ for(const id of ['save','open','openFile','musicxml','print','removeBar'])assert.match(html,new RegExp('id="'+id+'"'));
+ assert.ok(html.indexOf('id="moreTools"')<html.indexOf('id="musicxml"'));
+});
+test('selected note exposes explicitly labelled Pitch and Expression controls',()=>{
+ assert.match(html,/heading\('Pitch'\)/);
+ assert.match(html,/heading\('Expression · click to add or remove'\)/);
+ assert.match(html,/id="editPanel" hidden/);
+ assert.match(html,/Edit selected note/);
+});
+test('full page and fit, play and stop, accessible buttons are preserved',()=>{
+ assert.match(html,/id="zoom"/);assert.match(html,/id="full"/);
+ assert.match(html,/id="play"/);assert.match(html,/id="stop" disabled/);
+ assert.match(html,/\.moreTools>summary:focus-visible/);
+ assert.match(html,/active\?\.closest\('button,a,summary'\)/);
+});
