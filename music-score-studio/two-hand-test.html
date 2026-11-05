@@ -143,17 +143,18 @@ button.active:not(.primary){background:#e6f5f5;color:#087b86}
 <header class="studioHeader"><div class="brand"><span class="brandLogo" aria-hidden="true">♫</span><div><h1>Music Score Studio <span class="headerMode">Two-Hand Piano · TEST</span></h1><p>Compose, listen and learn · right and left hands together</p></div></div><a class="backLink" href="./index.html">← Single stave</a></header>
 <main class="studioShell">
 <aside class="studioSidebar" aria-label="Composition tools">
+
+<section class="panel" aria-label="Compose notes">
+<div class="entryTop">
+<div><div class="studioLabel">COMPOSE</div><h2>Choose a note value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
+<div class="entryOptions"><label>Write <select id="kind" aria-label="Write note or rest"><option value="note">Note</option><option value="rest">Rest</option></select></label><label><input type="checkbox" id="dotted"> Dotted (+½)</label><label>Accidental <select id="acc"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></label></div>
+</div>
+</section>
 <section class="panel setupPanel">
 <div class="row">
 <label>Score title <input id="title" type="text" maxlength="100" value="My Piano Piece" aria-label="Score title"></label>
 <label>Time signature <select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></label>
 <label>Tempo (BPM) <input id="tempo" type="number" min="40" max="220" value="96" style="width:78px"></label>
-</div>
-</section>
-<section class="panel" aria-label="Compose notes">
-<div class="entryTop">
-<div><div class="studioLabel">COMPOSE</div><h2>Choose a note value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
-<div class="entryOptions"><label>Write <select id="kind" aria-label="Write note or rest"><option value="note">Note</option><option value="rest">Rest</option></select></label><label><input type="checkbox" id="dotted"> Dotted (+½)</label><label>Accidental <select id="acc"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></label></div>
 </div>
 </section>
 </aside>
