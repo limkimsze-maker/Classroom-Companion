@@ -110,7 +110,7 @@ function drawClef(svg,hand,x,top){
  const clef=hand==='right'?'𝄞':'𝄢';
  drawText(svg,x,top+65,clef,74,{'font-family':'Noto Music,Segoe UI Symbol,serif',fill:'#234354'});
 }
-function drawEvent(svg,e,x,top,hand,isSelected){
+function drawEvent(svg,e,x,top,hand,isSelected,beamed=false){
  const y=e.kind==='note'?yAt(e,top,hand):top+38,fill='#204451';
  const group=el('g',{'data-id':e.id,role:'button',tabindex:0,'aria-label':(hand==='right'?'Right':'Left')+' hand '+(e.kind==='rest'?'rest':e.step+e.octave)+' '+NAMES[e.den]});svg.append(group);
  if(isSelected)group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:20,fill:'#c3f1e7'}));
@@ -122,12 +122,48 @@ function drawEvent(svg,e,x,top,hand,isSelected){
   if(e.acc)drawText(group,x-31,y+7,e.acc==='#'?'♯':e.acc==='b'?'♭':'♮',24,{'font-family':'serif'});
   group.append(el('ellipse',{cx:x,cy:y,rx:e.den===1?12.5:11.5,ry:7,transform:'rotate(-17 '+x+' '+y+')',fill:e.den>=4?fill:'#fff',stroke:fill,'stroke-width':2}));
   if(e.den!==1){const up=y>=top+36,sx=x+(up?10:-10),ey=y+(up?-49:49);drawLine(group,sx,y,sx,ey,fill,2.2);
-   if(e.den>=8){const count=e.den===8?1:2;for(let k=0;k<count;k++)group.append(el('path',{d:'M '+sx+' '+(ey+(up?k*9:-k*9))+' q '+(up?24:-24)+' '+(up?-6:6)+' '+(up?11:-11)+' '+(up?26:-26),fill:'none',stroke:fill,'stroke-width':3}))}
+   if(e.den>=8&&!beamed){const count=e.den===8?1:2;for(let k=0;k<count;k++)group.append(el('path',{d:'M '+sx+' '+(ey+(up?k*9:-k*9))+' q '+(up?24:-24)+' '+(up?-6:6)+' '+(up?11:-11)+' '+(up?26:-26),fill:'none',stroke:fill,'stroke-width':3}))}
   }
  }
  if(e.dot)group.append(el('circle',{cx:x+19,cy:y-4,r:2.9,fill}));
  group.append(el('rect',{x:x-20,y:y-21,width:40,height:42,fill:'transparent',class:'noteHit','data-id':e.id}));
  return group;
+}
+
+// Beam neighbouring quavers/semiquavers inside a crotchet beat (or a
+// dotted-crotchet beat in 6/8). Keep both hands independent.
+function pianoBeamGroups(events){
+ const unit=data.meter==='6/8'?36:24,groups=[];
+ let group=[],pos=0,prevBeat=-1;
+ const finish=()=>{if(group.length>1)groups.push(group);group=[]};
+ for(let i=0;i<events.length;i++){
+  const e=events[i],beat=Math.floor((pos+.00001)/unit);
+  if(e.kind!=='note'||e.den<8||beat!==prevBeat)finish();
+  if(e.kind==='note'&&e.den>=8)group.push(i);
+  pos+=ticks(e);prevBeat=beat;
+ }
+ finish();return groups;
+}
+function drawPianoBeams(svg,events,groups,left,width,top,hand){
+ const dark='#204451';
+ const offsets=[];let elapsed=0;
+ events.forEach(e=>{offsets.push(timeX(elapsed,ticks(e),left,width));elapsed+=ticks(e)});
+ for(const indices of groups){
+  const ys=indices.map(i=>yAt(events[i],top,hand));
+  const up=ys.reduce((a,b)=>a+b,0)/ys.length>=top+36;
+  const xs=indices.map(i=>offsets[i]+(up?10:-10)),anchor=up?
+   Math.min(...ys)-48:Math.max(...ys)+48;
+  const g=el('g',{'aria-hidden':'true','pointer-events':'none'});svg.append(g);
+  indices.forEach((i,k)=>drawLine(g,xs[k],ys[k],xs[k],anchor,dark,2.25));
+  const y2=anchor+(up?5.5:-5.5);
+  g.append(el('path',{d:'M '+xs[0]+' '+anchor+' L '+xs.at(-1)+' '+anchor+' L '+xs.at(-1)+' '+y2+' L '+xs[0]+' '+y2+' Z',fill:dark}));
+  for(let k=0;k<indices.length-1;k++){
+   if(events[indices[k]].den<16||events[indices[k+1]].den<16)continue;
+   const shift=up?10:-10;
+   g.append(el('path',{d:'M '+xs[k]+' '+(anchor+shift)+' L '+xs[k+1]+' '+(anchor+shift),
+    fill:'none',stroke:dark,'stroke-width':5.5}));
+  }
+ }
 }
 const LEFT=155,W=1140,BARW=230,TOP=110,SYSHEIGHT=286,SEPARATION=123;
 function locationForBar(index){const line=Math.floor(index/4),slot=index%4;return {line,left:LEFT+slot*BARW,width:BARW,top:TOP+line*SYSHEIGHT}}
@@ -154,7 +190,9 @@ function render(){
   for(const hand of ['right','left']){
    const staffTop=top+(hand==='left'?SEPARATION:0),events=data.bars[b][hand],used=barSum(events);
    const hit=el('rect',{x:left,y:staffTop-10,width,height:95,fill:'transparent','data-bar':b,'data-hand':hand,'data-top':staffTop,'data-left':left,'data-width':width});svg.append(hit);
-   let position=0;for(const e of events){const x=timeX(position,ticks(e),left,width);drawEvent(svg,e,x,staffTop,hand,e.id===selected);position+=ticks(e)}
+   const beams=pianoBeamGroups(events),beamed=new Set(beams.flat());
+   let position=0;for(let i=0;i<events.length;i++){const e=events[i],x=timeX(position,ticks(e),left,width);drawEvent(svg,e,x,staffTop,hand,e.id===selected,beamed.has(i));position+=ticks(e)}
+   drawPianoBeams(svg,events,beams,left,width,staffTop,hand);
    const lineWeight=b===data.bars.length-1?2:1.4;drawLine(svg,right,staffTop,right,staffTop+72,'#234657',lineWeight);
    if(b===data.bars.length-1)drawLine(svg,right+5,staffTop,right+5,staffTop+72,'#234657',3);
    if(hand==='right'){drawText(svg,left+9,top-20,'Bar '+(b+1),11);if(used>meterCap())drawText(svg,right-5,top-20,'Overfull',10,{'text-anchor':'end',fill:'#bd4545'})}
