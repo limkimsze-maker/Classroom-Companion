@@ -35,7 +35,7 @@ function preview(){
   'autoExpressionReview','pianoCounts','scanAnother','closePiano','helpAndProjects',
   'pianoNowPlaying','moreActions','testDockCompose','testDockOpen','testScoreTools',
   'omrChooseButton','engravedScore','testEngravedNav','testEngravedPrev','testEngravedNext',
-  'testEngravedPageLabel'])ids[name]=makeNode(name);
+  'testEngravedPageLabel','testEngravedResume'])ids[name]=makeNode(name);
  const filePanel=makeNode(''),scanner=makeNode('omrHero'),setup=makeNode('settings'),
   notice=makeNode('notice'),toolbar=makeNode('toolbar'),inner=makeNode('inner'),
   optionsItem=makeNode('openXML'),info=makeNode('info');
@@ -107,7 +107,7 @@ test('engraved page buttons show exactly one page without modifying playback',()
  assert.equal(ui.ids.testEngravedNext.disabled,true);
  ui.ids.testEngravedPrev.click();
  assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true]);
- assert.match(html,/if\(slot\.section\.hidden\)/,'Playback cursor selects a different page');
+ assert.match(html,/window\.testScoreFollowPage\?\.\(page\)/,'Playback cursor passes playhead page to the guarded follower');
  assert.match(html,/window\.testScoreShowPage\?\.\(0\)/,'Navigator starts after engraving');
 });
 test('responsive score frame, note palette, full-page and frozen source stay available',()=>{
@@ -125,4 +125,60 @@ test('responsive score frame, note palette, full-page and frozen source stay ava
  assert.match(html,/Semibreve/);
  assert.match(html,/Semiquaver/);
  assert.match(html,/#musicTermsPanel\{display:none!important\}/);
+});
+
+test('manual Previous/Next stays selected during playback until Resume following',()=>{
+ const ui=preview();
+ ui.window.testScoreShowPage(0);
+ assert.equal(ui.ids.testEngravedResume.hidden,true);
+ // Simulate pupils browsing while an audible piece is on page one.
+ ui.ids.testEngravedNext.click();
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true]);
+ assert.equal(ui.ids.testEngravedResume.hidden,false);
+ assert.match(ui.ids.testEngravedPageLabel.textContent,/Browsing/);
+ ui.window.testScoreFollowPage(0); // playback still page 1: do not snap
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true]);
+ ui.window.testScoreFollowPage(2); // playback moves to page 3: still browse page 2
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true]);
+ ui.ids.testEngravedPrev.click();
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[false,true,true]);
+ ui.window.testScoreFollowPage(2);
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[false,true,true]);
+ // Resume immediately returns to the actual playhead and follows it thereafter.
+ ui.ids.testEngravedResume.click();
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,true,false]);
+ assert.equal(ui.ids.testEngravedResume.hidden,true);
+ assert.doesNotMatch(ui.ids.testEngravedPageLabel.textContent,/Browsing/);
+ ui.window.testScoreFollowPage(1);
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true]);
+});
+test('real engraved playback cursor retains manual page without scrolling to hidden cursor',()=>{
+ const ui=preview();
+ ui.window.testScoreShowPage(0);
+ ui.ids.testEngravedNext.click();
+ const start=html.indexOf('function moveEngravedPlaybackCursor(globalTick){');
+ const end=html.indexOf('\nfunction startPianoTracking(',start);
+ assert.ok(start>=0&&end>start,'Actual engraved playback cursor implementation found');
+ const cursor={iterator:{endReached:true},cursorElement:{},show(){this.shown=true},hide(){},reset(){},next(){},previous(){}};
+ const slot={start:0,end:9600,section:ui.pages[0],cursor,visible:false,position:-1,ready:true,lastTarget:0};
+ const realDoc={
+  getElementById:id=>ui.ids[id],
+  querySelectorAll:selector=>selector==='#engravedScore > .omrRenderedPage'?ui.pages:[]
+ };
+ let scrolled=0;
+ const move=new Function('document','window','engravedCursors','osmdTimestampTicks','followPianoElement',
+  html.slice(start,end)+'\nreturn moveEngravedPlaybackCursor;'
+ )(realDoc,ui.window,[slot],()=>0,()=>scrolled++);
+ move(60);
+ assert.equal(cursor.shown,true,'Music cursor continues advancing during manual browsing');
+ assert.equal(scrolled,0,'Do not scroll a hidden playing page into view');
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true],'Manual page is not overwritten by cursor');
+ ui.ids.testEngravedResume.click();
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[false,true,true],'Resumed page matches actual playing page');
+});
+test('reviewed mobile labels and page buttons have readable touch targets',()=>{
+ assert.match(html,/#annotationToolbar \.noteStampName\{font-size:11px;line-height:1\.15/);
+ assert.match(html,/@media\(max-width:380px\)\{\s*#annotationToolbar \.noteStampName\{font-size:10px/);
+ assert.match(html,/\.testEngravedNav button\{min-height:44px\}/);
+ assert.match(html,/id="testEngravedResume"/);
 });
