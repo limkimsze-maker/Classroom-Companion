@@ -393,11 +393,11 @@ function setVolume(value){
  $('volume').value=String(volume);$('volumeValue').textContent=volume+'%';
  if(masterGain&&ctx)masterGain.gain.setTargetAtTime(volume/100,ctx.currentTime,.015);
 }
-function oscillator(midi,at,duration,hand){
+function oscillator(midi,at,duration,hand,strength=1){
  if(!ctx)return;const root=ctx.createOscillator(),gain=ctx.createGain(),harm=ctx.createOscillator(),hGain=ctx.createGain();
  const hz=440*Math.pow(2,(midi-69)/12);root.type='triangle';harm.type='sine';
  root.frequency.setValueAtTime(hz,at);harm.frequency.setValueAtTime(hz*2,at);
- const amp=hand==='left'?.18:.15,hold=Math.max(.1,duration*.91),end=at+hold;
+ const amp=(hand==='left'?.18:.15)*Math.min(1.5,Math.max(.5,strength)),hold=Math.max(.1,duration*.91),end=at+hold;
  gain.gain.setValueAtTime(.00001,at);gain.gain.exponentialRampToValueAtTime(amp,at+.012);gain.gain.exponentialRampToValueAtTime(.00001,end+.12);
  hGain.gain.setValueAtTime(.00001,at);hGain.gain.exponentialRampToValueAtTime(amp*.18,at+.012);hGain.gain.exponentialRampToValueAtTime(.00001,end+.07);
  root.connect(gain);gain.connect(ensureMaster());harm.connect(hGain);hGain.connect(ensureMaster());
@@ -410,26 +410,73 @@ function midi(e,bar,index){
  return 12*(e.octave+1)+semis[e.step]+alter;
 }
 function performance(){
- const secPerTick=60/Math.max(40,Number(data.tempo)||96)/24;
- const events=[];
- for(let b=0;b<data.bars.length;b++)for(const hand of ['right','left']){
-  let offset=0;const bar=data.bars[b][hand];
-  for(let i=0;i<bar.length;i++){const e=bar[i],duration=ticks(e);
-   if(e.kind==='note')events.push({bar:b,hand,index:i,event:e,at:(b*meterCap()+offset)*secPerTick,length:duration*secPerTick,pitch:midi(e,bar,i)});
-   offset+=duration;
+ const secPerTick=60/Math.max(40,Number(data.tempo)||96)/24,events=[];
+ for(const hand of ['right','left']){
+  const links=handLinks(hand),legato=new Set();
+  for(const [from,to] of links.slurs){
+   const a=links.indices.get(from),b=links.indices.get(to);
+   for(let k=a;k<b;k++)if(links.refs[k].e.kind==='note')legato.add(links.refs[k].e.id);
+  }
+  const notes=[],ids=new Map();
+  for(let b=0;b<data.bars.length;b++){
+   let offset=0;const bar=data.bars[b][hand];
+   for(let i=0;i<bar.length;i++){
+    const e=bar[i],length=ticks(e),at=(b*meterCap()+offset)*secPerTick;
+    if(e.kind==='note'){
+     const entry={bar:b,hand,index:i,event:e,at,length:length*secPerTick,
+       pitch:midi(e,bar,i),ids:[e.id],id:e.id};
+     notes.push(entry);ids.set(e.id,entry);
+    }
+    offset+=length;
+   }
+  }
+  const tiedTo=new Set(links.ties.map(pair=>pair[1]));
+  for(const entry of notes){
+   if(tiedTo.has(entry.id))continue;
+   const e=entry.event;
+   let duration=entry.length,current=entry,count=0;
+   while(count++<40){
+    const link=links.ties.find(pair=>pair[0]===current.id);
+    if(!link)break;
+    const next=ids.get(link[1]);
+    if(!next||Math.abs(next.at-(entry.at+duration))>.0001)break;
+    duration+=next.length;entry.ids.push(next.id);current=next;
+   }
+   const factor=e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:
+     legato.has(e.id)?1.03:.96;
+   entry.duration=Math.max(.06,duration*factor)+(e.fermata?Math.max(.2,duration*.55):0);
+   entry.gain=e.marcato?1.43:e.accent?1.25:1;
+   events.push(entry);
   }
  }
- return {events,duration:data.bars.length*meterCap()*secPerTick};
+ events.sort((a,b)=>a.at-b.at||a.hand.localeCompare(b.hand));
+ const nominal=data.bars.length*meterCap()*secPerTick;
+ return {events,duration:Math.max(nominal,...events.map(e=>e.at+e.duration))};
+}
+function setPlayingNotes(ids){
+ if(ids.size===activeNotes.size&&[...ids].every(id=>activeNotes.has(id)))return;
+ activeNotes=new Set(ids);render();
 }
 async function play(){
  if(playing)stop();
  try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();ensureMaster()}catch(e){info('Audio could not start in this browser.');return}
  const perf=performance(),start=ctx.currentTime+.08;playing=true;
- for(const e of perf.events)oscillator(e.pitch,start+e.at,e.length,e.hand);
- $('play').disabled=true;$('stop').disabled=false;info('Playing right and left hands together.');
+ for(const e of perf.events)oscillator(e.pitch,start+e.at,e.duration,e.hand,e.gain);
+ $('play').disabled=true;$('stop').disabled=false;
+ info('Playing both hands · Gold rings show notes currently sounding.');
+ timers.push(setInterval(()=>{
+  if(!playing)return;
+  const t=ctx.currentTime-start,visible=new Set();
+  for(const e of perf.events)if(e.at<=t&&t<e.at+e.duration)for(const id of e.ids)visible.add(id);
+  setPlayingNotes(visible);
+ },45));
  timers.push(setTimeout(()=>stop(),Math.ceil((perf.duration+.3)*1000)));
 }
-function stop(){for(const s of sounds)try{s.stop()}catch(_){}sounds=[];timers.forEach(clearTimeout);timers=[];playing=false;$('play').disabled=false;$('stop').disabled=true;info('Stopped.')}
+function stop(){
+ for(const s of sounds)try{s.stop()}catch(_){}
+ sounds=[];timers.forEach(clearInterval);timers=[];playing=false;
+ activeNotes.clear();render();$('play').disabled=false;$('stop').disabled=true;info('Stopped.');
+}
 function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
 function typeName(den){return ({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[den]}
 function printBar(bar){const out=bar.map(e=>({...e}));let left=meterCap()-barSum(bar);
