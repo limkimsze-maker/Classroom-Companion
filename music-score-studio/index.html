@@ -1549,36 +1549,55 @@ function removeSelected(){const s=findSelected();if(!s)return;change();data.bars
 function adjustPitch(n){const s=findSelected();if(!s||s.e.kind!=='note')return;let idx=noteIndex(s.e.step,s.e.octave)+n;if(idx<8||idx>48)return;change();Object.assign(s.e,fromIndex(idx));removeBrokenConnections();commit()}
 function applyValue(){const s=findSelected();if(!s)return;const n={...s.e,den,dot};if(sumBar(data.bars[s.bar])-ticks(s.e)+ticks(n)>cap()+.00001){flash('That note value would make this bar too long.');return}change();s.e.den=den;s.e.dot=dot;if(s.e.kind==='note')s.e.acc=acc;commit();flash('Selected symbol updated')}
 function selectEvent(id){if(finishNoteSlur(id))return;selected=id;let entry=findSelected();if(entry)markedBar=entry.bar;render();let s=findSelected();if(s)updateStatus(`${noteName(s.e)} · ${MUSIC_DURATION_NAMES[s.e.den]?.toLowerCase()||'note'}${s.e.dot?' (dotted)':''} · Bar ${s.bar+1}`)}
+/* Rhythmic engraving: calculate horizontal geometry without modifying the
+ * score's event order, pitch, duration, timing or saved JSON fields.
+ * Music engraving is semi-proportional, not equally spaced or strictly linear. */
+function engravingGap(previous,next){
+ const duration=Math.max(3,ticks(previous));
+ const ideal=31+12*Math.log2(1+duration/6);
+ const clearance=33+(previous.dot?7:0)+(next.acc?19:0)+(next.dot?4:0)+
+  (next.kind==='rest'?4:0)+(next.fermata?5:0);
+ return Math.max(ideal,clearance);
+}
+function engravingMargins(bar){
+ const first=bar[0],last=bar.at(-1);
+ return {before:first?.acc?56:38,after:last?.dot?44:38};
+}
+function engravingMinWidth(bar){
+ if(!bar.length)return 190;
+ const margin=engravingMargins(bar);
+ let gaps=0;for(let i=1;i<bar.length;i++)gaps+=engravingGap(bar[i-1],bar[i]);
+ return Math.max(190,margin.before+margin.after+gaps+14);
+}
 function eventPositions(bar,left,width){
- const count=bar.length,pad=30,usable=width-pad*2;
- return bar.map((event,i)=>Number.isFinite(event.posX)&&event.posX>=0&&event.posX<=1
-  ?left+Math.max(pad,Math.min(width-pad,event.posX*width))
-  :left+pad+(i+.5)*usable/Math.max(1,count));
+ const count=bar.length;if(!count)return [];
+ const margin=engravingMargins(bar);
+ if(count===1)return [left+width/2];
+ const ideals=Array.from({length:count-1},(_,i)=>engravingGap(bar[i],bar[i+1]));
+ const minGap=ideals.map((g,i)=>Math.min(g,Math.max(27,33+
+  (bar[i].dot?6:0)+(bar[i+1].acc?19:0)+(bar[i+1].dot?4:0))));
+ const maxSpan=Math.max(0,width-margin.before-margin.after);
+ const natural=ideals.reduce((a,b)=>a+b,0);
+ const hardMin=minGap.reduce((a,b)=>a+b,0);
+ let gaps;
+ if(natural<=maxSpan){
+  const stretch=Math.min(11,(maxSpan-natural)/(count-1));
+  gaps=ideals.map(g=>g+stretch);
+ }else{
+  const shrink=natural===hardMin?0:Math.max(0,Math.min(1,(maxSpan-hardMin)/(natural-hardMin)));
+  gaps=ideals.map((g,i)=>minGap[i]+(g-minGap[i])*shrink);
+  if(hardMin>maxSpan)gaps=minGap.map(g=>g*maxSpan/hardMin);
+ }
+ const used=gaps.reduce((a,b)=>a+b,0);
+ const inset=Math.max(margin.before,(width-used)/2);
+ let x=left+inset;
+ return [x,...gaps.map(g=>x+=g)];
 }
 function findInsertIndex(barIndex,x,left,width){
- const arr=eventPositions(data.bars[barIndex],left,width);
- let index=0;while(index<arr.length&&x>arr[index])index++;return index;
-}
-// Keep placed notes where they were dropped, while preserving the familiar
-// automatic spacing for older scores until their first manual placement.
-function placedNoteX(bar,left,width,desired){
- const used=eventPositions(bar,left,width).map(x=>x-left);
- const clamp=x=>Math.max(30,Math.min(width-30,x));
- let best=clamp(desired-left);
- if(used.some(x=>Math.abs(x-best)<24)){
-  let bestDistance=Infinity,free=null;
-  for(let d=0;d<=width;d+=6){
-   for(const candidate of [best-d,best+d]){
-    const x=clamp(candidate);
-    if(used.some(p=>Math.abs(p-x)<23))continue;
-    const distance=Math.abs(x-best);
-    if(distance<bestDistance){free=x;bestDistance=distance;}
-   }
-   if(free!==null)break;
-  }
-  if(free!==null)best=free;
- }
- return best;
+ const positions=eventPositions(data.bars[barIndex],left,width);
+ // Click position chooses rhythmic insertion order, not final engraved x.
+ let index=0;while(index<positions.length&&x>(positions[index]+(positions[index+1]??positions[index]))/2)index++;
+ return index;
 }
 function insertPlacedMusicEvent(target,denominator,kind='note'){
  if(!target||target.type!=='insert'||!VALID_DEN.includes(denominator)||!['note','rest'].includes(kind))return false;
@@ -1590,16 +1609,55 @@ function insertPlacedMusicEvent(target,denominator,kind='note'){
   const message='Bar '+(bar+1)+' is too full for that '+kind+'. Choose a shorter value or another bar.';
   $('beautifyFeedback').textContent=message;updateStatus(message);flash(message);return false;
  }
- const old=data.bars[bar],oldXs=eventPositions(old,left,width),placement=placedNoteX(old,left,width,location.x);
+ const events=data.bars[bar],index=findInsertIndex(bar,location.x,left,width);
  change();
- // Keep previously placed notes at their recorded position; the new note alone may be nudged.
- for(let i=0;i<old.length;i++)if(!Number.isFinite(old[i].posX))old[i].posX=(oldXs[i]-left)/width;
- event.posX=placement/width;old.push(event);old.sort((a,b)=>(a.posX??0)-(b.posX??0));
+ // Horizontal input chooses the sequence; engraving owns the final x.
+ // Preserve legacy posX metadata in JSON without letting it cause collisions.
+ events.splice(index,0,event);
  boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=event.id;
  if(activeNoteStampDen||quickKeyboardOn)advanceQuickCursor(bar,event,pitch);
  commit();return true;
 }
-function staffLayout(){const systems=Math.ceil(data.bars.length/2),H=94+systems*202;return {W:1120,H,sys:systems,top:s=>104+s*202,left:144,right:1096,barW:(1096-144)/2}}
+function staffLayout(){
+ const left=144,right=1096,baseRoom=right-left,bars=data.bars;
+ const requests=bars.map(engravingMinWidth),groups=[];
+ // Hand-drawn ink uses absolute SVG coordinates: retain its historic system
+ // geometry rather than moving sketches while a teacher is annotating.
+ if(data.strokes?.length){
+  for(let i=0;i<bars.length;i+=2)groups.push([i,...(i+1<bars.length?[i+1]:[])]);
+ }else{
+  for(let i=0;i<bars.length;){
+   const group=[];let used=0;
+   while(i<bars.length){
+    const pair=isTwoBarRest(i)&&i+1<bars.length?2:1;
+    const demand=requests.slice(i,i+pair).reduce((a,b)=>a+b,0);
+    if(group.length&&used+demand>baseRoom)break;
+    for(let j=0;j<pair;j++)group.push(i+j);
+    used+=demand;i+=pair;
+   }
+   groups.push(group);
+  }
+ }
+ const W=data.strokes?.length?1120:Math.max(1120,left+Math.max(0,...requests)+24);
+ const available=W-left-24,cells=Array(bars.length),systemCells=[],systemEnds=[];
+ for(let sys=0;sys<groups.length;sys++){
+  const group=groups[sys],desired=group.map(i=>data.strokes?.length?baseRoom/2:requests[i]);
+  const total=desired.reduce((a,b)=>a+b,0);
+  const lineLength=data.strokes?.length?baseRoom:sys<groups.length-1?available:
+   Math.min(available,Math.max(total,total*1.22));
+  const excess=Math.max(0,lineLength-total);
+  let x=left;const row=[];
+  for(let i=0;i<group.length;i++){
+   const width=desired[i]+excess*(desired[i]/total);
+   const cell={bar:group[i],sys,top:104+sys*202,left:x,width};
+   row.push(cell);cells[group[i]]=cell;x+=width;
+  }
+  systemCells.push(row);systemEnds.push(x);
+ }
+ const H=94+Math.max(1,groups.length)*202;
+ return {W,H,sys:groups.length,top:s=>104+s*202,left,right:W-24,
+  cells,systemCells,systemEnds,barW:baseRoom/2};
+}
 function el(name,attrs={},textValue){const n=document.createElementNS(NS,name);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(textValue!==undefined)n.textContent=String(textValue);return n}
 function line(g,x1,y1,x2,y2,stroke='#273844',sw=1.35,more={}){g.append(el('line',{x1,y1,x2,y2,stroke,'stroke-width':sw,...more}))}
 function textSvg(g,x,y,str,size=16,attrs={}){g.append(el('text',{x,y,'font-size':size,'font-family':'system-ui, Segoe UI, Arial, sans-serif',fill:'#1e3542',...attrs},str))}
@@ -2074,22 +2132,14 @@ function inkFindFill(b,head){
 
 function inkLocateHead(head,layout,barCount){
  let nearest=null,closest=Infinity;
- for(let sys=0;sys<layout.sys;sys++){
-  const top=layout.top(sys);
-  // The head must actually sit on a line/space, or at most one ledger
-  // line above/below the staff. Exclude titles, labels, margins and notes
-  // scribbled far outside the staff (previously accepted up to 52px above).
+ for(const cell of layout.cells){
+  if(!cell||cell.bar>=barCount)continue;
+  const {bar,top,left,width}=cell;
   if(head.y<top-18||head.y>top+90)continue;
   if(head.minY<top-29||head.maxY>top+101)continue;
-  if(head.x<layout.left+18||head.x>layout.right-18)continue;
-  const localBar=Math.floor((head.x-layout.left)/layout.barW);
-  if(localBar<0||localBar>1)continue;
-  const bar=sys*2+localBar;
-  const barLeft=layout.left+localBar*layout.barW;
-  if(head.minX<barLeft+9||head.maxX>barLeft+layout.barW-9)continue;
-  if(bar>=barCount)continue;
+  if(head.minX<left+9||head.maxX>left+width-9)continue;
   const dist=Math.abs(head.y-(top+36));
-  if(dist<closest){closest=dist;nearest={bar,top,left:layout.left+localBar*layout.barW,width:layout.barW};}
+  if(dist<closest){closest=dist;nearest={bar,top,left,width};}
  }
  return nearest;
 }
@@ -2312,18 +2362,12 @@ function nearestMusicNote(p){
 function staffNotePosition(p){
  const layout=staffLayout();
  if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return null;
- for(let sys=0;sys<layout.sys;sys++){
-  const top=layout.top(sys);
-  // Notes must be on the staff or within one ledger line.
+ for(const cell of layout.cells){
+  if(!cell)continue;
+  const {bar,top,left,width}=cell;
   if(p.y<top-18||p.y>top+90)continue;
-  if(p.x<layout.left+18||p.x>layout.right-18)continue;
-  const slot=Math.floor((p.x-layout.left)/layout.barW);
-  if(slot!==0&&slot!==1)continue;
-  const bar=sys*2+slot;
-  if(bar>=data.bars.length)continue;
-  const left=layout.left+slot*layout.barW;
-  if(p.x<left+18||p.x>left+layout.barW-18)continue;
-  return {type:'insert',bar,top,left,width:layout.barW,x:p.x,y:p.y,pitch:pitchOfY(p.y,top),den:null};
+  if(p.x<left+18||p.x>left+width-18)continue;
+  return {type:'insert',bar,top,left,width,x:p.x,y:p.y,pitch:pitchOfY(p.y,top),den:null};
  }
  return null;
 }
