@@ -88,3 +88,23 @@ test('automatic quaver grouping follows 4/4 crotchet beats and 6/8 dotted-crotch
  const interrupted=[note('C',5,8),{id:'rest',kind:'rest',den:8,dot:false},...quavers.slice(0,4)];
  assert.deepEqual(six.pianoBeamGroups(interrupted),[[3,4,5]]);
 });
+
+test('piano has a user-adjustable classroom volume with a safe output limiter',()=>{
+ assert.match(html,/id="volume" type="range" min="0" max="100" value="75"/);
+ assert.match(html,/const amp=hand==='left'\?\.18:\.15/);
+ assert.match(html,/function ensureMaster\(\)/);
+ assert.match(html,/ctx\.createDynamicsCompressor\(\)/);
+ assert.match(html,/masterGain\.connect\(limiter\);limiter\.connect\(ctx\.destination\)/);
+ assert.match(html,/gain\.connect\(ensureMaster\(\)\)/);
+ assert.match(html,/hGain\.connect\(ensureMaster\(\)\)/);
+});
+test('volume change is bounded and can mute playback without altering score data',()=>{
+ const segment=extract('function setVolume(','function oscillator(');
+ const ui={volume:{value:'75'},volumeValue:{textContent:'75%'}};
+ const f=new Function('$','masterGain','ctx','volume',segment+
+  '\nreturn v=>{setVolume(v);return {volume,slider:$(\'volume\').value,label:$(\'volumeValue\').textContent}};')(
+  id=>ui[id],null,null,75);
+ assert.deepEqual(f(0),{volume:0,slider:'0',label:'0%'});
+ assert.deepEqual(f(110),{volume:100,slider:'100',label:'100%'});
+ assert.deepEqual(f(55),{volume:55,slider:'55',label:'55%'});
+});
