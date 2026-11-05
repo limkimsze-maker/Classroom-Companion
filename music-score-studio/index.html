@@ -597,6 +597,10 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
 }
 @media print{#pianoPanel.fullPageMusic .omrRenderedPage[hidden]{display:block!important}}
 
+/* Keep score headings unobscured when an import or writing tool scrolls to them. */
+#editorScorePanel,#pianoPanel{scroll-margin-top:78px}
+.piano-active #testToolFiles .meta{display:none}
+
 </style>
 <script src="./annotation-tools.js?v=a754a293" defer></script>
 </head>
