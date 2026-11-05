@@ -614,6 +614,25 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
  #annotationToolbar .noteStampName{font-size:11px;line-height:1.15}
 }
 
+
+/* TEST-only: Open Score and Tools are now separate, non-overlapping workflows. */
+.testScoreOpen{position:relative}
+.testOpenPanel{position:absolute;right:0;top:calc(100% + 12px);z-index:302;width:min(530px,calc(100vw - 16px));max-height:calc(100dvh - 82px);overflow:auto;overscroll-behavior:contain;background:#fff;border:1px solid #bfdaea;box-shadow:0 22px 50px #12354b35;border-radius:18px;padding:16px}
+.testOpenPanel[hidden]{display:none!important}
+.testOpenPanel h3{margin:0 0 10px;font-size:15px;color:#225276}
+.testOpenPanel .omrHero{display:block!important;max-width:none;margin:0;padding:0}
+.testOpenPanel .omrCard{padding:12px;border-radius:12px;box-shadow:none}
+.testOpenPanel .omrHeading h2{font-size:17px}
+.testOpenPanel .omrHeading p{font-size:12px;line-height:1.4}
+.testOpenPanel .oneTapControls{margin:10px 0;display:flex;flex-wrap:wrap;gap:7px}
+.testOpenPanel .oneTapControls .btn{min-height:44px}
+.testOpenPanel .omrDetails{font-size:11px}
+#testDockOpen[aria-expanded="true"]{background:#e8f5ff;border-color:#7ab5d6}
+@media(max-width:700px){
+ .testOpenPanel{position:fixed;top:57px;right:6px;width:calc(100vw - 12px);max-height:calc(100dvh - 63px);padding:10px;border-radius:14px}
+}
+@media print{.testOpenPanel{display:none!important}}
+
 </style>
 <script src="./annotation-tools.js?v=a754a293" defer></script>
 </head>
@@ -627,11 +646,16 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
   <div class="testDockPlay" id="testDockPlay" role="group" aria-label="Play and stop"></div>
   <span class="testDockSpacer"></span>
   <button type="button" class="testDockAction testDockCompose" id="testDockCompose">✎ Compose</button>
-  <button type="button" class="testDockAction" id="testDockOpen">＋ Open score</button>
+  <div class="testScoreOpen">
+   <button type="button" class="testDockAction" id="testDockOpen" aria-expanded="false" aria-controls="testOpenPanel">＋ Open score</button>
+   <div class="testOpenPanel" id="testOpenPanel" role="region" aria-label="Open or scan a score" hidden>
+    <h3>Open or scan a score</h3>
+    <div id="testToolImport"></div>
+   </div>
+  </div>
   <details class="testScoreTools" id="testScoreTools">
    <summary aria-label="Open music tools and teacher options">⚙ Tools</summary>
    <div class="testToolsPanel" id="testToolsPanel">
-    <h3>Open or scan music</h3><div id="testToolImport"></div>
     <h3>Score &amp; settings</h3><div id="testToolSetup"></div>
     <h3>Editing and files</h3><div id="testToolFiles"></div>
     <h3>Teacher tools</h3><div id="testToolTeacher"></div>
@@ -4092,17 +4116,36 @@ wire();wireScoreFullPage();wireScanner();wireProfessionalScanner();wireOneStepSc
  $('testDockCompose').addEventListener('click',()=>{
   $('closePiano').click();
   $('testScoreTools').open=false;
+  $('testOpenPanel').hidden=true;
+  $('testDockOpen').setAttribute('aria-expanded','false');
  });
+ const openPanel=$('testOpenPanel');
+ const setImportOpen=open=>{
+  openPanel.hidden=!open;
+  $('testDockOpen').setAttribute('aria-expanded',String(open));
+ };
  $('testDockOpen').addEventListener('click',()=>{
-  $('testScoreTools').open=true;
-  $('omrChooseButton').focus({preventScroll:true});
+  const open=openPanel.hidden;
+  if(open)$('testScoreTools').open=false;
+  setImportOpen(open);
+  if(open)$('omrChooseButton').focus({preventScroll:true});
+ });
+ $('testScoreTools').addEventListener('toggle',()=>{
+  if($('testScoreTools').open)setImportOpen(false);
  });
  document.addEventListener('pointerdown',event=>{
-  const drawer=$('testScoreTools');
-  if(drawer.open&&!drawer.contains(event.target)&&event.target!==$('testDockOpen'))drawer.open=false;
+  const drawer=$('testScoreTools'), opener=$('testDockOpen');
+  if(drawer.open&&!drawer.contains(event.target))drawer.open=false;
+  if(!openPanel.hidden&&!openPanel.contains(event.target)&&event.target!==opener)setImportOpen(false);
  });
  document.addEventListener('keydown',event=>{
-  if(event.key==='Escape'&&$('testScoreTools').open)$('testScoreTools').open=false;
+  if(event.key==='Escape'){
+   if($('testScoreTools').open)$('testScoreTools').open=false;
+   if(!openPanel.hidden){
+    setImportOpen(false);
+    $('testDockOpen').focus({preventScroll:true});
+   }
+  }
  });
  let shownPage=0,playingPage=0,manualBrowsing=false;
  function showEngravedPage(page,fromUser=false,resetScroll=false){
