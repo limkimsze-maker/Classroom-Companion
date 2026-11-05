@@ -32,7 +32,7 @@ test('Escape cancels a pending slur before exiting full-page mode',()=>{
  assert.match(html,/\$\('scoreSlurButton'\)\.onclick=\(\)=>pendingSlurStart\?cancelNoteSlur\(\):toggleNoteSlur\(\)/);
 });
 test('musical slurs still link note IDs, remain separate from ties and export in MusicXML',()=>{
- assert.match(html,/links\.refs\[a\]\.e\.slurTo=endId/);
+ assert.match(html,/links\.refs\[a\]\.e\.slurTo=links\.refs\[b\]\.e\.id/);
  assert.match(html,/if\(links\.slurEnds\.has\(e\.id\)\)notations\.push\('<slur number="1" type="stop\/"\/> '\)/.source ? /links\.slurEnds\.has\(e\.id\)/ : /links\.slurEnds\.has\(e\.id\)/);
  assert.match(html,/for\(const \[a,b\] of links\.slurs\)connect\(a,b,'slur'\)/);
  assert.match(html,/for\(const \[a,b\] of links\.ties\)connect\(a,b,'tie'\)/);
@@ -62,7 +62,7 @@ test('slur target tap ignores empty staff and keeps the pending slur',()=>{
 test('slur mode switches to cursor selection and retains musical links',()=>{
  assert.match(html,/document\.querySelector\('\[data-annotation-tool="cursor"\]'\)\?\.click\(\)/);
  assert.match(html,/setMode\('select'\);\s*pendingSlurStart=found\.e\.id/);
- assert.match(html,/links\.refs\[a\]\.e\.slurTo=endId/);
+ assert.match(html,/links\.refs\[a\]\.e\.slurTo=links\.refs\[b\]\.e\.id/);
 });
 
 test('slur creation works whether the first or last note is tapped first',()=>{
