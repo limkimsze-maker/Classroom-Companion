@@ -1594,9 +1594,15 @@ function eventPositions(bar,left,width){
  return [x,...gaps.map(g=>x+=g)];
 }
 function findInsertIndex(barIndex,x,left,width){
- const positions=eventPositions(data.bars[barIndex],left,width);
- // Click position chooses rhythmic insertion order, not final engraved x.
- let index=0;while(index<positions.length&&x>(positions[index]+(positions[index+1]??positions[index]))/2)index++;
+ const bar=data.bars[barIndex],positions=eventPositions(bar,left,width);
+ // Old posX and recent click locations are sequence hints only, NOT engraving x.
+ // The new rhythmic layout always calculates its own final note positions.
+ let index=0;
+ while(index<bar.length){
+  const hint=Number.isFinite(bar[index].posX)?left+bar[index].posX*width:positions[index];
+  if(x<=hint)break;
+  index++;
+ }
  return index;
 }
 function insertPlacedMusicEvent(target,denominator,kind='note'){
@@ -1613,6 +1619,7 @@ function insertPlacedMusicEvent(target,denominator,kind='note'){
  change();
  // Horizontal input chooses the sequence; engraving owns the final x.
  // Preserve legacy posX metadata in JSON without letting it cause collisions.
+ event.posX=Math.max(0,Math.min(1,(location.x-left)/width)); // sequence hint, not a drawn coordinate
  events.splice(index,0,event);
  boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=event.id;
  if(activeNoteStampDen||quickKeyboardOn)advanceQuickCursor(bar,event,pitch);
