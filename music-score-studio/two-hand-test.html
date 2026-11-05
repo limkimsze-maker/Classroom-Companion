@@ -23,7 +23,7 @@ h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0
 #sheet{display:block;width:100%;min-width:780px;height:auto;cursor:crosshair;user-select:none}
 #sheet.zoomed{width:135%;min-width:1053px}
 .noteHit{cursor:pointer}.noteHit:focus-visible{outline:none;stroke:#0b9cad;stroke-width:2}
-.status{min-height:20px;font-size:13px;color:#275f70}.articulations{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.articulations button{padding:7px 9px;font-size:12px;min-height:36px}.articulations button.active{background:#d4f3ed}.slurStart{fill:none;stroke:#078f99;stroke-width:3;stroke-dasharray:4 3;pointer-events:none}.playHalo{fill:#ffc64b;fill-opacity:.55;stroke:#e19a23;stroke-width:3;pointer-events:none;opacity:0}.isPlaying .playHalo{opacity:1}
+.status{min-height:20px;font-size:13px;color:#275f70}.noteContext{position:fixed;z-index:1100;background:#fff;border:1px solid #9fc8ce;border-radius:12px;box-shadow:0 10px 30px #183c4b35;padding:10px;max-width:min(310px,calc(100vw - 16px));min-width:190px}.noteContext[hidden]{display:none}.noteContext strong{display:block;margin:0 0 7px;font-size:13px;color:#234b60}.noteContext .valueChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.noteContext .valueChoices button{padding:7px;min-height:35px;font-size:12px}.noteContext .valueChoices button:last-child:nth-child(odd){grid-column:1/-1}.noteContext .contextDismiss{margin-top:7px;width:100%;min-height:32px;font-size:12px}.articulations{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.articulations button{padding:7px 9px;font-size:12px;min-height:36px}.articulations button.active{background:#d4f3ed}.slurStart{fill:none;stroke:#078f99;stroke-width:3;stroke-dasharray:4 3;pointer-events:none}.playHalo{fill:#ffc64b;fill-opacity:.55;stroke:#e19a23;stroke-width:3;pointer-events:none;opacity:0}.isPlaying .playHalo{opacity:1}
 #editPanel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid #e6eef0;margin-top:10px}
 #editPanel[hidden]{display:none}.muted{color:#637985}
 footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
@@ -64,6 +64,7 @@ footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
 <p id="status" class="status" role="status" aria-live="polite">Ready · Select a value and tap either stave.</p>
 </section>
 </main>
+<div id="noteContext" class="noteContext" hidden role="dialog" aria-label="Note values"><strong id="noteContextTitle">Choose a note value</strong><div id="contextValues" class="valueChoices"></div><button type="button" class="contextDismiss" id="contextClose">Cancel</button></div>
 <footer>Music Score Studio © 2026 Lim Kim Sze · Experimental two-hand composition · Review notation before teaching · Works locally in your browser.<div style="margin-top:6px">Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.</div><div style="margin-top:6px">Licensed under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a> · <a href="https://github.com/limkimsze-maker/Classroom-Companion/tree/music-studio/two-hand-piano-test-20261105/music-score-studio" target="_blank" rel="noopener noreferrer">Source code</a> · <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/OPEN_SOURCE_NOTICES.md" target="_blank" rel="noopener noreferrer">Open-source notices</a>.</div></footer>
 <script>
 (()=>{'use strict';
@@ -71,7 +72,7 @@ const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-
 const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
 const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
 const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]}))});
-let data=newProject(),chosen=4,selected=null,pendingSlur=null,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
+let data=newProject(),chosen=4,selected=null,pendingSlur=null,contextTarget=null,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
 const MARKS=['staccato','staccatissimo','portato','tenuto','accent','marcato','fermata'];
 const MARK_LABELS={staccato:'Staccato ·',staccatissimo:'Staccatissimo ▾',portato:'Portato –·',tenuto:'Tenuto –',accent:'Accent >',marcato:'Marcato ^',fermata:'Fermata 𝄐'};
 const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
@@ -351,8 +352,8 @@ function render(){
  $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;
 }
 function point(ev){const svg=$('sheet'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const matrix=svg.getScreenCTM();return matrix?p.matrixTransform(matrix.inverse()):p}
-function insert(b,hand,x,y){
- const bar=data.bars[b][hand],den=chosen,kind=$('kind').value;
+function insert(b,hand,x,y,denOverride=null,kindOverride=null){
+ const bar=data.bars[b][hand],den=denOverride||chosen,kind=kindOverride||$('kind').value;
  const e={id:makeId(),kind,den,dot:$('dotted').checked};
  if(kind==='note')Object.assign(e,{...pitchAt(y,locationForBar(b).top+(hand==='left'?SEPARATION:0),hand),acc:$('acc').value});
  if(barSum(bar)+ticks(e)>meterCap()+.0001){info('That '+NAMES[den].toLowerCase()+' will not fit in '+hand+'-hand Bar '+(b+1)+'.');return false}
@@ -360,6 +361,52 @@ function insert(b,hand,x,y){
  for(const item of bar){times.push(timeX(pos,ticks(item),loc.left,loc.width));pos+=ticks(item)}
  let index=0;while(index<times.length&&times[index]<x)index++;
  snapshot();bar.splice(index,0,e);selected=e.id;commit((hand==='right'?'Right':'Left')+' hand · '+(kind==='rest'?'Rest':e.step+e.octave)+' added.');return true;
+}
+
+function closeNoteContext(){contextTarget=null;$('noteContext').hidden=true}
+function pickContextValue(den){
+ const target=contextTarget;closeNoteContext();if(!target||!DENS.includes(den))return;
+ if(target.type==='edit'){
+  const found=locate(target.id);if(!found||found.event.kind!=='note')return;
+  const bar=data.bars[found.b][found.hand],e=found.event;
+  if(barSum(bar)-ticks(e)+ticks({...e,den})>meterCap()+.0001){info('That '+NAMES[den].toLowerCase()+' would overfill this bar.');return}
+  snapshot();e.den=den;selected=e.id;commit('Changed to '+NAMES[den]+'.');
+ }else if(target.type==='insert'){
+  insert(target.b,target.hand,target.x,target.y,den,'note');
+ }
+}
+function openNoteContext(ev){
+ const svg=$('sheet'),p=point(ev);
+ const target=ev.target.closest('[data-id],[data-bar]');
+ let result=null;
+ if(target?.dataset?.id){
+  const ref=locate(target.dataset.id);
+  if(ref?.event.kind==='note')result={type:'edit',id:ref.event.id};
+ }else if(target?.dataset?.bar!==undefined){
+  const b=Number(target.dataset.bar),hand=target.dataset.hand;
+  if(data.bars[b]&&['right','left'].includes(hand))result={type:'insert',b,hand,x:p.x,y:p.y};
+ }
+ if(!result){
+  // Musical glyphs (e.g. clefs and staff lines) can intercept hitboxes.
+  // Determine the stave from its actual score position as a fallback.
+  const row=Math.floor((p.y-TOP)/SYSHEIGHT),within=p.y-(TOP+row*SYSHEIGHT);
+  const hand=within>=SEPARATION-10&&within<=SEPARATION+92?'left':
+   within>=-10&&within<=94?'right':null;
+  const b=row*4+Math.floor((p.x-LEFT)/BARW);
+  const loc=locationForBar(b);
+  if(hand&&b>=0&&b<data.bars.length&&loc.line===row&&p.x>=loc.left&&p.x<=loc.left+loc.width)
+   result={type:'insert',b,hand,x:p.x,y:p.y};
+ }
+ if(!result)return;
+ ev.preventDefault();ev.stopPropagation();
+ contextTarget=result;
+ const title=result.type==='edit'?'Change selected note value':(result.hand==='right'?'Right-hand':'Left-hand')+' note · Bar '+(result.b+1);
+ $('noteContextTitle').textContent=title;
+ const menu=$('noteContext');menu.hidden=false;
+ const rect=menu.getBoundingClientRect();
+ menu.style.left=Math.max(8,Math.min(ev.clientX,window.innerWidth-rect.width-8))+'px';
+ menu.style.top=Math.max(8,Math.min(ev.clientY,window.innerHeight-rect.height-8))+'px';
+ menu.querySelector('button')?.focus();
 }
 function clickSheet(ev){
  const target=ev.target.closest('[data-id],[data-bar]');if(!target)return;
@@ -554,6 +601,15 @@ function bind(){
  for(const den of DENS){const b=document.createElement('button');b.type='button';b.innerHTML='<b>'+GLYPHS[den]+'</b>'+NAMES[den];b.dataset.den=den;b.onclick=()=>{chosen=den;refreshValues();info(NAMES[den]+' selected. Tap a stave to insert.')};$('values').append(b)}
  refreshValues();
  $('sheet').addEventListener('click',clickSheet);
+ $('sheet').addEventListener('contextmenu',openNoteContext);
+ const contextChoices=$('contextValues');contextChoices.replaceChildren();
+ for(const den of DENS){
+  const button=document.createElement('button');button.type='button';
+  button.textContent=GLYPHS[den]+' '+NAMES[den];button.onclick=()=>pickContextValue(den);contextChoices.append(button);
+ }
+ $('contextClose').onclick=closeNoteContext;
+ document.addEventListener('pointerdown',e=>{if(!$('noteContext').hidden&&!e.target.closest('#noteContext'))closeNoteContext()});
+ window.addEventListener('scroll',closeNoteContext,{capture:true,passive:true});
  $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();if(!finishSlur(id)){selected=id;render()}}});
  $('play').onclick=play;$('stop').onclick=stop;$('undo').onclick=undo;$('redo').onclick=redo;
  $('volume').oninput=e=>setVolume(e.target.value);
@@ -570,6 +626,7 @@ function bind(){
  $('zoom').onclick=()=>{zoomed=!zoomed;$('sheet').classList.toggle('zoomed',zoomed);$('zoom').textContent=zoomed?'↘ Fit page':'🔎 Larger'};
  $('full').onclick=()=>{const full=$('paper').classList.toggle('fullpage');$('full').textContent=full?'⊟ Minimise':'⛶ Full page';$('full').setAttribute('aria-pressed',String(full))};
  window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!$('noteContext').hidden){closeNoteContext();e.preventDefault();return}
   if(e.key==='Escape'&&pendingSlur){pendingSlur=null;render();info('Slur cancelled.');e.preventDefault();return}
   if(e.key==='Escape'&&$('paper').classList.contains('fullpage')){$('full').click();e.preventDefault();return}
   const active=document.activeElement;if(['INPUT','TEXTAREA','SELECT'].includes(active?.tagName)||active?.closest('button,a,summary'))return;
