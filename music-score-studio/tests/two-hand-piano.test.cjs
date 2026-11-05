@@ -8,32 +8,17 @@ function extract(start,end){
  const a=app.indexOf(start),b=app.indexOf(end,a+start.length);
  assert.ok(a>=0&&b>a,'Cannot locate '+start);return app.slice(a,b);
 }
-const helpers=extract('const NAMES=','function flash('); // replaced by lower-scope extraction below
-const functions=extract('const ticks=','function drawClef(')
-  +extract('function printBar(','function exportXml(');
-const STUBS={
- document:{createElementNS:()=>({setAttribute(){}})},
- window:{},
- NS:'http://www.w3.org/2000/svg'
-};
 function setup(initial){
- let data=initial,serial=0,downloaded=null;
- const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
- const STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
- const code=extract('const ticks=','function drawClef(')+extract('function printBar(','function bind(');
- // Most functions have dependencies supplied as stubs; no browser side effects.
- const names=[
- 'data','STEPS','DENS','NAMES','document','NS','history','future','selected','chosen',
- 'playing','stop','render','info','snapshot','commit','download','escapeXml','$','window','makeId','localStorage'
- ];
- const args=[
- data,STEPS,DENS,NAMES,STUBS.document,STUBS.NS,[],[],null,4,
- false,()=>{},()=>{},()=>{},()=>{},(s,n,t)=>{downloaded={s,n,t}},
- s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c])),
- id=>({value:id==='kind'?'note':'',checked:false}),{},()=> 'id'+(++serial),{}
- ];
- const output=new Function(...names,code+'\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,getData:()=>data};')(...args);
- return {...output,get downloaded(){return downloaded}};
+ let downloaded=null;
+ const names=['C','D','E','F','G','A','B'],dens=[1,2,4,8,16];
+ const labels={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
+ const code=extract('const ticks=','function bind(');
+ const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
+  code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,getData:()=>data,getDownloaded:()=>downloaded};'
+ )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:''}),
+ {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
+ return {...result,get downloaded(){return result.getDownloaded()}};
 }
 const note=(step,octave,den=4,extras={})=>({id:step+octave+Math.random(),kind:'note',step,octave,den,dot:false,acc:'',...extras});
 const project=(right,left,meter='4/4')=>({format:'cc-music-score-studio-twohand',version:1,title:'Piano TEST',tempo:120,meter,bars:[{right,left}]});
