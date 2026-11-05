@@ -239,8 +239,8 @@ function printBar(bar){const out=bar.map(e=>({...e}));let left=meterCap()-barSum
 }
 function exportXml(){
  let xml='<?xml version="1.0" encoding="utf-8"?>\n<score-partwise version="4.0"><work><work-title>'+escapeXml(data.title)+'</work-title></work><movement-title>'+escapeXml(data.title)+'</movement-title>';
- xml+='<part-list><score-part id="P1"><part-name>Piano Right Hand</part-name><part-abbreviation>RH</part-abbreviation><score-instrument id="I1"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>';
- xml+='<score-part id="P2"><part-name>Piano Left Hand</part-name><part-abbreviation>LH</part-abbreviation><score-instrument id="I2"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>1</midi-program></midi-instrument></score-part></part-list>';
+ xml+='<part-list><part-group number="1" type="start"><group-name>Piano</group-name><group-symbol>brace</group-symbol><group-barline>yes</group-barline></part-group><score-part id="P1"><part-name>Piano Right Hand</part-name><part-abbreviation>RH</part-abbreviation><score-instrument id="I1"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>';
+ xml+='<score-part id="P2"><part-name>Piano Left Hand</part-name><part-abbreviation>LH</part-abbreviation><score-instrument id="I2"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>1</midi-program></midi-instrument></score-part><part-group number="1" type="stop"/></part-list>';
  const [n,d]=data.meter.split('/');
  for(const [hand,part,sign,line] of [['right','P1','G','2'],['left','P2','F','4']]){
   xml+='<part id="'+part+'">';
