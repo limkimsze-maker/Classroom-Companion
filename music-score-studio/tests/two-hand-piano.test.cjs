@@ -316,7 +316,7 @@ test('secondary tools remain available inside one clearly named disclosure',()=>
 });
 test('selected note exposes explicitly labelled Pitch and Expression controls',()=>{
  assert.match(html,/heading\('Pitch'\)/);
- assert.match(html,/heading\('Expression · click to add or remove'\)/);
+ assert.match(html,/heading\('Expression and musical connections'\)/);
  assert.match(html,/id="editPanel" hidden/);
  assert.match(html,/Edit selected note/);
 });
@@ -469,7 +469,7 @@ test('selection move and size changes affect only teacher marks',()=>{
  assert.equal(p.getData().bars[0].right[0].step,'C');
 });
 test('annotation mode guards musical editing and right-click note insertion',()=>{
- assert.match(html,/function clickSheet\(ev\)\{\s*if\(annotationTool!=='cursor'\)return/);
+ assert.match(html,/function clickSheet\(ev\)\{\s*keyboardNoteFocus=false;\s*if\(annotationTool!=='cursor'\)return/);
  assert.match(html,/function pitchPointerDown\(ev\)\{\s*if\(annotationTool!=='cursor'\)return/);
  assert.match(html,/function openNoteContext\(ev\)\{\s*if\(annotationTool!=='cursor'\)/);
  assert.match(html,/function drawAnnotations\(svg\)/);
@@ -514,7 +514,7 @@ test('note-attached arrows follow bass notes independently of treble events',()=
  assert.ok(p.annotationXY(arrow.points.at(-1)).x>initial.x);
 });
 test('note-linked teacher marks survive JSON roundtrip, and deleted notes get safe fallback',()=>{
- const a=note('G',4),p=setup(project([a],[])),xy=p.notePosition(a.id);
+ const a=note('G',4,4,{id:'stableNoteG4'}),p=setup(project([a],[])),xy=p.notePosition(a.id);
  const attached=p.attachAnnotationToNote({x:xy.x+8,y:xy.y-8},a.id);
  const projectData=p.getData();
  projectData.annotations.push({id:'inkOne',tool:'hand',color:'#df654d',size:38,points:[attached]});
