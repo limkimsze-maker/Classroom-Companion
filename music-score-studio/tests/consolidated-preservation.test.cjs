@@ -6,6 +6,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const one=fs.readFileSync(path.join(__dirname,'..','consolidated-test.html'),'utf8');
 const two=fs.readFileSync(path.join(__dirname,'..','consolidated-two-hand-test.html'),'utf8');
+const overlay=fs.readFileSync(path.join(__dirname,'..','consolidated-annotation-tools.js'),'utf8');
 const approved='Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.';
 const ids=h=>[...h.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').matchAll(/\sid="([^"]+)"/g)].map(m=>m[1]);
 function inkModel(data,positions){
@@ -83,4 +84,65 @@ test('Unlinked handwriting still follows its bar on system reflow',()=>{
  const old=box(),next=box(150,302,450),ink={kind:'music',headX:420,headY:172,points:[[420,172],[422,174]]};
  api.reprojectScoreInk([ink],old,next,[ink.points.map(p=>p.slice())],api.scoreInkNoteCentres(old));
  assert.equal(ink.headY,374);assert.ok(ink.headX>420);
+});
+
+test('print-mode music ink follows actual printed notehead, not print-only rest layout offsets',()=>{
+ const data={bars:[[note('Cnote')]]},api=inkModel(data,()=>[259.9]),editor=box();
+ const printed={cells:[{bar:0,left:144,top:302,width:250}]};
+ const old=api.scoreInkNoteCentres(editor);
+ const actualPrintedNotes=new Map([['Cnote',{x:200.85,y:374}]]);
+ const ink={kind:'music',headX:259.9,headY:172,points:[[259.9,172],[262,174]]};
+ api.reprojectScoreInk([ink],editor,printed,[ink.points.map(p=>p.slice())],old,actualPrintedNotes);
+ assert.ok(Math.abs(ink.points[0][0]-200.85)<.001);
+ assert.equal(ink.points[0][1],374);
+ assert.equal(ink.headX,200.85);
+ assert.equal(ink.headY,374);
+ assert.match(one,/reprojectScoreInk\(\[stroke\],staffLayout\(\),layout,null,scoreInkNoteCentres\(staffLayout\(\)\),notePositions\)/);
+});
+test('PNG export uses same print-mode layout dimensions as SVG, even with new systems',()=>{
+ assert.match(one,/function vectorString\(\)\{const svg=makeScore\(true\)/);
+ assert.match(one,/const canvas=document\.createElement\('canvas'\),layout=staffLayout\(true\),scale=2/);
+ assert.match(one,/canvas\.height=layout\.H\*scale/);
+});
+function overlayModel(items,geometryRef){
+ const start=overlay.indexOf('function scoreGeometry(){'),end=overlay.indexOf('function sync(){',start);
+ assert.ok(start>=0&&end>start,'TEST-only annotation anchoring functions');
+ const state={items},window={musicScoreAnnotationGeometry:()=>geometryRef.value};
+ let saved=0,painted=0;
+ const api=new Function('state','activeView','window','persist','render',
+  overlay.slice(start,end)+'\nreturn {anchorForItem,reflowTeacherMarks};')(
+   state,()=> 'editor',window,()=>saved++,()=>painted++);
+ return {...api,state,counts:()=>({saved,painted})};
+}
+test('TEST-only teacher overlay keeps note-local pen ink fixed through a new score system',()=>{
+ const g1={width:1120,height:296,notes:[{id:'C',x:260/1120,y:172/296}],
+  bars:[{left:144/1120,width:400/1120,top:100/296}]};
+ const ref={value:g1},mark={type:'pen',points:[[257/1120,169/296],[262/1120,173/296]],color:'#df654d'};
+ const api=overlayModel([mark],ref);
+ mark.anchor=api.anchorForItem(mark,g1);
+ assert.equal(mark.anchor.type,'note');
+ ref.value={width:1120,height:498,notes:[{id:'C',x:260/1120,y:374/498}],
+  bars:[{left:144/1120,width:400/1120,top:302/498}]};
+ api.reflowTeacherMarks();
+ assert.ok(Math.abs(mark.points[0][1]*498-371)<.01,'ink stays exactly 3 SVG units above printed note');
+ assert.ok(api.counts().saved>0);
+});
+test('passage highlight uses bar-relative fallback at correct SVG offset after system reflow',()=>{
+ const g1={width:1120,height:296,notes:[{id:'C',x:260/1120,y:172/296}],
+  bars:[{left:144/1120,width:400/1120,top:100/296}]};
+ const ref={value:g1},mark={type:'highlighter',points:[[150/1120,135/296],[350/1120,135/296]],color:'#df654d'};
+ const api=overlayModel([mark],ref);
+ mark.anchor=api.anchorForItem(mark,g1);
+ assert.equal(mark.anchor.type,'bar');
+ ref.value={width:1120,height:498,notes:[{id:'C',x:260/1120,y:374/498}],
+  bars:[{left:144/1120,width:400/1120,top:302/498}]};
+ api.reflowTeacherMarks();
+ assert.ok(Math.abs(mark.points[0][1]*498-337)<.01,'bar-relative highlight remains 35 SVG units below staff start');
+});
+test('new test-only overlay module is isolated from production and listens for score reflow',()=>{
+ assert.match(one,/src="\.\/consolidated-annotation-tools\.js"/);
+ assert.match(one,/musicScoreAnnotationGeometry/);
+ assert.match(one,/music-score-studio:score-layout/);
+ assert.match(overlay,/function reflowTeacherMarks\(\)/);
+ assert.match(overlay,/document\.addEventListener\('music-score-studio:score-layout',scheduleSync\)/);
 });
