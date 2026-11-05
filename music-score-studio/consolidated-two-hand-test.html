@@ -1271,7 +1271,8 @@ function exportXml(){
     xml+='<note>';
     if(e.kind==='rest')xml+=e.measureRest?'<rest measure="yes"/>':'<rest/>';
     else {
-     const natural={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[e.step],effective=midi(e,bar,i)-12*(e.octave+1)-natural;
+     const natural={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[e.step],
+      effective=midi(e,original,i)-12*(e.octave+1)-natural;
      xml+='<pitch><step>'+e.step+'</step>'+(effective?'<alter>'+effective+'</alter>':'')+'<octave>'+e.octave+'</octave></pitch>';
     }
     xml+='<duration>'+Math.round(e.measureRest?meterCap():ticks(e))+'</duration>';
