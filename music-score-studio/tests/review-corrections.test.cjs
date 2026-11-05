@@ -91,3 +91,14 @@ test('JSON project import explicitly rejects more than 40 bars',()=>{
  assert.match(html,/raw\.bars\.length>40\)throw Error\('Classroom projects support a maximum of 40 bars'\)/);
  assert.doesNotMatch(html,/raw\.bars\.length>60\)/);
 });
+
+test('real project validator accepts 40 bars, rejects 41/60 without truncating',()=>{
+ const code=extract('function validateProject(','function loadProject(');
+ const blank=()=>({title:'',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',bars:[],strokes:[]});
+ const validator=new Function('blank','VALID_DEN','makeId','STEPS','EXTRA_MARKS','cleanBarDirective','TICKS','sumBar',
+  code+'\nreturn validateProject;')(
+  blank,[1,2,4,8,16],()=>Math.random().toString(36).slice(2),['C','D','E','F','G','A','B'],[],x=>x||{},96,()=>0);
+ const make=n=>({bars:Array.from({length:n},()=>[])});
+ assert.equal(validator(make(40)).bars.length,40);
+ for(const n of [41,60])assert.throws(()=>validator(make(n)),/maximum of 40 bars/);
+});
