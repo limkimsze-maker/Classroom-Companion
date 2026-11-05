@@ -601,6 +601,19 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
 #editorScorePanel,#pianoPanel{scroll-margin-top:78px}
 .piano-active #testToolFiles .meta{display:none}
 
+
+/* UI/UX independent review: readable pupil note names and touch-sized page controls. */
+.testEngravedNav button{min-height:44px}
+@media(max-width:700px){
+ #annotationToolbar .noteStampCard{min-height:72px}
+ #annotationToolbar .noteStampName{font-size:11px;line-height:1.15;overflow-wrap:anywhere}
+ #annotationToolbar .noteStampGraphic{height:31px;width:31px}
+ .testEngravedNav button{min-height:44px}
+}
+@media(max-width:380px){
+ #annotationToolbar .noteStampName{font-size:10px;line-height:1.15}
+}
+
 </style>
 <script src="./annotation-tools.js?v=a754a293" defer></script>
 </head>
@@ -836,7 +849,7 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
    <p id="autoExpressionNotice">Detected directions are applied automatically when recognition confidence is sufficient. Bar positions are estimated from the printed page; review them before classroom use.</p>
    <div id="autoExpressionRows"></div>
   </details>
-  <div id="notationHeader" class="omrNotationHeader"><strong id="notationStatus">Preparing the sheet music…</strong><div id="testEngravedNav" class="testEngravedNav" role="group" aria-label="Engraved score page navigation" hidden><button type="button" id="testEngravedPrev" aria-label="Previous score page">◀ Previous</button><strong id="testEngravedPageLabel" aria-live="polite">Page 1</strong><button type="button" id="testEngravedNext" aria-label="Next score page">Next ▶</button></div><button id="notationViewToggle" type="button" class="smallBtn" hidden>Show simplified view</button></div>
+  <div id="notationHeader" class="omrNotationHeader"><strong id="notationStatus">Preparing the sheet music…</strong><div id="testEngravedNav" class="testEngravedNav" role="group" aria-label="Engraved score page navigation" hidden><button type="button" id="testEngravedPrev" aria-label="Previous score page">◀ Previous</button><strong id="testEngravedPageLabel" aria-live="polite">Page 1</strong><button type="button" id="testEngravedNext" aria-label="Next score page">Next ▶</button><button type="button" id="testEngravedResume" aria-label="Resume automatically following the playing score" hidden>↪ Resume following</button></div><button id="notationViewToggle" type="button" class="smallBtn" hidden>Show simplified view</button></div>
   <div id="engravedScore" class="omrEngravedScore" hidden></div>
   <div class="pianoScoreScroll"><div id="simpleScoreGuide" class="simpleScoreGuide"><div class="simpleGuideNav"><button id="simplePrev" type="button">◀ Previous</button><strong id="simplePageLabel">Simplified score</strong><button id="simpleNext" type="button">Next ▶</button></div><div id="simpleNotes" class="simpleNotes" aria-label="Pitches in the current bar"></div></div><svg id="pianoScore" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MusicXML notes shown as grand staff with both hands"></svg></div>
 </div>
@@ -3305,11 +3318,10 @@ function moveEngravedPlaybackCursor(globalTick){
    if(slot.visible){try{cursor.hide()}catch(e){}slot.visible=false;}
    continue;
   }
-  // Only the visible engraved page changes; audio continues on the same clock.
-  if(slot.section.hidden){
-   const page=[...document.querySelectorAll('#engravedScore > .omrRenderedPage')].indexOf(slot.section);
-   if(page>=0)window.testScoreShowPage?.(page);
-  }
+  // Track the real playhead page without overriding manual Previous/Next browsing.
+  // Playback and the engraved cursor continue even when another page is displayed.
+  const page=[...document.querySelectorAll('#engravedScore > .omrRenderedPage')].indexOf(slot.section);
+  if(page>=0)window.testScoreFollowPage?.(page);
   const target=globalTick-slot.start;
   try{
    if(!slot.ready||target<slot.lastTarget-3){cursor.reset();slot.ready=true;slot.position=-1;}
@@ -3325,7 +3337,7 @@ function moveEngravedPlaybackCursor(globalTick){
    const pos=osmdTimestampTicks(cursor);
    if(!slot.visible||slot.position!==pos){
     cursor.show();slot.visible=true;slot.position=pos;
-    if(pane&&!pane.hidden)followPianoElement(cursor.cursorElement||slot.section,pane);
+    if(pane&&!pane.hidden&&!slot.section.hidden)followPianoElement(cursor.cursorElement||slot.section,pane);
    }
   }catch(e){slot.failed=true;try{cursor.hide()}catch(_){}}
  }
@@ -4092,22 +4104,42 @@ wire();wireScoreFullPage();wireScanner();wireProfessionalScanner();wireOneStepSc
  document.addEventListener('keydown',event=>{
   if(event.key==='Escape'&&$('testScoreTools').open)$('testScoreTools').open=false;
  });
- let shownPage=0;
- function showEngravedPage(page){
+ let shownPage=0,playingPage=0,manualBrowsing=false;
+ function showEngravedPage(page,fromUser=false,resetScroll=false){
   const area=$('engravedScore'),nav=$('testEngravedNav');
   const pages=[...area.querySelectorAll(':scope > .omrRenderedPage')];
-  if(!pages.length){nav.hidden=true;shownPage=0;return;}
-  shownPage=Math.max(0,Math.min(pages.length-1,Math.floor(Number(page)||0)));
-  pages.forEach((section,index)=>{section.hidden=index!==shownPage});
+  if(!pages.length){
+   nav.hidden=true;shownPage=0;playingPage=0;manualBrowsing=false;
+   $('testEngravedResume').hidden=true;
+   return;
+  }
+  const index=Math.max(0,Math.min(pages.length-1,Math.floor(Number(page)||0)));
+  if(fromUser)manualBrowsing=true;
+  const pageChanged=shownPage!==index;
+  shownPage=index;
+  pages.forEach((section,i)=>{section.hidden=i!==shownPage});
   nav.hidden=area.hidden||pages.length<=1;
   $('testEngravedPrev').disabled=shownPage===0;
   $('testEngravedNext').disabled=shownPage===pages.length-1;
-  $('testEngravedPageLabel').textContent='Page '+(shownPage+1)+' of '+pages.length;
-  area.scrollTop=0;area.scrollLeft=0;
+  $('testEngravedResume').hidden=!manualBrowsing||nav.hidden;
+  $('testEngravedPageLabel').textContent='Page '+(shownPage+1)+' of '+pages.length+(manualBrowsing?' · Browsing':'');
+  if(pageChanged||resetScroll){area.scrollTop=0;area.scrollLeft=0;}
  }
- window.testScoreShowPage=showEngravedPage;
- $('testEngravedPrev').addEventListener('click',()=>showEngravedPage(shownPage-1));
- $('testEngravedNext').addEventListener('click',()=>showEngravedPage(shownPage+1));
+ // A new imported score begins with automatic page following.
+ window.testScoreShowPage=page=>{
+  manualBrowsing=false;playingPage=0;showEngravedPage(page,false,true);
+ };
+ // Musical time and cursor positions advance regardless of manual navigation.
+ window.testScoreFollowPage=page=>{
+  playingPage=page;
+  if(!manualBrowsing&&shownPage!==page)showEngravedPage(page);
+ };
+ $('testEngravedPrev').addEventListener('click',()=>showEngravedPage(shownPage-1,true));
+ $('testEngravedNext').addEventListener('click',()=>showEngravedPage(shownPage+1,true));
+ $('testEngravedResume').addEventListener('click',()=>{
+  manualBrowsing=false;
+  showEngravedPage(playingPage,false,true);
+ });
 })();
 </script>
 
