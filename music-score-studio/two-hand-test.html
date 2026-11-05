@@ -459,7 +459,7 @@ function setPlayingNotes(ids){
  activeNotes=new Set(ids);
  // Only update the existing note symbols: do not recreate the SVG or steal
  // keyboard focus every time a playback highlight changes.
- $('sheet').querySelectorAll('g[data-id]').forEach(g=>g.classList.toggle('isPlaying',activeNotes.has(g.getAttribute('data-id'))));
+ $('sheet')?.querySelectorAll?.('g[data-id]').forEach(g=>g.classList.toggle('isPlaying',activeNotes.has(g.getAttribute('data-id'))));
  // Follow the sounding notes when playback moves to another stave system.
  // Respect teacher scrolling while the current sounding system is in view.
  if(!ids.size)return;
