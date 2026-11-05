@@ -904,7 +904,7 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
  </details>
  </div>
 </details>
-<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><div class="fullPageControls"><span id="modeHint">Drag a note onto a line or space</span><span id="slurGuide" class="slurPrompt" role="status" aria-live="polite" hidden>Tap the last note</span><button type="button" class="smallBtn slurAction" id="scoreSlurButton" hidden aria-pressed="false" title="Connect the selected note to a later note with a musical slur">Slur ⌒</button><button type="button" class="smallBtn fullPagePlay" id="fullPagePlayEditor" hidden>▶ Play</button><button type="button" class="smallBtn fullPageZoom" id="fullPageZoomEditor" hidden>🔎 Larger</button><button type="button" class="smallBtn fullPageToggle" id="fullPageEditor" aria-pressed="false" title="Show the music sheet across the screen">⛶ Full page</button></div></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
+<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><div class="fullPageControls"><span id="modeHint">Drag a note onto a line or space</span><span id="slurGuide" class="slurPrompt" role="status" aria-live="polite" hidden>Tap the other note</span><button type="button" class="smallBtn slurAction" id="scoreSlurButton" hidden aria-pressed="false" title="Connect the selected note to a later note with a musical slur">Slur ⌒</button><button type="button" class="smallBtn fullPagePlay" id="fullPagePlayEditor" hidden>▶ Play</button><button type="button" class="smallBtn fullPageZoom" id="fullPageZoomEditor" hidden>🔎 Larger</button><button type="button" class="smallBtn fullPageToggle" id="fullPageEditor" aria-pressed="false" title="Show the music sheet across the screen">⛶ Full page</button></div></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
 <div class="paperCard" id="pianoPanel" hidden>
   <div class="pianoTop"><div><span class="pianoEyebrow">🎵 LISTEN &amp; LEARN</span><h3 id="pianoTitle">Your music is ready!</h3><p id="pianoSubtitle">Both hands play together</p></div><div class="pianoTopActions"><button type="button" class="btn primary" id="scanAnother">📷 Another song</button><button type="button" class="btn" id="closePiano">✏ Compose instead</button><button type="button" class="btn fullPagePlay" id="fullPagePlayImported" hidden>▶ Play</button><button type="button" class="btn fullPageZoom" id="fullPageZoomImported" hidden>🔎 Larger</button><button type="button" class="btn fullPageToggle" id="fullPageImported" aria-pressed="false" title="View the recognised sheet music across the screen">⛶ Full page</button></div></div>
   <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span><label class="pianoFollowLabel"><input type="checkbox" id="followNotes" checked> Follow notes</label><span id="pianoNowPlaying" aria-live="off">Press Play to follow the notes.</span></div>
@@ -1532,22 +1532,25 @@ function toggleNoteSlur(){
  document.querySelector('[data-annotation-tool="cursor"]')?.click();
  setMode('select');
  pendingSlurStart=found.e.id;render();
- updateStatus('Slur: tap the last note (or press Escape to cancel).');
- flash('Tap the last note. Escape cancels.');
+ updateStatus('Slur: tap the other note, either before or after (Escape cancels).');
+ flash('Tap the other note. Escape cancels.');
 }
 function finishNoteSlur(endId){
  if(!pendingSlurStart)return false;
  const startId=pendingSlurStart;pendingSlurStart=null;
  if(startId===endId){render();flash('Slur cancelled.');return true;}
- const links=musicalLinks(),a=links.indices.get(startId),b=links.indices.get(endId);
- if(a===undefined||b===undefined||a>=b||links.refs[b].e.kind!=='note'){
-  render();flash('Select a later note as the slur ending.');return true;
+ const links=musicalLinks(),first=links.indices.get(startId),last=links.indices.get(endId);
+ if(first===undefined||last===undefined||links.refs[first].e.kind!=='note'||links.refs[last].e.kind!=='note'){
+  render();flash('Choose a musical note for the slur.');return true;
  }
+ // Either selection order is natural in a classroom. Save the correct earlier
+ // note as the slur start, without changing note order, pitch or playback.
+ const a=Math.min(first,last),b=Math.max(first,last);
  for(const [from,to] of links.slurs){
   const x=links.indices.get(from),y=links.indices.get(to);
-  if(a<y&&x<b){render();flash('Overlapping slurs are not supported. Choose another ending.');return true;}
+  if(a<y&&x<b){render();flash('Overlapping slurs are not supported. Choose another pair.');return true;}
  }
- change();links.refs[a].e.slurTo=endId;selected=endId;commit();
+ change();links.refs[a].e.slurTo=links.refs[b].e.id;selected=endId;commit();
  flash('Slur added between the selected notes.');return true;
 }
 function addNoteMarkButtons(container,e){
@@ -1568,7 +1571,7 @@ function addNoteMarkButtons(container,e){
  button((e.tieTo?'✓ ':'')+'Tie ⌣',!!e.tieTo,'Join the immediately following same-pitch note',toggleNoteTie);
  if(pendingSlurStart===e.id){
   const msg=document.createElement('span');msg.className='slurPrompt';
-  msg.textContent='→ Tap the ending note';container.append(msg);
+  msg.textContent='→ Tap the other note';container.append(msg);
  }
 }
 
