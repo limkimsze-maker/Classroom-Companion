@@ -49,6 +49,7 @@ test('save/reopen and adaptive reflow keep horizontal index independent of old h
  const {api,data}=run(loaded);
  const first=api.staffLayout();
  data.bars[0]=Array.from({length:16},(_,i)=>note('dense'+i,.99,16));
+ data.bars[1]=Array.from({length:16},(_,i)=>note('dense2'+i,.99,16));
  const reflow=api.staffLayout(),b=1,c=reflow.cells[b];
  assert.notEqual(reflow.cells[b].top,first.cells[b].top);
  const xs=api.eventPositions(data.bars[b],c.left,c.width);
