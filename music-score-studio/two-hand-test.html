@@ -121,7 +121,7 @@ function drawEvent(svg,e,x,top,hand,isSelected,beamed=false){
   for(let yy=top;yy>=y+12;yy-=18)drawLine(group,x-15,yy,x+15,yy,fill,1.3);
   if(e.acc)drawText(group,x-31,y+7,e.acc==='#'?'♯':e.acc==='b'?'♭':'♮',24,{'font-family':'serif'});
   group.append(el('ellipse',{cx:x,cy:y,rx:e.den===1?12.5:11.5,ry:7,transform:'rotate(-17 '+x+' '+y+')',fill:e.den>=4?fill:'#fff',stroke:fill,'stroke-width':2}));
-  if(e.den!==1){const up=y>=top+36,sx=x+(up?10:-10),ey=y+(up?-49:49);drawLine(group,sx,y,sx,ey,fill,2.2);
+  if(e.den!==1&&!beamed){const up=y>=top+36,sx=x+(up?10:-10),ey=y+(up?-49:49);drawLine(group,sx,y,sx,ey,fill,2.2);
    if(e.den>=8&&!beamed){const count=e.den===8?1:2;for(let k=0;k<count;k++)group.append(el('path',{d:'M '+sx+' '+(ey+(up?k*9:-k*9))+' q '+(up?24:-24)+' '+(up?-6:6)+' '+(up?11:-11)+' '+(up?26:-26),fill:'none',stroke:fill,'stroke-width':3}))}
   }
  }
