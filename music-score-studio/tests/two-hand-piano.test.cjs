@@ -463,8 +463,9 @@ test('selection move and size changes affect only teacher marks',()=>{
  p.setPoint(start);p.annotationPointerDown(ev);
  p.setPoint({x:start.x+20,y:start.y+15});p.annotationPointerMove(ev);p.annotationPointerEnd(ev);
  assert.ok(p.getData().annotations[0].points[0].dx>15);
+ const beforeSize=p.getData().annotations[0].points.map(x=>({...x}));
  p.setSelectedAnnotation('testMark');p.resizeAnnotation(1.15);
- assert.ok(p.getData().annotations[0].points[0].dx!==input.annotations[0].points[0].dx);
+ assert.ok(p.getData().annotations[0].points.some((x,i)=>x.dx!==beforeSize[i].dx||x.dy!==beforeSize[i].dy));
  assert.equal(p.getData().bars[0].right[0].step,'C');
 });
 test('annotation mode guards musical editing and right-click note insertion',()=>{
