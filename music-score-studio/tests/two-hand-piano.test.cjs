@@ -77,7 +77,7 @@ test('full page, minimisation, zoom and keyboard safety controls exist',()=>{
 });
 test('single-stave composition source is linked but not replaced',()=>{
  assert.match(html,/href="\.\/index\.html"/);
- assert.match(html,/British music terminology/);
+ assert.match(html,/British note values/);
 });
 
 test('automatic quaver grouping follows 4/4 crotchet beats and 6/8 dotted-crotchet beats',()=>{
@@ -303,7 +303,7 @@ test('horizontal-only drag and wrong-pointer movement do not change notes',()=>{
 });
 
 test('simple score-first interface shows Compose, Listen and Music sheet in order',()=>{
- const compose=html.indexOf('1 · Compose'),listen=html.indexOf('2 · Listen'),sheet=html.indexOf('3 · Music sheet');
+ const compose=html.indexOf('aria-label="Compose notes"'),listen=html.indexOf('LISTEN &amp; LEARN'),sheet=html.indexOf('Your music sheet');
  assert.ok(compose>=0&&listen>compose&&sheet>listen);
  assert.match(html,/id="composeHint"/);
  assert.match(html,/Right-click for note values/);
@@ -352,4 +352,37 @@ test('play state is synchronized from both play and stop transitions',()=>{
  const update=make(id=>elems[id],state);
  assert.deepEqual(update(false),{play:false,stop:true,label:'▶ Play',pressed:'false'});
  assert.deepEqual(update(true),{play:true,stop:false,label:'■ Stop',pressed:'true'});
+});
+
+test('two-hand page visually reuses the approved single-stave header and paper-card pattern',()=>{
+ assert.match(html,/linear-gradient\(115deg,#103449,#17516a\)/);
+ assert.match(html,/class="studioHeader"/);
+ assert.match(html,/class="brandLogo"/);
+ assert.match(html,/class="studioShell"/);
+ assert.match(html,/grid-template-columns:292px minmax\(0,1fr\)/);
+ assert.match(html,/linear-gradient\(90deg,#f9fcfc,#edf6f6\)/);
+ assert.match(html,/class="panel scorePanel" id="paper"/);
+ assert.match(html,/class="paperScroll"/);
+});
+test('composer controls precede score settings and score is the main work region',()=>{
+ const sidebar=html.indexOf('<aside class="studioSidebar"'),compose=html.indexOf('aria-label="Compose notes"'),
+ setup=html.indexOf('class="panel setupPanel"'),work=html.indexOf('class="studioWork"'),
+ score=html.indexOf('class="panel scorePanel"');
+ assert.ok(sidebar>=0&&compose>sidebar&&setup>compose&&work>setup&&score>work);
+ assert.match(html,/<main class="studioShell">/);
+ assert.match(html,/<aside class="studioSidebar" aria-label="Composition tools">/);
+});
+test('full-page score sheet remains internally scrollable and offers minimisation',()=>{
+ assert.match(html,/\.fullpage>#sheetViewport\{flex:1 1 auto!important/);
+ assert.match(html,/\.fullpage #sheet\.zoomed\{min-width:880px;width:135%\}/);
+ assert.match(html,/\.fullpage>#editPanel\{flex:0 0 auto/);
+ assert.match(html,/id="full"/);
+ assert.match(html,/id="sheetPlay"/);
+ assert.match(html,/id="zoom"/);
+});
+test('small phone layouts keep the score and annotation controls usable',()=>{
+ assert.match(html,/@media\(max-width:650px\)\{/);
+ assert.match(html,/\.studioShell\{padding:8px;gap:8px\}/);
+ assert.match(html,/\.scorehead \.controls button\{font-size:12px;padding:7px 9px\}/);
+ assert.match(html,/\.fullpage #editPanel\{max-height:23dvh\}/);
 });
