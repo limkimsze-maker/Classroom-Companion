@@ -431,6 +431,9 @@ function adjustPitch(direction){
 // The score's SVG is the stable pointer-capture owner, so redrawing note
 // groups during a drag never loses the ongoing mouse/pen/touch gesture.
 function pitchPointerDown(ev){
+ // Some browsers omit the click after a dragged SVG target is redrawn.
+ // Clear any leftover suppression on the next actual pointer gesture.
+ if(suppressDragClick)suppressDragClick=false;
  if(ev.button!==0||pendingSlur||!$('noteContext').hidden)return;
  const target=ev.target.closest('[data-id]');
  if(!target)return;
