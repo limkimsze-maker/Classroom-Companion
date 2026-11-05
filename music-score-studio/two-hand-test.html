@@ -26,39 +26,40 @@ h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0
 .status{min-height:20px;font-size:13px;color:#275f70}.noteContext{position:fixed;z-index:1100;background:#fff;border:1px solid #9fc8ce;border-radius:12px;box-shadow:0 10px 30px #183c4b35;padding:10px;max-width:min(310px,calc(100vw - 16px));min-width:190px}.noteContext[hidden]{display:none}.noteContext strong{display:block;margin:0 0 7px;font-size:13px;color:#234b60}.noteContext .valueChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.noteContext .valueChoices button{padding:7px;min-height:35px;font-size:12px}.noteContext .valueChoices button:last-child:nth-child(odd){grid-column:1/-1}.noteContext .contextDismiss{margin-top:7px;width:100%;min-height:32px;font-size:12px}.articulations{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.articulations button{padding:7px 9px;font-size:12px;min-height:36px}.articulations button.active{background:#d4f3ed}.slurStart{fill:none;stroke:#078f99;stroke-width:3;stroke-dasharray:4 3;pointer-events:none}.playHalo{fill:#ffc64b;fill-opacity:.55;stroke:#e19a23;stroke-width:3;pointer-events:none;opacity:0}.isPlaying .playHalo{opacity:1}
 #editPanel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid #e6eef0;margin-top:10px}
 #editPanel[hidden]{display:none}.muted{color:#637985}
-footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
+.studioLabel{font-size:12px;font-weight:750;letter-spacing:.045em;text-transform:uppercase;color:#486d7b}.composeIntro{display:flex;flex-direction:column;gap:5px}.composeIntro h2{margin:0}.entryTop{display:flex;flex-wrap:wrap;align-items:start;gap:12px;justify-content:space-between}.entryOptions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;align-self:center}.entryOptions label{font-size:13px;display:flex;align-items:center;gap:6px}.transportGroup,.editGroup{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.transportLabel{font-size:12px;font-weight:750;color:#537481}.moreTools{position:relative}.moreTools>summary{cursor:pointer;list-style:none;border:1px solid #c6d9dd;background:#fff;border-radius:10px;padding:10px 12px;min-height:42px;font-size:13px;font-weight:650;display:flex;align-items:center;gap:6px}.moreTools>summary::-webkit-details-marker{display:none}.moreTools>summary:focus-visible{outline:3px solid #07a3aa;outline-offset:2px}.moreTools[open]>summary{border-color:#5ca4a8;background:#eff8f6}.moreToolsBody{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#f5fafb;border:1px solid #d8e7e9;border-radius:12px;margin-top:7px}.editHeading{font-size:12px;font-weight:750;color:#496c79;align-self:center}.controlHelp{font-size:12px;color:#607984}.scorehead h2{margin:0}.quickHelp{font-size:13px;color:#416978;background:#f1faf9;padding:9px 11px;border-radius:10px;margin:9px 0}.quickHelp strong{color:#235363}.setupPanel{padding:11px 14px}.setupPanel .row{gap:9px}.setupPanel input[type=text]{width:min(300px,100%)}.scorePanel{border-color:#bbdadd}.editPanelLabel{width:100%;font-size:12px;font-weight:750;color:#49717a}.articulations{width:100%;border-top:1px solid #e4eef0;padding-top:8px}.articulations .editHeading{min-width:100%;margin-top:3px}.actionsPanel{padding:10px 14px}.actionsPanel .toolbar{gap:10px}.contextualHint{font-size:12px;color:#5b7b87}footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
 .fullpage{position:fixed!important;inset:0!important;z-index:1000!important;border-radius:0!important;margin:0!important;background:#fff;overflow:auto}
 .fullpage #sheetViewport{max-height:calc(100dvh - 160px)}
-@media(max-width:650px){header h1{font-size:17px}main{padding:8px}.panel{padding:10px}.values button{min-width:66px;font-size:11px;padding:7px}.values button b{font-size:18px}.toolbar{align-items:stretch}#sheetViewport{max-height:60vh}}
+@media(max-width:650px){.entryTop{display:block}.entryOptions{margin-top:10px}.setupPanel .row{align-items:flex-start}.transportGroup{width:100%}.actionsPanel .toolbar{align-items:flex-start}.scorehead{align-items:flex-start}.quickHelp{line-height:1.5}header h1{font-size:17px}main{padding:8px}.panel{padding:10px}.values button{min-width:66px;font-size:11px;padding:7px}.values button b{font-size:18px}.toolbar{align-items:stretch}#sheetViewport{max-height:60vh}}
 @media print{header,.controls,.toolbar,#editPanel,.scorehead button,footer,.status,.hint{display:none!important}main,.panel{display:block;border:0;box-shadow:none;margin:0;padding:0}#sheetViewport{max-height:none;overflow:visible;border:0}#sheet,#sheet.zoomed{width:100%;min-width:0}body{background:white}}
 </style>
 </head>
 <body>
 <header><div><h1>🎹 Music Score Studio — Two-Hand Piano <small>TEST</small></h1><small>Compose for right and left hands together · British music terminology</small></div><a href="./index.html">← Single-stave Music Score Studio</a></header>
 <main>
-<section class="panel">
+<section class="panel setupPanel">
 <div class="row">
-<label>Title <input id="title" type="text" maxlength="100" value="My Piano Piece" aria-label="Score title"></label>
+<label>Score title <input id="title" type="text" maxlength="100" value="My Piano Piece" aria-label="Score title"></label>
 <label>Time signature <select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></label>
 <label>Tempo (BPM) <input id="tempo" type="number" min="40" max="220" value="96" style="width:78px"></label>
 </div>
-<p class="hint">Upper stave: right hand (treble). Lower stave: left hand (bass). Choose a note or rest, then tap its place in either stave. Select a note to use ↑ Higher / ↓ Lower, or drag it up and down. Both hands play together.</p>
 </section>
-<section class="panel controls" aria-label="Note entry">
-<div><h2>Choose a value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
-<label class="row"><input type="checkbox" id="dotted"> Dotted (+½)</label>
-<label class="row">Symbol <select id="kind"><option value="note">Note</option><option value="rest">Rest</option></select></label>
-<label class="row">Accidental <select id="acc"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></label>
-</section>
-<section class="panel">
-<div class="toolbar">
-<div class="controls"><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label><button id="undo" disabled>↶ Undo</button><button id="redo" disabled>↷ Redo</button><button id="addBar">+ Bar</button><button id="removeBar">− Empty bar</button></div>
-<div class="controls"><button id="save">Save JSON</button><button id="open">Open JSON</button><input id="openFile" type="file" accept=".json,application/json" hidden><button id="musicxml">MusicXML</button><button id="print">Print / PDF</button></div>
+<section class="panel" aria-label="Compose notes">
+<div class="entryTop">
+<div><div class="studioLabel">1 · Compose</div><h2>Choose a note value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
+<div class="entryOptions"><label>Write <select id="kind" aria-label="Write note or rest"><option value="note">Note</option><option value="rest">Rest</option></select></label><label><input type="checkbox" id="dotted"> Dotted (+½)</label><label>Accidental <select id="acc"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></label></div>
 </div>
 </section>
-<section class="panel" id="paper">
-<div class="scorehead"><h2>Two-hand music sheet <span id="count" class="muted"></span></h2><div class="controls"><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
-<div id="editPanel" hidden><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button><div id="articulations" class="articulations" role="group" aria-label="Expression and articulation for selected note"></div></div>
+<section class="panel actionsPanel">
+<div class="toolbar">
+<div class="transportGroup"><span class="transportLabel">2 · Listen</span><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label></div>
+<div class="transportGroup"><button id="undo" title="Undo last edit (Ctrl+Z)" disabled>↶ Undo</button><button id="redo" title="Redo last edit (Ctrl+Shift+Z)" disabled>↷ Redo</button><button id="addBar" title="Add another bar to both hands">+ Bar</button>
+<details class="moreTools" id="moreTools"><summary aria-label="Save, open, export and more score tools">⋯ Save &amp; more</summary><div class="moreToolsBody"><button id="removeBar">− Empty bar</button><button id="save">Save JSON</button><button id="open">Open JSON</button><input id="openFile" type="file" accept=".json,application/json" hidden><button id="musicxml">Export MusicXML</button><button id="print">Print / PDF</button></div></details></div>
+</div>
+</section>
+<section class="panel scorePanel" id="paper">
+<div class="scorehead"><h2>3 · Music sheet <span id="count" class="muted"></span></h2><div class="controls"><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<p class="quickHelp" id="composeHint"><strong>Right hand ↑</strong> Treble stave · <strong>Left hand ↓</strong> Bass stave · Tap empty space to add · Select a note to edit or drag it higher/lower · Right-click for note values</p>
+<div id="editPanel" hidden><span class="editPanelLabel">Edit selected note</span><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button><div id="articulations" class="articulations" role="group" aria-label="Expression and articulation for selected note"></div></div>
 <div id="sheetViewport"><svg id="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" role="img" aria-label="Editable two-hand piano score. Tap on a stave to add notes or rests."></svg></div>
 
 <p id="status" class="status" role="status" aria-live="polite">Ready · Select a value and tap either stave.</p>
