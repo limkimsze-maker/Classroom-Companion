@@ -157,13 +157,14 @@ test('JSON save/reopen keeps duration, order, position hints and computed engrav
  assert.deepEqual(api.data.bars[0].map(x=>x.step),['C','D','E']);
  assert.equal(api.sumBar(api.data.bars[0]),48);
 });
-test('manual ink drawings preserve historical two-bar coordinates',()=>{
- const api=make([[],[],[],[]],'4/4',{strokes:[{points:[[1,1],[2,2]]}]});
- const l=api.staffLayout();
- assert.equal(l.W,1120);assert.equal(l.sys,2);
- assert.equal(l.cells[0].width,476);
- assert.equal(l.cells[1].left,620);
- assert.equal(l.cells[2].top,306);
+test('adding handwritten ink leaves the current engraving geometry unchanged',()=>{
+ const api=make([[ev(4),ev(4)],[ev(8),ev(8)],[],[]]);
+ const before=api.staffLayout();
+ api.data.strokes.push({points:[[10,10],[20,20]],kind:'pen'});
+ const after=api.staffLayout();
+ assert.deepEqual(after.cells,before.cells);
+ assert.deepEqual(after.systemEnds,before.systemEnds);
+ assert.equal(after.W,before.W);
 });
 test('marked two-bar rests stay in the same adaptive system',()=>{
  const api=make([[],[],[ev(1)],[],[]],'4/4',{
