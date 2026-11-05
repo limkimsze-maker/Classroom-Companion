@@ -290,9 +290,17 @@ function validate(raw){
  // complexity. They cannot change musical notes or playback.
  if(Array.isArray(raw.annotations))out.annotations=raw.annotations.slice(0,250).flatMap(a=>{
   if(!a||!['pen','highlighter','arrow','circle','hand'].includes(a.tool)||!Array.isArray(a.points)||a.points.length<1||a.points.length>500)return [];
-  const points=a.points.flatMap(p=>Number.isInteger(p?.bar)&&p.bar>=0&&p.bar<out.bars.length&&
-   Number.isFinite(p?.dx)&&Number.isFinite(p?.dy)&&Math.abs(p.dx)<=600&&Math.abs(p.dy)<=600?
-   [{bar:p.bar,dx:p.dx,dy:p.dy}]:[]);
+  const noteIds=new Set(out.bars.flatMap(bar=>['right','left'].flatMap(hand=>bar[hand].filter(n=>n.kind==='note').map(n=>n.id))));
+  const points=a.points.flatMap(p=>{
+   if(!Number.isInteger(p?.bar)||p.bar<0||p.bar>=out.bars.length||
+    !Number.isFinite(p.dx)||!Number.isFinite(p.dy)||Math.abs(p.dx)>600||Math.abs(p.dy)>600)return [];
+   const q={bar:p.bar,dx:p.dx,dy:p.dy};
+   if(typeof p.noteId==='string'&&noteIds.has(p.noteId)&&
+    Number.isFinite(p.noteDx)&&Number.isFinite(p.noteDy)&&
+    Math.abs(p.noteDx)<=600&&Math.abs(p.noteDy)<=600)
+    Object.assign(q,{noteId:p.noteId,noteDx:p.noteDx,noteDy:p.noteDy});
+   return [q];
+  });
   if(!points.length)return [];
   const color=/^#[0-9a-fA-F]{6}$/.test(a.color)?a.color:'#df654d';
   return [{id:makeId(),tool:a.tool,points,color,size:Number.isFinite(a.size)?Math.max(16,Math.min(64,a.size)):31}];
@@ -520,9 +528,50 @@ function annotationAnchor(p){
  const bar=Math.max(0,Math.min(data.bars.length-1,row*4+slot)),loc=locationForBar(bar);
  return {bar,dx:Math.round((p.x-loc.left)*10)/10,dy:Math.round((p.y-loc.top)*10)/10};
 }
+function notePosition(id){
+ const ref=locate(id);if(!ref||ref.event.kind!=='note')return null;
+ const loc=locationForBar(ref.b),top=loc.top+(ref.hand==='left'?SEPARATION:0);
+ const bar=data.bars[ref.b][ref.hand],elapsed=bar.slice(0,ref.i).reduce((n,e)=>n+ticks(e),0);
+ return {x:timeX(elapsed,ticks(ref.event),loc.left,loc.width),
+  y:yAt(ref.event,top,ref.hand)};
+}
 function annotationXY(p){
+ if(p.noteId){
+  const note=notePosition(p.noteId);
+  if(note)return {x:note.x+p.noteDx,y:note.y+p.noteDy};
+ }
  const loc=locationForBar(Math.max(0,Math.min(data.bars.length-1,p.bar)));
  return {x:loc.left+p.dx,y:loc.top+p.dy};
+}
+function attachAnnotationToNote(p,noteId){
+ const fallback=annotationAnchor(p),target=notePosition(noteId);
+ return target?{...fallback,noteId,noteDx:+(p.x-target.x).toFixed(1),
+  noteDy:+(p.y-target.y).toFixed(1)}:fallback;
+}
+function nearestWrittenNote(p,maxDistance=49){
+ let closest=null,distance=maxDistance;
+ for(const bar of data.bars)for(const hand of ['right','left'])for(const e of bar[hand]){
+  if(e.kind!=='note')continue;
+  const pos=notePosition(e.id),d=Math.hypot(p.x-pos.x,p.y-pos.y);
+  if(d<distance){closest=e.id;distance=d}
+ }
+ return closest;
+}
+function linkTeacherMark(mark){
+ if(mark.tool==='hand'){
+  const p=annotationXY(mark.points[0]),id=nearestWrittenNote(p,55);
+  if(id)mark.points[0]=attachAnnotationToNote(p,id);
+ }else if(mark.tool==='circle'&&mark.points.length>1){
+  const p=annotationXY(mark.points[0]),q=annotationXY(mark.points[1]);
+  const id=nearestWrittenNote({x:(p.x+q.x)/2,y:(p.y+q.y)/2},56);
+  if(id)mark.points=mark.points.map(x=>attachAnnotationToNote(annotationXY(x),id));
+ }else if(mark.tool==='arrow'&&mark.points.length>1){
+  const n=mark.points.length-1,p=annotationXY(mark.points[n]),id=nearestWrittenNote(p,37);
+  if(id)mark.points[n]=attachAnnotationToNote(p,id);
+ }
+}
+function annotationAnchorPreservingNote(p,old){
+ return old?.noteId?attachAnnotationToNote(p,old.noteId):annotationAnchor(p);
 }
 function annotationDistance(p,a,b){
  const dx=b.x-a.x,dy=b.y-a.y,t=dx*dx+dy*dy?
@@ -627,7 +676,7 @@ function annotationPointerMove(ev){
  if(drag.mode==='move'){
   if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)<3&&!drag.changed)return;
   const mark=data.annotations.find(a=>a.id===drag.id);if(!mark)return;
-  mark.points=drag.original.map(q=>{const xy=annotationXY(q);return annotationAnchor({x:xy.x+p.x-drag.start.x,y:xy.y+p.y-drag.start.y})});
+  mark.points=drag.original.map(q=>{const xy=annotationXY(q);return annotationAnchorPreservingNote({x:xy.x+p.x-drag.start.x,y:xy.y+p.y-drag.start.y},q)});
   drag.changed=true;render();return;
  }
  if(!annotationDraft)return;
@@ -654,6 +703,7 @@ function annotationPointerEnd(ev){
  const mark=annotationDraft;annotationDraft=null;
  if(!mark)return;
  if(mark.tool==='hand'||mark.points.length>1){
+  linkTeacherMark(mark);
   snapshot();data.annotations.push(mark);selectedAnnotation=mark.id;
   commit('Teacher '+mark.tool+' annotation added.');
  }else render();
@@ -676,7 +726,7 @@ function resizeAnnotation(scale){
  const mark=data.annotations.find(a=>a.id===selectedAnnotation);if(!mark)return;
  const points=mark.points.map(annotationXY),cx=points.reduce((n,p)=>n+p.x,0)/points.length,
  cy=points.reduce((n,p)=>n+p.y,0)/points.length;
- snapshot();mark.points=points.map(p=>annotationAnchor({x:cx+(p.x-cx)*scale,y:cy+(p.y-cy)*scale}));
+ snapshot();mark.points=points.map((p,i)=>annotationAnchorPreservingNote({x:cx+(p.x-cx)*scale,y:cy+(p.y-cy)*scale},mark.points[i]));
  if(mark.tool==='hand')mark.size=Math.max(16,Math.min(64,(mark.size||31)*scale));
  commit('Teacher annotation resized.');
 }
