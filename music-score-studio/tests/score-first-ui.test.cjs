@@ -101,7 +101,7 @@ test('engraved page buttons show exactly one page without modifying playback',()
  assert.equal(ui.ids.testEngravedPrev.disabled,true);
  ui.ids.testEngravedNext.click();
  assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true]);
- assert.equal(ui.ids.testEngravedPageLabel.textContent,'Page 2 of 3');
+ assert.equal(ui.ids.testEngravedPageLabel.textContent,'Page 2 of 3 · Browsing');
  ui.window.testScoreShowPage(2);
  assert.deepEqual(ui.pages.map(p=>p.hidden),[true,true,false]);
  assert.equal(ui.ids.testEngravedNext.disabled,true);
