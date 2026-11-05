@@ -146,3 +146,17 @@ test('new test-only overlay module is isolated from production and listens for s
  assert.match(overlay,/function reflowTeacherMarks\(\)/);
  assert.match(overlay,/document\.addEventListener\('music-score-studio:score-layout',scheduleSync\)/);
 });
+
+test('orphaned teacher note annotation becomes bar-local after note deletion and system growth',()=>{
+ const g1={width:1120,height:296,notes:[{id:'C',x:260/1120,y:172/296,bar:0}],
+  bars:[{left:144/1120,width:400/1120,top:100/296}]};
+ const ref={value:g1},mark={type:'hand',points:[[260/1120,172/296]],color:'#df654d'};
+ const api=overlayModel([mark],ref);
+ mark.anchor=api.anchorForItem(mark,g1);
+ assert.equal(mark.anchor.type,'note');
+ ref.value={width:1120,height:498,notes:[],
+  bars:[{left:144/1120,width:400/1120,top:302/498}]};
+ api.reflowTeacherMarks();
+ assert.equal(mark.anchor.type,'bar');
+ assert.ok(Math.abs(mark.points[0][1]*498-374)<.01,'deleted-note mark safely follows its bar with 72-unit offset');
+});
