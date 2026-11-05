@@ -197,7 +197,7 @@ function actualScoreRenderer(data){
   appendChild(item){this.children.push(item)},get childNodes(){return this.children},remove(){},textContent:''};}
  const document={createElementNS:(_ns,name)=>node(name)};
  const stubs={data,document,TICKS,NS,noteIndex,bottomIndex,ticks,sumBar,cap,
-  selected:null,playingId:null,boxSelectedNotes:new Set(),boxSelectedStrokes:new Set(),
+  selected:null,playingId:null,pendingSlurStart:null,boxSelectedNotes:new Set(),boxSelectedStrokes:new Set(),
   penDraft:null,boxDraft:null,barDirective:()=>({}),musicalLinks:()=>({ties:new Map(),slurs:new Map()}),den:4};
  const drawing=extract('function staffLayout(exportMode=false)','function render(){');
  const f=new Function(...Object.keys(stubs),geometry.split('function staffLayout')[0]+drawing+
