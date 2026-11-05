@@ -671,6 +671,27 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
 #quickEntryHint{font-size:11px;color:#536f7c;font-weight:600}
 @media(max-width:700px){.quickEntryExtras{gap:4px}#quickEntryHint{font-size:10px}}
 @media print{#quickInsertionGuide{display:none!important}}
+
+/* Clearly visible score-mode switch, matching the two-hand TEST composer.
+   Test branch only: the approved production single-stave site stays untouched. */
+.studioScoreModeNav{background:#f8fcff;border-bottom:1px solid #bdd9e7}
+.studioScoreModeInner{max-width:1588px;margin:auto;min-height:56px;padding:8px 18px;display:flex;align-items:center;flex-wrap:wrap;gap:11px}
+.studioScoreModeLabel{font-size:12px;font-weight:850;color:#225276;letter-spacing:.035em}
+.studioScoreModeChoices{display:inline-flex;gap:4px;padding:4px;background:#e9f2f5;border-radius:12px}
+.studioScoreModeChoice{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;min-height:40px;border:1px solid transparent;border-radius:9px;font-size:13px;font-weight:800;color:#234c6a;text-decoration:none;white-space:nowrap}
+a.studioScoreModeChoice:hover{background:#fff;border-color:#a1c7d0;color:#084b59}
+.studioScoreModeChoice.current{background:#087b86;color:#fff;box-shadow:0 2px 7px #12354b23}
+.studioScoreModeHint{font-size:12px;color:#577380}
+.studioScoreModeTest{margin-left:auto;font-size:11px;font-weight:800;letter-spacing:.04em;background:#fff0bd;color:#674400;padding:6px 9px;border-radius:8px}
+@media(max-width:650px){
+ .studioScoreModeInner{padding:8px 10px;gap:7px}
+ .studioScoreModeChoices{flex:1;min-width:0}
+ .studioScoreModeChoice{flex:1;min-width:0;font-size:12px;padding:6px 8px;min-height:44px}
+ .studioScoreModeLabel,.studioScoreModeHint{display:none}
+ .studioScoreModeTest{margin-left:0}
+}
+@media print{.studioScoreModeNav{display:none!important}}
+
 </style>
 <script src="./annotation-tools.js?v=a754a293" defer></script>
 </head>
@@ -704,6 +725,17 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
  </div>
 </div>
 
+<nav class="studioScoreModeNav" aria-label="Choose score type">
+ <div class="studioScoreModeInner">
+  <span class="studioScoreModeLabel">COMPOSE</span>
+  <div class="studioScoreModeChoices" role="group" aria-label="Score mode">
+   <span class="studioScoreModeChoice current" aria-current="page">♫ Single stave</span>
+   <a class="studioScoreModeChoice" href="./two-hand-test.html" title="Compose a piano score for treble and bass hands">🎹 Two hands</a>
+  </div>
+  <span class="studioScoreModeHint">Choose a score format · The two-hand composer opens a separate TEST workspace</span>
+  <span class="studioScoreModeTest">TEST</span>
+ </div>
+</nav>
 <section class="omrHero" aria-label="Photo to score and playback"><div class="omrCard">
   <div class="omrHeading"><div><div class="omrEyebrow">Trained optical music recognition · Classroom Companion</div><h2>🎶 Your sheet music, brought to life!</h2><p>Take a photo or upload the pages of a song. Hear the notes, rhythm and recognised musical expressions! You can check uncertain markings before teaching.</p></div><span class="omrStatusFlag">On-device photo reading</span></div>
   <div class="oneTapControls"><button type="button" class="btn primary" id="omrCameraButton">📷 Scan &amp; play a song</button><input id="omrCameraInput" class="sr" type="file" accept="image/*" capture="environment"><button type="button" class="btn" id="omrChooseButton">🖼 Upload score pages</button><input id="omrChooseInput" class="sr" type="file" accept="image/*,.pdf,application/pdf" multiple><button type="button" class="btn" id="omrImportButton">🎹 Open MusicXML / PDF</button><input id="omrImportInput" type="file" accept=".pdf,.musicxml,.xml,application/pdf,text/xml" class="sr"></div>
