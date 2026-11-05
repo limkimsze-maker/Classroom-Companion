@@ -31,7 +31,7 @@ function harnessFactory(ids,document,window,hooks){
  const blank=()=>({barDirectives:[],title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,
   instrument:'piano',pitchNames:false,metronome:false,playFlow:false,completeBars:true,
   bars:Array.from({length:4},()=>[]),strokes:[]});
- let data=blank(),piano=null,tool='select',den=2,dot=false,acc='',selected=null,
+ let data=blank(),piano=null,tool='select',den=2,dot=false,acc='',selected=null,drag=null,
   activeNoteStampDen=null,quickKeyboardOn=false,quickCursor=null,quickHover=null,
   history=[],future=[],serial=0,playing=false,pendingSlurStart=null;
  const $=id=>ids(id),makeId=()=>('note'+(++serial));
@@ -43,9 +43,10 @@ function harnessFactory(ids,document,window,hooks){
  const bottomIndex=()=>data.clef==='treble'?noteIndex('E',4):noteIndex('G',2);
  const pitchOfY=(y,top)=>fromIndex(Math.max(8,Math.min(48,bottomIndex()+Math.round((top+72-y)/9))));
  const flash=message=>hooks.flashes.push(message),updateStatus=message=>{hooks.status=message;};
- const change=()=>{history.push(JSON.stringify(data));future=[];};
+ const snapshot=()=>JSON.stringify(data);
+ const change=()=>{history.push(snapshot());future=[];};
  const commit=()=>{hooks.saved=JSON.stringify(data);hooks.commits++;drawQuickOverlay();};
- const syncConfig=()=>{},closePiano=()=>{piano=null;},removeBrokenConnections=()=>{},stopPlayback=()=>{};
+ const syncConfig=()=>{},closePiano=()=>{piano=null;},removeBrokenConnections=()=>{},stopPlayback=()=>{},cleanBarDirective=v=>v||{};
  const setMode=v=>{tool=v;activeNoteStampDen=null;};
  const expandBarPlayOrder=()=>data.bars.map((_,i)=>i),barDirective=()=>({});
  const musicalLinks=()=>({slurs:new Map(),ties:new Map(),indices:new Map(),refs:[]});
