@@ -9,7 +9,7 @@ function extract(a,b){
  assert.ok(i>=0&&j>i,'Source region unavailable: '+a);return html.slice(i,j);
 }
 const functions=[
- extract('function eventPositions(','function insertPlacedMusicEvent('),
+ extract('function engravingGap(','function insertPlacedMusicEvent('),
  extract('function insertPlacedMusicEvent(','function el('),
  extract('function staffNotePosition(','function hideMusicNoteMenu('),
  extract('function selectPaletteNote(','/* Teacher quick-entry state'),
@@ -96,10 +96,10 @@ function mock(options={}){
  return {api,$,hooks};
 }
 function loc(api,bar,step='C',octave=4,fraction=.15){
- const l=api.staffLayout(),top=l.top(Math.floor(bar/2)),left=l.left+(bar%2)*l.barW;
+ const l=api.staffLayout(),cell=l.cells[bar],top=cell.top,left=cell.left;
  const bottom=api.data.clef==='treble'?4*7+2:2*7+4;
  const pitch=octave*7+'CDEFGAB'.indexOf(step);
- return api.staffNotePosition({x:left+l.barW*fraction,y:top+72-(pitch-bottom)*9});
+ return api.staffNotePosition({x:left+cell.width*fraction,y:top+72-(pitch-bottom)*9});
 }
 function key(api,name,target={tagName:'DIV',closest:()=>null},flags={}){
  const ev={key:name,target,defaultPrevented:false,isComposing:false,repeat:false,
@@ -150,7 +150,7 @@ test('reject overflowing measure without committing any change',()=>{
 test('preserve 40-bar limit during automatic advancement',()=>{
  const {api}=mock({bars:40,meter:'2/4'});
  const l=api.staffLayout();api.selectPaletteNote(4);
- api.setCursor({bar:39,x:l.left+l.barW+50,pitch:{step:'C',octave:4}});
+ api.setCursor({bar:39,x:l.cells[39].left+50,pitch:{step:'C',octave:4}});
  api.setQuickKeyboard(true);assert.equal(api.quickEnter('note','C'),true);
  assert.equal(api.quickEnter('note','D'),true);
  assert.equal(api.data.bars.length,40);
