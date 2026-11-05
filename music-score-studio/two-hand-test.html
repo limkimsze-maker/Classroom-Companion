@@ -425,7 +425,7 @@ function performance(){
     if(e.kind==='note'){
      const entry={bar:b,hand,index:i,event:e,at,length:length*secPerTick,
        pitch:midi(e,bar,i),ids:[e.id],id:e.id};
-     notes.push(entry);ids.set(e.id,entry);
+     entry.segments=[{id:e.id,at,end:at+entry.length}];notes.push(entry);ids.set(e.id,entry);
     }
     offset+=length;
    }
@@ -440,7 +440,7 @@ function performance(){
     if(!link)break;
     const next=ids.get(link[1]);
     if(!next||Math.abs(next.at-(entry.at+duration))>.0001)break;
-    duration+=next.length;entry.ids.push(next.id);current=next;
+    duration+=next.length;entry.ids.push(next.id);entry.segments.push({id:next.id,at:next.at,end:next.at+next.length});current=next;
    }
    const factor=e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:
      legato.has(e.id)?1.03:.96;
@@ -467,7 +467,13 @@ async function play(){
  timers.push(setInterval(()=>{
   if(!playing)return;
   const t=ctx.currentTime-start,visible=new Set();
-  for(const e of perf.events)if(e.at<=t&&t<e.at+e.duration)for(const id of e.ids)visible.add(id);
+  for(const e of perf.events){
+   if(t<e.at||t>=e.at+e.duration)continue;
+   for(let i=0;i<e.segments.length;i++){
+    const segment=e.segments[i],until=i===e.segments.length-1?e.at+e.duration:segment.end;
+    if(segment.at<=t&&t<until)visible.add(segment.id);
+   }
+  }
   setPlayingNotes(visible);
  },45));
  timers.push(setTimeout(()=>stop(),Math.ceil((perf.duration+.3)*1000)));
@@ -489,6 +495,7 @@ function exportXml(){
  xml+='<score-part id="P2"><part-name>Piano Left Hand</part-name><part-abbreviation>LH</part-abbreviation><score-instrument id="I2"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>1</midi-program></midi-instrument></score-part><part-group number="1" type="stop"/></part-list>';
  const [n,d]=data.meter.split('/');
  for(const [hand,part,sign,line] of [['right','P1','G','2'],['left','P2','F','4']]){
+  const links=handLinks(hand),tieStarts=new Set(links.ties.map(([id])=>id)),slurStarts=new Set(links.slurs.map(([id])=>id));
   xml+='<part id="'+part+'">';
   for(let b=0;b<data.bars.length;b++){
    xml+='<measure number="'+(b+1)+'">';
@@ -503,6 +510,21 @@ function exportXml(){
     if(!e.measureRest)xml+='<type>'+typeName(e.den)+'</type>';
     if(e.dot&&!e.measureRest)xml+='<dot/>';
     if(e.kind==='note'&&e.acc)xml+='<accidental>'+(e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural')+'</accidental>';
+    if(e.kind==='note'){
+     if(links.tieEnds.has(e.id))xml+='<tie type="stop"/>';
+     if(tieStarts.has(e.id))xml+='<tie type="start"/>';
+     const notations=[];
+     if(links.tieEnds.has(e.id))notations.push('<tied type="stop"/>');
+     if(tieStarts.has(e.id))notations.push('<tied type="start"/>');
+     if(links.slurEnds.has(e.id))notations.push('<slur number="1" type="stop"/>');
+     if(slurStarts.has(e.id))notations.push('<slur number="1" type="start"/>');
+     if(e.fermata)notations.push('<fermata type="upright"/>');
+     const articulation=[];
+     for(const [key,xmlTag] of [['staccato','staccato'],['staccatissimo','staccatissimo'],['portato','detached-legato'],['tenuto','tenuto'],['accent','accent'],['marcato','strong-accent']])
+      if(e[key])articulation.push('<'+xmlTag+'/>');
+     if(articulation.length)notations.push('<articulations>'+articulation.join('')+'</articulations>');
+     if(notations.length)xml+='<notations>'+notations.join('')+'</notations>';
+    }
     xml+='</note>';
    }xml+='</measure>';
   }xml+='</part>';
