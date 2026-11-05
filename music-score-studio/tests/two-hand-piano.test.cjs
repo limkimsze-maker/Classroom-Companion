@@ -15,7 +15,7 @@ function setup(initial){
  const code=extract('const ticks=','function bind(');
  const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
   code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
-  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,getData:()=>data,getDownloaded:()=>downloaded};'
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,pianoBeamGroups,getData:()=>data,getDownloaded:()=>downloaded};'
  )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:''}),
  {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
  return {...result,get downloaded(){return result.getDownloaded()}};
@@ -77,4 +77,14 @@ test('full page, minimisation, zoom and keyboard safety controls exist',()=>{
 test('single-stave composition source is linked but not replaced',()=>{
  assert.match(html,/href="\.\/index\.html"/);
  assert.match(html,/British music terminology/);
+});
+
+test('automatic quaver grouping follows 4/4 crotchet beats and 6/8 dotted-crotchet beats',()=>{
+ const quavers=Array.from({length:8},()=>note('C',5,8));
+ const four=setup(project(quavers,[],'4/4'));
+ assert.deepEqual(four.pianoBeamGroups(quavers),[[0,1],[2,3],[4,5],[6,7]]);
+ const six=setup(project(quavers.slice(0,6),[],'6/8'));
+ assert.deepEqual(six.pianoBeamGroups(quavers.slice(0,6)),[[0,1,2],[3,4,5]]);
+ const interrupted=[note('C',5,8),{id:'rest',kind:'rest',den:8,dot:false},...quavers.slice(0,4)];
+ assert.deepEqual(six.pianoBeamGroups(interrupted),[[3,4,5]]);
 });
