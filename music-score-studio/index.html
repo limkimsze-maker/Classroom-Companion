@@ -1625,9 +1625,9 @@ function insertPlacedMusicEvent(target,denominator,kind='note'){
  if(activeNoteStampDen||quickKeyboardOn)advanceQuickCursor(bar,event,pitch);
  commit();return true;
 }
-function staffLayout(){
+function staffLayout(exportMode=false){
  const left=144,right=1096,baseRoom=right-left,bars=data.bars;
- const requests=bars.map(engravingMinWidth),groups=[];
+ const requests=bars.map(bar=>engravingMinWidth(exportMode?printBarEvents(bar):bar)),groups=[];
  // Hand-drawn ink uses absolute SVG coordinates: retain its historic system
  // geometry rather than moving sketches while a teacher is annotating.
  if(data.strokes?.length){
@@ -1979,7 +1979,7 @@ function drawTwoBarRest(svg,index,left,top,width,exportMode){
  if(index+1===data.bars.length-1)line(svg,right+5,top,right+5,top+72,color,4,{'pointer-events':'none'});
 }
 
-function makeScore(exportMode=false){const layout=staffLayout(),{W,H}=layout;
+function makeScore(exportMode=false){const layout=staffLayout(exportMode),{W,H}=layout;
 const svg=el('svg',{xmlns:NS,viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:'img','aria-label':'Music score'});const notePositions=new Map();
 svg.append(el('rect',{x:0,y:0,width:W,height:H,fill:'#fff'}));
 // Print-friendly title, part of the score itself.
