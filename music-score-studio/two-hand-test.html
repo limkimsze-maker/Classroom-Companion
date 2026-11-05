@@ -900,8 +900,8 @@ function changeValue(sign){
  snapshot();ref.event.den=den;commit('Changed to '+NAMES[den]+'.')
 }
 function remove(){const ref=locate(selected);if(!ref)return;snapshot();data.bars[ref.b][ref.hand].splice(ref.i,1);pendingSlur=null;selected=null;commit('Note or rest deleted.')}
-function undo(){if(!history.length)return;pendingSlur=null;if(playing)stop();future.push(clone(data));data=history.pop();selected=null;commit('Undone.')}
-function redo(){if(!future.length)return;pendingSlur=null;if(playing)stop();history.push(clone(data));data=future.pop();selected=null;commit('Redone.')}
+function undo(){if(!history.length)return;selectedAnnotation=null;annotationDraft=null;annotationDrag=null;pendingSlur=null;if(playing)stop();future.push(clone(data));data=history.pop();selected=null;commit('Undone.')}
+function redo(){if(!future.length)return;selectedAnnotation=null;annotationDraft=null;annotationDrag=null;pendingSlur=null;if(playing)stop();history.push(clone(data));data=future.pop();selected=null;commit('Redone.')}
 // One shared output bus supports classroom volume and gentle peak limiting.
 function ensureMaster(){
  if(!ctx)return null;
@@ -1114,7 +1114,7 @@ function bind(){
  $('volume').oninput=e=>setVolume(e.target.value);
  setVolume(volume);
  $('addBar').onclick=()=>{if(data.bars.length>=40){info('Maximum 40 bars.');return}snapshot();data.bars.push({right:[],left:[]});commit('Added Bar '+data.bars.length+'.')};
- $('removeBar').onclick=()=>{const last=data.bars.at(-1);if(data.bars.length<=1||last.right.length||last.left.length){info('Only the final empty bar can be removed.');return}snapshot();data.bars.pop();selected=null;commit('Removed final bar.')};
+ $('removeBar').onclick=()=>{const last=data.bars.at(-1);if(data.bars.length<=1||last.right.length||last.left.length||data.annotations?.some(a=>a.points.some(p=>p.bar===data.bars.length-1))){info('Only an unannotated final empty bar can be removed.');return}snapshot();data.bars.pop();selected=null;commit('Removed final bar.')};
  $('shorter').onclick=()=>changeValue(1);$('longer').onclick=()=>changeValue(-1);$('delete').onclick=remove;
  $('title').onchange=e=>{snapshot();data.title=e.target.value.slice(0,100)||'My Piano Piece';commit('Title updated.')};
  $('meter').onchange=e=>{const [n,d]=e.target.value.split('/').map(Number),cap=n*96/d;if(data.bars.some(b=>barSum(b.right)>cap||barSum(b.left)>cap)){e.target.value=data.meter;info('Shorten overfull bars before changing the metre.');return}snapshot();data.meter=e.target.value;commit('Time signature updated.')};
