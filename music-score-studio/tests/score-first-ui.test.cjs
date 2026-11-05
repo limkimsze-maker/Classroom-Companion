@@ -96,6 +96,8 @@ test('Open score opens only its import panel; Tools remains a separate menu',()=
  assert.equal(ui.ids.testDockOpen.getAttribute('aria-expanded'),'true');
  assert.equal(ui.ids.omrChooseButton.focused,true);
  assert.ok(ui.ids.testToolImport.children.includes(ui.scanner));
+ assert.ok(ui.ids.testToolImport.children.some(node=>node.className==='testLegacyImport'),'Advanced imports stay under Open Score');
+ assert.equal(ui.ids.testToolFiles.children.length,1,'Tools has file/editor settings but no duplicate import panel');
  assert.ok(ui.ids.testOpenPanel.children.includes(ui.ids.testToolImport) || html.includes('id="testToolImport"'));
  ui.document.events.keydown({key:'Escape'});
  assert.equal(ui.ids.testOpenPanel.hidden,true,'Escape closes import menu');
@@ -214,4 +216,10 @@ test('import entry points stay independent from advanced score settings',()=>{
  assert.match(markup,/id="omrCameraButton"/);
  assert.match(html,/function wireOneStepScanner\(\)/);
  assert.match(html,/function wireProfessionalScanner\(\)/);
+});
+
+test('import and compose actions remain available on narrow phones',()=>{
+ assert.match(html,/.piano-active \.testDockInner\{flex-wrap:wrap\}/);
+ assert.match(html,/.piano-active #testDockOpen,.piano-active \.testScoreTools>summary\{width:100%\}/);
+ assert.doesNotMatch(html,/\.piano-active #testDockOpen\{display:none\}/);
 });
