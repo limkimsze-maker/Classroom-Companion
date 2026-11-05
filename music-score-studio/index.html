@@ -584,6 +584,19 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
  .shell{padding:0!important}
 }
 
+
+/* Keep every primary action reachable without horizontal page scrolling. */
+@media(max-width:480px){
+ .testDockInner{display:flex;gap:3px}
+ .testDockPlay{flex:1 1 auto;min-width:0;gap:3px}
+ .testDockPlay #play{flex:1 1 auto;min-width:0;max-width:35vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .testDockPlay #stop{flex:0 0 auto}
+ .testDockSpacer{display:none}
+ .testDockAction,.testScoreTools>summary{font-size:11px;padding:6px 7px}
+ .piano-active #testDockOpen{display:none}
+}
+@media print{#pianoPanel.fullPageMusic .omrRenderedPage[hidden]{display:block!important}}
+
 </style>
 <script src="./annotation-tools.js?v=a754a293" defer></script>
 </head>
