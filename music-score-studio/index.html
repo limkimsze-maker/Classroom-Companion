@@ -1270,6 +1270,7 @@ const MUSIC_BEAT_LABELS={1:'4 beats',2:'2 beats',4:'1 beat',8:'½ beat',16:'¼ b
 const blank=()=>({barDirectives:[],title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,instrument:'piano',pitchNames:false,metronome:false,playFlow:false,completeBars:true,bars:Array.from({length:4},()=>[]),strokes:[]});
 let pendingSlurStart=null,markedBar=0;
 let piano=null;let data=blank(),tool='select',den=2,dot=false,acc='',selected=null,playingId=null,history=[],future=[],serial=0,drag=null,penDraft=null;
+let inkBeforeChange=null;
 let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
 let activeNoteStampDen=null,notePaletteDrag=null,notePaletteGhost=null,notePaletteScrollFrame=0;
 let quickKeyboardOn=false,quickCursor=null,quickHover=null;
@@ -1288,9 +1289,18 @@ const yOf=e=>0; // Pitch-position conversion is implemented per staff in the ren
 function flash(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2700)}
 function updateStatus(msg){$('status').innerHTML=escapeHTML(msg)}
 function snapshot(){return JSON.stringify(data)}
-function change(){history.push(snapshot());if(history.length>70)history.shift();future=[]; if(playing)stopPlayback()}
+function change(){
+ history.push(snapshot());if(history.length>70)history.shift();future=[];
+ inkBeforeChange={source:data.strokes,layout:staffLayout(),points:data.strokes.map(s=>s.points?.map(p=>p.slice()))};
+ if(playing)stopPlayback();
+}
 function saved(){try{localStorage.setItem(LS,JSON.stringify(data))}catch(e){} updateHistoryButtons()}
 function commit(){
+ if(inkBeforeChange){
+  if(data.strokes===inkBeforeChange.source)
+   reprojectScoreInk(data.strokes,inkBeforeChange.layout,staffLayout(),inkBeforeChange.points);
+  inkBeforeChange=null;
+ }
  removeBrokenConnections();
  if(Array.isArray(data.barDirectives)){
   for(let i=0;i<data.barDirectives.length;i++){
@@ -1300,8 +1310,8 @@ function commit(){
  }
  saved();render();
 }
-function undo(){if(!history.length)return;pendingSlurStart=null;if(playing)stopPlayback();future.push(snapshot());data=JSON.parse(history.pop());selected=null;syncConfig();commit();flash('Undone')}
-function redo(){if(!future.length)return;pendingSlurStart=null;if(playing)stopPlayback();history.push(snapshot());data=JSON.parse(future.pop());selected=null;syncConfig();commit();flash('Redone')}
+function undo(){if(!history.length)return;inkBeforeChange=null;pendingSlurStart=null;if(playing)stopPlayback();future.push(snapshot());data=JSON.parse(history.pop());selected=null;syncConfig();commit();flash('Undone')}
+function redo(){if(!future.length)return;inkBeforeChange=null;pendingSlurStart=null;if(playing)stopPlayback();history.push(snapshot());data=JSON.parse(future.pop());selected=null;syncConfig();commit();flash('Redone')}
 function updateHistoryButtons(){$('undo').disabled=!history.length;$('redo').disabled=!future.length}
 
 const CLASSROOM_TEMPOS={
@@ -1594,16 +1604,13 @@ function eventPositions(bar,left,width){
  return [x,...gaps.map(g=>x+=g)];
 }
 function findInsertIndex(barIndex,x,left,width){
- const bar=data.bars[barIndex],positions=eventPositions(bar,left,width);
- // Old posX and recent click locations are sequence hints only, NOT engraving x.
- // The new rhythmic layout always calculates its own final note positions.
- let index=0;
- while(index<bar.length){
-  const hint=Number.isFinite(bar[index].posX)?left+bar[index].posX*width:positions[index];
-  if(x<=hint)break;
-  index++;
- }
- return index;
+ const positions=eventPositions(data.bars[barIndex],left,width);
+ // Use engraved notehead boundaries rather than legacy posX hints.
+ if(!positions.length)return 0;
+ if(x<positions[0])return 0;
+ for(let i=1;i<positions.length;i++)
+  if(x<(positions[i-1]+positions[i])/2)return i;
+ return positions.length;
 }
 function insertPlacedMusicEvent(target,denominator,kind='note'){
  if(!target||target.type!=='insert'||!VALID_DEN.includes(denominator)||!['note','rest'].includes(kind))return false;
@@ -1624,6 +1631,33 @@ function insertPlacedMusicEvent(target,denominator,kind='note'){
  boxSelectedNotes.clear();boxSelectedStrokes.clear();selected=event.id;
  if(activeNoteStampDen||quickKeyboardOn)advanceQuickCursor(bar,event,pitch);
  commit();return true;
+}
+// Preserve a teacher's drawn stroke with its bar when automatic engraving reflows.
+function scoreInkBar(points,layout){
+ if(!points?.length||!layout.cells.length)return -1;
+ const centre=points.reduce((v,p)=>[v[0]+p[0]/points.length,v[1]+p[1]/points.length],[0,0]);
+ let choice=-1,best=Infinity;
+ layout.cells.forEach((cell,i)=>{
+  const dx=Math.max(cell.left-centre[0],0,centre[0]-(cell.left+cell.width));
+  const dy=Math.abs(centre[1]-(cell.top+36));
+  const distance=dy*dy*4+dx*dx;
+  if(distance<best){best=distance;choice=i}
+ });
+ return choice;
+}
+function reprojectScoreInk(strokes,oldLayout,newLayout,sourcePoints=null){
+ for(let i=0;i<strokes.length;i++){
+  const stroke=strokes[i],points=sourcePoints?.[i]||stroke.points;
+  if(!points?.length)continue;
+  const bar=scoreInkBar(points,oldLayout),from=oldLayout.cells[bar],to=newLayout.cells[bar];
+  if(!from||!to)continue;
+  const translate=p=>[
+   +(to.left+(p[0]-from.left)*to.width/from.width).toFixed(2),
+   +(p[1]+to.top-from.top).toFixed(2)];
+  stroke.points=points.map(translate);
+  if(Number.isFinite(stroke.headX)&&Number.isFinite(stroke.headY))
+   [stroke.headX,stroke.headY]=translate([stroke.headX,stroke.headY]);
+ }
 }
 function staffLayout(exportMode=false){
  const left=144,right=1096,baseRoom=right-left,bars=data.bars;
@@ -1775,8 +1809,8 @@ function renderRhythmBeams(svg,bar,positions,top,groups){
 }
 
 
-function drawMusicConnections(svg,positions){
- const links=musicalLinks(),layout=staffLayout();
+function drawMusicConnections(svg,positions,layout){
+ const links=musicalLinks();
  const paint=(from,to,kind,side)=>{
   const color='#193a4a',isTie=kind==='tie',dist=to.x-from.x;
   const x1=from.x+(isTie?11:10),x2=to.x-(isTie?11:10);
@@ -2019,9 +2053,11 @@ renderRhythmBeams(svg,bar,xx,top,beamGroups);
 if(idx===data.bars.length-1){line(svg,x1+5,top,x1+5,top+72,'#263d49',4)}
 }
 }
-drawMusicConnections(svg,notePositions);
+drawMusicConnections(svg,notePositions,layout);
 for(let i=0;i<data.strokes.length;i++){
- const stroke=data.strokes[i];if(!stroke.points||stroke.points.length<2)continue;
+ const original=data.strokes[i];if(!original.points||original.points.length<2)continue;
+ const stroke=exportMode?{...original,points:original.points.map(p=>p.slice())}:original;
+ if(exportMode)reprojectScoreInk([stroke],staffLayout(),layout);
  const pts=stroke.points.map(p=>p[0]+','+p[1]).join(' ');
  if(!exportMode&&boxSelectedStrokes.has(i))svg.append(el('polyline',{points:pts,fill:'none',stroke:'#48c7d4','stroke-opacity':.65,'stroke-width':12,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
  svg.append(el('polyline',{points:pts,fill:'none',stroke:stroke.color||'#df654d','stroke-width':3.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
@@ -2834,7 +2870,7 @@ if(e.kind==='note'){
 }
 xml+='</note>'}xml+=xmlDirectionsEnd(b);xml+='</measure>'}
 xml+='\n</part>\n</score-partwise>';download(new Blob([xml],{type:'application/vnd.recordare.musicxml+xml'}),filename()+'.musicxml');flash('MusicXML saved')}
-function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>60)throw Error('No valid bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.completeBars=raw.completeBars!==false;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}if(typeof e.posX==='number'&&Number.isFinite(e.posX)&&e.posX>=0&&e.posX<=1)ev.posX=e.posX;return ev})});// Remap stable tie/slur references after safely assigning new event IDs.
+function validateProject(raw){if(!raw||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>40)throw Error('Classroom projects support a maximum of 40 bars');const result=blank();result.title=String(raw.title||'My Music Score').slice(0,100);result.composer=String(raw.composer||'').slice(0,100);result.clef=['treble','bass'].includes(raw.clef)?raw.clef:'treble';result.meter=['2/4','3/4','4/4','6/8'].includes(raw.meter)?raw.meter:'4/4';result.tempo=Math.max(40,Math.min(220,Number(raw.tempo)||96));result.instrument=['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano';result.pitchNames=!!raw.pitchNames;result.metronome=!!raw.metronome;result.playFlow=!!raw.playFlow;result.completeBars=raw.completeBars!==false;result.bars=raw.bars.map(bar=>{if(!Array.isArray(bar)||bar.length>100)throw Error('Bad bar');return bar.map(e=>{if(!e||!VALID_DEN.includes(Number(e.den))||!['note','rest'].includes(e.kind))throw Error('Bad note');const ev={id:makeId(),kind:e.kind,den:Number(e.den),dot:!!e.dot};if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Bad pitch');ev.step=e.step;ev.octave=e.octave;ev.acc=['','#','b','n'].includes(e.acc)?e.acc:''}if(typeof e.posX==='number'&&Number.isFinite(e.posX)&&e.posX>=0&&e.posX<=1)ev.posX=e.posX;return ev})});// Remap stable tie/slur references after safely assigning new event IDs.
 const inputEvents=raw.bars.flat(),restoredEvents=result.bars.flat(),idMap=new Map();
 inputEvents.forEach((e,i)=>{
  if(typeof e.id==='string'&&e.id.length<128&&!idMap.has(e.id))
