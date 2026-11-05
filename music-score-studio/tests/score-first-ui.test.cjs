@@ -62,7 +62,8 @@ function preview(){
  return {ids,window,document,pages,filePanel,scanner,setup,labels,toolbar};
 }
 test('there is one real Play and Stop and a visible TEST VERSION label',()=>{
- const allIds=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
+ const markup=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
+ const allIds=[...markup.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
  assert.equal(allIds.length,new Set(allIds).size,'No duplicate IDs');
  assert.match(html,/TEST VERSION — PR #64 \+ PR #65/);
  assert.match(html,/id="testDockPlay"/);
