@@ -275,7 +275,7 @@ function validate(raw){
    [{bar:p.bar,dx:p.dx,dy:p.dy}]:[]);
   if(!points.length)return [];
   const color=/^#[0-9a-fA-F]{6}$/.test(a.color)?a.color:'#df654d';
-  return [{id:makeId(),tool:a.tool,points,color}];
+  return [{id:makeId(),tool:a.tool,points,color,size:Number.isFinite(a.size)?Math.max(16,Math.min(64,a.size)):31}];
  });
  // Validated links never cross hands, never point backwards, and ties connect
  // adjacent notes of the same written and sounding pitch.
@@ -521,7 +521,7 @@ function drawAnnotation(svg,a,preview=false){
  const g=el('g',{'data-annotation':a.id||'draft','pointer-events':'none'}),color=a.color;
  svg.append(g);
  if(a.tool==='hand'){
-  drawText(g,points[0].x,points[0].y,'👆',31,{'text-anchor':'middle','font-family':'Segoe UI Emoji,Apple Color Emoji,sans-serif'});
+  drawText(g,points[0].x,points[0].y,'👆',a.size||31,{'text-anchor':'middle','font-family':'Segoe UI Emoji,Apple Color Emoji,sans-serif'});
  }else if(a.tool==='circle'&&points.length>1){
   const p=points[0],q=points[points.length-1];
   g.append(el('ellipse',{cx:(p.x+q.x)/2,cy:(p.y+q.y)/2,rx:Math.max(3,Math.abs(q.x-p.x)/2),ry:Math.max(3,Math.abs(q.y-p.y)/2),fill:'none',stroke:color,'stroke-width':3.2,'stroke-linecap':'round'}));
@@ -585,7 +585,7 @@ function annotationPointerDown(ev){
   if((data.annotations||[]).length>=250){info('Maximum 250 teacher annotations.');return}
   const first=annotationAnchor(p);
   annotationDraft={id:makeId(),tool:annotationTool,points:[first],
-   color:$('annotationColour').value};
+   color:$('annotationColour').value,size:31};
   annotationDrag={pointer:ev.pointerId,mode:'draw',start:p,changed:false};
   if(annotationTool==='hand')annotationPointerEnd(ev);
  }
@@ -647,6 +647,7 @@ function resizeAnnotation(scale){
  const points=mark.points.map(annotationXY),cx=points.reduce((n,p)=>n+p.x,0)/points.length,
  cy=points.reduce((n,p)=>n+p.y,0)/points.length;
  snapshot();mark.points=points.map(p=>annotationAnchor({x:cx+(p.x-cx)*scale,y:cy+(p.y-cy)*scale}));
+ if(mark.tool==='hand')mark.size=Math.max(16,Math.min(64,(mark.size||31)*scale));
  commit('Teacher annotation resized.');
 }
 
@@ -1037,7 +1038,11 @@ function bind(){
  $('zoom').onclick=()=>{zoomed=!zoomed;$('sheet').classList.toggle('zoomed',zoomed);$('zoom').textContent=zoomed?'↘ Fit page':'🔎 Larger'};
  $('full').onclick=()=>{const full=$('paper').classList.toggle('fullpage');$('full').textContent=full?'⊟ Minimise':'⛶ Full page';$('full').setAttribute('aria-pressed',String(full))};
  window.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&annotationTool!=='cursor'){setAnnotationTool('cursor');e.preventDefault();return}
+  if(e.key==='Escape'&&annotationTool!=='cursor'){
+   setAnnotationTool('cursor');
+   if($('paper').classList.contains('fullpage'))$('full').click();
+   e.preventDefault();return
+  }
   if(e.key==='Escape'&&!$('noteContext').hidden){closeNoteContext();e.preventDefault();return}
   if(e.key==='Escape'&&pendingSlur){pendingSlur=null;render();info('Slur cancelled.');e.preventDefault();return}
   if(e.key==='Escape'&&$('paper').classList.contains('fullpage')){$('full').click();e.preventDefault();return}
