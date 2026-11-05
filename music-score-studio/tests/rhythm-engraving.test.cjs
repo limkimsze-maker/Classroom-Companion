@@ -33,9 +33,9 @@ function make(bars,meter='4/4',extra={}){
  const pitchOfY=(y,top)=>fromIndex(Math.max(8,Math.min(48,bottomIndex()+Math.round(((top+72)-y)/9))));
  const funcs=new Function('data','TICKS','ticks','cap','sumBar','isTwoBarRest',
   'noteIndex','fromIndex','bottomIndex','pitchOfY',geometry+
-  '\nreturn {engravingGap,engravingMinWidth,eventPositions,findInsertIndex,staffLayout,staffNotePosition,planRhythmBeams,printBarEvents};'
+  '\nreturn {engravingGap,engravingMinWidth,eventPositions,findInsertIndex,staffLayout,staffNotePosition,planRhythmBeams,printBarEvents,setData(v){data=v}};'
  )(data,TICKS,ticks,cap,sumBar,isTwoBarRest,noteIndex,fromIndex,bottomIndex,pitchOfY);
- return {...funcs,get data(){return data;},setData:v=>{data=v},sumBar,cap,ticks};
+ return {...funcs,get data(){return data;},setData:v=>{data=v;funcs.setData(v)},sumBar,cap,ticks};
 }
 const positions=(api,index,printing=false)=>{
  const layout=api.staffLayout(printing),cell=layout.cells[index];
