@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Music Score Studio — Two-Hand Piano TEST</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#233e50;background:#f1f7f8}
+*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}
+button{cursor:pointer;touch-action:manipulation;border:1px solid #c6d9dd;background:white;color:#204451;border-radius:10px;padding:9px 12px;font-weight:650;min-height:42px}
+button:hover{border-color:#58a2a8}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #07a3aa;outline-offset:2px}
+button[disabled]{opacity:.45;cursor:not-allowed}.primary{background:#087e88;color:white;border-color:#087e88}.active{background:#d4f3ed;border-color:#348a79}.danger{color:#aa3943}
+header{background:#fff;border-bottom:1px solid #cddfe1;padding:12px max(16px,calc((100vw - 1250px)/2));display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{margin:0;font-size:20px;letter-spacing:-.5px}header small{color:#5f7784}a{color:#087e88}
+main{max-width:1250px;margin:auto;padding:16px;display:grid;gap:12px}
+.panel{background:#fff;border:1px solid #d6e3e6;border-radius:16px;padding:14px;box-shadow:0 3px 13px #1c485112}
+.controls,.toolbar,.row{display:flex;flex-wrap:wrap;align-items:center;gap:9px}.toolbar{justify-content:space-between}.row label{display:flex;align-items:center;gap:6px;color:#496373;font-size:13px}
+input,select{padding:8px;border:1px solid #c4d5da;border-radius:8px;background:white;color:#224451;min-height:39px}
+input[type=text]{width:min(320px,100%)}.pill{background:#edf8f6;border-radius:10px;padding:6px 10px;color:#27716f;font-size:13px}
+.values{display:flex;gap:6px;flex-wrap:wrap}.values button{min-width:85px;padding:8px 11px;font-size:13px}.values button b{display:block;font-size:21px;line-height:1.3}
+h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0}.scorehead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#sheetViewport{overflow:auto;max-height:68vh;border:1px solid #dce8e9;border-radius:12px;background:white;touch-action:pan-x pan-y}
+#sheet{display:block;width:100%;min-width:780px;height:auto;cursor:crosshair;user-select:none}
+#sheet.zoomed{width:135%;min-width:1053px}
+.noteHit{cursor:pointer}.noteHit:focus-visible{outline:none;stroke:#0b9cad;stroke-width:2}
+.status{min-height:20px;font-size:13px;color:#275f70}
+#editPanel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid #e6eef0;margin-top:10px}
+#editPanel[hidden]{display:none}.muted{color:#637985}
+footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
+.fullpage{position:fixed!important;inset:0!important;z-index:1000!important;border-radius:0!important;margin:0!important;background:#fff;overflow:auto}
+.fullpage #sheetViewport{max-height:calc(100dvh - 160px)}
+@media(max-width:650px){header h1{font-size:17px}main{padding:8px}.panel{padding:10px}.values button{min-width:66px;font-size:11px;padding:7px}.values button b{font-size:18px}.toolbar{align-items:stretch}#sheetViewport{max-height:60vh}}
+@media print{header,.controls,.toolbar,#editPanel,.scorehead button,footer,.status,.hint{display:none!important}main,.panel{display:block;border:0;box-shadow:none;margin:0;padding:0}#sheetViewport{max-height:none;overflow:visible;border:0}#sheet,#sheet.zoomed{width:100%;min-width:0}body{background:white}}
+</style>
+</head>
+<body>
+<header><div><h1>🎹 Music Score Studio — Two-Hand Piano <small>TEST</small></h1><small>Compose for right and left hands together · British music terminology</small></div><a href="./index.html">← Single-stave Music Score Studio</a></header>
+<main>
+<section class="panel">
+<div class="row">
+<label>Title <input id="title" type="text" maxlength="100" value="My Piano Piece" aria-label="Score title"></label>
+<label>Time signature <select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></label>
+<label>Tempo (BPM) <input id="tempo" type="number" min="40" max="220" value="96" style="width:78px"></label>
+</div>
+<p class="hint">Upper stave: right hand (treble). Lower stave: left hand (bass). Choose a note or rest, then tap its place in either stave. Both hands share the same bars and play at the same time.</p>
+</section>
+<section class="panel controls" aria-label="Note entry">
+<div><h2>Choose a value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
+<label class="row"><input type="checkbox" id="dotted"> Dotted (+½)</label>
+<label class="row">Symbol <select id="kind"><option value="note">Note</option><option value="rest">Rest</option></select></label>
+<label class="row">Accidental <select id="acc"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></label>
+</section>
+<section class="panel">
+<div class="toolbar">
+<div class="controls"><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><button id="undo" disabled>↶ Undo</button><button id="redo" disabled>↷ Redo</button><button id="addBar">+ Bar</button><button id="removeBar">− Empty bar</button></div>
+<div class="controls"><button id="save">Save JSON</button><button id="open">Open JSON</button><input id="openFile" type="file" accept=".json,application/json" hidden><button id="musicxml">MusicXML</button><button id="print">Print / PDF</button></div>
+</div>
+</section>
+<section class="panel" id="paper">
+<div class="scorehead"><h2>Two-hand music sheet <span id="count" class="muted"></span></h2><div class="controls"><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<div id="sheetViewport"><svg id="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" role="img" aria-label="Editable two-hand piano score. Tap on a stave to add notes or rests."></svg></div>
+<div id="editPanel" hidden><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button></div>
+<p id="status" class="status" role="status" aria-live="polite">Ready · Select a value and tap either stave.</p>
+</section>
+</main>
+<footer>Experimental two-hand composition · Review notation before teaching · No uploads or paid services · Music Score Studio AGPL-3.0 attribution remains in the main application.</footer>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-music-twohand-test-v1';
+const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
+const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
+const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]}))});
+let data=newProject(),chosen=4,selected=null,history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false;
+const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
+const meterCap=()=>{let [a,b]=data.meter.split('/').map(Number);return a*96/b};
+const barSum=events=>events.reduce((n,e)=>n+ticks(e),0);
+const noteIx=(step,oct)=>oct*7+STEPS.indexOf(step);
+const pitchFromIx=n=>({step:STEPS[((n%7)+7)%7],octave:Math.floor(n/7)});
+const base=hand=>hand==='right'?noteIx('E',4):noteIx('G',2);
+const pitchAt=(y,top,hand)=>pitchFromIx(Math.max(9,Math.min(47,base(hand)+Math.round((top+72-y)/9))));
+const yAt=(e,top,hand)=>top+72-(noteIx(e.step,e.octave)-base(hand))*9;
+const info=text=>{$('status').textContent=text};
+const escapeXml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+function el(name,attrs={},text){const n=document.createElementNS(NS,name);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=String(text);return n}
+function drawLine(svg,x1,y1,x2,y2,stroke='#294553',w=1.3){svg.append(el('line',{x1,y1,x2,y2,stroke,'stroke-width':w}))}
+function drawText(svg,x,y,text,size=13,attrs={}){svg.append(el('text',{x,y,fill:'#2b5261','font-family':'system-ui,Segoe UI,Arial', 'font-size':size,...attrs},text))}
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function snapshot(){history.push(clone(data));if(history.length>60)history.shift();future=[];if(playing)stop()}
+function store(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){}}
+function commit(message){store();render();if(message)info(message)}
+function locate(id){for(let b=0;b<data.bars.length;b++)for(const hand of ['right','left']){const i=data.bars[b][hand].findIndex(e=>e.id===id);if(i>=0)return {b,hand,i,event:data.bars[b][hand][i]}}return null}
+function validate(raw){
+ if(!raw||raw.format!=='cc-music-score-studio-twohand'||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>40)throw Error('Invalid two-hand project (maximum 40 bars).');
+ if(!['2/4','3/4','4/4','6/8'].includes(raw.meter))throw Error('Unsupported metre');
+ const out={format:'cc-music-score-studio-twohand',version:1,title:String(raw.title||'My Piano Piece').slice(0,100),meter:raw.meter,tempo:Math.max(40,Math.min(220,Number(raw.tempo)||96)),bars:[]};
+ const cap=Number(raw.meter.split('/')[0])*96/Number(raw.meter.split('/')[1]);
+ for(const bar of raw.bars){const entry={right:[],left:[]};for(const hand of ['right','left']){
+  if(!Array.isArray(bar?.[hand])||bar[hand].length>100)throw Error('Invalid '+hand+'-hand bar');
+  entry[hand]=bar[hand].map(e=>{
+   if(!e||!DENS.includes(e.den)||!['note','rest'].includes(e.kind))throw Error('Invalid note/rest');
+   const v={id:makeId(),kind:e.kind,den:e.den,dot:!!e.dot};
+   if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Invalid pitch');Object.assign(v,{step:e.step,octave:e.octave,acc:['','#','b','n'].includes(e.acc)?e.acc:''})}
+   return v;
+  });
+  if(barSum(entry[hand])>cap+.0001)throw Error('Too many beats in '+hand+'-hand bar');
+ }out.bars.push(entry)}return out;
+}
+function drawClef(svg,hand,x,top){
+ // Built-in musical glyphs are display-only; pitch and playback use exact diatonic mapping.
+ const clef=hand==='right'?'𝄞':'𝄢';
+ drawText(svg,x,top+65,clef,74,{'font-family':'Noto Music,Segoe UI Symbol,serif',fill:'#234354'});
+}
+function drawEvent(svg,e,x,top,hand,isSelected){
+ const y=e.kind==='note'?yAt(e,top,hand):top+38,fill='#204451';
+ const group=el('g',{'data-id':e.id,role:'button',tabindex:0,'aria-label':(hand==='right'?'Right':'Left')+' hand '+(e.kind==='rest'?'rest':e.step+e.octave)+' '+NAMES[e.den]});svg.append(group);
+ if(isSelected)group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:20,fill:'#c3f1e7'}));
+ if(e.kind==='rest'){
+  drawText(group,x-9,y+6,e.den===1?'𝄻':e.den===2?'𝄼':e.den===4?'𝄽':e.den===8?'𝄾':'𝄿',30,{'font-family':'Noto Music,Segoe UI Symbol,serif'});
+ }else{
+  for(let yy=top+72;yy<=y-12;yy+=18)drawLine(group,x-15,yy,x+15,yy,fill,1.3);
+  for(let yy=top;yy>=y+12;yy-=18)drawLine(group,x-15,yy,x+15,yy,fill,1.3);
+  if(e.acc)drawText(group,x-31,y+7,e.acc==='#'?'♯':e.acc==='b'?'♭':'♮',24,{'font-family':'serif'});
+  group.append(el('ellipse',{cx:x,cy:y,rx:e.den===1?12.5:11.5,ry:7,transform:'rotate(-17 '+x+' '+y+')',fill:e.den>=4?fill:'#fff',stroke:fill,'stroke-width':2}));
+  if(e.den!==1){const up=y>=top+36,sx=x+(up?10:-10),ey=y+(up?-49:49);drawLine(group,sx,y,sx,ey,fill,2.2);
+   if(e.den>=8){const count=e.den===8?1:2;for(let k=0;k<count;k++)group.append(el('path',{d:'M '+sx+' '+(ey+(up?k*9:-k*9))+' q '+(up?24:-24)+' '+(up?-6:6)+' '+(up?11:-11)+' '+(up?26:-26),fill:'none',stroke:fill,'stroke-width':3}))}
+  }
+ }
+ if(e.dot)group.append(el('circle',{cx:x+19,cy:y-4,r:2.9,fill}));
+ group.append(el('rect',{x:x-20,y:y-21,width:40,height:42,fill:'transparent',class:'noteHit','data-id':e.id}));
+ return group;
+}
+const LEFT=155,W=1140,BARW=230,TOP=110,SYSHEIGHT=286,SEPARATION=123;
+function locationForBar(index){const line=Math.floor(index/4),slot=index%4;return {line,left:LEFT+slot*BARW,width:BARW,top:TOP+line*SYSHEIGHT}}
+function timeX(start,length,left,width){return left+24+(Math.min(start,meterCap())/meterCap())*(width-48)}
+function render(){
+ const svg=$('sheet'),systems=Math.ceil(data.bars.length/4),h=TOP+systems*SYSHEIGHT+6;
+ svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+W+' '+h);
+ svg.append(el('rect',{width:W,height:h,fill:'#fff'}));
+ drawText(svg,W/2,41,data.title,22,{'text-anchor':'middle','font-weight':800,fill:'#234b60'});
+ for(let sys=0;sys<systems;sys++){
+  const top=TOP+sys*SYSHEIGHT,leftTop=top,leftBottom=top+SEPARATION;
+  for(const staffTop of [leftTop,leftBottom])for(let j=0;j<5;j++)drawLine(svg,35,staffTop+j*18,LEFT+Math.min(4,data.bars.length-sys*4)*BARW,staffTop+j*18);
+  // One brace connects both hands; it repeats at each system.
+  svg.append(el('path',{d:'M 23 '+(top-5)+' C 6 '+(top+15)+' 33 '+(top+57)+' 17 '+(top+96)+' C 32 '+(top+134)+' 6 '+(top+173)+' 23 '+(top+200),fill:'none',stroke:'#244855','stroke-width':3.3}));
+  drawClef(svg,'right',49,top);drawClef(svg,'left',49,top+SEPARATION);
+  if(sys===0){const [n,d]=data.meter.split('/');for(const staffTop of [leftTop,leftBottom]){
+   drawText(svg,113,staffTop+32,n,30,{'font-weight':800,'text-anchor':'middle'});
+   drawText(svg,113,staffTop+64,d,30,{'font-weight':800,'text-anchor':'middle'});
+  }}
+  drawText(svg,38,top-22,'Right hand',11);drawText(svg,38,top+SEPARATION-14,'Left hand',11);
+ }
+ for(let b=0;b<data.bars.length;b++){
+  const layout=locationForBar(b),{top,left,width}=layout,right=left+width;
+  for(const hand of ['right','left']){
+   const staffTop=top+(hand==='left'?SEPARATION:0),events=data.bars[b][hand],used=barSum(events);
+   const hit=el('rect',{x:left,y:staffTop-10,width,height:95,fill:'transparent','data-bar':b,'data-hand':hand,'data-top':staffTop,'data-left':left,'data-width':width});svg.append(hit);
+   let position=0;for(const e of events){const x=timeX(position,ticks(e),left,width);drawEvent(svg,e,x,staffTop,hand,e.id===selected);position+=ticks(e)}
+   const lineWeight=b===data.bars.length-1?2:1.4;drawLine(svg,right,staffTop,right,staffTop+72,'#234657',lineWeight);
+   if(b===data.bars.length-1)drawLine(svg,right+5,staffTop,right+5,staffTop+72,'#234657',3);
+   if(hand==='right'){drawText(svg,left+9,top-20,'Bar '+(b+1),11);if(used>meterCap())drawText(svg,right-5,top-20,'Overfull',10,{'text-anchor':'end',fill:'#bd4545'})}
+  }
+ }
+ $('count').textContent='· '+data.bars.length+' bar'+(data.bars.length===1?'':'s');
+ $('undo').disabled=!history.length;$('redo').disabled=!future.length;
+ const found=locate(selected);$('editPanel').hidden=!found;
+ if(found){$('selection').textContent=(found.hand==='right'?'Right':'Left')+' hand · Bar '+(found.b+1)+' · '+(found.event.kind==='rest'?'Rest':found.event.step+found.event.octave)+' · '+NAMES[found.event.den]+(found.event.dot?' dotted':'')}
+ $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;
+}
+function point(ev){const svg=$('sheet'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const matrix=svg.getScreenCTM();return matrix?p.matrixTransform(matrix.inverse()):p}
+function insert(b,hand,x,y){
+ const bar=data.bars[b][hand],den=chosen,kind=$('kind').value;
+ const e={id:makeId(),kind,den,dot:$('dotted').checked};
+ if(kind==='note')Object.assign(e,{...pitchAt(y,locationForBar(b).top+(hand==='left'?SEPARATION:0),hand),acc:$('acc').value});
+ if(barSum(bar)+ticks(e)>meterCap()+.0001){info('That '+NAMES[den].toLowerCase()+' will not fit in '+hand+'-hand Bar '+(b+1)+'.');return false}
+ const loc=locationForBar(b),times=[];let pos=0;
+ for(const item of bar){times.push(timeX(pos,ticks(item),loc.left,loc.width));pos+=ticks(item)}
+ let index=0;while(index<times.length&&times[index]<x)index++;
+ snapshot();bar.splice(index,0,e);selected=e.id;commit((hand==='right'?'Right':'Left')+' hand · '+(kind==='rest'?'Rest':e.step+e.octave)+' added.');return true;
+}
+function clickSheet(ev){
+ const target=ev.target.closest('[data-id],[data-bar]');if(!target)return;
+ const id=target.dataset.id;
+ if(id){selected=id;render();return}
+ const b=Number(target.dataset.bar),hand=target.dataset.hand;if(!data.bars[b]||!['right','left'].includes(hand))return;
+ const p=point(ev);insert(b,hand,p.x,p.y);
+}
+function changeValue(sign){
+ const ref=locate(selected);if(!ref)return;
+ const i=DENS.indexOf(ref.event.den),n=i+sign;if(n<0||n>=DENS.length)return;
+ const den=DENS[n],bar=data.bars[ref.b][ref.hand];
+ if(barSum(bar)-ticks(ref.event)+ticks({...ref.event,den})>meterCap()+1e-4){info('Not enough beats in this bar.');return}
+ snapshot();ref.event.den=den;commit('Changed to '+NAMES[den]+'.')
+}
+function remove(){const ref=locate(selected);if(!ref)return;snapshot();data.bars[ref.b][ref.hand].splice(ref.i,1);selected=null;commit('Note or rest deleted.')}
+function undo(){if(!history.length)return;if(playing)stop();future.push(clone(data));data=history.pop();selected=null;commit('Undone.')}
+function redo(){if(!future.length)return;if(playing)stop();history.push(clone(data));data=future.pop();selected=null;commit('Redone.')}
+function oscillator(midi,at,duration,hand){
+ if(!ctx)return;const root=ctx.createOscillator(),gain=ctx.createGain(),harm=ctx.createOscillator(),hGain=ctx.createGain();
+ const hz=440*Math.pow(2,(midi-69)/12);root.type='triangle';harm.type='sine';
+ root.frequency.setValueAtTime(hz,at);harm.frequency.setValueAtTime(hz*2,at);
+ const amp=hand==='left'?.09:.075,hold=Math.max(.1,duration*.91),end=at+hold;
+ gain.gain.setValueAtTime(.00001,at);gain.gain.exponentialRampToValueAtTime(amp,at+.012);gain.gain.exponentialRampToValueAtTime(.00001,end+.12);
+ hGain.gain.setValueAtTime(.00001,at);hGain.gain.exponentialRampToValueAtTime(amp*.18,at+.012);hGain.gain.exponentialRampToValueAtTime(.00001,end+.07);
+ root.connect(gain);gain.connect(ctx.destination);harm.connect(hGain);hGain.connect(ctx.destination);
+ root.start(at);harm.start(at);root.stop(end+.15);harm.stop(end+.10);sounds.push(root,harm);
+}
+function midi(e,bar,index){
+ const semis={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+ let alter=e.acc==='#'?1:e.acc==='b'?-1:0;
+ if(!e.acc){for(let i=index-1;i>=0;i--){const p=bar[i];if(p.kind==='note'&&p.step===e.step&&p.octave===e.octave&&p.acc){alter=p.acc==='#'?1:p.acc==='b'?-1:0;break}}}
+ return 12*(e.octave+1)+semis[e.step]+alter;
+}
+function performance(){
+ const secPerTick=60/Math.max(40,Number(data.tempo)||96)/24;
+ const events=[];
+ for(let b=0;b<data.bars.length;b++)for(const hand of ['right','left']){
+  let offset=0;const bar=data.bars[b][hand];
+  for(let i=0;i<bar.length;i++){const e=bar[i],duration=ticks(e);
+   if(e.kind==='note')events.push({bar:b,hand,index:i,event:e,at:(b*meterCap()+offset)*secPerTick,length:duration*secPerTick,pitch:midi(e,bar,i)});
+   offset+=duration;
+  }
+ }
+ return {events,duration:data.bars.length*meterCap()*secPerTick};
+}
+async function play(){
+ if(playing)stop();
+ try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();await ctx.resume()}catch(e){info('Audio could not start in this browser.');return}
+ const perf=performance(),start=ctx.currentTime+.08;playing=true;
+ for(const e of perf.events)oscillator(e.pitch,start+e.at,e.length,e.hand);
+ $('play').disabled=true;$('stop').disabled=false;info('Playing right and left hands together.');
+ timers.push(setTimeout(()=>stop(),Math.ceil((perf.duration+.3)*1000)));
+}
+function stop(){for(const s of sounds)try{s.stop()}catch(_){}sounds=[];timers.forEach(clearTimeout);timers=[];playing=false;$('play').disabled=false;$('stop').disabled=true;info('Stopped.')}
+function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
+function typeName(den){return ({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[den]}
+function printBar(bar){const out=bar.map(e=>({...e}));let left=meterCap()-barSum(bar);
+ for(const den of DENS){const t=96/den;while(left>=t-.0001){out.push({kind:'rest',den,dot:false});left-=t}}
+ return out;
+}
+function exportXml(){
+ let xml='<?xml version="1.0" encoding="utf-8"?>\n<score-partwise version="4.0"><work><work-title>'+escapeXml(data.title)+'</work-title></work><movement-title>'+escapeXml(data.title)+'</movement-title>';
+ xml+='<part-list><score-part id="P1"><part-name>Piano Right Hand</part-name><part-abbreviation>RH</part-abbreviation><score-instrument id="I1"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>';
+ xml+='<score-part id="P2"><part-name>Piano Left Hand</part-name><part-abbreviation>LH</part-abbreviation><score-instrument id="I2"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>1</midi-program></midi-instrument></score-part></part-list>';
+ const [n,d]=data.meter.split('/');
+ for(const [hand,part,sign,line] of [['right','P1','G','2'],['left','P2','F','4']]){
+  xml+='<part id="'+part+'">';
+  for(let b=0;b<data.bars.length;b++){
+   xml+='<measure number="'+(b+1)+'">';
+   if(b===0)xml+='<attributes><divisions>24</divisions><key><fifths>0</fifths></key><time><beats>'+n+'</beats><beat-type>'+d+'</beat-type></time><clef><sign>'+sign+'</sign><line>'+line+'</line></clef></attributes><direction><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>'+data.tempo+'</per-minute></metronome></direction-type><sound tempo="'+data.tempo+'"/></direction>';
+   const original=data.bars[b][hand],bar=printBar(original);
+   if(!original.length)bar.splice(0,bar.length,{kind:'rest',measureRest:true,den:1,dot:false});
+   for(const e of bar){
+    xml+='<note>';
+    if(e.kind==='rest')xml+=e.measureRest?'<rest measure="yes"/>':'<rest/>';
+    else xml+='<pitch><step>'+e.step+'</step>'+(e.acc&&e.acc!=='n'?'<alter>'+(e.acc==='#'?1:-1)+'</alter>':'')+'<octave>'+e.octave+'</octave></pitch>';
+    xml+='<duration>'+Math.round(e.measureRest?meterCap():ticks(e))+'</duration>';
+    if(!e.measureRest)xml+='<type>'+typeName(e.den)+'</type>';
+    if(e.dot&&!e.measureRest)xml+='<dot/>';
+    if(e.kind==='note'&&e.acc)xml+='<accidental>'+(e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural')+'</accidental>';
+    xml+='</note>';
+   }xml+='</measure>';
+  }xml+='</part>';
+ }
+ xml+='</score-partwise>';
+ download(xml,'two-hand-piano.musicxml','application/vnd.recordare.musicxml+xml');
+ info('MusicXML exported with two simultaneous piano parts.');
+}
+function bind(){
+ $('values').replaceChildren();
+ for(const den of DENS){const b=document.createElement('button');b.type='button';b.innerHTML='<b>'+GLYPHS[den]+'</b>'+NAMES[den];b.dataset.den=den;b.onclick=()=>{chosen=den;refreshValues();info(NAMES[den]+' selected. Tap a stave to insert.')};$('values').append(b)}
+ refreshValues();
+ $('sheet').addEventListener('click',clickSheet);
+ $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();selected=id;render()}});
+ $('play').onclick=play;$('stop').onclick=stop;$('undo').onclick=undo;$('redo').onclick=redo;
+ $('addBar').onclick=()=>{if(data.bars.length>=40){info('Maximum 40 bars.');return}snapshot();data.bars.push({right:[],left:[]});commit('Added Bar '+data.bars.length+'.')};
+ $('removeBar').onclick=()=>{const last=data.bars.at(-1);if(data.bars.length<=1||last.right.length||last.left.length){info('Only the final empty bar can be removed.');return}snapshot();data.bars.pop();selected=null;commit('Removed final bar.')};
+ $('shorter').onclick=()=>changeValue(1);$('longer').onclick=()=>changeValue(-1);$('delete').onclick=remove;
+ $('title').onchange=e=>{snapshot();data.title=e.target.value.slice(0,100)||'My Piano Piece';commit('Title updated.')};
+ $('meter').onchange=e=>{const [n,d]=e.target.value.split('/').map(Number),cap=n*96/d;if(data.bars.some(b=>barSum(b.right)>cap||barSum(b.left)>cap)){e.target.value=data.meter;info('Shorten overfull bars before changing the metre.');return}snapshot();data.meter=e.target.value;commit('Time signature updated.')};
+ $('tempo').onchange=e=>{snapshot();data.tempo=Math.max(40,Math.min(220,Number(e.target.value)||96));commit('Tempo updated.')};
+ $('save').onclick=()=>download(JSON.stringify(data,null,2),'two-hand-piano.json','application/json');
+ $('open').onclick=()=>$('openFile').click();$('openFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{const raw=validate(JSON.parse(await file.text()));snapshot();data=raw;selected=null;commit('Two-hand project opened.')}catch(err){info('Could not open file: '+err.message)}};
+ $('musicxml').onclick=exportXml;$('print').onclick=()=>window.print();
+ $('zoom').onclick=()=>{zoomed=!zoomed;$('sheet').classList.toggle('zoomed',zoomed);$('zoom').textContent=zoomed?'↘ Fit page':'🔎 Larger'};
+ $('full').onclick=()=>{const full=$('paper').classList.toggle('fullpage');$('full').textContent=full?'⊟ Minimise':'⛶ Full page';$('full').setAttribute('aria-pressed',String(full))};
+ window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&$('paper').classList.contains('fullpage')){$('full').click();e.preventDefault();return}
+  const active=document.activeElement;if(['INPUT','TEXTAREA','SELECT'].includes(active?.tagName)||active?.closest('button,a,summary'))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}
+  if(e.key==='Delete'&&selected){e.preventDefault();remove()}
+ });
+}
+function refreshValues(){document.querySelectorAll('#values button').forEach(b=>{const active=Number(b.dataset.den)===chosen;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))})}
+try{const old=localStorage.getItem(KEY);if(old)data=validate(JSON.parse(old))}catch(_){data=newProject()}
+bind();render();
+window.addEventListener('pagehide',()=>{if(playing)stop()});
+})();
+</script>
+</body>
+</html>
