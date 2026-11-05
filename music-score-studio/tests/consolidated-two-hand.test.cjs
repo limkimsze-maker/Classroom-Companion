@@ -739,3 +739,87 @@ test('dotted-semiquaver pickup completion never loses or invents 6/8 beats',()=>
   assert.equal(sum,72);
  }
 });
+
+test('barline tie carries C-sharp to an unmarked C but not a newly struck C',()=>{
+ const src=note('C',4,4,{id:'tieSharpSource',acc:'#'}),continuation=note('C',4,4,{id:'tieSharpTarget'});
+ const newAttack=note('C',4,4,{id:'freshC'});
+ const d=project([],[]);d.bars=[
+  {right:[{id:'openingRest',kind:'rest',den:2,dot:true},src],left:[]},
+  {right:[continuation,newAttack],left:[]}
+ ];
+ const p=setup(d);
+ p.setSelected(src.id);p.toggleTie();
+ assert.equal(src.tieTo,continuation.id);
+ assert.deepEqual(p.handLinks('right').ties,[[src.id,continuation.id]]);
+ const notes=p.getData().bars[1].right;
+ assert.equal(p.midi(notes[0],notes,0),61);
+ assert.equal(p.midi(notes[1],notes,1),60,'newly played C is natural after barline');
+ const perf=p.performance().events.filter(x=>x.hand==='right');
+ assert.equal(perf.length,2,'tied continuation does not retrigger');
+ assert.equal(perf[0].pitch,61);
+ assert.equal(perf[0].ids.length,2);
+ assert.equal(perf[1].pitch,60);
+ p.exportXml();
+ const xml=p.downloaded.s.split('<part id="P1">')[1].split('</part>')[0];
+ const secondBar=xml.split('<measure number="2">')[1].split('</measure>')[0];
+ const alters=[...secondBar.matchAll(/<pitch><step>C<\/step>(?:<alter>(-?\d+)<\/alter>)?<octave>4<\/octave><\/pitch>/g)].map(m=>Number(m[1]||0));
+ assert.deepEqual(alters,[1,0]);
+ assert.match(secondBar,/<tie type="stop"\/>/);
+ assert.equal((secondBar.match(/<accidental>sharp<\/accidental>/g)||[]).length,0);
+ const reopened=p.validate(JSON.parse(JSON.stringify(p.getData())));
+ assert.equal(reopened.bars[0].right[1].tieTo,continuation.id,'JSON keeps the valid tie');
+});
+test('flat tie across barline works independently for bass and treble',()=>{
+ const r1=note('E',4,4,{id:'rhFlatSource',acc:'b'}),r2=note('E',4,4,{id:'rhFlatNext'});
+ const l1=note('B',2,4,{id:'lhFlatSource',acc:'b'}),l2=note('B',2,4,{id:'lhFlatNext'});
+ const d=project([],[]);d.bars=[
+  {right:[{id:'rRest',kind:'rest',den:2,dot:true},r1],left:[{id:'lRest',kind:'rest',den:2,dot:true},l1]},
+  {right:[r2],left:[l2]}
+ ];
+ const p=setup(d);
+ for(const id of [r1.id,l1.id]){p.setSelected(id);p.toggleTie();}
+ assert.deepEqual(p.handLinks('right').ties,[[r1.id,r2.id]]);
+ assert.deepEqual(p.handLinks('left').ties,[[l1.id,l2.id]]);
+ const sounds=p.performance().events.filter(e=>e.event.id===r1.id||e.event.id===l1.id);
+ assert.equal(sounds.length,2);
+ assert.ok(sounds.every(e=>e.ids.length===2));
+ assert.equal(p.midi(r2,d.bars[1].right,0),63);
+ assert.equal(p.midi(l2,d.bars[1].left,0),46);
+ p.exportXml();
+ const xml=p.downloaded.s;
+ assert.equal((xml.match(/<tie type="stop"\/>/g)||[]).length,2);
+ const restored=p.validate(JSON.parse(JSON.stringify(d)));
+ assert.equal(restored.bars[0].right[1].tieTo,r2.id);
+ assert.equal(restored.bars[0].left[1].tieTo,l2.id);
+});
+test('explicit natural cancellation rejects cross-bar sharp tie; a natural source may tie naturally',()=>{
+ const src=note('C',4,4,{id:'sharpBefore',acc:'#'}),next=note('C',4,4,{id:'naturalAfter',acc:'n'});
+ const d=project([],[]);d.bars=[
+  {right:[{kind:'rest',id:'blank',den:2,dot:true},src],left:[]},
+  {right:[next],left:[]}
+ ];
+ const p=setup(d);p.setSelected(src.id);p.toggleTie();
+ assert.equal(src.tieTo,undefined);
+ assert.equal(p.handLinks('right').ties.length,0);
+ const malicious=JSON.parse(JSON.stringify(d));malicious.bars[0].right[1].tieTo=next.id;
+ assert.equal(p.validate(malicious).bars[0].right[1].tieTo,undefined);
+ const normal=note('C',4,4,{id:'normalStart',acc:'n'}),normalNext=note('C',4,4,{id:'normalContinue'});
+ const d2=project([],[]);d2.bars=[
+  {right:[{id:'rest',kind:'rest',den:2,dot:true},normal],left:[]},
+  {right:[normalNext],left:[]}
+ ];
+ const q=setup(d2);q.setSelected(normal.id);q.toggleTie();
+ assert.equal(normal.tieTo,normalNext.id);
+ assert.equal(q.midi(normalNext,d2.bars[1].right,0),60);
+});
+test('an untied sharp cannot accidentally carry into next measure; non-adjacent tie is rejected',()=>{
+ const sharp=note('G',4,4,{id:'sourceG',acc:'#'}),after=note('G',4,4,{id:'newG'});
+ const d=project([],[]);d.bars=[
+  {right:[{id:'restG',kind:'rest',den:2,dot:true},sharp],left:[]},
+  {right:[after],left:[]}
+ ];
+ const p=setup(d);
+ assert.equal(p.midi(after,d.bars[1].right,0),67);
+ const wrong=JSON.parse(JSON.stringify(d));wrong.bars[1].right.unshift({id:'leadingRest',kind:'rest',den:8,dot:false});wrong.bars[0].right[1].tieTo=after.id;
+ assert.equal(p.validate(wrong).bars[0].right[1].tieTo,undefined);
+});
