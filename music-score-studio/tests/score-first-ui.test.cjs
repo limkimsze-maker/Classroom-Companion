@@ -30,10 +30,10 @@ function makeNode(id=''){
   querySelectorAll(){return []}
  };
 }
-function preview(){
+function preview({wide=false}={}){
  const ids={};
  for(const name of ['testDockPlay','play','stop','testToolFiles','testToolImport','testToolSetup',
-  'testToolTeacher','testToolHelp','toolRow','clearScoreTop','beautifyFeedback','teacherDrawer',
+  'testToolTeacher','testToolHelp','testDockAnnotations','toolRow','clearScoreTop','beautifyFeedback','teacherDrawer',
   'autoExpressionReview','pianoCounts','scanAnother','closePiano','helpAndProjects',
   'pianoNowPlaying','moreActions','testDockCompose','testDockOpen','testScoreTools',
   'omrChooseButton','engravedScore','testEngravedNav','testEngravedPrev','testEngravedNext',
@@ -58,10 +58,11 @@ function preview(){
   createElement:()=>makeNode(),
   events:{},addEventListener(type,fn){this.events[type]=fn}
  };
- const window={};
+ const annotationMedia={matches:wide,listeners:{},addEventListener(type,fn){this.listeners[type]=fn}};
+ const window={matchMedia:()=>annotationMedia};
  ids.play.onclick=()=>{},ids.stop.onclick=()=>{};
  new Function('document','window',source[1])(document,window);
- return {ids,window,document,pages,filePanel,scanner,setup,labels,toolbar};
+ return {ids,window,document,pages,filePanel,scanner,setup,labels,toolbar,annotationMedia};
 }
 test('there is one real Play and Stop and a visible TEST VERSION label',()=>{
  const markup=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
@@ -222,4 +223,21 @@ test('import and compose actions remain available on narrow phones',()=>{
  assert.match(html,/.piano-active \.testDockInner\{flex-wrap:wrap\}/);
  assert.match(html,/.piano-active #testDockOpen,.piano-active \.testScoreTools>summary\{width:100%\}/);
  assert.doesNotMatch(html,/\.piano-active #testDockOpen\{display:none\}/);
+});
+
+test('desktop annotations reuse original tools and resizing restores the mobile Tools drawer',()=>{
+ const ui=preview({wide:true});
+ assert.equal(ui.ids.teacherDrawer.parentElement,ui.ids.testDockAnnotations);
+ assert.equal(ui.ids.teacherDrawer.open,true);
+ assert.equal(ui.ids.testToolTeacher.children.includes(ui.ids.teacherDrawer),false);
+ ui.annotationMedia.matches=false;
+ ui.annotationMedia.listeners.change();
+ assert.equal(ui.ids.teacherDrawer.parentElement,ui.ids.testToolTeacher);
+ assert.equal(ui.ids.teacherDrawer.open,false);
+ assert.equal(ui.ids.testDockAnnotations.children.length,0);
+ ui.annotationMedia.matches=true;
+ ui.annotationMedia.listeners.change();
+ assert.equal(ui.ids.teacherDrawer.parentElement,ui.ids.testDockAnnotations);
+ assert.equal(ui.ids.teacherDrawer.open,true);
+ assert.match(html,/\.testDockAnnotations #teacherDrawer \.annotationToolbarInner\{[^}]*overflow-x:auto/);
 });
