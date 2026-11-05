@@ -15,8 +15,9 @@ function setup(initial){
  const code=extract('const ticks=','function bind(');
  const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
   code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
-  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
- )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:''}),
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},setPointerY:y=>{point=()=>({x:200,y})},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
+ )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:'',hidden:id==='noteContext',
+  setPointerCapture(){},releasePointerCapture(){}}),
  {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
  return {...result,get downloaded(){return result.getDownloaded()}};
 }
@@ -275,4 +276,28 @@ test('notes at the supported pitch boundary cannot be moved beyond range',()=>{
  const lo=note('D',1),hi=note('B',6);const p=setup(project([lo,hi],[]));
  p.setSelected(lo.id);assert.equal(p.adjustPitch(-1),false);
  p.setSelected(hi.id);assert.equal(p.adjustPitch(1),false);
+});
+
+test('vertical pointer drag actually moves a right-hand note by two stave steps',()=>{
+ const e=note('E',5,4,{staccato:true}),left=note('G',2,2),p=setup(project([e],[left]));
+ const event={button:0,pointerId:7,target:{closest:selector=>selector==='[data-id]'?{dataset:{id:e.id}}:null}};
+ p.setPointerY(100);p.pitchPointerDown(event);
+ p.setPointerY(82);p.pitchPointerMove({...event,pointerId:7});
+ p.pitchPointerEnd({...event,pointerId:7});
+ const after=p.getData().bars[0];
+ assert.equal(after.right[0].step,'G');
+ assert.equal(after.right[0].octave,5);
+ assert.equal(after.right[0].den,4);
+ assert.equal(after.right[0].staccato,true);
+ assert.equal(after.left[0].step,'G');
+ assert.equal(after.right.length,1);
+});
+test('horizontal-only drag and wrong-pointer movement do not change notes',()=>{
+ const e=note('E',5),p=setup(project([e],[]));
+ const ev={button:0,pointerId:2,target:{closest:()=>({dataset:{id:e.id}})}};
+ p.setPointerY(100);p.pitchPointerDown(ev);
+ p.setPointerY(60);p.pitchPointerMove({...ev,pointerId:99});
+ p.setPointerY(100);p.pitchPointerMove(ev);
+ p.pitchPointerEnd(ev);
+ assert.equal(p.getData().bars[0].right[0].step,'E');
 });
