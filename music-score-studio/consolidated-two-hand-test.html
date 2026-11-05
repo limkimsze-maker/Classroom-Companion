@@ -453,7 +453,8 @@ function validate(raw){
    if(end===undefined||end<=i||refs[end].e.kind!=='note')delete e.slurTo;
    const next=refs[i+1];
    if(!next||e.tieTo!==next.e.id||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||!tiePitchMatches(e,out.bars[refs[i].b][hand],refs[i].i,next.e,out.bars[next.b][hand],next.i,out)||
-     (refs[i].b!==next.b&&Math.abs(barSum(out.bars[refs[i].b][hand])-cap)>.001))delete e.tieTo;
+     (refs[i].b!==next.b&&(next.b!==refs[i].b+1||next.i!==0||
+      Math.abs(barSum(out.bars[refs[i].b][hand])-cap)>.001)))delete e.tieTo;
   }
  }
  return out;
@@ -470,7 +471,8 @@ function handLinks(hand){
   const next=refs[i+1];
   if(next?.e.kind==='note'&&next.e.id===e.tieTo&&e.step===next.e.step&&e.octave===next.e.octave&&
    tiePitchMatches(e,data.bars[a.b][hand],a.i,next.e,data.bars[next.b][hand],next.i)&&
-   (a.b===next.b||Math.abs(barSum(data.bars[a.b][hand])-meterCap())<.001)){
+   (a.b===next.b||(next.b===a.b+1&&next.i===0&&
+     Math.abs(barSum(data.bars[a.b][hand])-meterCap())<.001))){
    ties.push([e.id,next.e.id]);tieEnds.add(next.e.id)
   }
  }
@@ -504,7 +506,8 @@ function toggleTie(){
  const refs=handRefs(ref.hand),n=refs.findIndex(r=>r.e.id===e.id),next=refs[n+1];
  if(!next||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||
   !tiePitchMatches(e,data.bars[ref.b][ref.hand],ref.i,next.e,data.bars[next.b][ref.hand],next.i)||
-  (ref.b!==next.b&&Math.abs(barSum(data.bars[ref.b][ref.hand])-meterCap())>.001)){
+  (ref.b!==next.b&&(next.b!==ref.b+1||next.i!==0||
+   Math.abs(barSum(data.bars[ref.b][ref.hand])-meterCap())>.001))){
   info('A tie joins the next same-pitch note in the same hand.');return
  }
  snapshot();e.tieTo=next.e.id;
@@ -1123,7 +1126,18 @@ function tiePitchMatches(from,fromBar,fromIndex,to,toBar,toIndex,score=data){
  if(from.kind!=='note'||to.kind!=='note'||
     from.step!==to.step||from.octave!==to.octave)return false;
  const start=midi(from,fromBar,fromIndex,score);
- if(fromBar!==toBar&&toIndex===0&&!to.acc)return true;
+ if(fromBar!==toBar){
+  const sourceBar=score.bars.findIndex(b=>b.right===fromBar||b.left===fromBar);
+  const targetBar=score.bars.findIndex(b=>b.right===toBar||b.left===toBar);
+  const [beats,beatType]=score.meter.split('/').map(Number);
+  // A tie never jumps over another measure, even if that hand has no
+  // written events in the intervening measure. It must join the first
+  // note of the immediately following bar after a complete source bar.
+  if(sourceBar<0||targetBar!==sourceBar+1||toIndex!==0||
+     fromIndex!==fromBar.length-1||
+     Math.abs(barSum(fromBar)-beats*96/beatType)>.001)return false;
+  if(!to.acc)return true;
+ }
  return start===midi(to,toBar,toIndex,score);
 }
 function performance(){
