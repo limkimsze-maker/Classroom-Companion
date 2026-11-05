@@ -158,6 +158,26 @@ button.active:not(.primary){background:#e6f5f5;color:#087b86}
 #sheet.annotating [data-id],#sheet.annotating .noteHit{cursor:crosshair}
 @media(max-width:650px){.teacherAnnotations>summary{padding:8px 12px}.annotationTools{padding:8px}.annotationToolRow button{flex:1 1 auto}.annotationSummaryHint{display:none}}
 @media print{.teacherAnnotations{display:none!important}}
+
+/* Phone Fit must remain readable: the score scrolls rather than shrinking to 300px. */
+.fullpage #sheet{min-width:880px!important;width:100%!important;height:auto!important}
+.fullpage #sheet.zoomed{min-width:1160px!important;width:135%!important}
+.fullpage #sheetViewport{overflow:auto!important;overscroll-behavior:contain}
+.fullpage>.teacherAnnotations{flex:0 0 auto;max-height:29dvh;overflow:auto}
+.studioSidebar .values button{font-size:11px;line-height:1.2;min-height:74px}
+.articulations button{min-height:42px;font-size:12px}
+#editPanel button{min-height:42px}
+.expressionMore{width:100%;border-top:1px solid #e4eef0;padding-top:5px}
+.expressionMore>summary{font-size:12px;font-weight:700;color:#376678;cursor:pointer;padding:9px 7px}
+.expressionMore>summary:focus-visible{outline:3px solid #84cfde;outline-offset:1px}
+.expressionMoreInner{display:flex;flex-wrap:wrap;gap:6px;padding-top:6px}
+@media(max-width:650px){
+ .studioSidebar .values button{font-size:11px;min-height:78px;padding:5px 3px}
+ .studioSidebar .values button b{font-size:26px}
+ .articulations button{min-height:44px}
+ .fullpage #sheet{min-width:880px!important}
+ .fullpage #sheet.zoomed{min-width:1160px!important}
+}
 </style>
 </head>
 <body>
@@ -224,7 +244,7 @@ const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-
 const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
 const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
 const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]})),annotations:[]});
-let data=newProject(),chosen=4,selectedAnnotation=null,annotationTool='cursor',annotationDrag=null,annotationDraft=null,selected=null,pendingSlur=null,contextTarget=null,dragPitch=null,suppressDragClick=false,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
+let data=newProject(),chosen=4,selectedAnnotation=null,annotationTool='cursor',annotationDrag=null,annotationDraft=null,selected=null,pendingSlur=null,contextTarget=null,dragPitch=null,suppressDragClick=false,keyboardNoteFocus=false,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
 const MARKS=['staccato','staccatissimo','portato','tenuto','accent','marcato','fermata'];
 const MARK_LABELS={staccato:'Staccato ·',staccatissimo:'Staccatissimo ▾',portato:'Portato –·',tenuto:'Tenuto –',accent:'Accent >',marcato:'Marcato ^',fermata:'Fermata 𝄐'};
 const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
@@ -372,14 +392,19 @@ function finishSlur(id){
 }
 function renderArticulations(ref){
  const dock=$('articulations');dock.replaceChildren();if(!ref||ref.event.kind!=='note')return;
- const mk=(label,pressed,fn)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.className=pressed?'active':'';button.setAttribute('aria-pressed',String(!!pressed));button.onclick=fn;dock.append(button)};
+ const mk=(label,pressed,fn,dest=dock)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.className=pressed?'active':'';button.setAttribute('aria-pressed',String(!!pressed));button.onclick=fn;dest.append(button)};
  const heading=text=>{const label=document.createElement('span');label.className='editHeading';label.textContent=text;dock.append(label)};
  heading('Pitch');
  for(const [label,direction] of [['↑ Higher',1],['↓ Lower',-1]])mk(label,false,()=>adjustPitch(direction));
- heading('Expression · click to add or remove');
- for(const mark of MARKS)mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark));
+ heading('Expression and musical connections');
+ for(const mark of ['staccato','tenuto','accent'])mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark));
  mk(pendingSlur?'✕ Cancel slur':ref.event.slurTo?'Remove slur':'Slur ⌒',!!pendingSlur,()=>toggleSlur());
  mk(ref.event.tieTo?'Remove tie':'Tie ⌣',!!ref.event.tieTo,()=>toggleTie());
+ const advanced=document.createElement('details');advanced.className='expressionMore';
+ const summary=document.createElement('summary');summary.textContent='⋯ More musical expression';advanced.append(summary);
+ const inner=document.createElement('div');inner.className='expressionMoreInner';advanced.append(inner);
+ for(const mark of ['staccatissimo','portato','marcato','fermata'])mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark),inner);
+ dock.append(advanced);
  if(pendingSlur){const hint=document.createElement('span');hint.className='muted';hint.textContent='Tap the other note (same hand)';dock.append(hint)}
 }
 function drawClef(svg,hand,x,top){
@@ -652,7 +677,7 @@ function resizeAnnotation(scale){
 }
 
 function render(){
- const svg=$('sheet'),systems=Math.ceil(data.bars.length/4),h=TOP+systems*SYSHEIGHT+6,positions=new Map();
+ const svg=$('sheet'),priorFocus=keyboardNoteFocus?document.activeElement?.closest?.('[data-id]')?.dataset?.id:null,systems=Math.ceil(data.bars.length/4),h=TOP+systems*SYSHEIGHT+6,positions=new Map();
  svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+W+' '+h);
  svg.append(el('rect',{width:W,height:h,fill:'#fff'}));
  drawText(svg,W/2,41,data.title,22,{'text-anchor':'middle','font-weight':800,fill:'#234b60'});
@@ -689,6 +714,11 @@ function render(){
  const found=locate(selected);$('editPanel').hidden=!found;renderArticulations(found);
  if(found){$('selection').textContent=(found.hand==='right'?'Right':'Left')+' hand · Bar '+(found.b+1)+' · '+(found.event.kind==='rest'?'Rest':found.event.step+found.event.octave)+' · '+NAMES[found.event.den]+(found.event.dot?' dotted':'')}
  $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;
+ if(priorFocus){
+  const next=[...svg.querySelectorAll('g[data-id]')].find(g=>g.dataset.id===priorFocus);
+  next?.focus?.({preventScroll:true});
+ }
+ keyboardNoteFocus=false;
 }
 function point(ev){const svg=$('sheet'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const matrix=svg.getScreenCTM();return matrix?p.matrixTransform(matrix.inverse()):p}
 function insert(b,hand,x,y,denOverride=null,kindOverride=null){
@@ -749,6 +779,7 @@ function openNoteContext(ev){
  menu.querySelector('button')?.focus();
 }
 function clickSheet(ev){
+ keyboardNoteFocus=false;
  if(annotationTool!=='cursor')return;
  if(suppressDragClick){suppressDragClick=false;return}
  const target=ev.target.closest('[data-id],[data-bar]');if(!target)return;
@@ -999,6 +1030,7 @@ function bind(){
  for(const den of DENS){const b=document.createElement('button');b.type='button';b.innerHTML='<b>'+GLYPHS[den]+'</b>'+NAMES[den];b.dataset.den=den;b.onclick=()=>{chosen=den;refreshValues();info(NAMES[den]+' selected. Tap a stave to insert.')};$('values').append(b)}
  refreshValues();
  $('sheet').addEventListener('click',clickSheet);
+ $('sheet').addEventListener('pointerdown',()=>{keyboardNoteFocus=false});
  $('sheet').addEventListener('pointerdown',annotationPointerDown);
  $('sheet').addEventListener('pointermove',annotationPointerMove);
  $('sheet').addEventListener('pointerup',annotationPointerEnd);
@@ -1021,7 +1053,7 @@ function bind(){
  $('contextClose').onclick=closeNoteContext;
  document.addEventListener('pointerdown',e=>{if(!$('noteContext').hidden&&!e.target.closest('#noteContext'))closeNoteContext()});
  window.addEventListener('scroll',closeNoteContext,{capture:true,passive:true});
- $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();if(!finishSlur(id)){selected=id;render()}}});
+ $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();keyboardNoteFocus=true;if(!finishSlur(id)){selected=id;render()}}});
  $('play').onclick=play;$('stop').onclick=stop;$('sheetPlay').onclick=()=>playing?stop():play();$('undo').onclick=undo;$('redo').onclick=redo;
  syncPlayButtons();
  $('volume').oninput=e=>setVolume(e.target.value);
