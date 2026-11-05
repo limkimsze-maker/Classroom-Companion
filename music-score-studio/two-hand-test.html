@@ -178,29 +178,90 @@ button.active:not(.primary){background:#e6f5f5;color:#087b86}
  .fullpage #sheet{min-width:880px!important}
  .fullpage #sheet.zoomed{min-width:1160px!important}
 }
+
+/* One common visual language across the single-stave and two-hand TEST pages. */
+.studioHeader{padding:18px max(18px,calc((100vw - 1560px)/2));min-height:82px}
+.studioHeader h1{font-size:21px;line-height:1.1}
+.studioHeader p{display:block;color:#b8dbe3}
+.studioHeader .top-pill{font-size:12px;border:1px solid #69919f;padding:6px 11px;border-radius:999px;color:#e3f5f7;white-space:nowrap}
+.scoreModeNav{background:#f8fcff;border-bottom:1px solid #bdd9e7;box-shadow:0 5px 18px #12354b0c}
+.scoreModeInner{max-width:1588px;margin:auto;display:flex;align-items:center;flex-wrap:wrap;gap:11px;padding:10px 18px;min-height:62px}
+.scoreModeLabel{color:#225276;font-size:12px;font-weight:850;letter-spacing:.035em}
+.scoreModeChoices{display:inline-flex;gap:4px;background:#e9f2f5;border-radius:12px;padding:4px}
+.scoreModeChoice{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 14px;border:1px solid transparent;border-radius:9px;color:#234c6a;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap}
+a.scoreModeChoice:hover{background:#fff;border-color:#a1c7d0;color:#084b59}
+.scoreModeChoice.current{background:#087b86;color:white;box-shadow:0 2px 7px #12354b23}
+.scoreModeNote{font-size:12px;color:#577380}
+.testPill{margin-left:auto;font-size:11px;font-weight:800;letter-spacing:.04em;background:#fff0bd;color:#674400;padding:6px 9px;border-radius:8px}
+.sectionEyebrow{font-size:11px;font-weight:800;color:#526b7d;letter-spacing:.05em;margin-bottom:6px}
+.studioSidebar>.panel[aria-label="Compose notes"]{padding:17px}
+.studioSidebar .entryOptions{border-top:1px solid #e1e9ec;padding-top:13px}
+.studioSidebar>.setupPanel{padding:15px 17px}
+.scoreSettingsDrawer>summary{cursor:pointer;font-weight:850;color:#264e79;font-size:15px;padding:3px 0 9px;list-style:revert}
+.scoreSettingsDrawer>summary span{font-size:11px;font-weight:550;color:#6a8194;margin-left:6px}
+.scoreSettingsDrawer[open]>summary{border-bottom:1px solid #e0e9f2;margin-bottom:8px}
+.scoreSettingsDrawer .intro{font-size:12px;line-height:1.5;color:#637987;margin:7px 0 12px}
+.scoreSettingsDrawer>summary:focus-visible{outline:3px solid #84cfde;outline-offset:2px}
+.studioWork .actionsPanel,.studioWork .scorePanel{box-shadow:0 12px 36px rgba(21,51,69,.085)}
+.scorePanel .scorehead{padding:12px 16px}
+.scorePanel .scorehead h2{font-weight:800}
+.scorePanel .scorehead #sheetPlay{min-height:40px}
+.scorePanel .scorehead #zoom{min-height:40px}
+.scorePanel .scorehead #full{min-height:40px}
+@media(max-width:650px){
+ .studioHeader{min-height:64px;padding:12px 14px}
+ .studioHeader h1{font-size:18px}
+ .studioHeader p{font-size:11px}
+ .studioHeader .top-pill{font-size:10px;padding:5px 8px}
+ .scoreModeInner{padding:8px 10px;gap:7px}
+ .scoreModeNote{display:none}
+ .scoreModeLabel{display:none}
+ .scoreModeChoices{flex:1;min-width:0}
+ .scoreModeChoice{flex:1;min-width:0;min-height:44px;font-size:12px;padding:6px 8px}
+ .testPill{margin-left:0}
+ .studioSidebar>.setupPanel{padding:12px}
+}
+@media print{.scoreModeNav{display:none!important}}
+
 </style>
 </head>
 <body>
-<header class="studioHeader"><div class="brand"><span class="brandLogo" aria-hidden="true">♫</span><div><h1>Music Score Studio <span class="headerMode">Two-Hand Piano · TEST</span></h1><p>Compose, listen and learn · right and left hands together</p></div></div><a class="backLink" href="./index.html">← Single stave</a></header>
+<header class="studioHeader"><div class="brand"><span class="brandLogo" aria-hidden="true">♫</span><div><h1>Music Score Studio</h1><p>Compose · Listen · Explore</p></div></div><span class="top-pill">Free · No account · Made for teaching</span></header>
+<nav class="scoreModeNav" aria-label="Choose score type">
+ <div class="scoreModeInner">
+  <span class="scoreModeLabel">COMPOSE</span>
+  <div class="scoreModeChoices" role="group" aria-label="Score mode">
+   <a class="scoreModeChoice" href="./index.html" title="Compose on one treble or bass stave">♫ Single stave</a>
+   <span class="scoreModeChoice current" aria-current="page">🎹 Two hands</span>
+  </div>
+  <span class="scoreModeNote">Treble and bass staves · Both hands play together</span>
+  <span class="testPill">TEST</span>
+ </div>
+</nav>
 <main class="studioShell">
 <aside class="studioSidebar" aria-label="Composition tools">
 
 <section class="panel" aria-label="Compose notes">
+<div class="sectionEyebrow">MUSIC COMPOSITION</div>
 <div class="entryTop">
 <div><div class="studioLabel">COMPOSE</div><h2>Choose a note value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
 <div class="entryOptions"><label>Write <select id="kind" aria-label="Write note or rest"><option value="note">Note</option><option value="rest">Rest</option></select></label><label><input type="checkbox" id="dotted"> Dotted (+½)</label><label>Accidental <select id="acc"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></label></div>
 </div>
 </section>
 <section class="panel setupPanel">
+<details class="scoreSettingsDrawer" id="scoreSettingsDrawer" open>
+<summary>⚙ Score setup <span>Time · tempo · title</span></summary>
+<p class="intro">Use the same note values and editing controls as the single-stave composer.</p>
 <div class="row">
 <label>Score title <input id="title" type="text" maxlength="100" value="My Piano Piece" aria-label="Score title"></label>
 <label>Time signature <select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></label>
 <label>Tempo (BPM) <input id="tempo" type="number" min="40" max="220" value="96" style="width:78px"></label>
 </div>
+</details>
 </section>
 </aside>
 <div class="studioWork">
-<section class="panel actionsPanel">
+<section class="panel actionsPanel" aria-label="Playback and editing">
 <div class="toolbar">
 <div class="transportGroup"><span class="transportLabel">LISTEN &amp; LEARN</span><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label></div>
 <div class="transportGroup"><button id="undo" title="Undo last edit (Ctrl+Z)" disabled>↶ Undo</button><button id="redo" title="Redo last edit (Ctrl+Shift+Z)" disabled>↷ Redo</button><button id="addBar" title="Add another bar to both hands">+ Bar</button>
