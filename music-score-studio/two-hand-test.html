@@ -481,6 +481,175 @@ function drawPianoConnections(svg,positions){
   }
  }
 }
+
+// Teacher mark positions are stored relative to their bar, not as fixed
+// screen pixels. Marks stay with their musical bar when systems reflow.
+function annotationAnchor(p){
+ const row=Math.max(0,Math.min(Math.ceil(data.bars.length/4)-1,Math.floor((p.y-TOP+35)/SYSHEIGHT)));
+ const slot=Math.max(0,Math.min(Math.min(4,data.bars.length-row*4)-1,Math.floor((p.x-LEFT)/BARW)));
+ const bar=Math.max(0,Math.min(data.bars.length-1,row*4+slot)),loc=locationForBar(bar);
+ return {bar,dx:Math.round((p.x-loc.left)*10)/10,dy:Math.round((p.y-loc.top)*10)/10};
+}
+function annotationXY(p){
+ const loc=locationForBar(Math.max(0,Math.min(data.bars.length-1,p.bar)));
+ return {x:loc.left+p.dx,y:loc.top+p.dy};
+}
+function annotationDistance(p,a,b){
+ const dx=b.x-a.x,dy=b.y-a.y,t=dx*dx+dy*dy?
+ Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy))):0;
+ return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));
+}
+function annotationHit(p){
+ let best=null,distance=21;
+ for(const a of data.annotations||[]){
+  const q=a.points.map(annotationXY);
+  if(!q.length)continue;
+  let d=Math.hypot(p.x-q[0].x,p.y-q[0].y);
+  for(let i=1;i<q.length;i++)d=Math.min(d,annotationDistance(p,q[i-1],q[i]));
+  if(a.tool==='circle'&&q.length>1){
+   const cx=(q[0].x+q[1].x)/2,cy=(q[0].y+q[1].y)/2;
+   const rx=Math.abs(q[1].x-q[0].x)/2,ry=Math.abs(q[1].y-q[0].y)/2;
+   if(rx>1&&ry>1)d=Math.min(d,Math.abs(Math.hypot((p.x-cx)/rx,(p.y-cy)/ry)-1)*Math.min(rx,ry));
+  }
+  if(d<distance){distance=d;best=a}
+ }
+ return best;
+}
+function annotationPath(points){return points.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ')}
+function drawAnnotation(svg,a,preview=false){
+ const points=a.points.map(annotationXY);if(!points.length)return;
+ const g=el('g',{'data-annotation':a.id||'draft','pointer-events':'none'}),color=a.color;
+ svg.append(g);
+ if(a.tool==='hand'){
+  drawText(g,points[0].x,points[0].y,'👆',31,{'text-anchor':'middle','font-family':'Segoe UI Emoji,Apple Color Emoji,sans-serif'});
+ }else if(a.tool==='circle'&&points.length>1){
+  const p=points[0],q=points[points.length-1];
+  g.append(el('ellipse',{cx:(p.x+q.x)/2,cy:(p.y+q.y)/2,rx:Math.max(3,Math.abs(q.x-p.x)/2),ry:Math.max(3,Math.abs(q.y-p.y)/2),fill:'none',stroke:color,'stroke-width':3.2,'stroke-linecap':'round'}));
+ }else if(a.tool==='arrow'&&points.length>1){
+  const p=points[0],q=points[points.length-1],angle=Math.atan2(q.y-p.y,q.x-p.x);
+  g.append(el('path',{d:annotationPath([p,q]),fill:'none',stroke:color,'stroke-width':3.6,'stroke-linecap':'round'}));
+  const arm=13,theta=.5;
+  g.append(el('path',{d:annotationPath([q,
+    {x:q.x-arm*Math.cos(angle-theta),y:q.y-arm*Math.sin(angle-theta)},q,
+    {x:q.x-arm*Math.cos(angle+theta),y:q.y-arm*Math.sin(angle+theta)}]),fill:'none',stroke:color,'stroke-width':3.6,'stroke-linecap':'round','stroke-linejoin':'round'}));
+ }else if(points.length>1){
+  g.append(el('path',{d:annotationPath(points),fill:'none',stroke:color,
+   'stroke-width':a.tool==='highlighter'?19:2.9,'stroke-opacity':a.tool==='highlighter'?.27:1,
+   'stroke-linecap':'round','stroke-linejoin':'round'}));
+ }
+ if(a.id===selectedAnnotation&&!preview){
+  const x=points.reduce((n,p)=>n+p.x,0)/points.length,y=points.reduce((n,p)=>n+p.y,0)/points.length;
+  g.append(el('circle',{cx:x,cy:y,r:12,fill:'none',stroke:'#078b9c','stroke-width':2,'stroke-dasharray':'4 3'}));
+ }
+}
+function drawAnnotations(svg){
+ for(const mark of data.annotations||[])drawAnnotation(svg,mark);
+ if(annotationDraft)drawAnnotation(svg,annotationDraft,true);
+}
+function setAnnotationTool(tool){
+ if(!['cursor','select','hand','arrow','pen','highlighter','circle','eraser'].includes(tool))return;
+ annotationTool=tool;annotationDrag=null;annotationDraft=null;selectedAnnotation=null;
+ $('sheet').classList.toggle('annotating',tool!=='cursor');
+ document.querySelectorAll('[data-annotation-tool]').forEach(b=>{
+  const active=b.dataset.annotationTool===tool;b.setAttribute('aria-pressed',String(active));
+ });
+ const guides={cursor:'Cursor: compose and move musical notes as normal.',
+  select:'Selector: tap a teacher mark to select it, drag to move it, or use Size.',
+  hand:'Hand: tap the score to point at a note.',
+  arrow:'Arrow: drag from the start to the point of the arrow.',
+  pen:'Pen: draw on either stave. These marks are not musical notes.',
+  highlighter:'Highlighter: drag over a passage to emphasise it.',
+  circle:'Circle: drag a box around the notes you want to circle.',
+  eraser:'Eraser: tap an annotation to remove it; musical notes are protected.'};
+ $('annotationGuide').textContent=guides[tool];render();
+}
+function annotationPointerDown(ev){
+ if(annotationTool==='cursor'||ev.button!==0)return;
+ ev.preventDefault();
+ const p=point(ev);
+ if(annotationTool==='eraser'){
+  const hit=annotationHit(p);
+  if(hit){snapshot();data.annotations=data.annotations.filter(a=>a.id!==hit.id);selectedAnnotation=null;commit('Teacher mark erased.')}
+  else info('Tap a teacher annotation to erase it.');
+  return;
+ }
+ if(annotationTool==='select'){
+  const hit=annotationHit(p);
+  selectedAnnotation=hit?.id||null;
+  annotationDrag=hit?{pointer:ev.pointerId,mode:'move',id:hit.id,start:p,
+   original:clone(hit.points),changed:false}:null;
+  if(hit)$('annotationColour').value=hit.color;
+  render();
+  if(!hit){info('Tap an existing mark to select it.');return}
+ }else{
+  if((data.annotations||[]).length>=250){info('Maximum 250 teacher annotations.');return}
+  const first=annotationAnchor(p);
+  annotationDraft={id:makeId(),tool:annotationTool,points:[first],
+   color:$('annotationColour').value};
+  annotationDrag={pointer:ev.pointerId,mode:'draw',start:p,changed:false};
+  if(annotationTool==='hand')annotationPointerEnd(ev);
+ }
+ try{$('sheet').setPointerCapture?.(ev.pointerId)}catch(_){}
+}
+function annotationPointerMove(ev){
+ const drag=annotationDrag;if(!drag||drag.pointer!==ev.pointerId)return;
+ const p=point(ev);
+ if(drag.mode==='move'){
+  if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)<3&&!drag.changed)return;
+  const mark=data.annotations.find(a=>a.id===drag.id);if(!mark)return;
+  mark.points=drag.original.map(q=>{const xy=annotationXY(q);return annotationAnchor({x:xy.x+p.x-drag.start.x,y:xy.y+p.y-drag.start.y})});
+  drag.changed=true;render();return;
+ }
+ if(!annotationDraft)return;
+ if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)<2&&!drag.changed)return;
+ drag.changed=true;const last=annotationAnchor(p);
+ if(['pen','highlighter'].includes(annotationDraft.tool)){
+  if(annotationDraft.points.length<500){const prior=annotationXY(annotationDraft.points.at(-1));
+   if(Math.hypot(p.x-prior.x,p.y-prior.y)>=2.5)annotationDraft.points.push(last)}
+ }else annotationDraft.points=[annotationDraft.points[0],last];
+ render();
+}
+function annotationPointerEnd(ev){
+ const drag=annotationDrag;
+ if(!drag||drag.pointer!==ev.pointerId)return;
+ annotationDrag=null;
+ try{$('sheet').releasePointerCapture?.(ev.pointerId)}catch(_){}
+ if(drag.mode==='move'){
+  if(drag.changed){
+   const changed=data.annotations.find(a=>a.id===drag.id),newPoints=changed&&clone(changed.points);
+   if(changed){changed.points=drag.original;snapshot();changed.points=newPoints;commit('Teacher mark moved.')}
+  }
+  return;
+ }
+ const mark=annotationDraft;annotationDraft=null;
+ if(!mark)return;
+ if(mark.tool==='hand'||mark.points.length>1){
+  snapshot();data.annotations.push(mark);selectedAnnotation=mark.id;
+  commit('Teacher '+mark.tool+' annotation added.');
+ }else render();
+}
+function annotationPointerCancel(ev){
+ if(!annotationDrag||annotationDrag.pointer!==ev.pointerId)return;
+ const drag=annotationDrag;annotationDrag=null;annotationDraft=null;
+ if(drag.mode==='move'){
+  const mark=data.annotations.find(a=>a.id===drag.id);if(mark)mark.points=drag.original;
+ }
+ render();
+}
+function deleteAnnotation(){
+ if(!selectedAnnotation)return;
+ const id=selectedAnnotation;if(!data.annotations.some(a=>a.id===id))return;
+ snapshot();data.annotations=data.annotations.filter(a=>a.id!==id);
+ selectedAnnotation=null;commit('Teacher annotation deleted.');
+}
+function resizeAnnotation(scale){
+ const mark=data.annotations.find(a=>a.id===selectedAnnotation);if(!mark)return;
+ const points=mark.points.map(annotationXY),cx=points.reduce((n,p)=>n+p.x,0)/points.length,
+ cy=points.reduce((n,p)=>n+p.y,0)/points.length;
+ snapshot();mark.points=points.map(p=>annotationAnchor({x:cx+(p.x-cx)*scale,y:cy+(p.y-cy)*scale}));
+ commit('Teacher annotation resized.');
+}
+
 function render(){
  const svg=$('sheet'),systems=Math.ceil(data.bars.length/4),h=TOP+systems*SYSHEIGHT+6,positions=new Map();
  svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+W+' '+h);
