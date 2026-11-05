@@ -568,3 +568,29 @@ test('advanced musical expression can collapse while pitch and slur/tie remain v
  assert.match(html,/mk\(ref\.event\.tieTo\?/);
  assert.match(html,/\.articulations button\{min-height:42px/);
 });
+
+test('single-stave and two-hand composers use a visible, clearly labelled mode switch',()=>{
+ assert.match(html,/<nav class="scoreModeNav" aria-label="Choose score type">/);
+ assert.match(html,/<div class="scoreModeChoices" role="group" aria-label="Score mode">/);
+ assert.match(html,/<a class="scoreModeChoice" href="\.\/index\.html"/);
+ assert.match(html,/<span class="scoreModeChoice current" aria-current="page">🎹 Two hands<\/span>/);
+ assert.match(html,/\.scoreModeChoices\{display:inline-flex/);
+});
+test('two-hand main branding now follows the single-stave title, subtitle and trust line',()=>{
+ assert.match(html,/<h1>Music Score Studio<\/h1><p>Compose · Listen · Explore<\/p>/);
+ assert.match(html,/Free · No account · Made for teaching/);
+ assert.match(html,/<span class="testPill">TEST<\/span>/);
+});
+test('two-hand composer groups score setup in the same accessible drawer pattern',()=>{
+ assert.match(html,/<details class="scoreSettingsDrawer" id="scoreSettingsDrawer" open>/);
+ assert.match(html,/<summary>⚙ Score setup <span>Time · tempo · title<\/span><\/summary>/);
+ for(const id of ['meter','tempo','title','values','kind','acc','dotted'])assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(html,/\.scoreSettingsDrawer>summary:focus-visible/);
+});
+test('navigation preserves separate project save formats and two-hand expression/playback',()=>{
+ assert.match(html,/const NAMES=\{1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'\}/);
+ assert.match(html,/cc-music-score-studio-twohand/);
+ assert.match(html,/id="sheetPlay"/);
+ assert.match(html,/id="teacherAnnotations"/);
+ assert.match(html,/id="full"/);
+});
