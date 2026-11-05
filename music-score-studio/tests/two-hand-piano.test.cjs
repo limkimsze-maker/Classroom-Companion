@@ -15,7 +15,7 @@ function setup(initial){
  const code=extract('const ticks=','function bind(');
  const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
   code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
-  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
  )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:''}),
  {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
  return {...result,get downloaded(){return result.getDownloaded()}};
@@ -200,4 +200,38 @@ test('playback highlights update existing note symbols instead of redrawing the 
  assert.match(body,/querySelectorAll\?\.\('g\[data-id\]'\)/);
  assert.match(body,/classList\.toggle\('isPlaying'/);
  assert.ok(!body.includes('render()'),'Playback highlight must not recreate the score SVG');
+});
+
+test('two-hand score registers a real right-click note menu with standard British values',()=>{
+ assert.match(html,/\$\('sheet'\)\.addEventListener\('contextmenu',openNoteContext\)/);
+ assert.match(html,/id="noteContext"[^>]+role="dialog"/);
+ assert.match(html,/for\(const den of DENS\)\{\s*const button=document\.createElement\('button'\)/);
+ assert.match(html,/button\.textContent=GLYPHS\[den\]\+' '\+NAMES\[den\]/);
+});
+test('right-click choice inserts a crotchet note on treble or bass without changing the other hand',()=>{
+ const p=setup(project([],[]));
+ p.setContextTarget({type:'insert',b:0,hand:'right',x:170,y:110+72});
+ p.pickContextValue(4);
+ assert.equal(p.getData().bars[0].right.length,1);
+ assert.equal(p.getData().bars[0].left.length,0);
+ assert.equal(p.getData().bars[0].right[0].step,'E');
+ p.setContextTarget({type:'insert',b:0,hand:'left',x:170,y:110+123+72});
+ p.pickContextValue(2);
+ assert.equal(p.getData().bars[0].left.length,1);
+ assert.equal(p.getData().bars[0].left[0].step,'G');
+ assert.equal(p.getData().bars[0].left[0].den,2);
+});
+test('right-clicking existing notes changes duration but respects the bar capacity',()=>{
+ const a=note('C',5,4),b=note('D',5,4);
+ const p=setup(project([a,b],[]));
+ p.setContextTarget({type:'edit',id:a.id});p.pickContextValue(2);
+ assert.equal(p.getData().bars[0].right[0].den,2);
+ p.setContextTarget({type:'edit',id:a.id});p.pickContextValue(1);
+ assert.equal(p.getData().bars[0].right[0].den,2);
+});
+test('right-click menu can be dismissed and does not override normal note selection',()=>{
+ assert.match(html,/function closeNoteContext\(\)/);
+ assert.match(html,/if\(e\.key==='Escape'&&!\$\('noteContext'\)\.hidden\)/);
+ assert.match(html,/if\(id\)\{if\(finishSlur\(id\)\)return;selected=id;render\(\);return\}/);
+ assert.match(html,/menu\.querySelector\('button'\)\?\.focus\(\)/);
 });
