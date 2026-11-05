@@ -15,7 +15,7 @@ function setup(initial){
  const code=extract('const ticks=','function bind(');
  const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
   code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
-  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,pianoBeamGroups,getData:()=>data,getDownloaded:()=>downloaded};'
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
  )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:''}),
  {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
  return {...result,get downloaded(){return result.getDownloaded()}};
@@ -91,7 +91,7 @@ test('automatic quaver grouping follows 4/4 crotchet beats and 6/8 dotted-crotch
 
 test('piano has a user-adjustable classroom volume with a safe output limiter',()=>{
  assert.match(html,/id="volume" type="range" min="0" max="100" value="75"/);
- assert.match(html,/const amp=hand==='left'\?\.18:\.15/);
+ assert.match(html,/const amp=\(hand==='left'\?\.18:\.15\)\*Math\.min/);
  assert.match(html,/function ensureMaster\(\)/);
  assert.match(html,/ctx\.createDynamicsCompressor\(\)/);
  assert.match(html,/masterGain\.connect\(limiter\);limiter\.connect\(ctx\.destination\)/);
@@ -107,4 +107,74 @@ test('volume change is bounded and can mute playback without altering score data
  assert.deepEqual(f(0),{volume:0,slider:'0',label:'0%'});
  assert.deepEqual(f(110),{volume:100,slider:'100',label:'100%'});
  assert.deepEqual(f(55),{volume:55,slider:'55',label:'55%'});
+});
+
+test('staccato changes note duration but preserves beat timing, in either hand',()=>{
+ const right=note('E',5,4,{staccato:true}),left=note('C',3,4);
+ const p=setup(project([right],[left])),perf=p.performance();
+ const short=perf.events.find(e=>e.hand==='right'),normal=perf.events.find(e=>e.hand==='left');
+ assert.equal(short.at,normal.at);
+ assert.ok(short.duration<normal.duration);
+ assert.equal(short.length,normal.length);
+});
+test('accents raise playback strength while tenuto and portato affect duration',()=>{
+ const base=setup(project([note('E',5,4),note('E',5,4,{accent:true}),note('E',5,4,{portato:true})],[note('C',3,4,{tenuto:true})]));
+ const perf=base.performance(),rh=perf.events.filter(e=>e.hand==='right'),lh=perf.events.find(e=>e.hand==='left');
+ assert.ok(rh[1].gain>rh[0].gain);
+ assert.ok(rh[2].duration<rh[0].duration);
+ assert.ok(lh.duration>rh[0].duration);
+});
+test('slurs can start from either endpoint and never cross piano hands',()=>{
+ const a=note('C',5),b=note('D',5),c=note('C',3);
+ const p=setup(project([a,b],[c]));
+ p.setSelected(b.id);p.toggleSlur();
+ assert.equal(p.finishSlur(c.id),true);
+ assert.equal(p.getData().bars[0].right[0].slurTo,undefined);
+ assert.equal(p.finishSlur(a.id),true);
+ assert.equal(p.getData().bars[0].right[0].slurTo,b.id);
+ assert.equal(p.handLinks('right').slurs.length,1);
+ assert.equal(p.handLinks('left').slurs.length,0);
+});
+test('same-pitch ties sustain one voice, and playback tracks each notated endpoint',()=>{
+ const a=note('C',5),b=note('C',5),left=note('G',2,2);
+ const p=setup(project([a,b],[left]));
+ p.setSelected(a.id);p.toggleTie();
+ const perf=p.performance(),rh=perf.events.find(x=>x.hand==='right');
+ assert.equal(perf.events.filter(x=>x.hand==='right').length,1);
+ assert.equal(rh.ids.length,2);
+ assert.equal(rh.segments[0].id,a.id);
+ assert.equal(rh.segments[1].id,b.id);
+ assert.ok(rh.duration>.9);
+ assert.equal(perf.events.filter(x=>x.hand==='left').length,1);
+});
+test('two-hand MusicXML exports independent articulations, fermatas, slurs and ties',()=>{
+ const a=note('C',5,4,{staccato:true,accent:true}),b=note('D',5,4),
+       x=note('G',2,4),y=note('G',2,4,{fermata:true});
+ a.slurTo=b.id;x.tieTo=y.id;
+ const p=setup(project([a,b],[x,y]));
+ p.exportXml();const xml=p.downloaded.s;
+ assert.match(xml,/<staccato\/>/);assert.match(xml,/<accent\/>/);
+ assert.match(xml,/<fermata type="upright"\/>/);
+ assert.match(xml,/<slur number="1" type="start"\/>/);
+ assert.match(xml,/<slur number="1" type="stop"\/>/);
+ assert.match(xml,/<tie type="start"\/>/);
+ assert.match(xml,/<tie type="stop"\/>/);
+ assert.match(xml,/<tied type="start"\/>/);
+});
+test('saved two-hand JSON retains note expression marks and stable links',()=>{
+ const a=note('C',5,4,{staccato:true,accent:true}),b=note('D',5,4);
+ a.id='evtA';b.id='evtB';a.slurTo=b.id;
+ const p=setup(project([a,b],[])),reopened=p.validate(JSON.parse(JSON.stringify(p.getData())));
+ assert.equal(reopened.bars[0].right[0].id,'evtA');
+ assert.equal(reopened.bars[0].right[0].slurTo,'evtB');
+ assert.equal(reopened.bars[0].right[0].staccato,true);
+ assert.equal(reopened.bars[0].right[0].accent,true);
+});
+test('score highlights active noteheads in gold and clears them on Stop',()=>{
+ assert.match(html,/if\(activeNotes\.has\(e\.id\)\)group\.append\(el\('ellipse'/);
+ assert.match(html,/fill:'#ffc64b'/);
+ assert.match(html,/function setPlayingNotes\(ids\)/);
+ assert.match(html,/setInterval\(\(\)=>\{/);
+ assert.match(html,/for\(const e of perf\.events\)\{/);
+ assert.match(html,/activeNotes\.clear\(\);render\(\)/);
 });
