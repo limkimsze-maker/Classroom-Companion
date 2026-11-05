@@ -306,7 +306,7 @@ test('simple score-first interface shows Compose, Listen and Music sheet in orde
  const compose=html.indexOf('aria-label="Compose notes"'),listen=html.indexOf('LISTEN &amp; LEARN'),sheet=html.indexOf('Your music sheet');
  assert.ok(compose>=0&&listen>compose&&sheet>listen);
  assert.match(html,/id="composeHint"/);
- assert.match(html,/Right-click for note values/);
+ assert.match(html,/Right-click for values/);
 });
 test('secondary tools remain available inside one clearly named disclosure',()=>{
  assert.match(html,/<details class="moreTools" id="moreTools">/);
@@ -365,7 +365,7 @@ test('two-hand page visually reuses the approved single-stave header and paper-c
  assert.match(html,/class="paperScroll"/);
 });
 test('composer controls precede score settings and score is the main work region',()=>{
- const sidebar=html.indexOf('<aside class="studioSidebar"'),compose=html.indexOf('aria-label="Compose notes"'),
+ const sidebar=html.indexOf('<aside class="studioSidebar"'),compose=html.indexOf('aria-label="Compose notes"',sidebar),
  setup=html.indexOf('class="panel setupPanel"'),work=html.indexOf('class="studioWork"'),
  score=html.indexOf('class="panel scorePanel"');
  assert.ok(sidebar>=0&&compose>sidebar&&setup>compose&&work>setup&&score>work);
