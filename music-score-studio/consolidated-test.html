@@ -1437,7 +1437,7 @@ function scoreInkNoteCentres(layout){
 }
 // TEST-only bridge for the isolated teacher overlay. Coordinates are normalised
 // against the music SVG viewBox, not the screen or its current zoom.
-window.musicScoreAnnotationGeometry=()=>{
+if(typeof window!=='undefined')window.musicScoreAnnotationGeometry=()=>{
  const layout=staffLayout(),notes=scoreInkNoteCentres(layout);
  return {width:layout.W,height:layout.H,
   notes:[...notes].map(([id,p])=>({id,x:p.x/layout.W,y:p.y/layout.H})),
