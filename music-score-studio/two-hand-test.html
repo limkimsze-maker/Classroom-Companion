@@ -224,6 +224,7 @@ button.active:not(.primary){background:#e6f5f5;color:#087b86}
   <div class="annotationOptions">
    <label>Colour <select id="annotationColour" aria-label="Teacher annotation colour"><option value="#df654d">Coral red</option><option value="#127f9b">Ocean blue</option><option value="#2e9657">Green</option><option value="#262f43">Black</option></select></label>
    <span id="annotationGuide" class="annotationGuide" role="status">Cursor: compose notes as normal.</span>
+   <button type="button" id="annotationUndo" title="Undo last note or annotation change">↶ Undo</button><button type="button" id="annotationRedo" title="Redo last note or annotation change">↷ Redo</button>
    <span id="annotationSelected" hidden><button type="button" id="annotationSmaller" title="Reduce selected annotation size">− Size</button><button type="button" id="annotationLarger" title="Increase selected annotation size">+ Size</button><button type="button" id="annotationDelete" class="danger">Delete mark</button></span>
   </div>
  </div>
@@ -628,6 +629,7 @@ function drawAnnotations(svg){
 function setAnnotationTool(tool){
  if(!['cursor','select','hand','arrow','pen','highlighter','circle','eraser'].includes(tool))return;
  annotationTool=tool;annotationDrag=null;annotationDraft=null;selectedAnnotation=null;
+ if(tool!=='cursor'){selected=null;pendingSlur=null;keyboardNoteFocus=false;}
  $('sheet').classList.toggle('annotating',tool!=='cursor');
  document.querySelectorAll('[data-annotation-tool]').forEach(b=>{
   const active=b.dataset.annotationTool===tool;b.setAttribute('aria-pressed',String(active));
@@ -765,6 +767,7 @@ function render(){
  drawAnnotations(svg);
  $('count').textContent='· '+data.bars.length+' bar'+(data.bars.length===1?'':'s');
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
+ $('annotationUndo').disabled=!history.length;$('annotationRedo').disabled=!future.length;
  $('annotationSelected').hidden=!selectedAnnotation;
  const found=locate(selected);$('editPanel').hidden=!found;renderArticulations(found);
  if(found){$('selection').textContent=(found.hand==='right'?'Right':'Left')+' hand · Bar '+(found.b+1)+' · '+(found.event.kind==='rest'?'Rest':found.event.step+found.event.octave)+' · '+NAMES[found.event.den]+(found.event.dot?' dotted':'')}
@@ -1092,6 +1095,7 @@ function bind(){
  $('sheet').addEventListener('pointercancel',annotationPointerCancel);
  document.querySelectorAll('[data-annotation-tool]').forEach(b=>b.onclick=()=>setAnnotationTool(b.dataset.annotationTool));
  $('annotationDelete').onclick=deleteAnnotation;
+ $('annotationUndo').onclick=undo;$('annotationRedo').onclick=redo;
  $('annotationLarger').onclick=()=>resizeAnnotation(1.15);
  $('annotationSmaller').onclick=()=>resizeAnnotation(1/1.15);
  $('annotationColour').onchange=e=>{if(!selectedAnnotation)return;const mark=data.annotations.find(a=>a.id===selectedAnnotation);if(!mark)return;snapshot();mark.color=e.target.value;commit('Annotation colour updated.')};
@@ -1108,7 +1112,7 @@ function bind(){
  $('contextClose').onclick=closeNoteContext;
  document.addEventListener('pointerdown',e=>{if(!$('noteContext').hidden&&!e.target.closest('#noteContext'))closeNoteContext()});
  window.addEventListener('scroll',closeNoteContext,{capture:true,passive:true});
- $('sheet').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();keyboardNoteFocus=true;if(!finishSlur(id)){selected=id;render()}}});
+ $('sheet').addEventListener('keydown',e=>{if(annotationTool!=='cursor')return;if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();keyboardNoteFocus=true;if(!finishSlur(id)){selected=id;render()}}});
  $('play').onclick=play;$('stop').onclick=stop;$('sheetPlay').onclick=()=>playing?stop():play();$('undo').onclick=undo;$('redo').onclick=redo;
  syncPlayButtons();
  $('volume').oninput=e=>setVolume(e.target.value);
