@@ -2820,6 +2820,63 @@ function readImportedBarMarks(measure,isFirst=false){
  return d;
 }
 
+/* MusicXML dynamics are part/staff-scoped and timed to note onsets. */
+function applyImportedDynamicEvents(parts,measureStart){
+ for(const part of parts){
+  const notes=part.measures.flatMap(m=>m.items);
+  const staves=[...new Set(notes.map(e=>e.staff))];
+  for(const staff of staves){
+   const events=part.dynamicEvents.filter(e=>e.staff===null||e.staff===staff)
+    .map(e=>({...e,at:(measureStart[e.measure]||0)+e.tick,
+     until:e.kind==='wordRamp'?(measureStart[e.measure]||0)+part.measures[e.measure].length:null}))
+    .sort((a,b)=>a.at-b.at||a.order-b.order);
+   let level=.79,open=null;
+   const timeline=[{at:-Infinity,kind:'level',value:level,order:-1}];
+   const closeWedge=(at,target,order)=>{
+    if(!open)return;
+    const end=target??(open.type==='crescendo'?Math.min(1.3,open.value*(open.wordOnly?1.40:1.32)):
+     Math.max(open.wordOnly?.25:.2,open.value*.7));
+    if(at>open.at)timeline.push({at:open.at,kind:'ramp',end,until:at,from:open.value,order:open.order});
+    level=end;timeline.push({at,kind:'level',value:level,order});open=null;
+   };
+   for(let i=0;i<events.length;i++){
+    const e=events[i];
+    if(open?.wordOnly&&e.at>=open.until)closeWedge(open.until,null,open.order+.5);
+    if(e.kind==='wedge'&&e.value==='stop'){
+     // A new dynamic at the stop sets the ramp endpoint, even if printed later.
+     let end=null;
+     for(let j=i+1;j<events.length&&events[j].at===e.at;j++){
+      if(events[j].kind==='wedge'&&events[j].value!=='stop')break;
+      if(events[j].kind==='level')end=events[j].value;
+     }
+     closeWedge(e.at,end,e.order);
+    }else if(e.kind==='wedge'||e.kind==='wordRamp'){
+     if(open)closeWedge(e.at,null,e.order-.5);
+     open={at:e.at,order:e.order,type:e.value,value:level,
+      wordOnly:e.kind==='wordRamp',until:e.until};
+    }else if(e.kind==='level'){
+     if(open)closeWedge(e.at,e.value,e.order-.5);
+     level=e.value;timeline.push({at:e.at,kind:'level',value:level,order:e.order});
+    }
+   }
+   if(open?.wordOnly)closeWedge(open.until,null,open.order+.5);
+   // Retain the existing conservative fallback for an unterminated wedge.
+   if(open)timeline.push({at:open.at,kind:'level',
+    value:open.value*(open.type==='crescendo'?1.10:.90),order:open.order});
+   timeline.sort((a,b)=>a.at-b.at||a.order-b.order);
+   for(const note of notes){
+    if(note.staff!==staff)continue;
+    const at=(measureStart[note.measure]||0)+note.onset;
+    let current=timeline[0];
+    for(const event of timeline){if(event.at<=at)current=event;else break}
+    note.gain=current.kind==='ramp'
+     ?current.from+(current.end-current.from)*Math.max(0,Math.min(1,(at-current.at)/(current.until-current.at)))
+     :current.value;
+   }
+  }
+ }
+}
+
 function parseMusicXML(source){
  if(source.length>5*1024*1024)throw Error('MusicXML files must be smaller than 5 MB.');
  if(/<!ENTITY/i.test(source))throw Error('XML entity declarations are not supported.');
@@ -2830,17 +2887,21 @@ function parseMusicXML(source){
  if(!parts.length)throw Error('No musical parts were found in this MusicXML.');
  if(parts.length>12)throw Error('This score has too many parts for the classroom player.');
  const TPQ=960,steps={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
- const parsedParts=[],allMeasures=[],rawNotes=[],names={},importedMarks=[];let detectedTempo=null,signature='4/4';
+ const parsedParts=[],allMeasures=[],emptyImplicitNominals=[],rawNotes=[],names={},importedMarks=[];let detectedTempo=null,signature='4/4';
  for(const scorePart of children(child(root.documentElement,'part-list'),'score-part'))names[scorePart.getAttribute('id')]=nodeText(scorePart,'part-name')||'Instrument';
  for(let pi=0;pi<parts.length;pi++){
   const part=parts[pi],partName=names[part.getAttribute('id')]||'Part '+(pi+1),measures=children(part,'measure');
   if(measures.length>240)throw Error('This MusicXML contains too many measures.');
-  let divisions=1,beats=4,beatType=4,currentClefs={1:'treble'},measureResults=[],pendingTies=new Map(),activeSlurs=new Set(),currentVolume=.79,wedge=null;
+  let divisions=1,beats=4,beatType=4,currentClefs={1:'treble'},measureResults=[],pendingTies=new Map(),activeSlurs=new Set(),dynamicEvents=[],directionOrder=0;
   for(let mi=0;mi<measures.length;mi++){
    let cursor=0,maxCursor=0,lastOnset=0,lastDuration=0;
    const items=[],measure=measures[mi];
    if(!importedMarks[mi])importedMarks[mi]={};
-   Object.assign(importedMarks[mi],readImportedBarMarks(measure,mi===0));
+   const marks=readImportedBarMarks(measure,mi===0);
+   // All printed dynamics, including word-only cresc./dim., are note-timed.
+   // Teacher-reviewed photo/OCR directions remain separate bar-level overrides.
+   delete marks.dynamic;
+   Object.assign(importedMarks[mi],marks);
    const currentTicks=()=>Math.max(1,Math.round(beats*TPQ*4/beatType));
    const durationFor=el=>Math.max(0,Math.round((Number(nodeText(el,'duration'))||0)/Math.max(1,divisions)*TPQ));
    for(const node of Array.from(measure.children)){
@@ -2849,21 +2910,41 @@ function parseMusicXML(source){
      divisions=Math.max(1,Number(nodeText(node,'divisions'))||divisions);
      const time=child(node,'time');if(time){beats=Number(nodeText(time,'beats'))||beats;beatType=Number(nodeText(time,'beat-type'))||beatType;if(beats>0&&beats<20&&[1,2,4,8,16].includes(beatType))signature=beats+'/'+beatType;}
      for(const clef of children(node,'clef')){const number=Number(clef.getAttribute('number'))||1;currentClefs[number]=nodeText(clef,'sign')==='F'?'bass':'treble';}
-    }else if(tag==='direction'){
-     const snd=child(node,'sound'),beatsPer=directionQuarterBpm(node);
-     if(beatsPer>=30&&beatsPer<=240&&detectedTempo===null)detectedTempo=beatsPer;
-     const type=child(node,'direction-type'),dyn=child(type,'dynamics');
-     if(dyn){
-      const name=Array.from(dyn.children)[0]?.localName;
-      if(name&&Object.prototype.hasOwnProperty.call(MUSICAL_DYNAMICS,name))currentVolume=MUSICAL_DYNAMICS[name];
-      else if(name==='fp')currentVolume=.46;
+    }else if(tag==='direction'||tag==='sound'){
+     if(tag==='direction'){
+      const beatsPer=directionQuarterBpm(node);
+      if(beatsPer>=30&&beatsPer<=240&&detectedTempo===null)detectedTempo=beatsPer;
      }
-     const soundLevel=Number(snd?.getAttribute('dynamics'));
-     if(Number.isFinite(soundLevel)&&soundLevel>0&&soundLevel<=160)currentVolume=Math.min(1.6,soundLevel/90);
-     const mark=child(type,'wedge')?.getAttribute('type');
-     if(mark==='crescendo'||mark==='diminuendo')wedge={type:mark,initial:currentVolume};
-     else if(mark==='stop'&&wedge){
-      currentVolume=wedge.type==='crescendo'?Math.min(1.3,currentVolume*1.32):Math.max(.2,currentVolume*.7);wedge=null;
+     const targetStaff=tag==='direction'?Number(nodeText(node,'staff')):0;
+     const staff=Number.isInteger(targetStaff)&&targetStaff>0?targetStaff:null;
+     const offset=tag==='direction'?Number(nodeText(node,'offset')):0;
+     const tick=Math.max(0,cursor+(Number.isFinite(offset)?offset/Math.max(1,divisions)*TPQ:0));
+     const record=(kind,value)=>dynamicEvents.push({measure:mi,tick,staff,order:directionOrder++,kind,value});
+     const hasWedge=tag==='direction'&&children(node,'direction-type').some(type=>!!child(type,'wedge'));
+     if(tag==='direction')for(const type of children(node,'direction-type')){
+      // Process all children in their original XML sequence (including stops).
+      for(const mark of Array.from(type.children)){
+       if(mark.localName==='words'&&!hasWedge){
+        const words=(mark.textContent||'').trim();
+        if(/^(?:cresc|crescendo)\.?$/i.test(words))record('wordRamp','crescendo');
+        else if(/^(?:dim|diminuendo|decresc|decrescendo)\.?$/i.test(words))record('wordRamp','diminuendo');
+       }
+       if(mark.localName==='dynamics')for(const dyn of Array.from(mark.children)){
+        if(Object.prototype.hasOwnProperty.call(MUSICAL_DYNAMICS,dyn.localName))
+         record('level',MUSICAL_DYNAMICS[dyn.localName]);
+        else if(dyn.localName==='fp')record('level',.46);
+       }
+       if(mark.localName==='wedge'){
+        const kind=mark.getAttribute('type');
+        if(['crescendo','diminuendo','stop'].includes(kind))record('wedge',kind);
+       }
+      }
+     }
+     // An explicit <sound dynamics> overrides printed marks at the same point.
+     const sound=tag==='sound'?node:child(node,'sound');
+     if(sound?.hasAttribute('dynamics')){
+      const value=Number(sound.getAttribute('dynamics'));
+      if(Number.isFinite(value)&&value>=0&&value<=160)record('level',value/90);
      }
     }else if(tag==='backup'){
      cursor=Math.max(0,cursor-durationFor(node));
@@ -2896,19 +2977,29 @@ function parseMusicXML(source){
      const prev=pendingTies.get(tieKey);
      if(tied.includes('stop')&&prev){prev.duration+=dur;prev.fermata=prev.fermata||fermata;if(!tied.includes('start'))pendingTies.delete(tieKey);continue;}
      const item={measure:mi,onset,duration:dur||lastDuration||TPQ,midi,step,octave:oct,alter,staff,part:pi,voice,staccato,accent,staccatissimo,portato,tenuto,marcato,fermata,
-      gain:currentVolume*(wedge?(wedge.type==='crescendo'?1.10:.9):1),
+      gain:.79,
       legato,clef:currentClefs[staff]||currentClefs[1]||'treble'};
      items.push(item);
      if(tied.includes('start'))pendingTies.set(tieKey,item);
     }
    }
-   measureResults.push({items,length:Math.max(currentTicks(),maxCursor),signature:beats+'/'+beatType});
-   allMeasures[mi]=Math.max(allMeasures[mi]||0,Math.max(currentTicks(),maxCursor));
+   // Implicit MusicXML measures may be pickups: preserve their actual duration.
+   // Keep normal incomplete measures padded so existing playback is unchanged.
+   const nominalTicks=currentTicks();
+   const measureTicks=measure.getAttribute('implicit')==='yes'&&maxCursor>0&&maxCursor<nominalTicks
+    ?maxCursor:Math.max(nominalTicks,maxCursor);
+   measureResults.push({items,length:measureTicks,signature:beats+'/'+beatType});
+   // Empty implicit measures should not pad an actual pickup in another part.
+   // Remember their own meter only for bars with no written duration in any part.
+   if(maxCursor>0||measure.getAttribute('implicit')!=='yes')
+    allMeasures[mi]=Math.max(allMeasures[mi]||0,measureTicks);
+   else emptyImplicitNominals[mi]=Math.max(emptyImplicitNominals[mi]||0,nominalTicks);
   }
-  parsedParts.push({name:partName,measures:measureResults});
+  parsedParts.push({name:partName,measures:measureResults,dynamicEvents});
  }
  const measureStart=[],measureLength=[];let total=0;
- for(let i=0;i<allMeasures.length;i++){measureStart[i]=total;measureLength[i]=allMeasures[i]||4*TPQ;total+=measureLength[i]}
+ for(let i=0;i<Math.max(allMeasures.length,emptyImplicitNominals.length);i++){measureStart[i]=total;measureLength[i]=allMeasures[i]||emptyImplicitNominals[i]||4*TPQ;total+=measureLength[i]}
+ applyImportedDynamicEvents(parsedParts,measureStart);
  for(const part of parsedParts)for(const m of part.measures)for(const note of m.items){
   note.start=(measureStart[note.measure]||0)+note.onset;rawNotes.push(note)
  }
@@ -3073,15 +3164,16 @@ function startPianoTracking(audioStart,secondsPerTick,timing=null){
   events.push({at:off,index:i,on:false});
  });
  events.sort((a,b)=>a.at-b.at||(a.on===b.on?0:a.on?1:-1));
- let at=0,lastScroll=0,initial=true;
+ let at=0,lastScroll=0,initial=true,lastCursorTick=-Infinity;
  const active=new Set();
  const frame=()=>{
   if(token!==pianoTrackingToken||!playing||!piano||!context)return;
   const elapsed=context.currentTime-audioStart;
   const tick=timing?timing.tickAtSeconds(elapsed):elapsed/secondsPerTick;
   if(tick>=0){
-   let newest=-1;
+   let newest=-1,activeChanged=false;
    while(at<events.length&&events[at].at<=elapsed+.012){
+    activeChanged=true;
     const event=events[at++],node=pianoNoteNodes.get(event.index);
     if(event.on){active.add(event.index);pianoActiveIndices.add(event.index);newest=event.index;node?.classList.add('is-playing');simpleNoteNodes.get(event.index)?.classList.add('active');}
     else{active.delete(event.index);pianoActiveIndices.delete(event.index);node?.classList.remove('is-playing');simpleNoteNodes.get(event.index)?.classList.remove('active');}
@@ -3098,7 +3190,14 @@ function startPianoTracking(audioStart,secondsPerTick,timing=null){
      lastScroll=performance.now();
     }
    }
-   if(initial||newest>=0){moveEngravedPlaybackCursor(tick);initial=false;}
+   if(newest<0&&(activeChanged||initial)&&active.size===0){
+    const status=document.getElementById('pianoNowPlaying');
+    if(status)status.textContent='Following the score · no notes sounding';
+   }
+   // Scroll and engraved-score cursor must keep following musical time in silence.
+   if(initial||newest>=0||Math.abs(tick-lastCursorTick)>=Math.max(30,(piano.TPQ||960)/8)){
+    moveEngravedPlaybackCursor(tick);lastCursorTick=tick;initial=false;
+   }
   }
   if((timing?context.currentTime-audioStart<timing.total+.5:tick<piano.total+1))pianoTrackingFrame=requestAnimationFrame(frame);
  };
@@ -3504,6 +3603,7 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
    for(const p of pauses){if(p.tick<=t+.0001)result+=p.delay;else break}
    return result;
   };
+  const visitIndex=segments.length;
   for(const {e,index} of entries){
    const onset=barStart+localTime(e.onset);
    const full=localSeconds(Math.min(length,e.onset+e.duration))-localSeconds(e.onset);
@@ -3513,18 +3613,36 @@ function createImportedRepeatedTiming(score,secondsPerTick,order){
       e.tenuto?1:e.marcato?.92:legato?1.035:.98;
    if(direction.expression==='alla marcia'&&!e.staccato&&!e.staccatissimo)factor*=.90;
    const duration=e.fermata?full+fermataDelay:Math.max(.07,full*factor);
-   const baseGain=hasDynamic?gainAt(e.onset):Number(e.gain)||dynamic;
+   const baseGain=hasDynamic?gainAt(e.onset):(Number.isFinite(e.gain)?e.gain:dynamic);
    const volume=(score.notes.length>100?.53:.68)*baseGain*
       (e.marcato?1.48:e.accent?1.27:1)*(direction.expression==='dolce'?.83:1);
    const midi=e.midi+(direction.octave&&!direction.octaveEncoded?12:0);
-   notes.push({e,index,onset,duration,volume,midi});
-   events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
+   notes.push({e,index,onset,duration,volume,midi,visitIndex});
   }
   elapsed=barStart+localTime(length);
   segments.push({bar,start:barStart,end:elapsed,length,pauses,localSeconds,tempoStart:barBpm,tempoEnd:targetBpm});
   bpm=targetBpm;dynamic=endDynamic;
   if(notes.length>6500)throw Error('Too many repeated notes for a reliable classroom performance.');
  }
+ // Merge PR #65's tied-note sustain without losing PR #64's silent-note semantics.
+ for(const played of notes){
+  const first=segments[played.visitIndex],remainingTicks=played.e.onset+played.e.duration-first.length;
+  if(remainingTicks<=0)continue;
+  let remaining=remainingTicks,end=first.end;
+  for(let i=played.visitIndex+1;i<segments.length&&remaining>0;i++){
+   const previous=segments[i-1],next=segments[i];
+   // A repeat or navigation jump must not extend a tie into another passage.
+   if(next.bar!==previous.bar+1)break;
+   const ticks=Math.min(remaining,next.length);
+   end+=next.localSeconds(ticks);
+   for(const pause of next.pauses)if(pause.tick<=ticks+.0001)end+=pause.delay;
+   remaining-=ticks;
+  }
+  played.duration=Math.max(played.duration,end-played.onset);
+ }
+ // Silent imported notes remain present but do not sound or highlight.
+ for(const {index,onset,duration,volume} of notes)
+  if(volume>0)events.push({index,at:onset,on:true},{index,at:onset+duration,on:false});
  events.sort((a,b)=>a.at-b.at||(a.on===b.on?0:a.on?1:-1));
  function tickAtSeconds(seconds){
   if(seconds<0)return seconds/secondsPerTick;
@@ -3566,8 +3684,10 @@ async function playPiano(){
  }));
  for(const {e,onset,duration,volume,midi} of performanceNotes){
   // Repeated visits, chords, tempo, dynamics, fermatas and octave signs.
-  tone(Number.isFinite(midi)?midi:e.midi,start+onset,duration,
-    Number.isFinite(volume)?volume:(piano.notes.length>100?.53:.68)*(e.gain||.79));
+  const scheduledVolume=Number.isFinite(volume)?volume:
+    (piano.notes.length>100?.53:.68)*(Number.isFinite(e.gain)?e.gain:.79);
+  // An explicit zero-dynamic MusicXML note must not produce an oscillator.
+  if(scheduledVolume>0)tone(Number.isFinite(midi)?midi:e.midi,start+onset,duration,scheduledVolume);
  }
  startPianoTracking(start,secondsPerTick,timing);
  stopTimer=setTimeout(()=>{stopPlayback();updateStatus('MusicXML playback finished.')},(start+timing.total-context.currentTime)*1000+300);
