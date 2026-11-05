@@ -593,7 +593,10 @@ body:not(.piano-active) .testToolsPanel .importOnly{display:none}
  .testDockPlay #stop{flex:0 0 auto}
  .testDockSpacer{display:none}
  .testDockAction,.testScoreTools>summary{font-size:11px;padding:6px 7px}
- .piano-active #testDockOpen{display:none}
+ .piano-active .testDockInner{flex-wrap:wrap}
+ .piano-active .testDockPlay{flex:1 1 100%;justify-content:center}
+ .piano-active .testDockCompose,.piano-active #testDockOpen,.piano-active .testScoreTools{flex:1 1 auto}
+ .piano-active #testDockOpen,.piano-active .testScoreTools>summary{width:100%}
 }
 @media print{#pianoPanel.fullPageMusic .omrRenderedPage[hidden]{display:block!important}}
 
