@@ -22,7 +22,7 @@ h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0
 #sheetViewport{overflow:auto;max-height:68vh;border:1px solid #dce8e9;border-radius:12px;background:white;touch-action:pan-x pan-y}
 #sheet{display:block;width:100%;min-width:780px;height:auto;cursor:crosshair;user-select:none}
 #sheet.zoomed{width:135%;min-width:1053px}
-.noteHit{cursor:pointer}.noteHit:focus-visible{outline:none;stroke:#0b9cad;stroke-width:2}
+.noteHit{cursor:grab;touch-action:none}.noteHit:active{cursor:grabbing}.noteHit:focus-visible{outline:none;stroke:#0b9cad;stroke-width:2}
 .status{min-height:20px;font-size:13px;color:#275f70}.noteContext{position:fixed;z-index:1100;background:#fff;border:1px solid #9fc8ce;border-radius:12px;box-shadow:0 10px 30px #183c4b35;padding:10px;max-width:min(310px,calc(100vw - 16px));min-width:190px}.noteContext[hidden]{display:none}.noteContext strong{display:block;margin:0 0 7px;font-size:13px;color:#234b60}.noteContext .valueChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.noteContext .valueChoices button{padding:7px;min-height:35px;font-size:12px}.noteContext .valueChoices button:last-child:nth-child(odd){grid-column:1/-1}.noteContext .contextDismiss{margin-top:7px;width:100%;min-height:32px;font-size:12px}.articulations{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.articulations button{padding:7px 9px;font-size:12px;min-height:36px}.articulations button.active{background:#d4f3ed}.slurStart{fill:none;stroke:#078f99;stroke-width:3;stroke-dasharray:4 3;pointer-events:none}.playHalo{fill:#ffc64b;fill-opacity:.55;stroke:#e19a23;stroke-width:3;pointer-events:none;opacity:0}.isPlaying .playHalo{opacity:1}
 #editPanel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid #e6eef0;margin-top:10px}
 #editPanel[hidden]{display:none}.muted{color:#637985}
@@ -42,7 +42,7 @@ footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
 <label>Time signature <select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></label>
 <label>Tempo (BPM) <input id="tempo" type="number" min="40" max="220" value="96" style="width:78px"></label>
 </div>
-<p class="hint">Upper stave: right hand (treble). Lower stave: left hand (bass). Choose a note or rest, then tap its place in either stave. Both hands share the same bars and play at the same time.</p>
+<p class="hint">Upper stave: right hand (treble). Lower stave: left hand (bass). Choose a note or rest, then tap its place in either stave. Select a note to use ↑ Higher / ↓ Lower, or drag it up and down. Both hands play together.</p>
 </section>
 <section class="panel controls" aria-label="Note entry">
 <div><h2>Choose a value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
@@ -72,7 +72,7 @@ const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-
 const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
 const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
 const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]}))});
-let data=newProject(),chosen=4,selected=null,pendingSlur=null,contextTarget=null,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
+let data=newProject(),chosen=4,selected=null,pendingSlur=null,contextTarget=null,dragPitch=null,suppressDragClick=false,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
 const MARKS=['staccato','staccatissimo','portato','tenuto','accent','marcato','fermata'];
 const MARK_LABELS={staccato:'Staccato ·',staccatissimo:'Staccatissimo ▾',portato:'Portato –·',tenuto:'Tenuto –',accent:'Accent >',marcato:'Marcato ^',fermata:'Fermata 𝄐'};
 const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
@@ -210,6 +210,7 @@ function finishSlur(id){
 function renderArticulations(ref){
  const dock=$('articulations');dock.replaceChildren();if(!ref||ref.event.kind!=='note')return;
  const mk=(label,pressed,fn)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.className=pressed?'active':'';button.setAttribute('aria-pressed',String(!!pressed));button.onclick=fn;dock.append(button)};
+ for(const [label,direction] of [['↑ Higher',1],['↓ Lower',-1]])mk(label,false,()=>adjustPitch(direction));
  for(const mark of MARKS)mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark));
  mk(pendingSlur?'✕ Cancel slur':ref.event.slurTo?'Remove slur':'Slur ⌒',!!pendingSlur,()=>toggleSlur());
  mk(ref.event.tieTo?'Remove tie':'Tie ⌣',!!ref.event.tieTo,()=>toggleTie());
@@ -409,11 +410,57 @@ function openNoteContext(ev){
  menu.querySelector('button')?.focus();
 }
 function clickSheet(ev){
+ if(suppressDragClick){suppressDragClick=false;return}
  const target=ev.target.closest('[data-id],[data-bar]');if(!target)return;
  const id=target.dataset.id;
  if(id){if(finishSlur(id))return;selected=id;render();return}
  const b=Number(target.dataset.bar),hand=target.dataset.hand;if(!data.bars[b]||!['right','left'].includes(hand))return;
  const p=point(ev);insert(b,hand,p.x,p.y);
+}
+
+function adjustPitch(direction){
+ const ref=locate(selected);if(!ref||ref.event.kind!=='note')return false;
+ const ix=noteIx(ref.event.step,ref.event.octave)+direction;
+ // Match the existing single-stave note pitch bounds and diatonic steps.
+ if(ix<8||ix>48)return false;
+ snapshot();
+ Object.assign(ref.event,pitchFromIx(ix));
+ commit((ref.hand==='right'?'Right':'Left')+' hand · '+ref.event.step+ref.event.octave+'.');
+ return true;
+}
+// The score's SVG is the stable pointer-capture owner, so redrawing note
+// groups during a drag never loses the ongoing mouse/pen/touch gesture.
+function pitchPointerDown(ev){
+ if(ev.button!==0||pendingSlur||!$('noteContext').hidden)return;
+ const target=ev.target.closest('[data-id]');
+ if(!target)return;
+ const ref=locate(target.dataset.id);if(!ref||ref.event.kind!=='note')return;
+ const p=point(ev);
+ dragPitch={pointerId:ev.pointerId,id:ref.event.id,hand:ref.hand,
+  originY:p.y,originIndex:noteIx(ref.event.step,ref.event.octave),steps:0,changed:false};
+ selected=ref.event.id;
+ $('sheet').setPointerCapture?.(ev.pointerId);
+ // Deliberately do not render here: a plain tap still goes through the
+ // original clickSheet selection handler.
+}
+function pitchPointerMove(ev){
+ const drag=dragPitch;if(!drag||ev.pointerId!==drag.pointerId)return;
+ const p=point(ev),delta=drag.originY-p.y;
+ if(Math.abs(delta)<5&&!drag.changed)return;
+ const steps=Math.round(delta/9),ix=Math.max(8,Math.min(48,drag.originIndex+steps));
+ if(ix===drag.originIndex+drag.steps)return;
+ const ref=locate(drag.id);if(!ref||ref.event.kind!=='note')return;
+ if(!drag.changed){snapshot();drag.changed=true}
+ Object.assign(ref.event,pitchFromIx(ix));drag.steps=ix-drag.originIndex;
+ render();
+}
+function pitchPointerEnd(ev){
+ const drag=dragPitch;if(!drag||ev.pointerId!==drag.pointerId)return;
+ dragPitch=null;
+ try{$('sheet').releasePointerCapture?.(ev.pointerId)}catch(_){}
+ if(!drag.changed)return;
+ suppressDragClick=true;
+ commit('Note moved higher/lower in the '+drag.hand+' hand.');
 }
 function changeValue(sign){
  const ref=locate(selected);if(!ref)return;
@@ -601,6 +648,10 @@ function bind(){
  for(const den of DENS){const b=document.createElement('button');b.type='button';b.innerHTML='<b>'+GLYPHS[den]+'</b>'+NAMES[den];b.dataset.den=den;b.onclick=()=>{chosen=den;refreshValues();info(NAMES[den]+' selected. Tap a stave to insert.')};$('values').append(b)}
  refreshValues();
  $('sheet').addEventListener('click',clickSheet);
+ $('sheet').addEventListener('pointerdown',pitchPointerDown);
+ $('sheet').addEventListener('pointermove',pitchPointerMove);
+ $('sheet').addEventListener('pointerup',pitchPointerEnd);
+ $('sheet').addEventListener('pointercancel',pitchPointerEnd);
  $('sheet').addEventListener('contextmenu',openNoteContext);
  const contextChoices=$('contextValues');contextChoices.replaceChildren();
  for(const den of DENS){
