@@ -11,13 +11,15 @@ assert.ok(source,'Found appended score-first test wiring');
 
 function makeNode(id=''){
  return {
-  id,children:[],parentElement:null,events:{},hidden:false,disabled:false,open:false,
+  id,children:[],parentElement:null,events:{},attrs:{},hidden:id==='testOpenPanel',disabled:false,open:false,
   append(...items){
    for(const item of items){
     if(item.parentElement)item.parentElement.children=item.parentElement.children.filter(x=>x!==item);
     item.parentElement=this;this.children.push(item);
    }
   },
+  setAttribute(k,v){this.attrs[k]=String(v)},
+  getAttribute(k){return this.attrs[k]},
   addEventListener(type,fn){this.events[type]=fn},
   click(){this.events.click?.({target:this});this.onclick?.()},
   focus(){this.focused=true},
@@ -35,7 +37,7 @@ function preview(){
   'autoExpressionReview','pianoCounts','scanAnother','closePiano','helpAndProjects',
   'pianoNowPlaying','moreActions','testDockCompose','testDockOpen','testScoreTools',
   'omrChooseButton','engravedScore','testEngravedNav','testEngravedPrev','testEngravedNext',
-  'testEngravedPageLabel','testEngravedResume'])ids[name]=makeNode(name);
+  'testEngravedPageLabel','testEngravedResume','testOpenPanel'])ids[name]=makeNode(name);
  const filePanel=makeNode(''),scanner=makeNode('omrHero'),setup=makeNode('settings'),
   notice=makeNode('notice'),toolbar=makeNode('toolbar'),inner=makeNode('inner'),
   optionsItem=makeNode('openXML'),info=makeNode('info');
@@ -85,13 +87,29 @@ test('moves original transport and core settings without replacing event handler
  assert.ok(ui.ids.testToolTeacher.children.includes(ui.labels[0]));
  assert.ok(ui.ids.testToolTeacher.children.includes(ui.labels[1]));
 });
-test('Tools opens by keyboard button activation; Escape closes it',()=>{
+test('Open score opens only its import panel; Tools remains a separate menu',()=>{
  const ui=preview();
+ assert.equal(ui.ids.testOpenPanel.hidden,true);
  ui.ids.testDockOpen.click();
- assert.equal(ui.ids.testScoreTools.open,true);
+ assert.equal(ui.ids.testOpenPanel.hidden,false);
+ assert.equal(ui.ids.testScoreTools.open,false,'Open score must never open Tools');
+ assert.equal(ui.ids.testDockOpen.getAttribute('aria-expanded'),'true');
  assert.equal(ui.ids.omrChooseButton.focused,true);
+ assert.ok(ui.ids.testToolImport.children.includes(ui.scanner));
+ assert.ok(ui.ids.testOpenPanel.children.includes(ui.ids.testToolImport) || html.includes('id="testToolImport"'));
  ui.document.events.keydown({key:'Escape'});
- assert.equal(ui.ids.testScoreTools.open,false);
+ assert.equal(ui.ids.testOpenPanel.hidden,true,'Escape closes import menu');
+ assert.equal(ui.ids.testDockOpen.getAttribute('aria-expanded'),'false');
+ ui.ids.testDockOpen.click();
+ ui.ids.testDockOpen.click();
+ assert.equal(ui.ids.testOpenPanel.hidden,true,'Open score toggles its own panel');
+ ui.ids.testDockOpen.click();
+ ui.ids.testScoreTools.open=true;
+ ui.ids.testScoreTools.events.toggle();
+ assert.equal(ui.ids.testOpenPanel.hidden,true,'Opening Tools closes import panel');
+ assert.equal(ui.ids.testScoreTools.open,true);
+ ui.document.events.keydown({key:'Escape'});
+ assert.equal(ui.ids.testScoreTools.open,false,'Escape closes Tools');
 });
 test('engraved page buttons show exactly one page without modifying playback',()=>{
  const ui=preview();
@@ -181,4 +199,19 @@ test('reviewed mobile labels and page buttons have readable touch targets',()=>{
  assert.match(html,/@media\(max-width:380px\)\{\s*#annotationToolbar \.noteStampName\{font-size:11px/);
  assert.match(html,/\.testEngravedNav button\{min-height:44px\}/);
  assert.match(html,/id="testEngravedResume"/);
+});
+
+test('import entry points stay independent from advanced score settings',()=>{
+ const markup=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
+ const importStart=markup.indexOf('id="testOpenPanel"');
+ const toolStart=markup.indexOf('id="testToolsPanel"');
+ assert.ok(importStart>=0&&toolStart>importStart);
+ const toolMarkup=markup.slice(toolStart,markup.indexOf('</div>',toolStart));
+ assert.doesNotMatch(toolMarkup,/id="testToolImport"/);
+ assert.match(markup,/id="testDockOpen" aria-expanded="false" aria-controls="testOpenPanel"/);
+ assert.match(markup,/id="omrChooseButton"/);
+ assert.match(markup,/id="omrImportButton"/);
+ assert.match(markup,/id="omrCameraButton"/);
+ assert.match(html,/function wireOneStepScanner\(\)/);
+ assert.match(html,/function wireProfessionalScanner\(\)/);
 });
