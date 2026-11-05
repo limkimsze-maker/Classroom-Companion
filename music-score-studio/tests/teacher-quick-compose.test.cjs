@@ -117,7 +117,8 @@ test('change selected values and keep the same composition method',()=>{
  const {api}=mock();api.selectPaletteNote(4);
  assert.equal(api.placePaletteNote(loc(api,0,'C',4,.15),4),true);
  api.selectPaletteNote(8);
- assert.equal(api.placePaletteNote(loc(api,0,'D',4,.45),8),true);
+ // Insert to the right of the sole visible notehead (centred in its bar).
+ assert.equal(api.placePaletteNote(loc(api,0,'D',4,.75),8),true);
  assert.deepEqual(api.data.bars[0].map(e=>e.den),[4,8]);
  assert.equal(api.active,8);
 });
