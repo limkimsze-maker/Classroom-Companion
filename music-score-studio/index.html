@@ -1628,29 +1628,25 @@ function insertPlacedMusicEvent(target,denominator,kind='note'){
 function staffLayout(exportMode=false){
  const left=144,right=1096,baseRoom=right-left,bars=data.bars;
  const requests=bars.map(bar=>engravingMinWidth(exportMode?printBarEvents(bar):bar)),groups=[];
- // Hand-drawn ink uses absolute SVG coordinates: retain its historic system
- // geometry rather than moving sketches while a teacher is annotating.
- if(data.strokes?.length){
-  for(let i=0;i<bars.length;i+=2)groups.push([i,...(i+1<bars.length?[i+1]:[])]);
- }else{
-  for(let i=0;i<bars.length;){
-   const group=[];let used=0;
-   while(i<bars.length){
-    const pair=isTwoBarRest(i)&&i+1<bars.length?2:1;
-    const demand=requests.slice(i,i+pair).reduce((a,b)=>a+b,0);
-    if(group.length&&used+demand>baseRoom)break;
-    for(let j=0;j<pair;j++)group.push(i+j);
-    used+=demand;i+=pair;
-   }
-   groups.push(group);
+ // Line breaks depend on rhythmic density, not a fixed bars-per-line count.
+ // Adding ink alone must never change staff geometry underneath a sketch.
+ for(let i=0;i<bars.length;){
+  const group=[];let used=0;
+  while(i<bars.length){
+   const pair=isTwoBarRest(i)&&i+1<bars.length?2:1;
+   const demand=requests.slice(i,i+pair).reduce((a,b)=>a+b,0);
+   if(group.length&&used+demand>baseRoom)break;
+   for(let j=0;j<pair;j++)group.push(i+j);
+   used+=demand;i+=pair;
   }
+  groups.push(group);
  }
- const W=data.strokes?.length?1120:Math.max(1120,left+Math.max(0,...requests)+24);
+ const W=Math.max(1120,left+Math.max(0,...requests)+24);
  const available=W-left-24,cells=Array(bars.length),systemCells=[],systemEnds=[];
  for(let sys=0;sys<groups.length;sys++){
-  const group=groups[sys],desired=group.map(i=>data.strokes?.length?baseRoom/2:requests[i]);
+  const group=groups[sys],desired=group.map(i=>requests[i]);
   const total=desired.reduce((a,b)=>a+b,0);
-  const lineLength=data.strokes?.length?baseRoom:sys<groups.length-1?available:
+  const lineLength=sys<groups.length-1?available:
    Math.min(available,Math.max(total,total*1.22));
   const excess=Math.max(0,lineLength-total);
   let x=left;const row=[];
