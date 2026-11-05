@@ -178,3 +178,19 @@ test('score highlights active noteheads in gold and clears them on Stop',()=>{
  assert.match(html,/for\(const e of perf\.events\)\{/);
  assert.match(html,/activeNotes\.clear\(\);render\(\)/);
 });
+test('both hands can be highlighted together and all highlights can be cleared',()=>{
+ const rh=note('C',5,4),lh=note('G',2,4),p=setup(project([rh],[lh]));
+ p.setPlayingNotes(new Set([rh.id,lh.id]));
+ assert.deepEqual(p.getActive().sort(),[rh.id,lh.id].sort());
+ p.setPlayingNotes(new Set());
+ assert.deepEqual(p.getActive(),[]);
+});
+test('playback follows sounding notes through later music systems',()=>{
+ assert.match(html,/const line=Math\.floor\(first\.b\/4\)/);
+ assert.match(html,/viewport\.scrollTop=Math\.max\(0,top\)/);
+});
+test('expression controls remain visible above the scrolling piano sheet',()=>{
+ const edit=html.indexOf('id="editPanel"'),sheet=html.indexOf('id="sheetViewport"');
+ assert.ok(edit>=0&&sheet>edit);
+ assert.match(html,/id="articulations"/);
+});
