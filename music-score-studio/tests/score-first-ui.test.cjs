@@ -1,0 +1,127 @@
+/* Music Score Studio TEST VERSION score-first UI regression checks.
+ * node --test music-score-studio/tests/score-first-ui.test.cjs
+ * DOM is simulated: desktop/mobile appearance and sound still require live testing.
+ */
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+const source=html.match(/<script>\s*(\/\* Temporary TEST VERSION presentation wiring:[\s\S]*?)<\/script>/);
+assert.ok(source,'Found appended score-first test wiring');
+
+function makeNode(id=''){
+ return {
+  id,children:[],parentElement:null,events:{},hidden:false,disabled:false,open:false,
+  append(...items){
+   for(const item of items){
+    if(item.parentElement)item.parentElement.children=item.parentElement.children.filter(x=>x!==item);
+    item.parentElement=this;this.children.push(item);
+   }
+  },
+  addEventListener(type,fn){this.events[type]=fn},
+  click(){this.events.click?.({target:this});this.onclick?.()},
+  focus(){this.focused=true},
+  remove(){
+   if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(x=>x!==this);
+  },
+  querySelector(){return null},
+  querySelectorAll(){return []}
+ };
+}
+function preview(){
+ const ids={};
+ for(const name of ['testDockPlay','play','stop','testToolFiles','testToolImport','testToolSetup',
+  'testToolTeacher','testToolHelp','toolRow','clearScoreTop','beautifyFeedback','teacherDrawer',
+  'autoExpressionReview','pianoCounts','scanAnother','closePiano','helpAndProjects',
+  'pianoNowPlaying','moreActions','testDockCompose','testDockOpen','testScoreTools',
+  'omrChooseButton','engravedScore','testEngravedNav','testEngravedPrev','testEngravedNext',
+  'testEngravedPageLabel'])ids[name]=makeNode(name);
+ const filePanel=makeNode(''),scanner=makeNode('omrHero'),setup=makeNode('settings'),
+  notice=makeNode('notice'),toolbar=makeNode('toolbar'),inner=makeNode('inner'),
+  optionsItem=makeNode('openXML'),info=makeNode('info');
+ filePanel.querySelector=q=>q==='.toolbar'?toolbar:null;
+ inner.children.push(optionsItem);
+ ids.moreActions.querySelector=q=>q==='.moreActionsInner'?inner:null;
+ ids.pianoNowPlaying.parentElement=info;
+ const labels=[makeNode('tempo'),makeNode('follow')];
+ info.querySelectorAll=q=>q==='label'?labels:[];
+ const pages=[makeNode('page1'),makeNode('page2'),makeNode('page3')];
+ ids.engravedScore.querySelectorAll=q=>q===':scope > .omrRenderedPage'?pages:[];
+ const document={
+  getElementById:id=>ids[id]||null,
+  querySelector:q=>({
+   '.layout-main > .paperCard:first-child':filePanel,
+   '.omrHero':scanner,'.shell > aside.panel':setup,'.layout-main > .notice':notice
+  })[q]||null,
+  createElement:()=>makeNode(),
+  events:{},addEventListener(type,fn){this.events[type]=fn}
+ };
+ const window={};
+ ids.play.onclick=()=>{},ids.stop.onclick=()=>{};
+ new Function('document','window',source[1])(document,window);
+ return {ids,window,document,pages,filePanel,scanner,setup,labels,toolbar};
+}
+test('there is one real Play and Stop and a visible TEST VERSION label',()=>{
+ const allIds=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
+ assert.equal(allIds.length,new Set(allIds).size,'No duplicate IDs');
+ assert.match(html,/TEST VERSION — PR #64 \+ PR #65/);
+ assert.match(html,/id="testDockPlay"/);
+ assert.match(html,/id="testScoreTools"/);
+ assert.match(html,/id="testEngravedPrev"/);
+ assert.match(html,/id="testEngravedNext"/);
+});
+test('moves original transport and core settings without replacing event handlers',()=>{
+ const ui=preview();
+ assert.equal(ui.ids.play.parentElement,ui.ids.testDockPlay);
+ assert.equal(ui.ids.stop.parentElement,ui.ids.testDockPlay);
+ assert.equal(typeof ui.ids.play.onclick,'function');
+ assert.equal(typeof ui.ids.stop.onclick,'function');
+ assert.ok(ui.ids.testToolImport.children.includes(ui.scanner));
+ assert.ok(ui.ids.testToolSetup.children.includes(ui.setup));
+ assert.ok(ui.ids.testToolFiles.children.includes(ui.filePanel));
+ assert.ok(ui.ids.testToolTeacher.children.includes(ui.ids.teacherDrawer));
+ assert.ok(ui.ids.testToolTeacher.children.includes(ui.ids.autoExpressionReview));
+ assert.ok(ui.ids.testToolTeacher.children.includes(ui.labels[0]));
+ assert.ok(ui.ids.testToolTeacher.children.includes(ui.labels[1]));
+});
+test('Tools opens by keyboard button activation; Escape closes it',()=>{
+ const ui=preview();
+ ui.ids.testDockOpen.click();
+ assert.equal(ui.ids.testScoreTools.open,true);
+ assert.equal(ui.ids.omrChooseButton.focused,true);
+ ui.document.events.keydown({key:'Escape'});
+ assert.equal(ui.ids.testScoreTools.open,false);
+});
+test('engraved page buttons show exactly one page without modifying playback',()=>{
+ const ui=preview();
+ ui.window.testScoreShowPage(0);
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[false,true,true]);
+ assert.equal(ui.ids.testEngravedPageLabel.textContent,'Page 1 of 3');
+ assert.equal(ui.ids.testEngravedPrev.disabled,true);
+ ui.ids.testEngravedNext.click();
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true]);
+ assert.equal(ui.ids.testEngravedPageLabel.textContent,'Page 2 of 3');
+ ui.window.testScoreShowPage(2);
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,true,false]);
+ assert.equal(ui.ids.testEngravedNext.disabled,true);
+ ui.ids.testEngravedPrev.click();
+ assert.deepEqual(ui.pages.map(p=>p.hidden),[true,false,true]);
+ assert.match(html,/if\(slot\.section\.hidden\)/,'Playback cursor selects a different page');
+ assert.match(html,/window\.testScoreShowPage\?\.\(0\)/,'Navigator starts after engraving');
+});
+test('responsive score frame, note palette, full-page and frozen source stay available',()=>{
+ assert.match(html,/#editorScorePanel \.paperScroll\{height:clamp/);
+ assert.match(html,/#pianoPanel #engravedScore,#pianoPanel \.pianoScoreScroll\{height:clamp/);
+ assert.match(html,/@media\(max-width:700px\)/);
+ assert.match(html,/@media\(max-width:480px\)/);
+ assert.match(html,/id="fullPageEditor"/);
+ assert.match(html,/id="fullPageImported"/);
+ assert.match(html,/id="fullPageZoomEditor"/);
+ assert.match(html,/id="fullPageZoomImported"/);
+ assert.match(html,/function parseMusicXML\(source\)/);
+ assert.match(html,/function createImportedRepeatedTiming\(/);
+ assert.match(html,/AGPL-3\.0/);
+ assert.match(html,/Semibreve/);
+ assert.match(html,/Semiquaver/);
+ assert.match(html,/#musicTermsPanel\{display:none!important\}/);
+});
