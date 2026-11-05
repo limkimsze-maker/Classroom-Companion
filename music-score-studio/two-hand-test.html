@@ -288,8 +288,32 @@ function drawPianoBeams(svg,events,groups,left,width,top,hand){
 const LEFT=155,W=1140,BARW=230,TOP=110,SYSHEIGHT=286,SEPARATION=123;
 function locationForBar(index){const line=Math.floor(index/4),slot=index%4;return {line,left:LEFT+slot*BARW,width:BARW,top:TOP+line*SYSHEIGHT}}
 function timeX(start,length,left,width){return left+24+(Math.min(start,meterCap())/meterCap())*(width-48)}
+
+function drawPianoConnections(svg,positions){
+ for(const hand of ['right','left']){
+  const links=handLinks(hand);
+  for(const [kind,pairs] of [['slur',links.slurs],['tie',links.ties]]){
+   for(const [fromId,toId] of pairs){
+    const from=positions.get(fromId),to=positions.get(toId);if(!from||!to)continue;
+    const side=hand==='left'?1:-1,delta=kind==='tie'?8:21;
+    const curve=(a,b)=>{
+     const x1=a.x+11,x2=b.x-11;if(x2<=x1)return;
+     const y1=a.y+side*delta,y2=b.y+side*delta,span=x2-x1,arc=side*(kind==='tie'?10:Math.min(38,Math.max(15,span*.19)));
+     svg.append(el('path',{d:'M '+x1+' '+y1+' C '+(x1+span*.27)+' '+(y1+arc)+' '+(x2-span*.27)+' '+(y2+arc)+' '+x2+' '+y2,fill:'none',stroke:'#294553','stroke-width':kind==='tie'?2.1:2.7,'stroke-linecap':'round','pointer-events':'none',class:kind==='tie'?'pianoTie':'pianoSlur'}))
+    };
+    if(from.sys===to.sys){curve(from,to);continue}
+    curve(from,{x:LEFT+Math.min(4,data.bars.length-from.sys*4)*BARW-8,y:from.y});
+    for(let sys=from.sys+1;sys<=to.sys;sys++){
+     const top=TOP+sys*SYSHEIGHT+(hand==='left'?SEPARATION:0);
+     const yy=top+(from.y-(TOP+from.sys*SYSHEIGHT+(hand==='left'?SEPARATION:0)));
+     curve({x:LEFT-20,y:sys===to.sys?to.y:yy},sys===to.sys?to:{x:LEFT+Math.min(4,data.bars.length-sys*4)*BARW-8,y:yy})
+    }
+   }
+  }
+ }
+}
 function render(){
- const svg=$('sheet'),systems=Math.ceil(data.bars.length/4),h=TOP+systems*SYSHEIGHT+6;
+ const svg=$('sheet'),systems=Math.ceil(data.bars.length/4),h=TOP+systems*SYSHEIGHT+6,positions=new Map();
  svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+W+' '+h);
  svg.append(el('rect',{width:W,height:h,fill:'#fff'}));
  drawText(svg,W/2,41,data.title,22,{'text-anchor':'middle','font-weight':800,fill:'#234b60'});
@@ -311,13 +335,14 @@ function render(){
    const staffTop=top+(hand==='left'?SEPARATION:0),events=data.bars[b][hand],used=barSum(events);
    const hit=el('rect',{x:left,y:staffTop-10,width,height:95,fill:'transparent','data-bar':b,'data-hand':hand,'data-top':staffTop,'data-left':left,'data-width':width});svg.append(hit);
    const beams=pianoBeamGroups(events),beamed=new Set(beams.flat());
-   let position=0;for(let i=0;i<events.length;i++){const e=events[i],x=timeX(position,ticks(e),left,width);drawEvent(svg,e,x,staffTop,hand,e.id===selected,beamed.has(i));position+=ticks(e)}
+   let position=0;for(let i=0;i<events.length;i++){const e=events[i],x=timeX(position,ticks(e),left,width);drawEvent(svg,e,x,staffTop,hand,e.id===selected,beamed.has(i));if(e.kind==='note')positions.set(e.id,{x,y:yAt(e,staffTop,hand),sys:layout.line,hand});position+=ticks(e)}
    drawPianoBeams(svg,events,beams,left,width,staffTop,hand);
    const lineWeight=b===data.bars.length-1?2:1.4;drawLine(svg,right,staffTop,right,staffTop+72,'#234657',lineWeight);
    if(b===data.bars.length-1)drawLine(svg,right+5,staffTop,right+5,staffTop+72,'#234657',3);
    if(hand==='right'){drawText(svg,left+9,top-20,'Bar '+(b+1),11);if(used>meterCap())drawText(svg,right-5,top-20,'Overfull',10,{'text-anchor':'end',fill:'#bd4545'})}
   }
  }
+ drawPianoConnections(svg,positions);
  $('count').textContent='· '+data.bars.length+' bar'+(data.bars.length===1?'':'s');
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  const found=locate(selected);$('editPanel').hidden=!found;renderArticulations(found);
