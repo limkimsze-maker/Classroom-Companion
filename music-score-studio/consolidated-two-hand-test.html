@@ -452,7 +452,8 @@ function validate(raw){
    const end=indices.get(e.slurTo);
    if(end===undefined||end<=i||refs[end].e.kind!=='note')delete e.slurTo;
    const next=refs[i+1];
-   if(!next||e.tieTo!==next.e.id||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||!tiePitchMatches(e,out.bars[refs[i].b][hand],refs[i].i,next.e,out.bars[next.b][hand],next.i,out))delete e.tieTo;
+   if(!next||e.tieTo!==next.e.id||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||!tiePitchMatches(e,out.bars[refs[i].b][hand],refs[i].i,next.e,out.bars[next.b][hand],next.i,out)||
+     (refs[i].b!==next.b&&Math.abs(barSum(out.bars[refs[i].b][hand])-cap)>.001))delete e.tieTo;
   }
  }
  return out;
@@ -1108,7 +1109,7 @@ function midi(e,bar,index,score=data){
     const previous=previousBar.at(-1);
     if(previous?.kind==='note'&&previous.tieTo===e.id&&
        previous.step===e.step&&previous.octave===e.octave&&
-       Math.abs(barSum(previousBar)-meterCap())<.001)
+       Math.abs(barSum(previousBar)-score.meter.split('/').map(Number).reduce((n,d,i)=>i===0?n*d:n/d,96))<.001)
      return midi(previous,previousBar,previousBar.length-1,score);
    }
   }
