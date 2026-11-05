@@ -123,7 +123,7 @@ test('ties, slurs, articulations keep their own event references for renderer re
  const before=JSON.stringify(bar);positions(api,0);
  assert.equal(JSON.stringify(bar),before);
  assert.equal(bar[0].tieTo,'two');assert.equal(bar[1].slurTo,'three');
- assert.match(html,/drawMusicConnections\(svg,notePositions\)/);
+ assert.match(html,/drawMusicConnections\(svg,notePositions,layout\)/);
  assert.match(html,/layout\.systemEnds\[a\.sys\]/);
 });
 test('long score layouts have content-dependent systems and no overlapping bars',()=>{
