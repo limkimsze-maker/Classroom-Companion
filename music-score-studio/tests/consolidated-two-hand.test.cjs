@@ -15,7 +15,7 @@ function setup(initial){
  const code=extract('const ticks=','function bind(');
  const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
   code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
-  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,annotationAnchor,annotationXY,attachAnnotationToNote,linkTeacherMark,notePosition,annotationHit,annotationPointerDown,annotationPointerMove,annotationPointerEnd,annotationPointerCancel,deleteAnnotation,resizeAnnotation,undo,redo,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},setPointerY:y=>{point=()=>({x:200,y})},setPoint:p=>{point=()=>p},setAnnotationToolDirect:tool=>{annotationTool=tool},setSelectedAnnotation:id=>{selectedAnnotation=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,midi,performance,validate,printBar,exportXml,insert,annotationAnchor,annotationXY,attachAnnotationToNote,linkTeacherMark,notePosition,annotationHit,annotationPointerDown,annotationPointerMove,annotationPointerEnd,annotationPointerCancel,deleteAnnotation,resizeAnnotation,undo,redo,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},setPointerY:y=>{point=()=>({x:200,y})},setPoint:p=>{point=()=>p},setAnnotationToolDirect:tool=>{annotationTool=tool},setSelectedAnnotation:id=>{selectedAnnotation=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
  )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:'',hidden:id==='noteContext',
   setPointerCapture(){},releasePointerCapture(){}}),
  {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
@@ -646,4 +646,80 @@ test('one normal Play and score-local Full page Play preserve a shared playback 
  assert.match(html,/\.fullpage #sheetPlay\{display:inline-flex!important\}/);
  assert.match(html,/id="play"/);
  assert.match(html,/id="sheetPlay"/);
+});
+
+test('MusicXML sounds the same as playback for carried sharp and written natural',()=>{
+ const right=[note('C',4,4,{acc:'#'}),note('C',4),note('C',4,4,{acc:'n'}),note('C',4)];
+ const left=[note('C',4)];
+ const p=setup(project(right,left));p.exportXml();
+ assert.deepEqual(p.performance().events.filter(e=>e.hand==='right').map(e=>e.pitch),[61,61,60,60]);
+ const xml=p.downloaded.s,rightXml=xml.split('<part id="P1">')[1].split('</part>')[0];
+ const pitches=[...rightXml.matchAll(/<pitch><step>C<\/step>(?:<alter>(-?\d+)<\/alter>)?<octave>4<\/octave><\/pitch>/g)].map(m=>Number(m[1]||0));
+ assert.deepEqual(pitches,[1,1,0,0]);
+ assert.equal((rightXml.match(/<accidental>sharp<\/accidental>/g)||[]).length,1);
+ assert.equal((rightXml.match(/<accidental>natural<\/accidental>/g)||[]).length,1);
+ const leftXml=xml.split('<part id="P2">')[1].split('</part>')[0];
+ assert.match(leftXml,/<pitch><step>C<\/step><octave>4<\/octave><\/pitch>/);
+});
+test('accidental carry resets per bar and remains independent in each piano hand',()=>{
+ const doc=project([note('B',4,4,{acc:'b'}),note('B',4)], [note('B',4)]);
+ doc.bars.push({right:[note('B',4)],left:[note('B',4,4,{acc:'n'})]});
+ const p=setup(doc);
+ assert.deepEqual(p.performance().events.filter(e=>e.hand==='right').map(e=>e.pitch),[70,70,71]);
+ assert.deepEqual(p.performance().events.filter(e=>e.hand==='left').map(e=>e.pitch),[71,71]);
+ p.exportXml();
+ const xml=p.downloaded.s,right=xml.split('<part id="P1">')[1].split('</part>')[0];
+ assert.match(right,/<alter>-1<\/alter>/);
+ assert.equal((right.match(/<alter>-1<\/alter>/g)||[]).length,2);
+ assert.match(right,/<measure number="2">[\s\S]*?<pitch><step>B<\/step><octave>4<\/octave>/);
+});
+test('6/8 uses dotted-crotchet playback pulse and matching MusicXML metronome',()=>{
+ const d=project([note('C',5,4,{dot:true}),note('D',5,4,{dot:true})],[],'6/8');d.tempo=96;
+ const p=setup(d),events=p.performance().events;
+ assert.equal(events.find(e=>e.hand==='right'&&e.index===1).at,.625);
+ assert.equal(p.meterCap()*(60/96/36),1.25);
+ p.exportXml();
+ assert.match(p.downloaded.s,/<beat-unit>quarter<\/beat-unit><beat-unit-dot\/><per-minute>96<\/per-minute>/);
+ assert.match(p.downloaded.s,/<sound tempo="144"\/>/);
+ const simple=project([note('C',5),note('D',5)],[],'4/4');simple.tempo=96;
+ assert.equal(setup(simple).performance().events.find(e=>e.hand==='right'&&e.index===1).at,.625);
+});
+test('6/8 beaming excludes quavers straddling the main dotted-crotchet boundary',()=>{
+ const notes=[note('C',4,8),note('D',4,8),note('E',4,16),note('F',4,8),note('G',4,16)];
+ const p=setup(project(notes,[],'6/8'));
+ const groups=p.pianoBeamGroups(notes);
+ assert.deepEqual(groups,[[0,1,2]]);
+ assert.ok(groups.every(g=>!g.includes(3)));
+});
+test('MusicXML completion rests follow 6/8 and 4/4 primary beat boundaries',()=>{
+ const a=setup(project([note('C',5,8)],[],'6/8')),r=a.printBar(a.getData().bars[0].right).slice(1);
+ assert.deepEqual(r.map(e=>[e.den,e.dot]),[[4,false],[4,true]]);
+ assert.equal(r.reduce((n,e)=>n+a.ticks(e),0),60);
+ const b=setup(project([note('C',5,4)],[],'4/4')),rests=b.printBar(b.getData().bars[0].right).slice(1);
+ assert.deepEqual(rests.map(e=>[e.den,e.dot]),[[4,false],[2,false]]);
+ assert.equal(rests.reduce((n,e)=>n+b.ticks(e),0),72);
+});
+test('imported JSON rejects duplicate note IDs within and across hands',()=>{
+ const a=note('C',5,4,{id:'same_id'}),b=note('D',5,4,{id:'same_id'});
+ const p=setup(project([],[]));
+ assert.throws(()=>p.validate(project([a,b],[])),/Duplicate note ID/);
+ assert.throws(()=>p.validate(project([a],[b])),/Duplicate note ID/);
+ const unique=project([a],[{...b,id:'other_id'}]);
+ assert.equal(p.validate(unique).bars[0].right[0].id,'same_id');
+});
+test('short unambiguous teacher Pen ink follows a note, passage-wide pen remains bar anchored',()=>{
+ const target=note('C',5,4,{id:'penTarget'}),p=setup(project([target],[])),xy=p.notePosition(target.id);
+ const ink={id:'ink',tool:'pen',color:'#df654d',points:[
+  p.annotationAnchor({x:xy.x-3,y:xy.y-4}),
+  p.annotationAnchor({x:xy.x+3,y:xy.y+3})]};
+ p.linkTeacherMark(ink);
+ assert.equal(ink.points[0].noteId,target.id);
+ const old=p.annotationXY(ink.points[0]);
+ p.getData().bars[0].right.unshift(note('D',5));
+ const next=p.annotationXY(ink.points[0]);
+ assert.ok(next.x>old.x+20);
+ const passage={id:'passage',tool:'pen',color:'#df654d',points:[
+  p.annotationAnchor({x:175,y:xy.y-4}),p.annotationAnchor({x:370,y:xy.y-4})]};
+ p.linkTeacherMark(passage);
+ assert.equal(passage.points[0].noteId,undefined);
 });
