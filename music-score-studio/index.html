@@ -1415,7 +1415,7 @@ function musicPenCursor(){
  return 'url("data:image/svg+xml,'+encodeURIComponent(xml)+'") 24 45, crosshair';
 }
 function setMode(v){
- if(v!=='select'&&quickKeyboardOn){quickKeyboardOn=false;syncQuickKeyboardButton();}
+ if(v!=='select'&&quickKeyboardOn){quickKeyboardOn=false;$('score').removeAttribute('tabindex');syncQuickKeyboardButton();}
  quickHover=null;activeNoteStampDen=null;
  document.querySelectorAll('[data-stamp-den]').forEach(b=>b.setAttribute('aria-pressed','false'));
  tool=v;
@@ -4116,7 +4116,11 @@ function handleQuickKeyboard(ev){
  else if(key==='arrowdown')quickShiftPitch(-1);
  else if(key==='arrowleft'||key==='arrowright')quickMoveHorizontal(key==='arrowright'?1:-1);
  else if(key==='backspace'||key==='delete'){if(findSelected())removeSelected();else handled=false;}
- else if(key==='escape')setQuickKeyboard(false);
+ else if(key==='escape'){
+  // The existing Escape handler must still minimise Full page or close a dialog.
+  if(document.querySelector('.fullPageMusic')||$('helpModal').classList.contains('open'))return;
+  setQuickKeyboard(false);
+ }
  else handled=false;
  if(handled){ev.preventDefault();ev.stopImmediatePropagation();}
 }
