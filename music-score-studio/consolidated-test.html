@@ -1440,7 +1440,7 @@ function scoreInkNoteCentres(layout){
 if(typeof window!=='undefined')window.musicScoreAnnotationGeometry=()=>{
  const layout=staffLayout(),notes=scoreInkNoteCentres(layout);
  return {width:layout.W,height:layout.H,
-  notes:[...notes].map(([id,p])=>({id,x:p.x/layout.W,y:p.y/layout.H})),
+  notes:[...notes].map(([id,p])=>({id,x:p.x/layout.W,y:p.y/layout.H,bar:p.bar})),
   bars:layout.cells.map(c=>({left:c.left/layout.W,width:c.width/layout.W,top:c.top/layout.H}))};
 };
 function scoreInkBar(points,layout){
