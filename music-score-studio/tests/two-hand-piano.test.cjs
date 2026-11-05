@@ -309,10 +309,10 @@ test('simple score-first interface shows Compose, Listen and Music sheet in orde
  assert.match(html,/Right-click for values/);
 });
 test('secondary tools remain available inside one clearly named disclosure',()=>{
- assert.match(html,/<details class="moreTools" id="moreTools">/);
- assert.match(html,/<summary aria-label="Save, open, export and more score tools">/);
+ assert.match(html,/<details class="dockTools" id="dockTools"><summary>⚙ Tools<\/summary>/);
+ assert.match(html,/<div class="moreToolsBody" role="group" aria-label="File and bar tools">/);
  for(const id of ['save','open','openFile','musicxml','print','removeBar'])assert.match(html,new RegExp('id="'+id+'"'));
- assert.ok(html.indexOf('id="moreTools"')<html.indexOf('id="musicxml"'));
+ assert.ok(html.indexOf('id="dockTools"')<html.indexOf('id="musicxml"'));
 });
 test('selected note exposes explicitly labelled Pitch and Expression controls',()=>{
  assert.match(html,/heading\('Pitch'\)/);
@@ -358,19 +358,23 @@ test('two-hand page visually reuses the approved single-stave header and paper-c
  assert.match(html,/linear-gradient\(115deg,#103449,#17516a\)/);
  assert.match(html,/class="studioHeader"/);
  assert.match(html,/class="brandLogo"/);
- assert.match(html,/class="studioShell"/);
+ assert.match(html,/class="studioShell singleColumn"/);
  assert.match(html,/grid-template-columns:292px minmax\(0,1fr\)/);
  assert.match(html,/linear-gradient\(90deg,#f9fcfc,#edf6f6\)/);
  assert.match(html,/class="panel scorePanel" id="paper"/);
  assert.match(html,/class="paperScroll"/);
 });
-test('composer controls precede score settings and score is the main work region',()=>{
- const sidebar=html.indexOf('<aside class="studioSidebar"'),compose=html.indexOf('aria-label="Compose notes"',sidebar),
- setup=html.indexOf('class="panel setupPanel"'),work=html.indexOf('class="studioWork"'),
- score=html.indexOf('class="panel scorePanel"');
- assert.ok(sidebar>=0&&compose>sidebar&&setup>compose&&work>setup&&score>work);
- assert.match(html,/<main class="studioShell">/);
- assert.match(html,/<aside class="studioSidebar" aria-label="Composition tools">/);
+test('score-first composer controls are in the same compact single-stave-style dock, not a sidebar',()=>{
+ const main=html.indexOf('<main class="studioShell singleColumn">'),
+ work=html.indexOf('class="studioWork"',main),
+ compose=html.indexOf('id="composeDrawer"',work),
+ setup=html.indexOf('class="panel setupPanel"',compose),
+ tools=html.indexOf('id="dockTools"',setup),
+ score=html.indexOf('class="panel scorePanel"',tools);
+ assert.ok(main>=0&&work>main&&compose>work&&setup>compose&&tools>setup&&score>tools);
+ assert.doesNotMatch(html,/<aside class="studioSidebar"/);
+ assert.match(html,/class="studioDock"/);
+ assert.match(html,/class="studioDockQuick"/);
 });
 test('full-page score sheet remains internally scrollable and offers minimisation',()=>{
  assert.match(html,/\.fullpage>#sheetViewport\{flex:1 1 auto!important/);
@@ -593,4 +597,31 @@ test('navigation preserves separate project save formats and two-hand expression
  assert.match(html,/id="sheetPlay"/);
  assert.match(html,/id="teacherAnnotations"/);
  assert.match(html,/id="full"/);
+});
+
+test('persistent sidebar is replaced by two discoverable dock actions and a full-width score',()=>{
+ assert.match(html,/<details class="composeDrawer" id="composeDrawer"><summary>✎ Compose<\/summary>/);
+ assert.match(html,/<details class="dockTools" id="dockTools"><summary>⚙ Tools<\/summary>/);
+ assert.match(html,/\.studioShell\.singleColumn\{max-width:1588px!important;display:block!important/);
+ assert.match(html,/\.singleColumn \.scorePanel\{width:100%;min-width:0\}/);
+ assert.doesNotMatch(html,/<aside class="studioSidebar"/);
+ assert.match(html,/id="sheetPlay"/);
+});
+test('all five British note-value choices and score settings stay accessible',()=>{
+ for(const label of ['Semibreve','Minim','Crotchet','Quaver','Semiquaver'])
+  assert.ok(html.includes(label));
+ for(const id of ['values','kind','dotted','acc','title','meter','tempo'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(html,/id="scoreSettingsDrawer" open/);
+});
+test('file export and saving are one disclosure away, not nested behind Save & more',()=>{
+ const tools=html.indexOf('id="dockTools"'),close=html.indexOf('</details>',tools);
+ assert.ok(tools>0&&close>tools);
+ for(const id of ['save','open','musicxml','print','removeBar'])
+  assert.ok(html.indexOf('id="'+id+'"',tools)<close);
+ assert.doesNotMatch(html,/<details class="moreTools"/);
+});
+test('Compose and Tools drawers cannot overlap',()=>{
+ assert.match(html,/addEventListener\('toggle',\(\)=>\{if\(\$\('composeDrawer'\)\.open\)\$\('dockTools'\)\.open=false\}\)/);
+ assert.match(html,/addEventListener\('toggle',\(\)=>\{if\(\$\('dockTools'\)\.open\)\$\('composeDrawer'\)\.open=false\}\)/);
 });
