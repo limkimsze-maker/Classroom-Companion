@@ -467,7 +467,7 @@ body.scoreFullPageActive{overflow:hidden!important}
 @media(max-width:650px){.consolidatedModes{width:100%;justify-content:center}.consolidatedModes a,.consolidatedModes [aria-current="page"]{flex:1;min-height:44px}}
 
 </style>
-<script src="./annotation-tools.js?v=a754a293" defer></script>
+<script src="./consolidated-annotation-tools.js" defer></script>
 </head>
 <body>
 <header class="topbar"><div class="brand"><div class="logo" aria-hidden="true">♫</div><div><h1>Music Score Studio</h1><p>Compose · Listen · Explore</p></div></div><nav class="consolidatedModes" aria-label="Choose score mode"><span aria-current="page">♫ Single stave</span><a href="./consolidated-two-hand-test.html" title="Compose both piano hands in the same Music Score Studio TEST">🎹 Two hands</a><small>TEST</small></nav><span class="top-pill">Free · No account · Made for teaching</span></header>
@@ -1435,6 +1435,14 @@ function scoreInkNoteCentres(layout){
  }
  return notes;
 }
+// TEST-only bridge for the isolated teacher overlay. Coordinates are normalised
+// against the music SVG viewBox, not the screen or its current zoom.
+window.musicScoreAnnotationGeometry=()=>{
+ const layout=staffLayout(),notes=scoreInkNoteCentres(layout);
+ return {width:layout.W,height:layout.H,
+  notes:[...notes].map(([id,p])=>({id,x:p.x/layout.W,y:p.y/layout.H})),
+  bars:layout.cells.map(c=>({left:c.left/layout.W,width:c.width/layout.W,top:c.top/layout.H}))};
+};
 function scoreInkBar(points,layout){
  if(!points?.length||!layout.cells.length)return -1;
  const centre=points.reduce((v,p)=>[v[0]+p[0]/points.length,v[1]+p[1]/points.length],[0,0]);
@@ -1898,7 +1906,9 @@ if(!exportMode&&boxDraft){
  svg.append(el('rect',{x,y,width:Math.abs(boxDraft.x1-boxDraft.x0),height:Math.abs(boxDraft.y1-boxDraft.y0),fill:'#42a8c2','fill-opacity':.14,stroke:'#087b86','stroke-width':2,'stroke-dasharray':'10 5','pointer-events':'none'}));
 }
 return svg;}
-function render(){updateTeachingLabels();syncBarMarkControls();const svg=$('score'),fresh=makeScore();svg.setAttribute('viewBox',fresh.getAttribute('viewBox'));svg.replaceChildren(...[...fresh.childNodes]);$('counter').textContent=`· ${data.bars.length} bar${data.bars.length===1?'':'s'} · ${data.meter}`;let s=findSelected();const actions=$('selectedActions');actions.replaceChildren();
+function render(){updateTeachingLabels();syncBarMarkControls();const svg=$('score'),fresh=makeScore();svg.setAttribute('viewBox',fresh.getAttribute('viewBox'));svg.replaceChildren(...[...fresh.childNodes]);
+ document.dispatchEvent(new Event('music-score-studio:score-layout'));
+ $('counter').textContent=`· ${data.bars.length} bar${data.bars.length===1?'':'s'} · ${data.meter}`;let s=findSelected();const actions=$('selectedActions');actions.replaceChildren();
 if(boxSelectedNotes.size||boxSelectedStrokes.size){
  const label=document.createElement('span');label.className='editLabel';label.textContent=boxSelectedNotes.size+' notes/rests + '+boxSelectedStrokes.size+' sketches selected';actions.append(label);
  const del=document.createElement('button');del.className='smallBtn';del.textContent='Delete selection';del.onclick=deleteBoxSelection;actions.append(del);
