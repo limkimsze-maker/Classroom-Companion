@@ -76,7 +76,7 @@ const factory=new Function('return ('+harnessFactory.toString().replace('/* INSE
 function mock(options={}){
  const ids={};
  const $=id=>ids[id]||(ids[id]={
-  textContent:'',attrs:{},children:[],isConnected:true,classList:{contains:()=>false},
+  textContent:'',attrs:{},children:[],isConnected:true,hidden:id==='testOpenPanel',classList:{contains:()=>false},
   setAttribute(k,v){this.attrs[k]=String(v);},removeAttribute(k){delete this.attrs[k];},
   focus(){this.focused=true;},append(node){this.children.push(node);},
   getBoundingClientRect(){return {width:1120,height:850,left:0,top:0};},querySelector(){return null;}
