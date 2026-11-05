@@ -456,6 +456,16 @@ function performance(){
 function setPlayingNotes(ids){
  if(ids.size===activeNotes.size&&[...ids].every(id=>activeNotes.has(id)))return;
  activeNotes=new Set(ids);render();
+ // Follow the sounding notes when playback moves to another stave system.
+ // Respect teacher scrolling while the current sounding system is in view.
+ if(!ids.size)return;
+ const first=locate(ids.values().next().value),viewport=$('sheetViewport'),svg=$('sheet');
+ const viewHeight=svg?.viewBox?.baseVal?.height,displayHeight=svg?.getBoundingClientRect?.().height;
+ if(!first||!viewport||!viewHeight||!displayHeight)return;
+ const line=Math.floor(first.b/4),top=(TOP+line*SYSHEIGHT-22)*displayHeight/viewHeight;
+ const bottom=(TOP+(line+1)*SYSHEIGHT-24)*displayHeight/viewHeight;
+ if(top<viewport.scrollTop||bottom>viewport.scrollTop+viewport.clientHeight)
+  viewport.scrollTop=Math.max(0,top);
 }
 async function play(){
  if(playing)stop();
