@@ -15,14 +15,14 @@ function setup(initial){
  const code=extract('const ticks=','function bind(');
  const result=new Function('STEPS','DENS','NAMES','$','document','NS','KEY','localStorage','initial',
   code+'\ndata=initial;download=(s,n,t)=>{downloaded={s,n,t}};render=()=>{};'+
-  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},setPointerY:y=>{point=()=>({x:200,y})},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
+  '\nreturn {ticks,meterCap,barSum,pitchAt,yAt,locationForBar,timeX,performance,validate,printBar,exportXml,insert,annotationAnchor,annotationXY,annotationHit,annotationPointerDown,annotationPointerMove,annotationPointerEnd,annotationPointerCancel,deleteAnnotation,resizeAnnotation,undo,redo,adjustPitch,pitchPointerDown,pitchPointerMove,pitchPointerEnd,clickSheet,pickContextValue,setContextTarget:v=>{contextTarget=v},pianoBeamGroups,handLinks,toggleMark,toggleTie,toggleSlur,finishSlur,locate,setPlayingNotes,setSelected:id=>{selected=id},setPointerY:y=>{point=()=>({x:200,y})},setPoint:p=>{point=()=>p},setAnnotationToolDirect:tool=>{annotationTool=tool},setSelectedAnnotation:id=>{selectedAnnotation=id},getActive:()=>[...activeNotes],getData:()=>data,getDownloaded:()=>downloaded};'
  )(names,dens,labels,id=>({value:id==='kind'?'note':'',checked:false,textContent:'',hidden:id==='noteContext',
   setPointerCapture(){},releasePointerCapture(){}}),
  {createElementNS:()=>({setAttribute(){}})},'http://www.w3.org/2000/svg','TEST',{},initial);
  return {...result,get downloaded(){return result.getDownloaded()}};
 }
 const note=(step,octave,den=4,extras={})=>({id:step+octave+Math.random(),kind:'note',step,octave,den,dot:false,acc:'',...extras});
-const project=(right,left,meter='4/4')=>({format:'cc-music-score-studio-twohand',version:1,title:'Piano TEST',tempo:120,meter,bars:[{right,left}]});
+const project=(right,left,meter='4/4')=>({format:'cc-music-score-studio-twohand',version:1,title:'Piano TEST',tempo:120,meter,bars:[{right,left}],annotations:[]});
 test('right and left notes on equal beats have precisely equal onset times',()=>{
  const rh=[note('C',5,4),note('D',5,4)],lh=[note('C',3,2)];
  const p=setup(project(rh,lh)),r=p.performance();
@@ -385,4 +385,99 @@ test('small phone layouts keep the score and annotation controls usable',()=>{
  assert.match(html,/\.studioShell\{padding:8px;gap:8px\}/);
  assert.match(html,/\.scorehead \.controls button\{font-size:12px;padding:7px 9px\}/);
  assert.match(html,/\.fullpage #editPanel\{max-height:23dvh\}/);
+});
+
+test('two-hand annotations provide all eight teacher tools with a clear cursor mode',()=>{
+ for(const tool of ['cursor','select','hand','arrow','pen','highlighter','circle','eraser'])
+  assert.match(html,new RegExp('data-annotation-tool="'+tool+'"'));
+ assert.match(html,/id="teacherAnnotations"/);
+ assert.match(html,/id="annotationColour"/);
+ assert.match(html,/id="annotationLarger"/);
+ assert.match(html,/id="annotationSmaller"/);
+ assert.match(html,/id="annotationDelete"/);
+ assert.match(html,/class="annotationGuide"/);
+});
+test('bar-based anchors follow score reflow when a note moves to another staff system',()=>{
+ const base=project([],[]),p=setup({...base,bars:Array.from({length:5},()=>({right:[],left:[]}))});
+ const location=p.locationForBar(4);
+ const q={x:location.left+30,y:location.top+120};
+ const anchor=p.annotationAnchor(q);assert.equal(anchor.bar,4);
+ assert.deepEqual(p.annotationXY(anchor),q);
+ const first=p.annotationAnchor({x:location.left+20,y:location.top+18});
+ assert.equal(first.bar,4);
+});
+test('annotation JSON roundtrip validates and preserves colours, points, and tools',()=>{
+ const input=project([note('C',5)],[note('G',2)]);
+ input.annotations=[{id:'ink1',tool:'highlighter',color:'#127f9b',points:[{bar:0,dx:35,dy:20},{bar:0,dx:85,dy:68}]}];
+ const p=setup(input),restored=p.validate(JSON.parse(JSON.stringify(input)));
+ assert.equal(restored.annotations.length,1);
+ assert.equal(restored.annotations[0].tool,'highlighter');
+ assert.equal(restored.annotations[0].color,'#127f9b');
+ assert.deepEqual(restored.annotations[0].points,input.annotations[0].points);
+ assert.equal(restored.bars[0].right[0].step,'C');
+ const old={...input};delete old.annotations;
+ assert.deepEqual(p.validate(old).annotations,[]);
+});
+test('annotation JSON rejects dangerous geometry and unknown drawing tools',()=>{
+ const input=project([],[]);
+ input.annotations=[
+ {tool:'script',color:'#000000',points:[{bar:0,dx:1,dy:1}]},
+ {tool:'pen',color:'javascript:alert(1)',points:[{bar:500,dx:2,dy:3}]},
+ {tool:'circle',color:'#2e9657',points:[{bar:0,dx:40,dy:100},{bar:0,dx:84,dy:125}]}];
+ const p=setup(input),validated=p.validate(input);
+ assert.equal(validated.annotations.length,1);
+ assert.equal(validated.annotations[0].tool,'circle');
+});
+test('teacher pen draws independently of note editing and uses same Undo history',()=>{
+ const input=project([note('C',5)],[note('G',2)]);
+ const p=setup(input),ev={button:0,pointerId:9,preventDefault(){},target:{closest:()=>null}};
+ p.setAnnotationToolDirect('pen');p.setPoint({x:190,y:125});p.annotationPointerDown(ev);
+ p.setPoint({x:218,y:143});p.annotationPointerMove(ev);
+ p.annotationPointerEnd(ev);
+ assert.equal(input.annotations.length,1);
+ assert.equal(input.annotations[0].tool,'pen');
+ assert.equal(input.bars[0].right.length,1);
+ assert.equal(input.bars[0].left.length,1);
+ p.undo();assert.equal(p.getData().annotations.length,0);
+ assert.equal(p.getData().bars[0].right.length,1);
+ p.redo();assert.equal(p.getData().annotations.length,1);
+});
+test('arrow and circle can be added to either hand; eraser protects actual notes',()=>{
+ const input=project([note('E',5)],[note('G',2)]),p=setup(input);
+ const ev={button:0,pointerId:11,preventDefault(){},target:{closest:()=>null}};
+ p.setAnnotationToolDirect('circle');p.setPoint({x:190,y:250});p.annotationPointerDown(ev);
+ p.setPoint({x:240,y:296});p.annotationPointerMove(ev);p.annotationPointerEnd(ev);
+ assert.equal(p.getData().annotations.length,1);
+ const hit=p.annotationHit({x:190,y:273});assert.ok(hit);
+ p.setAnnotationToolDirect('eraser');p.setPoint({x:190,y:273});p.annotationPointerDown(ev);
+ assert.equal(p.getData().annotations.length,0);
+ assert.equal(p.getData().bars[0].left.length,1);
+ assert.equal(p.getData().bars[0].right.length,1);
+});
+test('selection move and size changes affect only teacher marks',()=>{
+ const input=project([note('C',5)],[note('G',2)]);
+ input.annotations=[{id:'testMark',tool:'arrow',color:'#df654d',points:[{bar:0,dx:15,dy:18},{bar:0,dx:95,dy:48}]}];
+ const p=setup(input);p.setAnnotationToolDirect('select');
+ const ev={button:0,pointerId:2,preventDefault(){},target:{closest:()=>null}};
+ const start=p.annotationXY(input.annotations[0].points[0]);
+ p.setPoint(start);p.annotationPointerDown(ev);
+ p.setPoint({x:start.x+20,y:start.y+15});p.annotationPointerMove(ev);p.annotationPointerEnd(ev);
+ assert.ok(p.getData().annotations[0].points[0].dx>15);
+ p.setSelectedAnnotation('testMark');p.resizeAnnotation(1.15);
+ assert.ok(p.getData().annotations[0].points[0].dx!==input.annotations[0].points[0].dx);
+ assert.equal(p.getData().bars[0].right[0].step,'C');
+});
+test('annotation mode guards musical editing and right-click note insertion',()=>{
+ assert.match(html,/function clickSheet\(ev\)\{\s*if\(annotationTool!=='cursor'\)return/);
+ assert.match(html,/function pitchPointerDown\(ev\)\{\s*if\(annotationTool!=='cursor'\)return/);
+ assert.match(html,/function openNoteContext\(ev\)\{\s*if\(annotationTool!=='cursor'\)/);
+ assert.match(html,/function drawAnnotations\(svg\)/);
+ assert.match(html,/drawAnnotations\(svg\);/);
+});
+test('full page annotation tools stay inside score and Escape restores note-edit mode',()=>{
+ const toolbar=html.indexOf('id="teacherAnnotations"'),sheet=html.indexOf('id="sheetViewport"');
+ assert.ok(toolbar>=0&&sheet>toolbar);
+ assert.match(html,/if\(e\.key==='Escape'&&annotationTool!=='cursor'\)/);
+ assert.match(html,/if\(\$\('paper'\)\.classList\.contains\('fullpage'\)\)\$\('full'\)\.click\(\)/);
+ assert.match(html,/@media print\{\.teacherAnnotations\{display:none!important\}\}/);
 });
