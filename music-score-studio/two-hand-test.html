@@ -31,11 +31,118 @@ h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0
 .fullpage #sheetViewport{max-height:calc(100dvh - 160px)}
 @media(max-width:650px){.entryTop{display:block}.entryOptions{margin-top:10px}.setupPanel .row{align-items:flex-start}.transportGroup{width:100%}.actionsPanel .toolbar{align-items:flex-start}.scorehead{align-items:flex-start}.quickHelp{line-height:1.5}header h1{font-size:17px}main{padding:8px}.panel{padding:10px}.values button{min-width:66px;font-size:11px;padding:7px}.values button b{font-size:18px}.toolbar{align-items:stretch}#sheetViewport{max-height:60vh}}
 @media print{header,.controls,.toolbar,#editPanel,.scorehead button,footer,.status,.hint{display:none!important}main,.panel{display:block;border:0;box-shadow:none;margin:0;padding:0}#sheetViewport{max-height:none;overflow:visible;border:0}#sheet,#sheet.zoomed{width:100%;min-width:0}body{background:white}}
+
+/* Match the approved single-stave score-first design, not a new theme. */
+:root{--navy:#12354b;--ink:#173449;--teal:#087b86;--teal2:#e6f5f5;--surface:#fff;--page:#f1f5f6;--border:#d8e4e7;--muted:#637987;--shadow:0 12px 36px rgba(21,51,69,.085)}
+html{scroll-behavior:smooth}
+body{background:var(--page);color:var(--ink);font-size:15px;line-height:1.5}
+.studioHeader{background:linear-gradient(115deg,#103449,#17516a);color:#fff;padding:17px max(18px,calc((100vw - 1560px)/2));display:flex;justify-content:space-between;align-items:center;gap:14px}
+.studioHeader .brand{display:flex;gap:13px;align-items:center}
+.brandLogo{width:46px;height:46px;display:grid;place-items:center;border-radius:13px;background:#e9fbf6;color:#0d6f78;font:34px/1 Georgia,serif}
+.studioHeader h1{color:#fff;font-size:21px;line-height:1.2;letter-spacing:-.45px}
+.studioHeader h1 .headerMode{display:block;font-size:13px;font-weight:650;letter-spacing:0;color:#b9dce5;margin-top:4px}
+.studioHeader p{margin:4px 0 0;color:#b8dbe3;font-size:12px}
+.studioHeader .backLink{color:#e3f5f7;border:1px solid #69919f;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:650;text-decoration:none}
+.studioHeader .backLink:hover,.studioHeader .backLink:focus-visible{background:#ffffff17;border-color:#b8dbe3;color:white}
+.studioShell{max-width:1588px;display:grid;grid-template-columns:292px minmax(0,1fr);gap:16px;padding:18px}
+.studioSidebar{display:flex;flex-direction:column;gap:14px;min-width:0}
+.studioWork{min-width:0;display:flex;flex-direction:column;gap:14px}
+.studioShell>.studioSidebar>.panel,.studioWork>.panel{margin:0}
+.panel{border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);background:var(--surface)}
+.setupPanel{order:2;padding:16px}
+.studioSidebar>.panel[aria-label="Compose notes"]{order:1;padding:17px}
+.studioSidebar .entryTop{display:block}
+.studioSidebar .entryOptions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:15px}
+.studioSidebar .entryOptions label{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#536c7b;font-size:12px;font-weight:650}
+.studioSidebar .entryOptions select{width:148px;max-width:75%;background:#fff}
+.studioSidebar .entryOptions input[type=checkbox]{width:17px;height:17px;accent-color:var(--teal)}
+.studioSidebar .studioLabel{color:#526b7d;letter-spacing:.3px;margin-bottom:7px}
+.studioSidebar .values{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;width:100%}
+.studioSidebar .values button{min-width:0;min-height:66px;padding:6px 1px;border:1px solid #cadde3;border-radius:9px;font-size:10px;line-height:1.15;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px}
+.studioSidebar .values button b{font:28px/1.05 Georgia,'Segoe UI Symbol',serif}
+.studioSidebar .values button.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.studioSidebar .values button:hover:not(.active){border-color:#5ca5b1;background:#f0f9f9}
+.studioSidebar .row{display:grid;gap:10px}
+.studioSidebar .row>label{display:block;color:#536c7b;font-size:11px;font-weight:750}
+.studioSidebar .row>label input,.studioSidebar .row>label select{display:block;width:100%;margin-top:5px}
+.actionsPanel{padding:0;overflow:visible}
+.actionsPanel .toolbar{padding:14px 16px;gap:10px}
+.transportGroup{gap:7px}
+.transportLabel{color:#526b7d;font-weight:750;letter-spacing:.02em}
+button{border-color:#ccdde2;color:var(--ink);min-height:39px;font-size:13px}
+button.primary,.primary{background:var(--teal);border-color:var(--teal);color:white}
+button.primary:hover{background:#08636d}
+button.active:not(.primary){background:#e6f5f5;color:#087b86}
+.scorePanel{padding:0;overflow:hidden;border-color:var(--border)}
+.scorehead{background:linear-gradient(90deg,#f9fcfc,#edf6f6);border-bottom:1px solid #dce7e8;padding:12px 16px;margin:0}
+.scorehead h2{font-size:14px;letter-spacing:-.1px;color:#213f52}
+.scorehead .controls{justify-content:flex-end}
+.scorehead #full{background:#e9f3ff;border-color:#9dc8ed;color:#194e86;font-weight:800}
+.scorehead #full:hover{background:#d2e9ff}
+.scorehead #sheetPlay{font-size:13px}
+.quickHelp{background:#f8fbfc;padding:9px 16px;border-radius:0;margin:0;border-bottom:1px solid #e6eef0;font-size:12px}
+#sheetViewport{border:none;border-radius:0;max-height:68vh;background:#fff;overflow:auto;overscroll-behavior:contain}
+#sheet{min-width:880px;width:100%;display:block}
+#sheet.zoomed{min-width:1160px;width:135%}
+#editPanel{padding:11px 16px 13px;margin:0;background:#f7fbfb;border-top:0;border-bottom:1px solid #dbe7e9;gap:7px}
+#editPanel .editPanelLabel{color:#496c79}
+#editPanel .articulations{border-top:1px solid #dce8eb}
+#status{display:block;border-top:1px solid #e1ecee;background:#fbfdfd;padding:10px 16px;margin:0}
+.fullpage{z-index:3500!important;display:flex!important;flex-direction:column!important;max-height:100dvh!important;overflow:hidden!important;box-shadow:none!important;border:0!important}
+.fullpage>.scorehead{flex:0 0 auto;background:linear-gradient(100deg,#e7f6ff,#f3f0ff)}
+.fullpage>#editPanel{flex:0 0 auto;max-height:28dvh;overflow-y:auto}
+.fullpage>#sheetViewport{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:auto!important}
+.fullpage #sheet{min-width:0;width:100%;height:auto}
+.fullpage #sheet.zoomed{min-width:880px;width:135%}
+.fullpage>.quickHelp{flex:0 0 auto}
+.fullpage>#status{flex:0 0 auto}
+@media(max-width:850px){
+ .studioShell{display:flex;flex-direction:column;padding:10px;gap:12px}
+ .studioSidebar{gap:10px}
+ .studioSidebar>.panel[aria-label="Compose notes"]{padding:12px}
+ .studioSidebar .entryTop{display:flex;gap:12px}
+ .studioSidebar .entryOptions{display:flex;flex-wrap:wrap;margin-top:0;align-items:center;gap:8px}
+ .studioSidebar .entryOptions label{justify-content:flex-start}
+ .studioSidebar .entryOptions select{width:auto}
+ .studioSidebar .values{width:auto;grid-template-columns:repeat(5,minmax(54px,1fr));max-width:370px}
+ .setupPanel{padding:10px 12px}
+ .studioSidebar .row{display:flex;flex-wrap:wrap}
+ .studioSidebar .row>label input,.studioSidebar .row>label select{width:auto;max-width:100%}
+ .studioWork{gap:10px}
+}
+@media(max-width:650px){
+ .studioHeader{padding:12px 14px}
+ .studioHeader .brandLogo{width:39px;height:39px;font-size:27px}
+ .studioHeader h1{font-size:17px}
+ .studioHeader p{display:none}
+ .studioShell{padding:8px;gap:8px}
+ .studioSidebar .entryTop{display:block}
+ .studioSidebar .entryOptions{margin-top:10px}
+ .studioSidebar .values{max-width:none;width:100%}
+ .studioSidebar .values button{min-height:61px;font-size:9px}
+ .actionsPanel .toolbar{padding:10px}
+ .scorehead{padding:11px 12px}
+ .scorehead .controls{gap:5px}
+ .scorehead .controls button{font-size:12px;padding:7px 9px}
+ .quickHelp{padding:8px 12px;line-height:1.45}
+ #sheetViewport{max-height:62vh}
+ .fullpage #sheetViewport{max-height:none}
+ .fullpage .quickHelp{display:none}
+ .fullpage #editPanel{max-height:23dvh}
+}
+@media print{
+ header,.studioSidebar,.actionsPanel,.quickHelp,#editPanel,.scorehead button,footer,.status{display:none!important}
+ .studioShell,.studioWork,.scorePanel{display:block!important;padding:0!important;margin:0!important;max-width:none;border:0!important;box-shadow:none!important}
+ #sheetViewport{overflow:visible!important;max-height:none!important}
+ #sheet,#sheet.zoomed{width:100%!important;min-width:0!important}
+}
+
 </style>
 </head>
 <body>
-<header><div><h1>🎹 Music Score Studio — Two-Hand Piano <small>TEST</small></h1><small>Compose for right and left hands together · British music terminology</small></div><a href="./index.html">← Single-stave Music Score Studio</a></header>
-<main>
+<header class="studioHeader"><div class="brand"><span class="brandLogo" aria-hidden="true">♫</span><div><h1>Music Score Studio <span class="headerMode">Two-Hand Piano · TEST</span></h1><p>Compose, listen and learn · right and left hands together</p></div></div><a class="backLink" href="./index.html">← Single stave</a></header>
+<main class="studioShell">
+<aside class="studioSidebar" aria-label="Composition tools">
 <section class="panel setupPanel">
 <div class="row">
 <label>Score title <input id="title" type="text" maxlength="100" value="My Piano Piece" aria-label="Score title"></label>
@@ -45,25 +152,28 @@ h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0
 </section>
 <section class="panel" aria-label="Compose notes">
 <div class="entryTop">
-<div><div class="studioLabel">1 · Compose</div><h2>Choose a note value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
+<div><div class="studioLabel">COMPOSE</div><h2>Choose a note value</h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
 <div class="entryOptions"><label>Write <select id="kind" aria-label="Write note or rest"><option value="note">Note</option><option value="rest">Rest</option></select></label><label><input type="checkbox" id="dotted"> Dotted (+½)</label><label>Accidental <select id="acc"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></label></div>
 </div>
 </section>
+</aside>
+<div class="studioWork">
 <section class="panel actionsPanel">
 <div class="toolbar">
-<div class="transportGroup"><span class="transportLabel">2 · Listen</span><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label></div>
+<div class="transportGroup"><span class="transportLabel">LISTEN &amp; LEARN</span><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label></div>
 <div class="transportGroup"><button id="undo" title="Undo last edit (Ctrl+Z)" disabled>↶ Undo</button><button id="redo" title="Redo last edit (Ctrl+Shift+Z)" disabled>↷ Redo</button><button id="addBar" title="Add another bar to both hands">+ Bar</button>
 <details class="moreTools" id="moreTools"><summary aria-label="Save, open, export and more score tools">⋯ Save &amp; more</summary><div class="moreToolsBody"><button id="removeBar">− Empty bar</button><button id="save">Save JSON</button><button id="open">Open JSON</button><input id="openFile" type="file" accept=".json,application/json" hidden><button id="musicxml">Export MusicXML</button><button id="print">Print / PDF</button></div></details></div>
 </div>
 </section>
 <section class="panel scorePanel" id="paper">
-<div class="scorehead"><h2>3 · Music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
-<p class="quickHelp" id="composeHint"><strong>Right hand ↑</strong> Treble stave · <strong>Left hand ↓</strong> Bass stave · Tap empty space to add · Select a note to edit or drag it higher/lower · Right-click for note values</p>
+<div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<p class="quickHelp" id="composeHint"><strong>Right hand</strong> · Treble clef &nbsp; <strong>Left hand</strong> · Bass clef &nbsp; <span>Tap to add · Drag notes up or down · Right-click for values</span></p>
 <div id="editPanel" hidden><span class="editPanelLabel">Edit selected note</span><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button><div id="articulations" class="articulations" role="group" aria-label="Expression and articulation for selected note"></div></div>
-<div id="sheetViewport"><svg id="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" role="img" aria-label="Editable two-hand piano score. Tap on a stave to add notes or rests."></svg></div>
+<div id="sheetViewport" class="paperScroll"><svg id="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" role="img" aria-label="Editable two-hand piano score. Tap on a stave to add notes or rests."></svg></div>
 
 <p id="status" class="status" role="status" aria-live="polite">Ready · Select a value and tap either stave.</p>
 </section>
+</div>
 </main>
 <div id="noteContext" class="noteContext" hidden role="dialog" aria-label="Note values"><strong id="noteContextTitle">Choose a note value</strong><div id="contextValues" class="valueChoices"></div><button type="button" class="contextDismiss" id="contextClose">Cancel</button></div>
 <footer>Music Score Studio © 2026 Lim Kim Sze · Experimental two-hand composition · Review notation before teaching · Works locally in your browser.<div style="margin-top:6px">Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.</div><div style="margin-top:6px">Licensed under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a> · <a href="https://github.com/limkimsze-maker/Classroom-Companion/tree/music-studio/two-hand-piano-test-20261105/music-score-studio" target="_blank" rel="noopener noreferrer">Source code</a> · <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/OPEN_SOURCE_NOTICES.md" target="_blank" rel="noopener noreferrer">Open-source notices</a>.</div></footer>
