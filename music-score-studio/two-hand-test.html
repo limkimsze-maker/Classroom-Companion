@@ -23,7 +23,7 @@ h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0
 #sheet{display:block;width:100%;min-width:780px;height:auto;cursor:crosshair;user-select:none}
 #sheet.zoomed{width:135%;min-width:1053px}
 .noteHit{cursor:pointer}.noteHit:focus-visible{outline:none;stroke:#0b9cad;stroke-width:2}
-.status{min-height:20px;font-size:13px;color:#275f70}
+.status{min-height:20px;font-size:13px;color:#275f70}.articulations{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.articulations button{padding:7px 9px;font-size:12px;min-height:36px}.articulations button.active{background:#d4f3ed}.slurStart{fill:none;stroke:#078f99;stroke-width:3;stroke-dasharray:4 3;pointer-events:none}
 #editPanel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid #e6eef0;margin-top:10px}
 #editPanel[hidden]{display:none}.muted{color:#637985}
 footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
@@ -59,7 +59,7 @@ footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
 <section class="panel" id="paper">
 <div class="scorehead"><h2>Two-hand music sheet <span id="count" class="muted"></span></h2><div class="controls"><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
 <div id="sheetViewport"><svg id="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" role="img" aria-label="Editable two-hand piano score. Tap on a stave to add notes or rests."></svg></div>
-<div id="editPanel" hidden><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button></div>
+<div id="editPanel" hidden><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button><div id="articulations" class="articulations" role="group" aria-label="Expression and articulation for selected note"></div></div>
 <p id="status" class="status" role="status" aria-live="polite">Ready · Select a value and tap either stave.</p>
 </section>
 </main>
@@ -70,7 +70,9 @@ const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-
 const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
 const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
 const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]}))});
-let data=newProject(),chosen=4,selected=null,history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
+let data=newProject(),chosen=4,selected=null,pendingSlur=null,history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
+const MARKS=['staccato','staccatissimo','portato','tenuto','accent','marcato','fermata'];
+const MARK_LABELS={staccato:'Staccato ·',staccatissimo:'Staccatissimo ▾',portato:'Portato –·',tenuto:'Tenuto –',accent:'Accent >',marcato:'Marcato ^',fermata:'Fermata 𝄐'};
 const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
 const meterCap=()=>{let [a,b]=data.meter.split('/').map(Number);return a*96/b};
 const barSum=events=>events.reduce((n,e)=>n+ticks(e),0);
@@ -99,11 +101,32 @@ function validate(raw){
   entry[hand]=bar[hand].map(e=>{
    if(!e||!DENS.includes(e.den)||!['note','rest'].includes(e.kind))throw Error('Invalid note/rest');
    const v={id:makeId(),kind:e.kind,den:e.den,dot:!!e.dot};
-   if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Invalid pitch');Object.assign(v,{step:e.step,octave:e.octave,acc:['','#','b','n'].includes(e.acc)?e.acc:''})}
+   if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Invalid pitch');Object.assign(v,{step:e.step,octave:e.octave,acc:['','#','b','n'].includes(e.acc)?e.acc:''});
+    for(const mark of MARKS)if(e[mark]===true)v[mark]=true;
+    if(typeof e.slurTo==='string')v.slurTo=e.slurTo.slice(0,128);
+    if(typeof e.tieTo==='string')v.tieTo=e.tieTo.slice(0,128);
+    // Keep stable saved IDs, but drop duplicates and invalid characters.
+    if(typeof e.id==='string'&&/^[a-zA-Z0-9_-]{1,128}$/.test(e.id))v.id=e.id;
+   }
    return v;
   });
   if(barSum(entry[hand])>cap+.0001)throw Error('Too many beats in '+hand+'-hand bar');
- }out.bars.push(entry)}return out;
+ }out.bars.push(entry)}
+ // Validated links never cross hands, never point backwards, and ties connect
+ // adjacent notes of the same written and sounding pitch.
+ for(const hand of ['right','left']){
+  const refs=out.bars.flatMap((bar,b)=>bar[hand].map((e,i)=>({e,b,i})));
+  const indices=new Map(refs.map((r,i)=>[r.e.id,i]));
+  for(let i=0;i<refs.length;i++){
+   const e=refs[i].e;
+   if(e.kind!=='note')continue;
+   const end=indices.get(e.slurTo);
+   if(end===undefined||end<=i||refs[end].e.kind!=='note')delete e.slurTo;
+   const next=refs[i+1];
+   if(!next||e.tieTo!==next.e.id||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||midi(e,out.bars[refs[i].b][hand],refs[i].i)!==midi(next.e,out.bars[next.b][hand],next.i))delete e.tieTo;
+  }
+ }
+ return out;
 }
 function drawClef(svg,hand,x,top){
  // Built-in musical glyphs are display-only; pitch and playback use exact diatonic mapping.
