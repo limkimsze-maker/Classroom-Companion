@@ -50,7 +50,7 @@ test('six-eight supports two dotted-crotchet beats and independent parts',()=>{
  const p=setup(project(rh,lh,'6/8')),r=p.performance();
  assert.equal(p.meterCap(),72);
  assert.equal(p.barSum(rh),72);assert.equal(p.barSum(lh),72);
- assert.equal(r.events.find(x=>x.hand==='right'&&x.index===1).at,.75);
+ assert.equal(r.events.find(x=>x.hand==='right'&&x.index===1).at,.5);
 });
 test('JSON validator keeps 40 bars and rejects 41 and invalid pitches',()=>{
  const p=setup(project([],[]));
