@@ -127,7 +127,9 @@ function anchorForItem(it,g){
  // annotations are anchored to their bar instead of guessing a note identity.
  if(it.type!=='highlighter'&&radius<=27&&notes[0]?.d<=27&&
   (!notes[1]||notes[1].d-notes[0].d>12))
-  return {type:'note',id:notes[0].n.id,base:[notes[0].n.x,notes[0].n.y],size:[g.width,g.height]};
+  return {type:'note',id:notes[0].n.id,base:[notes[0].n.x,notes[0].n.y],size:[g.width,g.height],
+   bar:notes[0].n.bar,barBase:g.bars[notes[0].n.bar]?
+   [g.bars[notes[0].n.bar].left,g.bars[notes[0].n.bar].top]:null};
  const bars=(g.bars||[]).map((b,i)=>({i,b,d:Math.hypot((b.left+b.width/2-mid[0])*g.width,
   (b.top+36/g.height-mid[1])*g.height)})).sort((a,b)=>a.d-b.d);
  if(!bars.length)return null;
@@ -140,7 +142,20 @@ function reflowTeacherMarks(){
   if(!it.anchor){it.anchor=anchorForItem(it,g);if(it.anchor)changed=true;continue}
   let next=null;
   if(it.anchor.type==='note'){
-   const n=g.notes.find(n=>n.id===it.anchor.id);if(n)next=[n.x,n.y];
+   const n=g.notes.find(n=>n.id===it.anchor.id);
+   if(n)next=[n.x,n.y];
+   else if(Number.isInteger(it.anchor.bar)&&it.anchor.barBase&&g.bars[it.anchor.bar]){
+    // The note has been deleted: preserve the mark in bar-local units
+    // instead of stretching its old fractional screen position.
+    const oldSize=it.anchor.size||[g.width,g.height],b=g.bars[it.anchor.bar];
+    const px=it.anchor.barBase[0]*oldSize[0],py=it.anchor.barBase[1]*oldSize[1];
+    it.points=it.points.map(p=>[
+     Math.max(-1,Math.min(2,(b.left*g.width+p[0]*oldSize[0]-px)/g.width)),
+     Math.max(-1,Math.min(2,(b.top*g.height+p[1]*oldSize[1]-py)/g.height))
+    ]);
+    it.anchor={type:'bar',index:it.anchor.bar,base:[b.left,b.top],size:[g.width,g.height]};
+    changed=true;continue;
+   }
   }else if(it.anchor.type==='bar'){
    const b=g.bars[it.anchor.index];if(b)next=[b.left,b.top];
   }
@@ -157,7 +172,12 @@ function reflowTeacherMarks(){
     Math.max(-1,Math.min(2,(nx+p[0]*oldSize[0]-ox)/g.width)),
     Math.max(-1,Math.min(2,(ny+p[1]*oldSize[1]-oy)/g.height))
    ]);
-   it.anchor.base=next;it.anchor.size=[g.width,g.height];changed=true;
+   it.anchor.base=next;it.anchor.size=[g.width,g.height];
+   if(it.anchor.type==='note'){
+    const n=g.notes.find(n=>n.id===it.anchor.id),bar=n&&g.bars[n.bar];
+    if(bar){it.anchor.bar=n.bar;it.anchor.barBase=[bar.left,bar.top]}
+   }
+   changed=true;
   }
  }
  if(changed){persist();render()}
