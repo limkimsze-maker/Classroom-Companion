@@ -137,6 +137,27 @@ button.active:not(.primary){background:#e6f5f5;color:#087b86}
  #sheet,#sheet.zoomed{width:100%!important;min-width:0!important}
 }
 
+
+.teacherAnnotations{border-bottom:1px solid #dce7e8;background:#f9fcfc}
+.teacherAnnotations>summary{list-style:none;cursor:pointer;min-height:39px;padding:10px 16px;display:flex;align-items:center;gap:8px;color:#245367;font-size:13px;font-weight:750}
+.teacherAnnotations>summary::-webkit-details-marker{display:none}
+.teacherAnnotations>summary:focus-visible{outline:3px solid #84cfde;outline-offset:-3px}
+.teacherAnnotations[open]>summary{background:#edf7f7;border-bottom:1px solid #dce7e8}
+.annotationSummaryHint{font-size:12px;font-weight:450;color:#6b7e86}
+.annotationTools{padding:10px 14px;display:grid;gap:9px;background:#fff}
+.annotationToolRow{display:flex;flex-wrap:wrap;gap:6px}
+.annotationToolRow button{min-height:36px;padding:6px 10px;font-size:12px}
+.annotationToolRow button[aria-pressed=true]{background:#087b86;color:#fff;border-color:#087b86}
+.annotationOptions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px}
+.annotationOptions select{font-size:12px;padding:6px;min-height:36px}
+.annotationOptions #annotationSelected{display:inline-flex;flex-wrap:wrap;gap:6px}
+.annotationOptions #annotationSelected[hidden]{display:none}
+.annotationOptions #annotationSelected button{min-height:32px;font-size:12px;padding:5px 8px}
+.annotationGuide{color:#51707c;font-size:12px}
+#sheet.annotating{cursor:crosshair;touch-action:none}
+#sheet.annotating [data-id],#sheet.annotating .noteHit{cursor:crosshair}
+@media(max-width:650px){.teacherAnnotations>summary{padding:8px 12px}.annotationTools{padding:8px}.annotationToolRow button{flex:1 1 auto}.annotationSummaryHint{display:none}}
+@media print{.teacherAnnotations{display:none!important}}
 </style>
 </head>
 <body>
@@ -168,6 +189,25 @@ button.active:not(.primary){background:#e6f5f5;color:#087b86}
 </section>
 <section class="panel scorePanel" id="paper">
 <div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<details class="teacherAnnotations" id="teacherAnnotations"><summary>🖍 Teacher Annotations <span class="annotationSummaryHint">· pen, highlighter and shapes</span></summary>
+ <div class="annotationTools" role="group" aria-label="Teacher annotation tools (not musical notes)">
+  <div class="annotationToolRow">
+   <button type="button" data-annotation-tool="cursor" aria-pressed="true" title="Return to adding, selecting and dragging musical notes">↖ Cursor</button>
+   <button type="button" data-annotation-tool="select" aria-pressed="false" title="Select and move existing annotation marks">▣ Selector</button>
+   <button type="button" data-annotation-tool="hand" aria-pressed="false" title="Place a pointing-hand marker">👆 Hand</button>
+   <button type="button" data-annotation-tool="arrow" aria-pressed="false" title="Drag an arrow to point at music">➜ Arrow</button>
+   <button type="button" data-annotation-tool="pen" aria-pressed="false" title="Teacher pen: underline or circle music; not note recognition">✎ Pen</button>
+   <button type="button" data-annotation-tool="highlighter" aria-pressed="false" title="Translucent highlight for teaching">🖍 Highlighter</button>
+   <button type="button" data-annotation-tool="circle" aria-pressed="false" title="Drag to circle a note or musical passage">◯ Circle</button>
+   <button type="button" data-annotation-tool="eraser" aria-pressed="false" title="Tap a teacher mark to erase it; notes will remain">⌫ Eraser</button>
+  </div>
+  <div class="annotationOptions">
+   <label>Colour <select id="annotationColour" aria-label="Teacher annotation colour"><option value="#df654d">Coral red</option><option value="#127f9b">Ocean blue</option><option value="#2e9657">Green</option><option value="#262f43">Black</option></select></label>
+   <span id="annotationGuide" class="annotationGuide" role="status">Cursor: compose notes as normal.</span>
+   <span id="annotationSelected" hidden><button type="button" id="annotationSmaller" title="Reduce selected annotation size">− Size</button><button type="button" id="annotationLarger" title="Increase selected annotation size">+ Size</button><button type="button" id="annotationDelete" class="danger">Delete mark</button></span>
+  </div>
+ </div>
+</details>
 <p class="quickHelp" id="composeHint"><strong>Right hand</strong> · Treble clef &nbsp; <strong>Left hand</strong> · Bass clef &nbsp; <span>Tap to add · Drag notes up or down · Right-click for values</span></p>
 <div id="editPanel" hidden><span class="editPanelLabel">Edit selected note</span><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button><div id="articulations" class="articulations" role="group" aria-label="Expression and articulation for selected note"></div></div>
 <div id="sheetViewport" class="paperScroll"><svg id="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" role="img" aria-label="Editable two-hand piano score. Tap on a stave to add notes or rests."></svg></div>
@@ -183,8 +223,8 @@ button.active:not(.primary){background:#e6f5f5;color:#087b86}
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-music-twohand-test-v1';
 const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
 const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
-const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]}))});
-let data=newProject(),chosen=4,selected=null,pendingSlur=null,contextTarget=null,dragPitch=null,suppressDragClick=false,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
+const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]})),annotations:[]});
+let data=newProject(),chosen=4,selectedAnnotation=null,annotationTool='cursor',annotationDrag=null,annotationDraft=null,selected=null,pendingSlur=null,contextTarget=null,dragPitch=null,suppressDragClick=false,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
 const MARKS=['staccato','staccatissimo','portato','tenuto','accent','marcato','fermata'];
 const MARK_LABELS={staccato:'Staccato ·',staccatissimo:'Staccatissimo ▾',portato:'Portato –·',tenuto:'Tenuto –',accent:'Accent >',marcato:'Marcato ^',fermata:'Fermata 𝄐'};
 const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
@@ -208,7 +248,7 @@ function locate(id){for(let b=0;b<data.bars.length;b++)for(const hand of ['right
 function validate(raw){
  if(!raw||raw.format!=='cc-music-score-studio-twohand'||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>40)throw Error('Invalid two-hand project (maximum 40 bars).');
  if(!['2/4','3/4','4/4','6/8'].includes(raw.meter))throw Error('Unsupported metre');
- const out={format:'cc-music-score-studio-twohand',version:1,title:String(raw.title||'My Piano Piece').slice(0,100),meter:raw.meter,tempo:Math.max(40,Math.min(220,Number(raw.tempo)||96)),bars:[]};
+ const out={format:'cc-music-score-studio-twohand',version:1,title:String(raw.title||'My Piano Piece').slice(0,100),meter:raw.meter,tempo:Math.max(40,Math.min(220,Number(raw.tempo)||96)),bars:[],annotations:[]};
  const cap=Number(raw.meter.split('/')[0])*96/Number(raw.meter.split('/')[1]);
  for(const bar of raw.bars){const entry={right:[],left:[]};for(const hand of ['right','left']){
   if(!Array.isArray(bar?.[hand])||bar[hand].length>100)throw Error('Invalid '+hand+'-hand bar');
@@ -226,6 +266,17 @@ function validate(raw){
   });
   if(barSum(entry[hand])>cap+.0001)throw Error('Too many beats in '+hand+'-hand bar');
  }out.bars.push(entry)}
+ // Annotations are presentation-only, with bounded colour, geometry and
+ // complexity. They cannot change musical notes or playback.
+ if(Array.isArray(raw.annotations))out.annotations=raw.annotations.slice(0,250).flatMap(a=>{
+  if(!a||!['pen','highlighter','arrow','circle','hand'].includes(a.tool)||!Array.isArray(a.points)||a.points.length<1||a.points.length>500)return [];
+  const points=a.points.flatMap(p=>Number.isInteger(p?.bar)&&p.bar>=0&&p.bar<out.bars.length&&
+   Number.isFinite(p?.dx)&&Number.isFinite(p?.dy)&&Math.abs(p.dx)<=600&&Math.abs(p.dy)<=600?
+   [{bar:p.bar,dx:p.dx,dy:p.dy}]:[]);
+  if(!points.length)return [];
+  const color=/^#[0-9a-fA-F]{6}$/.test(a.color)?a.color:'#df654d';
+  return [{id:makeId(),tool:a.tool,points,color}];
+ });
  // Validated links never cross hands, never point backwards, and ties connect
  // adjacent notes of the same written and sounding pitch.
  for(const hand of ['right','left']){
@@ -461,8 +512,10 @@ function render(){
   }
  }
  drawPianoConnections(svg,positions);
+ drawAnnotations(svg);
  $('count').textContent='· '+data.bars.length+' bar'+(data.bars.length===1?'':'s');
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
+ $('annotationSelected').hidden=!selectedAnnotation;
  const found=locate(selected);$('editPanel').hidden=!found;renderArticulations(found);
  if(found){$('selection').textContent=(found.hand==='right'?'Right':'Left')+' hand · Bar '+(found.b+1)+' · '+(found.event.kind==='rest'?'Rest':found.event.step+found.event.octave)+' · '+NAMES[found.event.den]+(found.event.dot?' dotted':'')}
  $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;
@@ -492,6 +545,7 @@ function pickContextValue(den){
  }
 }
 function openNoteContext(ev){
+ if(annotationTool!=='cursor'){ev.preventDefault();return}
  const svg=$('sheet'),p=point(ev);
  const target=ev.target.closest('[data-id],[data-bar]');
  let result=null;
@@ -525,6 +579,7 @@ function openNoteContext(ev){
  menu.querySelector('button')?.focus();
 }
 function clickSheet(ev){
+ if(annotationTool!=='cursor')return;
  if(suppressDragClick){suppressDragClick=false;return}
  const target=ev.target.closest('[data-id],[data-bar]');if(!target)return;
  const id=target.dataset.id;
@@ -546,6 +601,7 @@ function adjustPitch(direction){
 // The score's SVG is the stable pointer-capture owner, so redrawing note
 // groups during a drag never loses the ongoing mouse/pen/touch gesture.
 function pitchPointerDown(ev){
+ if(annotationTool!=='cursor')return;
  // Some browsers omit the click after a dragged SVG target is redrawn.
  // Clear any leftover suppression on the next actual pointer gesture.
  if(suppressDragClick)suppressDragClick=false;
@@ -773,6 +829,15 @@ function bind(){
  for(const den of DENS){const b=document.createElement('button');b.type='button';b.innerHTML='<b>'+GLYPHS[den]+'</b>'+NAMES[den];b.dataset.den=den;b.onclick=()=>{chosen=den;refreshValues();info(NAMES[den]+' selected. Tap a stave to insert.')};$('values').append(b)}
  refreshValues();
  $('sheet').addEventListener('click',clickSheet);
+ $('sheet').addEventListener('pointerdown',annotationPointerDown);
+ $('sheet').addEventListener('pointermove',annotationPointerMove);
+ $('sheet').addEventListener('pointerup',annotationPointerEnd);
+ $('sheet').addEventListener('pointercancel',annotationPointerCancel);
+ document.querySelectorAll('[data-annotation-tool]').forEach(b=>b.onclick=()=>setAnnotationTool(b.dataset.annotationTool));
+ $('annotationDelete').onclick=deleteAnnotation;
+ $('annotationLarger').onclick=()=>resizeAnnotation(1.15);
+ $('annotationSmaller').onclick=()=>resizeAnnotation(1/1.15);
+ $('annotationColour').onchange=e=>{if(!selectedAnnotation)return;const mark=data.annotations.find(a=>a.id===selectedAnnotation);if(!mark)return;snapshot();mark.color=e.target.value;commit('Annotation colour updated.')};
  $('sheet').addEventListener('pointerdown',pitchPointerDown);
  $('sheet').addEventListener('pointermove',pitchPointerMove);
  $('sheet').addEventListener('pointerup',pitchPointerEnd);
@@ -803,11 +868,13 @@ function bind(){
  $('zoom').onclick=()=>{zoomed=!zoomed;$('sheet').classList.toggle('zoomed',zoomed);$('zoom').textContent=zoomed?'↘ Fit page':'🔎 Larger'};
  $('full').onclick=()=>{const full=$('paper').classList.toggle('fullpage');$('full').textContent=full?'⊟ Minimise':'⛶ Full page';$('full').setAttribute('aria-pressed',String(full))};
  window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&annotationTool!=='cursor'){setAnnotationTool('cursor');e.preventDefault();return}
   if(e.key==='Escape'&&!$('noteContext').hidden){closeNoteContext();e.preventDefault();return}
   if(e.key==='Escape'&&pendingSlur){pendingSlur=null;render();info('Slur cancelled.');e.preventDefault();return}
   if(e.key==='Escape'&&$('paper').classList.contains('fullpage')){$('full').click();e.preventDefault();return}
   const active=document.activeElement;if(['INPUT','TEXTAREA','SELECT'].includes(active?.tagName)||active?.closest('button,a,summary'))return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}
+  if(e.key==='Delete'&&selectedAnnotation){e.preventDefault();deleteAnnotation();return}
   if(e.key==='Delete'&&selected){e.preventDefault();remove()}
  });
 }
