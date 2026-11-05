@@ -211,7 +211,10 @@ function finishSlur(id){
 function renderArticulations(ref){
  const dock=$('articulations');dock.replaceChildren();if(!ref||ref.event.kind!=='note')return;
  const mk=(label,pressed,fn)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.className=pressed?'active':'';button.setAttribute('aria-pressed',String(!!pressed));button.onclick=fn;dock.append(button)};
+ const heading=text=>{const label=document.createElement('span');label.className='editHeading';label.textContent=text;dock.append(label)};
+ heading('Pitch');
  for(const [label,direction] of [['↑ Higher',1],['↓ Lower',-1]])mk(label,false,()=>adjustPitch(direction));
+ heading('Expression · click to add or remove');
  for(const mark of MARKS)mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark));
  mk(pendingSlur?'✕ Cancel slur':ref.event.slurTo?'Remove slur':'Slur ⌒',!!pendingSlur,()=>toggleSlur());
  mk(ref.event.tieTo?'Remove tie':'Tie ⌣',!!ref.event.tieTo,()=>toggleTie());
