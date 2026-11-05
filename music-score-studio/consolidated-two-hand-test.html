@@ -403,6 +403,7 @@ function validate(raw){
  if(!['2/4','3/4','4/4','6/8'].includes(raw.meter))throw Error('Unsupported metre');
  const out={format:'cc-music-score-studio-twohand',version:1,title:String(raw.title||'My Piano Piece').slice(0,100),meter:raw.meter,tempo:Math.max(40,Math.min(220,Number(raw.tempo)||96)),bars:[],annotations:[]};
  const cap=Number(raw.meter.split('/')[0])*96/Number(raw.meter.split('/')[1]);
+ const seenIds=new Set();
  for(const bar of raw.bars){const entry={right:[],left:[]};for(const hand of ['right','left']){
   if(!Array.isArray(bar?.[hand])||bar[hand].length>100)throw Error('Invalid '+hand+'-hand bar');
   entry[hand]=bar[hand].map(e=>{
@@ -414,6 +415,8 @@ function validate(raw){
     if(typeof e.tieTo==='string')v.tieTo=e.tieTo.slice(0,128);
     // Keep stable saved IDs, but drop duplicates and invalid characters.
     if(typeof e.id==='string'&&/^[a-zA-Z0-9_-]{1,128}$/.test(e.id))v.id=e.id;
+    if(seenIds.has(v.id))throw Error('Duplicate note ID in imported project');
+    seenIds.add(v.id);
    }
    return v;
   });
@@ -597,10 +600,12 @@ function pianoBeamGroups(events){
  let group=[],pos=0,prevBeat=-1;
  const finish=()=>{if(group.length>1)groups.push(group);group=[]};
  for(let i=0;i<events.length;i++){
-  const e=events[i],beat=Math.floor((pos+.00001)/unit);
-  if(e.kind!=='note'||e.den<8||beat!==prevBeat)finish();
-  if(e.kind==='note'&&e.den>=8)group.push(i);
-  pos+=ticks(e);prevBeat=beat;
+  const e=events[i],length=ticks(e),beat=Math.floor((pos+.00001)/unit);
+  const crosses=Math.floor((pos+length-.00001)/unit)!==beat;
+  // A straddling note must not be beamed across the primary pulse.
+  if(e.kind!=='note'||e.den<8||beat!==prevBeat||crosses)finish();
+  if(e.kind==='note'&&e.den>=8&&!crosses)group.push(i);
+  pos+=length;prevBeat=crosses?-1:beat;
  }
  finish();return groups;
 }
@@ -701,6 +706,23 @@ function linkTeacherMark(mark){
  }else if(mark.tool==='arrow'&&mark.points.length>1){
   const n=mark.points.length-1,p=annotationXY(mark.points[n]),id=nearestWrittenNote(p,37);
   if(id)mark.points[n]=attachAnnotationToNote(p,id);
+ }else if(mark.tool==='pen'&&mark.points.length>=2){
+  const pts=mark.points.map(annotationXY);
+  const centre={x:pts.reduce((n,p)=>n+p.x,0)/pts.length,y:pts.reduce((n,p)=>n+p.y,0)/pts.length};
+  // Attach only a short, localised mark by one unambiguous notehead.
+  // Long underlines, passage markings and highlighter strokes stay bar-relative.
+  const spread=Math.max(...pts.map(p=>Math.hypot(p.x-centre.x,p.y-centre.y)));
+  if(spread<=23){
+   const candidates=[];
+   for(const bar of data.bars)for(const hand of ['right','left'])for(const note of bar[hand]){
+    if(note.kind!=='note')continue;
+    const pos=notePosition(note.id);if(!pos)continue;
+    candidates.push({id:note.id,d:Math.hypot(centre.x-pos.x,centre.y-pos.y)});
+   }
+   candidates.sort((a,b)=>a.d-b.d);
+   if(candidates[0]?.d<=19&&(!candidates[1]||candidates[1].d-candidates[0].d>12))
+    mark.points=mark.points.map(p=>attachAnnotationToNote(annotationXY(p),candidates[0].id));
+  }
  }
 }
 function annotationAnchorPreservingNote(p,old){
@@ -1070,7 +1092,8 @@ function midi(e,bar,index){
  return 12*(e.octave+1)+semis[e.step]+alter;
 }
 function performance(){
- const secPerTick=60/Math.max(40,Number(data.tempo)||96)/24,events=[];
+ const pulse=data.meter==='6/8'?36:24;
+ const secPerTick=60/Math.max(40,Number(data.tempo)||96)/pulse,events=[];
  for(const hand of ['right','left']){
   const links=handLinks(hand),legato=new Set();
   for(const [from,to] of links.slurs){
@@ -1165,8 +1188,23 @@ function stop(){
 }
 function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
 function typeName(den){return ({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[den]}
-function printBar(bar){const out=bar.map(e=>({...e}));let left=meterCap()-barSum(bar);
- for(const den of DENS){const t=96/den;while(left>=t-.0001){out.push({kind:'rest',den,dot:false});left-=t}}
+function printBar(bar){
+ const out=bar.map(e=>({...e})),cap=meterCap(),unit=data.meter==='6/8'?36:24;
+ let pos=barSum(bar);
+ // Split missing time at musical pulse boundaries; in 4/4 allow a minim
+ // over beats 3-4. Dotted rests express 6/8 compound beats correctly.
+ const choices=[{den:1,dot:false,t:96},{den:2,dot:false,t:48},
+  {den:4,dot:true,t:36},{den:4,dot:false,t:24},
+  {den:8,dot:true,t:18},{den:8,dot:false,t:12},
+  {den:16,dot:true,t:9},{den:16,dot:false,t:6}];
+ while(pos<cap-.0001){
+  let end=Math.min(cap,(Math.floor((pos+.0001)/unit)+1)*unit);
+  if(data.meter==='4/4'&&Math.abs(pos-48)<.0001)end=cap;
+  const room=end-pos,choice=choices.find(x=>x.t<=room+.0001);
+  if(!choice)break;
+  out.push({kind:'rest',den:choice.den,dot:choice.dot});
+  pos+=choice.t;
+ }
  return out;
 }
 function exportXml(){
@@ -1179,13 +1217,17 @@ function exportXml(){
   xml+='<part id="'+part+'">';
   for(let b=0;b<data.bars.length;b++){
    xml+='<measure number="'+(b+1)+'">';
-   if(b===0)xml+='<attributes><divisions>24</divisions><key><fifths>0</fifths></key><time><beats>'+n+'</beats><beat-type>'+d+'</beat-type></time><clef><sign>'+sign+'</sign><line>'+line+'</line></clef></attributes><direction><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>'+data.tempo+'</per-minute></metronome></direction-type><sound tempo="'+data.tempo+'"/></direction>';
+   if(b===0)xml+='<attributes><divisions>24</divisions><key><fifths>0</fifths></key><time><beats>'+n+'</beats><beat-type>'+d+'</beat-type></time><clef><sign>'+sign+'</sign><line>'+line+'</line></clef></attributes><direction><direction-type><metronome><beat-unit>quarter</beat-unit>'+(data.meter==='6/8'?'<beat-unit-dot/>':'')+'<per-minute>'+data.tempo+'</per-minute></metronome></direction-type><sound tempo="'+(data.meter==='6/8'?data.tempo*1.5:data.tempo)+'"/></direction>';
    const original=data.bars[b][hand],bar=printBar(original);
    if(!original.length)bar.splice(0,bar.length,{kind:'rest',measureRest:true,den:1,dot:false});
-   for(const e of bar){
+   for(let i=0;i<bar.length;i++){
+    const e=bar[i];
     xml+='<note>';
     if(e.kind==='rest')xml+=e.measureRest?'<rest measure="yes"/>':'<rest/>';
-    else xml+='<pitch><step>'+e.step+'</step>'+(e.acc&&e.acc!=='n'?'<alter>'+(e.acc==='#'?1:-1)+'</alter>':'')+'<octave>'+e.octave+'</octave></pitch>';
+    else {
+     const natural={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[e.step],effective=midi(e,bar,i)-12*(e.octave+1)-natural;
+     xml+='<pitch><step>'+e.step+'</step>'+(effective?'<alter>'+effective+'</alter>':'')+'<octave>'+e.octave+'</octave></pitch>';
+    }
     xml+='<duration>'+Math.round(e.measureRest?meterCap():ticks(e))+'</duration>';
     if(e.kind==='note'){
      if(links.tieEnds.has(e.id))xml+='<tie type="stop"/>';
