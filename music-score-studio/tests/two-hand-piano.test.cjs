@@ -272,7 +272,7 @@ test('pointer drag uses snapped stave steps, stable SVG pointer capture and one 
  assert.equal(p.getData().bars[0].right[0].step,'A');
 });
 test('notes at the supported pitch boundary cannot be moved beyond range',()=>{
- const lo=note('B',1),hi=note('B',6);const p=setup(project([lo,hi],[]));
+ const lo=note('D',1),hi=note('B',6);const p=setup(project([lo,hi],[]));
  p.setSelected(lo.id);assert.equal(p.adjustPitch(-1),false);
  p.setSelected(hi.id);assert.equal(p.adjustPitch(1),false);
 });
