@@ -723,3 +723,19 @@ test('short unambiguous teacher Pen ink follows a note, passage-wide pen remains
  p.linkTeacherMark(passage);
  assert.equal(passage.points[0].noteId,undefined);
 });
+
+test('dotted-semiquaver pickup completion never loses or invents 6/8 beats',()=>{
+ const cases=[
+  [note('C',5,16,{dot:true})],
+  [note('C',5,16,{dot:true}),note('D',5,16)],
+  [note('C',5,8),note('D',5,8),note('E',5,16,{dot:true})]
+ ];
+ for(const notes of cases){
+  const p=setup(project(notes,[],'6/8')),out=p.printBar(notes);
+  assert.equal(out.reduce((total,e)=>total+p.ticks(e),0),72);
+  p.exportXml();
+  const right=p.downloaded.s.split('<part id="P1">')[1].split('</part>')[0];
+  const sum=[...right.matchAll(/<duration>(\d+)<\/duration>/g)].reduce((total,m)=>total+Number(m[1]),0);
+  assert.equal(sum,72);
+ }
+});
