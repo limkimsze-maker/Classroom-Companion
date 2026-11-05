@@ -1187,23 +1187,35 @@ function stop(){
  setPlayingNotes(new Set());syncPlayButtons();info('Stopped.');
 }
 function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
-function typeName(den){return ({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[den]}
+function typeName(den){return ({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th',32:'32nd'})[den]}
 function printBar(bar){
  const out=bar.map(e=>({...e})),cap=meterCap(),unit=data.meter==='6/8'?36:24;
  let pos=barSum(bar);
- // Split missing time at musical pulse boundaries; in 4/4 allow a minim
- // over beats 3-4. Dotted rests express 6/8 compound beats correctly.
- const choices=[{den:1,dot:false,t:96},{den:2,dot:false,t:48},
-  {den:4,dot:true,t:36},{den:4,dot:false,t:24},
-  {den:8,dot:true,t:18},{den:8,dot:false,t:12},
-  {den:16,dot:true,t:9},{den:16,dot:false,t:6}];
+ // Only the MusicXML presentation is completed. Saved notes are untouched.
+ // Keep primary pulse boundaries, including dotted-crotchet beats in 6/8.
+ const choices=[{den:1,dot:false,t:96},{den:2,dot:true,t:72},
+  {den:2,dot:false,t:48},{den:4,dot:true,t:36},
+  {den:4,dot:false,t:24},{den:8,dot:true,t:18},
+  {den:8,dot:false,t:12},{den:16,dot:true,t:9},
+  {den:16,dot:false,t:6},{den:32,dot:false,t:3}];
+ function spell(total){
+  const best=Array(total+1).fill(null);
+  best[0]={cost:0,items:[]};
+  for(let n=1;n<=total;n++)for(const option of choices){
+   if(option.t>n||!best[n-option.t])continue;
+   const prev=best[n-option.t],cost=prev.cost+1+(option.t===3?.5:0)+(option.t===6?.1:0);
+   if(!best[n]||cost<best[n].cost-1e-8)
+    best[n]={cost,items:[...prev.items,{kind:'rest',den:option.den,dot:option.dot}]};
+  }
+  return best[total]?.items||[];
+ }
  while(pos<cap-.0001){
   let end=Math.min(cap,(Math.floor((pos+.0001)/unit)+1)*unit);
   if(data.meter==='4/4'&&Math.abs(pos-48)<.0001)end=cap;
-  const room=end-pos,choice=choices.find(x=>x.t<=room+.0001);
-  if(!choice)break;
-  out.push({kind:'rest',den:choice.den,dot:choice.dot});
-  pos+=choice.t;
+  const room=Math.round(end-pos),rests=spell(room);
+  if(!rests.length)break;
+  out.push(...rests);
+  pos+=rests.reduce((n,e)=>n+ticks(e),0);
  }
  return out;
 }
