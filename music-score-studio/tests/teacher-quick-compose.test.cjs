@@ -28,6 +28,7 @@ function harnessFactory(ids,document,window,hooks){
  const paletteNames=MUSIC_DURATION_NAMES,EXTRA_MARKS=['staccato','accent'];
  const boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
  const CLASSROOM_TEMPOS={},MUSICAL_DYNAMICS={mf:.79};
+ const isTwoBarRest=()=>false;
  const blank=()=>({barDirectives:[],title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,
   instrument:'piano',pitchNames:false,metronome:false,playFlow:false,completeBars:true,
   bars:Array.from({length:4},()=>[]),strokes:[]});
