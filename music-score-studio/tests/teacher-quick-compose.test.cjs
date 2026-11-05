@@ -26,6 +26,7 @@ function harnessFactory(ids,document,window,hooks){
  const TICKS=96,VALID_DEN=[1,2,4,8,16,32,64,128],STEPS=['C','D','E','F','G','A','B'];
  const MUSIC_DURATION_NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
  const paletteNames=MUSIC_DURATION_NAMES,EXTRA_MARKS=['staccato','accent'];
+ const boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
  const CLASSROOM_TEMPOS={},MUSICAL_DYNAMICS={mf:.79};
  const blank=()=>({barDirectives:[],title:'My Music Score',composer:'',clef:'treble',meter:'4/4',tempo:96,
   instrument:'piano',pitchNames:false,metronome:false,playFlow:false,completeBars:true,
@@ -74,7 +75,7 @@ const factory=new Function('return ('+harnessFactory.toString().replace('/* INSE
 function mock(options={}){
  const ids={};
  const $=id=>ids[id]||(ids[id]={
-  textContent:'',attrs:{},children:[],classList:{contains:()=>false},
+  textContent:'',attrs:{},children:[],isConnected:true,classList:{contains:()=>false},
   setAttribute(k,v){this.attrs[k]=String(v);},removeAttribute(k){delete this.attrs[k];},
   focus(){this.focused=true;},append(node){this.children.push(node);},
   getBoundingClientRect(){return {width:1120,height:850,left:0,top:0};},querySelector(){return null;}
