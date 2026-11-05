@@ -1447,8 +1447,8 @@ function scoreInkBar(points,layout){
  });
  return choice;
 }
-function reprojectScoreInk(strokes,oldLayout,newLayout,sourcePoints=null,oldNoteCentres=null){
- const newNoteCentres=oldNoteCentres?scoreInkNoteCentres(newLayout):null;
+function reprojectScoreInk(strokes,oldLayout,newLayout,sourcePoints=null,oldNoteCentres=null,printNoteCentres=null){
+ const newNoteCentres=oldNoteCentres?(printNoteCentres||scoreInkNoteCentres(newLayout)):null;
  for(let i=0;i<strokes.length;i++){
   const stroke=strokes[i],points=sourcePoints?.[i]||stroke.points;
   if(!points?.length)continue;
@@ -1880,7 +1880,7 @@ drawMusicConnections(svg,notePositions,layout);
 for(let i=0;i<data.strokes.length;i++){
  const original=data.strokes[i];if(!original.points||original.points.length<2)continue;
  const stroke=exportMode?{...original,points:original.points.map(p=>p.slice())}:original;
- if(exportMode)reprojectScoreInk([stroke],staffLayout(),layout);
+ if(exportMode)reprojectScoreInk([stroke],staffLayout(),layout,null,scoreInkNoteCentres(staffLayout()),notePositions);
  const pts=stroke.points.map(p=>p[0]+','+p[1]).join(' ');
  if(!exportMode&&boxSelectedStrokes.has(i))svg.append(el('polyline',{points:pts,fill:'none',stroke:'#48c7d4','stroke-opacity':.65,'stroke-width':12,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
  svg.append(el('polyline',{points:pts,fill:'none',stroke:stroke.color||'#df654d','stroke-width':3.6,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
@@ -2624,7 +2624,7 @@ window.addEventListener('beforeprint',()=>{if(!piano)refreshPrintEngraving(true)
 window.addEventListener('afterprint',()=>{if(!piano)render()});
 function vectorString(){const svg=makeScore(true);svg.setAttribute('xmlns',NS);return new XMLSerializer().serializeToString(svg)}
 function exportSVG(){download(new Blob([vectorString()],{type:'image/svg+xml;charset=utf-8'}),filename()+'.svg');flash('SVG image saved')}
-function exportPNG(){const svg=vectorString(),blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),img=new Image();img.onload=()=>{const canvas=document.createElement('canvas'),layout=staffLayout(),scale=2;canvas.width=layout.W*scale;canvas.height=layout.H*scale;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(b=>{if(b)download(b,filename()+'.png');else flash('Image export failed')},'image/png');URL.revokeObjectURL(url)};img.onerror=()=>{URL.revokeObjectURL(url);flash('PNG export could not complete. Try SVG instead.')};img.src=url}
+function exportPNG(){const svg=vectorString(),blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),img=new Image();img.onload=()=>{const canvas=document.createElement('canvas'),layout=staffLayout(true),scale=2;canvas.width=layout.W*scale;canvas.height=layout.H*scale;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(b=>{if(b)download(b,filename()+'.png');else flash('Image export failed')},'image/png');URL.revokeObjectURL(url)};img.onerror=()=>{URL.revokeObjectURL(url);flash('PNG export could not complete. Try SVG instead.')};img.src=url}
 function xmlEscape(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&apos;'}[c]))}
 
 function xmlLeftBarline(bar){
