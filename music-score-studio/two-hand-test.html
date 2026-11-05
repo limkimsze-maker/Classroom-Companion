@@ -23,7 +23,7 @@ h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0
 #sheet{display:block;width:100%;min-width:780px;height:auto;cursor:crosshair;user-select:none}
 #sheet.zoomed{width:135%;min-width:1053px}
 .noteHit{cursor:pointer}.noteHit:focus-visible{outline:none;stroke:#0b9cad;stroke-width:2}
-.status{min-height:20px;font-size:13px;color:#275f70}.articulations{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.articulations button{padding:7px 9px;font-size:12px;min-height:36px}.articulations button.active{background:#d4f3ed}.slurStart{fill:none;stroke:#078f99;stroke-width:3;stroke-dasharray:4 3;pointer-events:none}
+.status{min-height:20px;font-size:13px;color:#275f70}.articulations{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.articulations button{padding:7px 9px;font-size:12px;min-height:36px}.articulations button.active{background:#d4f3ed}.slurStart{fill:none;stroke:#078f99;stroke-width:3;stroke-dasharray:4 3;pointer-events:none}.playHalo{fill:#ffc64b;fill-opacity:.55;stroke:#e19a23;stroke-width:3;pointer-events:none;opacity:0}.isPlaying .playHalo{opacity:1}
 #editPanel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid #e6eef0;margin-top:10px}
 #editPanel[hidden]{display:none}.muted{color:#637985}
 footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
@@ -221,9 +221,9 @@ function drawClef(svg,hand,x,top){
 }
 function drawEvent(svg,e,x,top,hand,isSelected,beamed=false){
  const y=e.kind==='note'?yAt(e,top,hand):top+38,fill='#204451';
- const group=el('g',{'data-id':e.id,role:'button',tabindex:0,'aria-label':(hand==='right'?'Right':'Left')+' hand '+(e.kind==='rest'?'rest':e.step+e.octave)+' '+NAMES[e.den]});svg.append(group);
+ const group=el('g',{'data-id':e.id,'class':activeNotes.has(e.id)?'isPlaying':'',role:'button',tabindex:0,'aria-label':(hand==='right'?'Right':'Left')+' hand '+(e.kind==='rest'?'rest':e.step+e.octave)+' '+NAMES[e.den]});svg.append(group);
  if(isSelected)group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:20,fill:'#c3f1e7'}));
- if(activeNotes.has(e.id))group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:18,fill:'#ffc64b','fill-opacity':.55,stroke:'#e19a23','stroke-width':3,'pointer-events':'none'}));
+ if(e.kind==='note')group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:18,class:'playHalo'}));
  if(pendingSlur?.id===e.id)group.append(el('ellipse',{cx:x,cy:y,rx:27,ry:21,class:'slurStart'}));
  if(e.kind==='rest'){
   drawText(group,x-9,y+6,e.den===1?'𝄻':e.den===2?'𝄼':e.den===4?'𝄽':e.den===8?'𝄾':'𝄿',30,{'font-family':'Noto Music,Segoe UI Symbol,serif'});
@@ -456,7 +456,10 @@ function performance(){
 }
 function setPlayingNotes(ids){
  if(ids.size===activeNotes.size&&[...ids].every(id=>activeNotes.has(id)))return;
- activeNotes=new Set(ids);render();
+ activeNotes=new Set(ids);
+ // Only update the existing note symbols: do not recreate the SVG or steal
+ // keyboard focus every time a playback highlight changes.
+ $('sheet').querySelectorAll('g[data-id]').forEach(g=>g.classList.toggle('isPlaying',activeNotes.has(g.getAttribute('data-id'))));
  // Follow the sounding notes when playback moves to another stave system.
  // Respect teacher scrolling while the current sounding system is in view.
  if(!ids.size)return;
@@ -492,7 +495,7 @@ async function play(){
 function stop(){
  for(const s of sounds)try{s.stop()}catch(_){}
  sounds=[];timers.forEach(clearInterval);timers=[];playing=false;
- activeNotes.clear();render();$('play').disabled=false;$('stop').disabled=true;info('Stopped.');
+ setPlayingNotes(new Set());$('play').disabled=false;$('stop').disabled=true;info('Stopped.');
 }
 function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
 function typeName(den){return ({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th'})[den]}
