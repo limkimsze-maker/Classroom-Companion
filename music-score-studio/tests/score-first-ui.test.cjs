@@ -178,7 +178,7 @@ test('real engraved playback cursor retains manual page without scrolling to hid
 });
 test('reviewed mobile labels and page buttons have readable touch targets',()=>{
  assert.match(html,/#annotationToolbar \.noteStampName\{font-size:11px;line-height:1\.15/);
- assert.match(html,/@media\(max-width:380px\)\{\s*#annotationToolbar \.noteStampName\{font-size:10px/);
+ assert.match(html,/@media\(max-width:380px\)\{\s*#annotationToolbar \.noteStampName\{font-size:11px/);
  assert.match(html,/\.testEngravedNav button\{min-height:44px\}/);
  assert.match(html,/id="testEngravedResume"/);
 });
