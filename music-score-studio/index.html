@@ -4105,6 +4105,9 @@ function quickEnter(kind,step=null){
 function handleQuickKeyboard(ev){
  if(!quickKeyboardOn||piano||tool!=='select'||ev.isComposing||ev.repeat||ev.defaultPrevented||
   ev.altKey||ev.ctrlKey||ev.metaKey)return;
+ // A visible modal or menu owns its own keyboard interactions.
+ if($('helpModal').classList.contains('open')||$('scanModal').classList.contains('open')||
+  $('testScoreTools').open||!$('testOpenPanel').hidden)return;
  const focused=ev.target||document.activeElement;
  if(focused?.closest?.('button,a,summary,input,select,textarea,[role="button"],[role="checkbox"],[contenteditable="true"]')||
    ['INPUT','SELECT','TEXTAREA','BUTTON','A'].includes(focused?.tagName))return;
@@ -4118,7 +4121,7 @@ function handleQuickKeyboard(ev){
  else if(key==='backspace'||key==='delete'){if(findSelected())removeSelected();else handled=false;}
  else if(key==='escape'){
   // The existing Escape handler must still minimise Full page or close a dialog.
-  if(document.querySelector('.fullPageMusic')||$('helpModal').classList.contains('open'))return;
+  if(document.querySelector('.fullPageMusic')||!$('musicNoteContextMenu').hidden)return;
   setQuickKeyboard(false);
  }
  else handled=false;
