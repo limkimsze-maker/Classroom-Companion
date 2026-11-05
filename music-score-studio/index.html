@@ -3288,6 +3288,11 @@ function moveEngravedPlaybackCursor(globalTick){
    if(slot.visible){try{cursor.hide()}catch(e){}slot.visible=false;}
    continue;
   }
+  // Only the visible engraved page changes; audio continues on the same clock.
+  if(slot.section.hidden){
+   const page=[...document.querySelectorAll('#engravedScore > .omrRenderedPage')].indexOf(slot.section);
+   if(page>=0)window.testScoreShowPage?.(page);
+  }
   const target=globalTick-slot.start;
   try{
    if(!slot.ready||target<slot.lastTarget-3){cursor.reset();slot.ready=true;slot.position=-1;}
@@ -3378,6 +3383,7 @@ async function renderEngravedPages(pages){
  // Keep the professional music container IN LAYOUT during rendering. OSMD
  // reads offsetWidth; rendering into [hidden] (display:none) makes blank SVGs.
  area.replaceChildren();area.hidden=false;area.style.visibility='hidden';toggle.hidden=true;
+ $('testEngravedNav').hidden=true;
  document.querySelector('.pianoScoreScroll').hidden=false;
  if(!pages.length){area.hidden=true;area.style.visibility='';status.textContent='Showing a simplified pitch-and-timing preview.';return}
  status.textContent='Loading professional notation display…';
@@ -3405,6 +3411,7 @@ async function renderEngravedPages(pages){
   }
   if(serial!==engravedSerial)return;
   area.style.visibility='';area.hidden=false;document.querySelector('.pianoScoreScroll').hidden=true;
+  window.testScoreShowPage?.(0);
   toggle.hidden=false;toggle.textContent='Show simplified view';
   toggle.onclick=()=>{
    const toSimple=!area.hidden;
@@ -3417,12 +3424,14 @@ async function renderEngravedPages(pages){
     pane.scrollTop=0;pane.scrollLeft=0;
     status.textContent='Simplified teaching view · dark notes on staves, amber notes during playback.';
    }else{pane.hidden=true;area.hidden=false;status.textContent='Full engraved score · follow the moving cursor.';}
+   $('testEngravedNav').hidden=toSimple||area.querySelectorAll(':scope > .omrRenderedPage').length<=1;
    toggle.textContent=toSimple?'Show engraved score':'Show simplified view';
   };
   status.textContent='Engraved notation · compare all detected notes with the original.';
  }catch(e){
   if(serial!==engravedSerial)return;
   area.hidden=true;area.style.visibility='';
+  $('testEngravedNav').hidden=true;
   document.querySelector('.pianoScoreScroll').hidden=false;
   status.textContent='Using built-in score preview. Full engraving unavailable: '+e.message;
  }
@@ -4015,5 +4024,75 @@ $('teacherDrawer').addEventListener('toggle',ev=>{if(!ev.currentTarget.open)docu
 wire();wireScoreFullPage();wireScanner();wireProfessionalScanner();wireOneStepScanner();syncConfig();setMode('select');commit();updateStatus('Ready · Right-click a staff line or space to choose and place a note.');
 })();
 </script>
+
+<script>
+/* Temporary TEST VERSION presentation wiring: existing controls keep their
+   original IDs and music/audio/recognition event handlers. */
+(function configureScoreFirstPreview(){
+ const $=id=>document.getElementById(id);
+ const move=(id,slot)=>{const node=$(id),dest=$(slot);if(!node||!dest)throw Error('Score-first control missing: '+id);dest.append(node)};
+ $('testDockPlay').append($('play'),$('stop'));
+ const filePanel=document.querySelector('.layout-main > .paperCard:first-child');
+ if(!filePanel||filePanel.id)throw Error('Score file panel not found');
+ $('testToolFiles').append(filePanel);
+ const scanner=document.querySelector('.omrHero');
+ if(!scanner)throw Error('Score scanner not found');
+ $('testToolImport').append(scanner);
+ const setup=document.querySelector('.shell > aside.panel');
+ if(!setup)throw Error('Score setup not found');
+ $('testToolSetup').append(setup);
+ for(const id of ['toolRow','clearScoreTop','beautifyFeedback','teacherDrawer','autoExpressionReview',
+                  'pianoCounts','scanAnother','closePiano'])move(id,'testToolTeacher');
+ move('helpAndProjects','testToolHelp');
+ const notice=document.querySelector('.layout-main > .notice');
+ if(notice)$('testToolHelp').append(notice);
+ const info=$('pianoNowPlaying')?.parentElement;
+ if(info)for(const label of [...info.querySelectorAll('label')])$('testToolTeacher').append(label);
+ const more=$('moreActions');
+ if(more){
+  const inner=more.querySelector('.moreActionsInner');
+  const toolbar=$('testToolFiles').querySelector('.toolbar');
+  if(inner&&toolbar){
+   const wrapper=document.createElement('div');
+   wrapper.className='testExtraFileTools';
+   wrapper.append(...[...inner.children]);
+   toolbar.append(wrapper);
+  }
+  more.remove();
+ }
+ $('testDockCompose').addEventListener('click',()=>{
+  $('closePiano').click();
+  $('testScoreTools').open=false;
+ });
+ $('testDockOpen').addEventListener('click',()=>{
+  $('testScoreTools').open=true;
+  $('omrChooseButton').focus({preventScroll:true});
+ });
+ document.addEventListener('pointerdown',event=>{
+  const drawer=$('testScoreTools');
+  if(drawer.open&&!drawer.contains(event.target)&&event.target!==$('testDockOpen'))drawer.open=false;
+ });
+ document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&$('testScoreTools').open)$('testScoreTools').open=false;
+ });
+ let shownPage=0;
+ function showEngravedPage(page){
+  const area=$('engravedScore'),nav=$('testEngravedNav');
+  const pages=[...area.querySelectorAll(':scope > .omrRenderedPage')];
+  if(!pages.length){nav.hidden=true;shownPage=0;return;}
+  shownPage=Math.max(0,Math.min(pages.length-1,Math.floor(Number(page)||0)));
+  pages.forEach((section,index)=>{section.hidden=index!==shownPage});
+  nav.hidden=area.hidden||pages.length<=1;
+  $('testEngravedPrev').disabled=shownPage===0;
+  $('testEngravedNext').disabled=shownPage===pages.length-1;
+  $('testEngravedPageLabel').textContent='Page '+(shownPage+1)+' of '+pages.length;
+  area.scrollTop=0;area.scrollLeft=0;
+ }
+ window.testScoreShowPage=showEngravedPage;
+ $('testEngravedPrev').addEventListener('click',()=>showEngravedPage(shownPage-1));
+ $('testEngravedNext').addEventListener('click',()=>showEngravedPage(shownPage+1));
+})();
+</script>
+
 </body>
 </html>
