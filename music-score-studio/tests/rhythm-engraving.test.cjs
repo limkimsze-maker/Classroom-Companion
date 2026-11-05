@@ -184,3 +184,49 @@ test('source retains recognition, playback, British values and licence notices',
  assert.match(html,/Semibreve/);assert.match(html,/Semiquaver/);
  assert.match(html,/AGPL-3\.0/);
 });
+
+function actualScoreRenderer(data){
+ const STEPS=['C','D','E','F','G','A','B'],TICKS=96,NS='http://www.w3.org/2000/svg';
+ const noteIndex=(step,oct)=>oct*7+STEPS.indexOf(step);
+ const bottomIndex=()=>data.clef==='bass'?noteIndex('G',2):noteIndex('E',4);
+ const ticks=e=>TICKS/e.den*(e.dot?1.5:1);
+ const sumBar=bar=>bar.reduce((n,e)=>n+ticks(e),0);
+ const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
+ function node(name){return {name,attrs:{},children:[],setAttribute(k,v){this.attrs[k]=String(v)},
+  getAttribute(k){return this.attrs[k]},append(...items){this.children.push(...items)},
+  appendChild(item){this.children.push(item)},get childNodes(){return this.children},remove(){},textContent:''};}
+ const document={createElementNS:(_ns,name)=>node(name)};
+ const stubs={data,document,TICKS,NS,noteIndex,bottomIndex,ticks,sumBar,cap,
+  selected:null,playingId:null,boxSelectedNotes:new Set(),boxSelectedStrokes:new Set(),
+  penDraft:null,boxDraft:null,barDirective:()=>({}),musicalLinks:()=>({ties:new Map(),slurs:new Map()}),den:4};
+ const drawing=extract('function staffLayout(exportMode=false)','function render(){');
+ const f=new Function(...Object.keys(stubs),geometry.split('function staffLayout')[0]+drawing+
+  '\nreturn {makeScore,staffLayout};');
+ return f(...Object.values(stubs));
+}
+function walkSvg(root){
+ return [root,...root.children.flatMap(walkSvg)];
+}
+test('actual composer SVG reflows dense 16-semiquaver notes without notehead overlaps',()=>{
+ const notes=Array.from({length:16},(_,i)=>ev(16,STEPS[i%7]));
+ const data={title:'Dense rhythm',composer:'Teacher',clef:'treble',meter:'4/4',completeBars:false,
+  bars:[notes],strokes:[],barDirectives:[],pitchNames:false};
+ const render=actualScoreRenderer(data),svg=render.makeScore();
+ const heads=svg.children.filter(n=>n.attrs['data-id']).map(group=>
+  walkSvg(group).find(n=>n.name==='ellipse'&&n.attrs.cx!==undefined)).filter(Boolean);
+ assert.equal(heads.length,16);
+ const x=heads.map(n=>Number(n.attrs.cx));
+ for(let i=1;i<x.length;i++)assert.ok(x[i]>x[i-1]+28,'No notehead collision at '+i);
+ assert.ok(walkSvg(svg).some(n=>n.attrs.class==='autoRhythmBeams'),'Beam graphics drawn');
+ assert.ok(Number(svg.attrs.viewBox.split(' ').at(-2))>=1120,'Stable projection width');
+});
+test('actual SVG print/engraving lays out completion rests without changing notes',()=>{
+ const data={title:'In progress',composer:'',clef:'treble',meter:'6/8',completeBars:true,
+  bars:[[ev(8,'C')],[ev(8,'D'),ev(8,'E'),ev(8,'F')]],strokes:[],barDirectives:[],pitchNames:false};
+ const original=JSON.stringify(data),render=actualScoreRenderer(data);
+ const screen=render.makeScore(false),print=render.makeScore(true);
+ assert.ok(screen.children.length>0&&print.children.length>0);
+ assert.ok(walkSvg(print).filter(n=>n.attrs['data-id']).length>
+  walkSvg(screen).filter(n=>n.attrs['data-id']).length,'Print-only rests drawn');
+ assert.equal(JSON.stringify(data),original,'No mutation to editable project');
+});
