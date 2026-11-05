@@ -160,3 +160,61 @@ test('orphaned teacher note annotation becomes bar-local after note deletion and
  assert.equal(mark.anchor.type,'bar');
  assert.ok(Math.abs(mark.points[0][1]*498-374)<.01,'deleted-note mark safely follows its bar with 72-unit offset');
 });
+
+function actualEraserHarness(){
+ const extract=(a,b)=>{
+  const start=overlay.indexOf(a),end=overlay.indexOf(b,start+a.length);
+  assert.ok(start>=0&&end>start,'Expected real annotation gesture code: '+a);
+  return overlay.slice(start,end);
+ };
+ const source=[
+  extract('function remember(){','function updateButtons(){'),
+  extract('function eraseNear(','function translateShape('),
+  extract('function rememberEraseStart(','function endPointer('),
+  extract('function undo(){','function clearAnnotations()')
+ ].join('\n');
+ const state={tool:'eraser',hidden:false,items:[
+  {id:'inkA',type:'pen',points:[[.1,.2],[.2,.2]]},
+  {id:'inkB',type:'pen',points:[[.5,.5],[.6,.5]]}
+ ],drawing:null,selected:null,history:[],future:[],
+ layer:{setPointerCapture(){},releasePointerCapture(){}},size:{width:1000,height:1000}};
+ const methods=new Function('state','clone','position','nearestShape','persist','render','say',
+  'activeView','anchorForItem','scoreGeometry','shapeModes','$',
+  source+'\nreturn {startPointer,movePointer,endPointer,undo,redo};')(
+   state,x=>JSON.parse(JSON.stringify(x)),e=>e.pt,
+   pt=>state.items.find(x=>x.id===pt?.hit)||null,()=>{},()=>{},()=>{},
+   ()=> 'editor',()=>null,()=>null,new Set(),()=>null);
+ const event=pt=>({button:0,pointerId:4,pt,preventDefault(){}});
+ return {state,event,...methods};
+}
+test('blank-start eraser drag restores ALL marks in a single Undo/Redo step',()=>{
+ const h=actualEraserHarness();
+ h.startPointer(h.event({hit:null}));
+ assert.equal(h.state.history.length,0,'Blank start should not create empty Undo history');
+ h.movePointer(h.event({hit:'inkA'}));
+ h.movePointer(h.event({hit:'inkB'}));
+ h.endPointer(h.event({hit:null}));
+ assert.equal(h.state.items.length,0);
+ assert.equal(h.state.history.length,1,'One eraser gesture must create one history state');
+ h.undo();
+ assert.deepEqual(h.state.items.map(x=>x.id),['inkA','inkB']);
+ h.redo();
+ assert.equal(h.state.items.length,0);
+});
+test('direct eraser tap on ink preserves Undo and does not erase adjacent note ink',()=>{
+ const h=actualEraserHarness();
+ h.startPointer(h.event({hit:'inkA'}));
+ h.endPointer(h.event({hit:null}));
+ assert.deepEqual(h.state.items.map(x=>x.id),['inkB']);
+ assert.equal(h.state.history.length,1);
+ h.undo();
+ assert.deepEqual(h.state.items.map(x=>x.id),['inkA','inkB']);
+});
+test('eraser gesture that never touches a mark does not create an Undo entry',()=>{
+ const h=actualEraserHarness();
+ h.startPointer(h.event({hit:null}));
+ h.movePointer(h.event({hit:null}));
+ h.endPointer(h.event({hit:null}));
+ assert.equal(h.state.history.length,0);
+ assert.equal(h.state.items.length,2);
+});
