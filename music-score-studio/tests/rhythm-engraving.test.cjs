@@ -226,7 +226,7 @@ test('actual SVG print/engraving lays out completion rests without changing note
  const original=JSON.stringify(data),render=actualScoreRenderer(data);
  const screen=render.makeScore(false),print=render.makeScore(true);
  assert.ok(screen.children.length>0&&print.children.length>0);
- assert.ok(walkSvg(print).filter(n=>n.attrs['data-id']).length>
-  walkSvg(screen).filter(n=>n.attrs['data-id']).length,'Print-only rests drawn');
+ assert.ok(walkSvg(print).filter(n=>n.name==='g'&&n.attrs['data-id']).length>
+  walkSvg(screen).filter(n=>n.name==='g'&&n.attrs['data-id']).length,'Print-only rests drawn');
  assert.equal(JSON.stringify(data),original,'No mutation to editable project');
 });
