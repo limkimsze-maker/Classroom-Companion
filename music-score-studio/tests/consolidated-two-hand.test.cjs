@@ -823,3 +823,62 @@ test('an untied sharp cannot accidentally carry into next measure; non-adjacent 
  const wrong=JSON.parse(JSON.stringify(d));wrong.bars[1].right.unshift({id:'leadingRest',kind:'rest',den:8,dot:false});wrong.bars[0].right[1].tieTo=after.id;
  assert.equal(p.validate(wrong).bars[0].right[1].tieTo,undefined);
 });
+
+test('a tie must never skip an empty intervening measure or silence the target note',()=>{
+ const source=note('C',4,4,{id:'skipSource',acc:'#'}),later=note('C',4,4,{id:'skipTarget'});
+ const score=project([],[]);score.bars=[
+  {right:[{id:'threeBeatRest',kind:'rest',den:2,dot:true},source],left:[]},
+  {right:[],left:[]},
+  {right:[later],left:[]}
+ ];
+ const p=setup(score);
+ p.setSelected(source.id);p.toggleTie();
+ assert.equal(source.tieTo,undefined,'Tie must not connect bar 1 directly to bar 3');
+ assert.deepEqual(p.handLinks('right').ties,[]);
+ assert.equal(p.midi(later,score.bars[2].right,0),60,'Later note has normal barline pitch');
+ const played=p.performance().events.filter(e=>e.hand==='right');
+ assert.equal(played.length,2,'Both source and target should be struck');
+ assert.deepEqual(played.map(e=>e.pitch),[61,60]);
+ assert.deepEqual(played.map(e=>e.ids.length),[1,1]);
+ const malicious=JSON.parse(JSON.stringify(score));
+ malicious.bars[0].right[1].tieTo='skipTarget';
+ const restored=p.validate(malicious);
+ assert.equal(restored.bars[0].right[1].tieTo,undefined,'Validator drops skipped-bar link');
+ p.exportXml();
+ const xml=p.downloaded.s.split('<part id="P1">')[1].split('</part>')[0];
+ assert.doesNotMatch(xml,/<tie type="(?:start|stop)"\/>/);
+ const part3=xml.split('<measure number="3">')[1].split('</measure>')[0];
+ assert.match(part3,/<pitch><step>C<\/step><octave>4<\/octave><\/pitch>/);
+});
+test('a corrupted skipped-bar tie is ignored for playback and XML before JSON validation',()=>{
+ const source=note('E',4,4,{id:'corruptE',acc:'b',tieTo:'thirdBarE'});
+ const target=note('E',4,4,{id:'thirdBarE'});
+ const score=project([],[]);score.bars=[
+  {right:[{id:'restForE',kind:'rest',den:2,dot:true},source],left:[]},
+  {right:[],left:[]},
+  {right:[target],left:[]}
+ ];
+ const p=setup(score);
+ assert.deepEqual(p.handLinks('right').ties,[]);
+ assert.equal(p.performance().events.filter(e=>e.hand==='right').length,2);
+ assert.equal(p.midi(target,score.bars[2].right,0),64);
+ p.exportXml();
+ assert.doesNotMatch(p.downloaded.s,/<tie type="(?:start|stop)"\/>/);
+});
+test('adjacent-bar ties still work in both hands, even with an empty other hand',()=>{
+ const r=note('C',4,4,{id:'adjRh',acc:'#'}),rn=note('C',4,4,{id:'adjRhNext'});
+ const l=note('B',2,4,{id:'adjLh',acc:'b'}),ln=note('B',2,4,{id:'adjLhNext'});
+ const score=project([],[]);score.bars=[
+  {right:[{id:'r3',kind:'rest',den:2,dot:true},r],
+   left:[{id:'l3',kind:'rest',den:2,dot:true},l]},
+  {right:[rn],left:[ln]}
+ ];
+ const p=setup(score);
+ for(const id of ['adjRh','adjLh']){p.setSelected(id);p.toggleTie();}
+ assert.deepEqual(p.handLinks('right').ties,[[r.id,rn.id]]);
+ assert.deepEqual(p.handLinks('left').ties,[[l.id,ln.id]]);
+ assert.equal(p.performance().events.length,2);
+ const saved=p.validate(JSON.parse(JSON.stringify(score)));
+ assert.equal(saved.bars[0].right[1].tieTo,rn.id);
+ assert.equal(saved.bars[0].left[1].tieTo,ln.id);
+});
