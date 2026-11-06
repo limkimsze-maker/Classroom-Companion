@@ -713,7 +713,7 @@ body.scoreFullPageActive{overflow:hidden!important}
  </details>
  </div>
 </details>
-<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><div class="fullPageControls"><span id="modeHint">Drag a note onto a line or space</span><span id="slurGuide" class="slurPrompt" role="status" aria-live="polite" hidden>Tap the other note</span><button type="button" class="smallBtn slurAction" id="scoreSlurButton" hidden aria-pressed="false" title="Connect the selected note to a later note with a musical slur">Slur ⌒</button><button type="button" class="smallBtn fullPagePlay" id="fullPagePlayEditor">▶ Play</button><button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes, handwritten sketches and teacher annotations; confirmation required">⌫ Clear Score</button><button type="button" class="smallBtn fullPageZoom" id="fullPageZoomEditor" hidden>🔎 Larger</button><button type="button" class="smallBtn fullPageToggle" id="fullPageEditor" aria-pressed="false" title="Show the music sheet across the screen">⛶ Full page</button></div></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
+<div class="paperCard" id="editorScorePanel"><div class="paperTop"><div><b>Your music sheet</b> <span id="counter">· 4 bars</span></div><div class="fullPageControls"><span id="modeHint">Drag a note onto a line or space</span><span id="slurGuide" class="slurPrompt" role="status" aria-live="polite" hidden>Tap the other note</span><button type="button" class="smallBtn slurAction" id="scoreSlurButton" hidden aria-pressed="false" title="Connect the selected note to a later note with a musical slur">Slur ⌒</button><button type="button" class="smallBtn fullPagePlay" id="fullPagePlayEditor">▶ Play</button><button type="button" class="smallBtn" id="hearNoteEditor" title="Select a musical note, then hear its pitch in the chosen playback sound" aria-label="Hear selected note" disabled>♫ Hear Note</button><button type="button" class="annotationBtn musicClearBtn" id="clearScoreTop" title="Clear notes, handwritten sketches and teacher annotations; confirmation required">⌫ Clear Score</button><button type="button" class="smallBtn fullPageZoom" id="fullPageZoomEditor" hidden>🔎 Larger</button><button type="button" class="smallBtn fullPageToggle" id="fullPageEditor" aria-pressed="false" title="Show the music sheet across the screen">⛶ Full page</button></div></div><div class="paperScroll" id="scrollZone"><svg id="score" class="scoreSvg" viewBox="0 0 1120 370" role="img" aria-label="Music staff. Right-click a line or space to add a note, or touch and hold. Click an existing note to select it." xmlns="http://www.w3.org/2000/svg"></svg></div><div class="bottomline"><div class="status" id="status" role="status" aria-live="polite">Ready · Right-click the staff to choose a note.</div><div class="editing" id="selectedActions"><span class="editLabel">Nothing selected</span></div></div></div>
 <div class="paperCard" id="pianoPanel" hidden>
   <div class="pianoTop"><div><span class="pianoEyebrow">🎵 LISTEN &amp; LEARN</span><h3 id="pianoTitle">Your music is ready!</h3><p id="pianoSubtitle">Both hands play together</p></div><div class="pianoTopActions"><button type="button" class="btn primary" id="scanAnother">📷 Another song</button><button type="button" class="btn" id="closePiano">✏ Compose instead</button><button type="button" class="btn fullPagePlay" id="fullPagePlayImported" hidden>▶ Play</button><button type="button" class="btn fullPageZoom" id="fullPageZoomImported" hidden>🔎 Larger</button><button type="button" class="btn fullPageToggle" id="fullPageImported" aria-pressed="false" title="View the recognised sheet music across the screen">⛶ Full page</button></div></div>
   <div class="pianoInfo"><label>Tempo (BPM) <input type="number" min="30" max="240" step="1" id="pianoTempo" value="96"></label><span id="pianoCounts" class="status"></span><label class="pianoFollowLabel"><input type="checkbox" id="followNotes" checked> Follow notes</label><span id="pianoNowPlaying" aria-live="off">Press Play to follow the notes.</span></div>
@@ -1084,6 +1084,7 @@ let boxDraft=null,boxSelectedNotes=new Set(),boxSelectedStrokes=new Set();
 let activeNoteStampDen=null,notePaletteDrag=null,notePaletteGhost=null,notePaletteScrollFrame=0;
 let quickKeyboardOn=false,quickCursor=null,quickHover=null;
 let context=null,oscillators=[],playTimers=[],toastTimer=0,stopTimer=null,playing=false,audioBus=null;
+let notePreviewTimer=null,notePreviewOscillators=[];
 const cap=()=>{const [n,d]=data.meter.split('/').map(Number);return n*TICKS/d};
 const ticks=e=>(TICKS/e.den)*(e.dot?1.5:1);
 const sumBar=bar=>bar.reduce((s,e)=>s+ticks(e),0);
@@ -2491,6 +2492,7 @@ function ensureAudioBus(){
  audioBus=input;return input;
 }
 function stopPlayback(){
+ if(notePreviewTimer!==null){clearTimeout(notePreviewTimer);notePreviewTimer=null}notePreviewOscillators=[];
  resetPianoTracking();
  for(const t of playTimers)clearTimeout(t);playTimers=[];
  if(stopTimer)clearTimeout(stopTimer);stopTimer=null;
@@ -2650,9 +2652,42 @@ function makeMusicPerformance(){
  }
  return {order,events,clicks,bars,total:totalTime};
 }
+function stopNotePreview(){
+ if(notePreviewTimer!==null){clearTimeout(notePreviewTimer);notePreviewTimer=null}
+ for(const voice of notePreviewOscillators){try{voice.stop()}catch(_){}}
+ if(notePreviewOscillators.length){
+  const stopped=new Set(notePreviewOscillators);
+  oscillators=oscillators.filter(o=>!stopped.has(o));
+ }
+ notePreviewOscillators=[];
+ if(!playing&&playingId!==null){playingId=null;render()}
+}
+async function hearSelectedNote(){
+ const note=findSelected();
+ if(piano||playing||!note||note.e.kind!=='note')return;
+ stopNotePreview();
+ try{
+  context=context||new(window.AudioContext||window.webkitAudioContext)();
+  await context.resume();ensureAudioBus();
+ }catch(_){flash('Audio playback is unavailable in this browser.');return}
+ // The same pitch calculation and synthesised instrument as full-score playback.
+ const current=findSelected();if(!current||current.e.kind!=='note'||playing)return;
+ const quarterSeconds=60/Math.max(40,Number(data.tempo)||96);
+ const duration=Math.min(1.8,Math.max(.2,ticks(current.e)/24*quarterSeconds));
+ const startCount=oscillators.length;
+ tone(midiFor(current.bar,current.index),context.currentTime+.02,duration);
+ notePreviewOscillators=oscillators.slice(startCount);
+ playingId=current.e.id;render();
+ updateStatus('Hearing '+noteName(current.e)+' · '+(MUSIC_DURATION_NAMES[current.e.den]||'note')+'.');
+ notePreviewTimer=setTimeout(()=>{
+  notePreviewTimer=null;notePreviewOscillators=[];
+  if(!playing){playingId=null;render()}
+ },Math.ceil((duration+.18)*1000));
+}
 async function play(){
  if(piano)return playPiano();
  if(playing){stopPlayback();return}
+ stopNotePreview();
  if(!data.bars.some(b=>b.some(e=>e.kind==='note'))){flash('Add some notes first, or load the example.');return}
  try{context=context||new(window.AudioContext||window.webkitAudioContext)();await context.resume();ensureAudioBus()}
  catch(err){flash('Audio playback is not supported here.');return}
@@ -2929,6 +2964,7 @@ function updateScoreFocusButtons(){
   $(buttonId).setAttribute('aria-pressed',String(on));
   $(buttonId).title=on?'Return to normal page view':'Show the music sheet across the whole screen';
   $(playId).hidden=panelId==='editorScorePanel'?false:!on;$(playId).textContent=playing?'■ Stop':'▶ Play';
+  if(panelId==='editorScorePanel'){$('hearNoteEditor').disabled=playing||!!piano||findSelected()?.e?.kind!=='note'}
   $(zoomId).hidden=!on;$(zoomId).textContent=panel.classList.contains('pageZoomed')?'↔ Fit page':'🔎 Larger';
  }
 }
@@ -2975,6 +3011,7 @@ function wireScoreFullPage(){
  $('fullPageZoomEditor').onclick=()=>toggleScorePageZoom('editorScorePanel');
  $('fullPageZoomImported').onclick=()=>toggleScorePageZoom('pianoPanel');
  $('fullPagePlayEditor').onclick=()=>play();
+ $('hearNoteEditor').onclick=hearSelectedNote;
  $('fullPagePlayImported').onclick=()=>play();
  updateScoreFocusButtons();
 }
