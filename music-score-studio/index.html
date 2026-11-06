@@ -502,7 +502,7 @@ body.scoreFullPageActive{overflow:hidden!important}
 .scoreSetupActions .moreActionsInner{max-width:240px}
 @media print{.scoreSetupActions,.scoreSetupSaveOpen{display:none!important}}
 /* Hear Note stays discoverable even before pupils select a note. */
-#editorScorePanel .paperTop #hearNoteEditor{background:#e3f7f1;color:#176455;border:1px solid #73bba4;font-weight:800;white-space:nowrap;min-height:39px}
+#editorScorePanel .paperTop #hearNoteEditor{background:#e3f7f1;color:#176455;border:1px solid #73bba4;font-weight:800;white-space:nowrap;min-height:39px;opacity:1!important;cursor:pointer!important}
 #editorScorePanel .paperTop #hearNoteEditor:hover,#editorScorePanel .paperTop #hearNoteEditor:focus-visible{background:#cff1e6;border-color:#489a80}
 </style>
 <script src="./score-annotations.js" defer></script>
@@ -2960,6 +2960,9 @@ function looksLikeGrandStaff(staves){
 /* Screen-filling music sheet. A CSS overlay is intentional: iOS and school
    browsers do not consistently support the Fullscreen API for arbitrary elements. */
 function updateScoreFocusButtons(){
+ // Hear Note remains operable before selection; its handler explains what to do.
+ $('hearNoteEditor').disabled=false;
+ $('hearNoteEditor').removeAttribute('disabled');
  for(const [panelId,buttonId,playId,zoomId] of [
   ['editorScorePanel','fullPageEditor','fullPagePlayEditor','fullPageZoomEditor'],
   ['pianoPanel','fullPageImported','fullPagePlayImported','fullPageZoomImported']
