@@ -218,3 +218,69 @@ test('eraser gesture that never touches a mark does not create an Undo entry',()
  assert.equal(h.state.history.length,0);
  assert.equal(h.state.items.length,2);
 });
+
+function mockEngravedCursor(frames){
+ let i=0;
+ return {
+  iterator:{get endReached(){return i>=frames.length;},get tick(){return frames[i]?.tick??NaN;}},
+  reset(){i=0;},hide(){},next(){i++;},
+  GNotesUnderCursor(){return frames[i]?.notes||[];}
+ };
+}
+function mockGraphic(midi,node,isRest=false){
+ return {sourceNote:{halfTone:midi-12,isRest:()=>isRest},getNoteheadSVGs:()=>[node]};
+}
+function mockEngravedNode(){
+ const classes=new Set();
+ return {classes,classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}}};
+}
+function actualEngravedHighlighter(notes){
+ const from=one.indexOf('function indexEngravedNoteheads('),to=one.indexOf('function resetPianoTracking(',from);
+ assert.ok(from>0&&to>from,'Actual OSMD engraving highlight helpers must exist');
+ const mapped=new Map(),api=new Function('piano','engravedNoteheads','osmdTimestampTicks',
+  one.slice(from,to)+'\nreturn {indexEngravedNoteheads,setEngravedNotePlaying};')(
+   {notes},mapped,c=>c.iterator.tick);
+ return {...api,mapped};
+}
+test('Engraved playback highlights sounding chord/part noteheads independently and clears on note-off',()=>{
+ const c=mockEngravedNode(),e=mockEngravedNode(),rest=mockEngravedNode(),later=mockEngravedNode();
+ const notes=[{start:0,midi:60},{start:0,midi:64},{start:960,midi:60}];
+ const api=actualEngravedHighlighter(notes);
+ const cursor=mockEngravedCursor([
+  {tick:0,notes:[mockGraphic(60,c),mockGraphic(64,e),mockGraphic(0,rest,true)]},
+  {tick:960,notes:[mockGraphic(60,later)]}
+ ]);
+ api.indexEngravedNoteheads({cursor,start:0,end:1920});
+ assert.equal(api.mapped.size,3,'Rest symbols are not counted as played notes');
+ api.setEngravedNotePlaying(0,true);api.setEngravedNotePlaying(1,true);
+ assert.ok(c.classes.has('engravedPlayingNotehead')&&e.classes.has('engravedPlayingNotehead'));
+ assert.equal(later.classes.size,0,'Later note is not pre-highlighted');
+ assert.equal(rest.classes.size,0,'Rests are never highlighted');
+ api.setEngravedNotePlaying(0,false);
+ assert.ok(!c.classes.has('engravedPlayingNotehead')&&e.classes.has('engravedPlayingNotehead'),
+  'One voice stopping must not clear another sounding part');
+ api.setEngravedNotePlaying(1,false);api.setEngravedNotePlaying(2,true);
+ assert.ok(!e.classes.size&&later.classes.has('engravedPlayingNotehead'));
+ api.setEngravedNotePlaying(2,false);assert.equal(later.classes.size,0);
+});
+test('Engraved page-relative tick mapping follows later imported pages without a false match',()=>{
+ const first=mockEngravedNode(),second=mockEngravedNode();
+ const notes=[{start:0,midi:60},{start:1920,midi:67}];
+ const api=actualEngravedHighlighter(notes);
+ api.indexEngravedNoteheads({cursor:mockEngravedCursor([{tick:0,notes:[mockGraphic(60,first)]}]),start:0,end:1920});
+ api.indexEngravedNoteheads({cursor:mockEngravedCursor([{tick:0,notes:[mockGraphic(67,second)]}]),start:1920,end:3840});
+ assert.equal(api.mapped.size,2);
+ api.setEngravedNotePlaying(1,true);
+ assert.ok(second.classes.has('engravedPlayingNotehead')&&!first.classes.size);
+ api.setEngravedNotePlaying(1,false);
+ assert.equal(second.classes.size,0);
+});
+test('Engraved note highlighting uses OSMD notehead SVGs and existing audio events; cursor remains functional',()=>{
+ assert.match(one,/#engravedScore \.engravedPlayingNotehead/);
+ assert.match(one,/graphic\.getNoteheadSVGs\?\.\(\)/);
+ assert.match(one,/setEngravedNotePlaying\(event\.index,true\)/);
+ assert.match(one,/setEngravedNotePlaying\(event\.index,false\)/);
+ assert.match(one,/for\(const index of engravedNoteheads\.keys\(\)\)setEngravedNotePlaying\(index,false\)/);
+ assert.match(one,/moveEngravedPlaybackCursor\(tick\)/);
+ assert.match(one,/engravedNoteheads\.clear\(\)/);
+});
