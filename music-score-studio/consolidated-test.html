@@ -105,6 +105,9 @@
 .pianoFollowLabel input{width:18px;height:18px;accent-color:#087b86}
 #pianoNowPlaying{font-size:13px;font-weight:750;color:#8d410c;background:#fff3cc;border:1px solid #e8bc63;border-radius:9px;padding:7px 11px;min-height:34px}
 #engravedScore img[id*="cursor"],#engravedScore img[id*="Cursor"]{pointer-events:none}
+/* Highlight only sounding engraved noteheads, as in the simplified view. */
+#engravedScore .engravedPlayingNotehead,
+#engravedScore .engravedPlayingNotehead *{fill:#f07720!important;stroke:#9b420a!important;filter:drop-shadow(0 0 2px #ffda73)}
 @media print{#pianoNowPlaying,.pianoFollowLabel{display:none!important}}
 
 #grandStaffWarning{background:#fff4e2;border:1px solid #eacb91;color:#78551f;border-radius:10px;margin:12px 0;padding:12px;font-size:13px}
@@ -3252,7 +3255,7 @@ function pianoSVG(measureToShow=simplePageStart){
 // Engraving is handled by OpenSheetMusicDisplay (BSD-3-Clause). The local
 // pitch-and-timing view remains available without a network connection.
 let osmdLoadPromise=null,engravedSerial=0;
-let pianoNoteNodes=new Map(),engravedCursors=[],pianoTrackingFrame=0,pianoTrackingToken=0;
+let pianoNoteNodes=new Map(),engravedCursors=[],engravedNoteheads=new Map(),pianoTrackingFrame=0,pianoTrackingToken=0;
 let simplePageStart=0,simpleCurrentMeasure=0,pianoActiveIndices=new Set(),simpleNoteNodes=new Map();
 function renderSimpleNoteStrip(measure){
  if(!piano)return;
@@ -3274,12 +3277,47 @@ function renderSimpleNoteStrip(measure){
  if(candidates.length>64){const more=document.createElement('span');more.textContent='+'+(candidates.length-64)+' notes';holder.append(more);}
 }
 
+// Map OSMD SVG noteheads to audible score notes by tick and MIDI pitch.
+function indexEngravedNoteheads(slot){
+ const cursor=slot.cursor,buckets=new Map();
+ for(let i=0;i<(piano?.notes.length||0);i++){
+  const note=piano.notes[i];
+  if(note.start<slot.start||note.start>=slot.end)continue;
+  const key=(note.start-slot.start)+':'+note.midi;
+  if(!buckets.has(key))buckets.set(key,[]);
+  buckets.get(key).push(i);
+ }
+ try{
+  cursor.reset();
+  let steps=0;
+  while(cursor.iterator&&!cursor.iterator.endReached&&steps++<12000){
+   const tick=osmdTimestampTicks(cursor);
+   if(Number.isFinite(tick)){
+    for(const graphic of cursor.GNotesUnderCursor?.()||[]){
+     const source=graphic?.sourceNote;
+     if(!source||source.isRest?.()||!Number.isFinite(source.halfTone))continue;
+     // OSMD's halfTone is 12 below MIDI pitch.
+     const candidates=buckets.get(tick+':'+(source.halfTone+12));
+     if(!candidates?.length)continue;
+     const usable=Array.from(graphic.getNoteheadSVGs?.()||[]).filter(node=>node?.classList);
+     if(usable.length)engravedNoteheads.set(candidates.shift(),usable);
+    }
+   }
+   cursor.next();
+  }
+ }catch(_){/* Preserve the moving cursor if a renderer lacks notehead access. */}
+ finally{try{cursor.reset();cursor.hide();}catch(_){}}
+}
+function setEngravedNotePlaying(index,on){
+ for(const node of engravedNoteheads.get(index)||[])node.classList.toggle('engravedPlayingNotehead',on);
+}
 function resetPianoTracking(){
  pianoTrackingToken++;
  pianoActiveIndices.clear();
  for(const chip of simpleNoteNodes.values())chip.classList.remove('active');
  if(pianoTrackingFrame){cancelAnimationFrame(pianoTrackingFrame);pianoTrackingFrame=0;}
  for(const node of pianoNoteNodes.values())node.classList.remove('is-playing');
+ for(const index of engravedNoteheads.keys())setEngravedNotePlaying(index,false);
  for(const slot of engravedCursors){
   try{slot.cursor.hide();}catch(e){}
   slot.visible=false;slot.ready=false;slot.position=-1;slot.lastTarget=0;
@@ -3356,8 +3394,8 @@ function startPianoTracking(audioStart,secondsPerTick,timing=null){
    while(at<events.length&&events[at].at<=elapsed+.012){
     activeChanged=true;
     const event=events[at++],node=pianoNoteNodes.get(event.index);
-    if(event.on){active.add(event.index);pianoActiveIndices.add(event.index);newest=event.index;node?.classList.add('is-playing');simpleNoteNodes.get(event.index)?.classList.add('active');}
-    else{active.delete(event.index);pianoActiveIndices.delete(event.index);node?.classList.remove('is-playing');simpleNoteNodes.get(event.index)?.classList.remove('active');}
+    if(event.on){active.add(event.index);pianoActiveIndices.add(event.index);newest=event.index;node?.classList.add('is-playing');simpleNoteNodes.get(event.index)?.classList.add('active');setEngravedNotePlaying(event.index,true);}
+    else{active.delete(event.index);pianoActiveIndices.delete(event.index);node?.classList.remove('is-playing');simpleNoteNodes.get(event.index)?.classList.remove('active');setEngravedNotePlaying(event.index,false);}
    }
    if(newest>=0){
     const note=piano.notes[newest],status=document.getElementById('pianoNowPlaying');
@@ -3399,7 +3437,7 @@ function ensureOSMD(){
 }
 async function renderEngravedPages(pages){
  const serial=++engravedSerial,area=$('engravedScore'),toggle=$('notationViewToggle'),status=$('notationStatus');
- engravedCursors=[];
+ engravedCursors=[];engravedNoteheads.clear();
  // Keep the professional music container IN LAYOUT during rendering. OSMD
  // reads offsetWidth; rendering into [hidden] (display:none) makes blank SVGs.
  area.replaceChildren();area.hidden=false;area.style.visibility='hidden';toggle.hidden=true;
@@ -3425,11 +3463,16 @@ async function renderEngravedPages(pages){
    if(!engraving||engraving.getBoundingClientRect().width<120||!engraving.querySelector('path, line, use'))throw Error('The professional score was blank; showing the simplified notation instead.');
    const pageTicks=parseMusicXML(pages[i]).total;
    const cursor=obj.cursor||obj.cursors?.[0];
-   if(cursor){try{cursor.reset();cursor.hide();engravedCursors.push({cursor,start:pageTickOffset,end:pageTickOffset+pageTicks,section,ready:false,visible:false,position:-1,lastTarget:0});}catch(e){}}
+   if(cursor){try{
+     const slot={cursor,start:pageTickOffset,end:pageTickOffset+pageTicks,section,ready:false,visible:false,position:-1,lastTarget:0};
+     indexEngravedNoteheads(slot);
+     engravedCursors.push(slot);
+    }catch(e){}}
    pageTickOffset+=pageTicks;
   }
   if(serial!==engravedSerial)return;
   area.style.visibility='';area.hidden=false;document.querySelector('.pianoScoreScroll').hidden=true;
+   for(const index of pianoActiveIndices)setEngravedNotePlaying(index,true);
   toggle.hidden=false;toggle.textContent='Show simplified view';
   toggle.onclick=()=>{
    const toSimple=!area.hidden;
