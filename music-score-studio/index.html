@@ -469,6 +469,25 @@ body.scoreFullPageActive{overflow:hidden!important}
 .consolidatedModes small{color:#345966;font-size:10px;font-weight:850;padding:0 5px}
 @media(max-width:650px){.consolidatedModes{width:100%;justify-content:center}.consolidatedModes a,.consolidatedModes [aria-current="page"]{flex:1;min-height:44px}}
 
+
+/* Keep the complete expressive articulation palette alongside music writing,
+   instead of requiring a scroll to the selected-note footer. */
+.musicExpressionDock{display:flex;align-items:center;gap:9px;width:100%;padding:9px 0 3px;min-width:0;border-top:1px solid #b8d3d8}
+.musicExpressionTitle{font-size:12px;font-weight:850;color:#155868;flex:0 0 auto;white-space:nowrap}
+.musicExpressionButtons{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;min-width:0;padding:2px 2px 5px}
+.musicExpressionButtons .articulationBtn{white-space:nowrap;flex:0 0 auto;min-height:37px}
+.musicExpressionButtons .articulationBtn:disabled{opacity:.52;cursor:not-allowed}
+.musicExpressionButtons .articulationBtn:focus-visible{outline:3px solid #0995a1;outline-offset:2px}
+/* Retain bottom-bar pitch, duration and Delete tools without a duplicated
+   expression ribbon; full-page score keeps its original full editing toolbar. */
+#editorScorePanel:not(.fullPageMusic) #selectedActions .articulationBtn,
+#editorScorePanel:not(.fullPageMusic) #selectedActions .slurPrompt{display:none}
+@media(max-width:650px){
+ .musicExpressionDock{gap:5px;flex-wrap:wrap}
+ .musicExpressionTitle{width:100%}
+ .musicExpressionButtons{width:100%}
+ .musicExpressionButtons .articulationBtn{min-height:44px}
+}
 </style>
 <script src="./score-annotations.js" defer></script>
 </head>
@@ -511,6 +530,10 @@ body.scoreFullPageActive{overflow:hidden!important}
   </div>
   
   <span class="musicInkMessage" id="beautifyFeedback" role="status" aria-live="polite">Choose a note, tap the staff, then press Play to hear your tune!</span>
+ </div>
+ <div id="musicExpressionDock" class="musicExpressionDock" role="group" aria-label="Musical expression controls">
+  <strong class="musicExpressionTitle">🎶 Musical expression</strong>
+  <span class="musicExpressionButtons" id="musicExpressionButtons"><span class="editLabel">Select a note to add expression.</span></span>
  </div>
  <details class="teacherDrawer" id="teacherDrawer"><summary>🖍 Teacher annotation tools <span>Pen · highlighter · arrows (optional)</span></summary>
  <div class="annotationToolbarInner">
@@ -1346,6 +1369,22 @@ function addNoteMarkButtons(container,e){
  }
 }
 
+function renderMusicExpressionDock(selection){
+ const dock=$('musicExpressionButtons');dock.replaceChildren();
+ if(selection?.e?.kind==='note'){
+  addNoteMarkButtons(dock,selection.e);
+  return;
+ }
+ // Keep every musical expression visible, including before a note is selected.
+ // The buttons are intentionally disabled until a notehead is selected.
+ for(const name of ['Staccato ·','Staccatissimo ▾','Tenuto –','Accent >','Marcato ^','Fermata 𝄐','Slur ⌒','Tie ⌣']){
+  const b=document.createElement('button');b.type='button';
+  b.className='smallBtn articulationBtn';b.textContent=name;
+  b.disabled=true;b.setAttribute('aria-pressed','false');
+  b.title='Select a musical note to use '+name;
+  dock.append(b);
+ }
+}
 function removeSelected(){const s=findSelected();if(!s)return;change();data.bars[s.bar].splice(s.index,1);pendingSlurStart=null;removeBrokenConnections();selected=null;commit();updateStatus('Symbol removed.')}
 function adjustPitch(n){const s=findSelected();if(!s||s.e.kind!=='note')return;let idx=noteIndex(s.e.step,s.e.octave)+n;if(idx<8||idx>48)return;change();Object.assign(s.e,fromIndex(idx));removeBrokenConnections();commit()}
 function applyValue(){const s=findSelected();if(!s)return;const n={...s.e,den,dot};if(sumBar(data.bars[s.bar])-ticks(s.e)+ticks(n)>cap()+.00001){flash('That note value would make this bar too long.');return}change();s.e.den=den;s.e.dot=dot;if(s.e.kind==='note')s.e.acc=acc;commit();flash('Selected symbol updated')}
@@ -1910,7 +1949,7 @@ if(!exportMode&&boxDraft){
 return svg;}
 function render(){updateTeachingLabels();syncBarMarkControls();const svg=$('score'),fresh=makeScore();svg.setAttribute('viewBox',fresh.getAttribute('viewBox'));svg.replaceChildren(...[...fresh.childNodes]);
  document.dispatchEvent(new Event('music-score-studio:score-layout'));
- $('counter').textContent=`· ${data.bars.length} bar${data.bars.length===1?'':'s'} · ${data.meter}`;let s=findSelected();const actions=$('selectedActions');actions.replaceChildren();
+ $('counter').textContent=`· ${data.bars.length} bar${data.bars.length===1?'':'s'} · ${data.meter}`;let s=findSelected();const actions=$('selectedActions');actions.replaceChildren();renderMusicExpressionDock(s);
 if(boxSelectedNotes.size||boxSelectedStrokes.size){
  const label=document.createElement('span');label.className='editLabel';label.textContent=boxSelectedNotes.size+' notes/rests + '+boxSelectedStrokes.size+' sketches selected';actions.append(label);
  const del=document.createElement('button');del.className='smallBtn';del.textContent='Delete selection';del.onclick=deleteBoxSelection;actions.append(del);
