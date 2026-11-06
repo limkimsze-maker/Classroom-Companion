@@ -326,7 +326,7 @@ a.scoreModeChoice:hover{background:#fff;border-color:#a1c7d0;color:#084b59}
 <section class="panel actionsPanel" aria-label="Compose, playback and editing">
 <div class="studioDock">
  <span class="studioDockTitle">🎼 My music</span>
- <div class="studioDockQuick"><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label></div>
+ <div class="studioDockQuick"><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="instrument">🎹 Playback sound <select id="instrument" aria-label="Playback sound"><option value="piano">Warm piano</option><option value="musicbox">Music box</option><option value="flute">Gentle flute</option><option value="pure">Pure reference tone</option></select></label><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label></div>
  <div class="studioDockCommon" role="group" aria-label="Editing controls"><button id="undo" title="Undo last edit (Ctrl+Z)" disabled>↶ Undo</button><button id="redo" title="Redo last edit (Ctrl+Shift+Z)" disabled>↷ Redo</button><button id="addBar" title="Add another bar to both hands">+ Bar</button></div><div class="studioDockSpacer"></div>
  <details class="composeDrawer" id="composeDrawer"><summary>⚙ Score setup</summary>
  <div class="composeDrawerBody">
@@ -396,7 +396,7 @@ const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-
 const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
 const NOTE_ILLUSTRATIONS={"1":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#fff\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>","2":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"33\" y1=\"42\" x2=\"33\" y2=\"6\" stroke=\"#183f54\" stroke-width=\"3\" stroke-linecap=\"round\"/><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#fff\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>","4":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"33\" y1=\"42\" x2=\"33\" y2=\"6\" stroke=\"#183f54\" stroke-width=\"3\" stroke-linecap=\"round\"/><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#183f54\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>","8":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"33\" y1=\"42\" x2=\"33\" y2=\"6\" stroke=\"#183f54\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z\" fill=\"#183f54\"/><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#183f54\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>","16":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"33\" y1=\"42\" x2=\"33\" y2=\"6\" stroke=\"#183f54\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z\" fill=\"#183f54\"/><path d=\"M33 18 C49 21 48 35 38 43 C44 31 43 26 33 30 Z\" fill=\"#183f54\"/><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#183f54\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>"};
 const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
-const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]})),annotations:[]});
+const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,instrument:'piano',bars:Array.from({length:4},()=>({right:[],left:[]})),annotations:[]});
 let data=newProject(),chosen=4,selectedAnnotation=null,annotationTool='cursor',annotationDrag=null,annotationDraft=null,selected=null,pendingSlur=null,contextTarget=null,dragPitch=null,suppressDragClick=false,keyboardNoteFocus=false,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
 const MARKS=['staccato','staccatissimo','portato','tenuto','accent','marcato','fermata'];
 const MARK_LABELS={staccato:'Staccato ·',staccatissimo:'Staccatissimo ▾',portato:'Portato –·',tenuto:'Tenuto –',accent:'Accent >',marcato:'Marcato ^',fermata:'Fermata 𝄐'};
@@ -421,7 +421,7 @@ function locate(id){for(let b=0;b<data.bars.length;b++)for(const hand of ['right
 function validate(raw){
  if(!raw||raw.format!=='cc-music-score-studio-twohand'||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>40)throw Error('Invalid two-hand project (maximum 40 bars).');
  if(!['2/4','3/4','4/4','6/8'].includes(raw.meter))throw Error('Unsupported metre');
- const out={format:'cc-music-score-studio-twohand',version:1,title:String(raw.title||'My Piano Piece').slice(0,100),meter:raw.meter,tempo:Math.max(40,Math.min(220,Number(raw.tempo)||96)),bars:[],annotations:[]};
+ const out={format:'cc-music-score-studio-twohand',version:1,title:String(raw.title||'My Piano Piece').slice(0,100),meter:raw.meter,tempo:Math.max(40,Math.min(220,Number(raw.tempo)||96)),instrument:['piano','musicbox','flute','pure'].includes(raw.instrument)?raw.instrument:'piano',bars:[],annotations:[]};
  const cap=Number(raw.meter.split('/')[0])*96/Number(raw.meter.split('/')[1]);
  const seenIds=new Set();
  for(const bar of raw.bars){const entry={right:[],left:[]};for(const hand of ['right','left']){
@@ -949,7 +949,7 @@ function render(){
  $('annotationSelected').hidden=!selectedAnnotation;
  const found=locate(selected);$('editPanel').hidden=!found;renderArticulations(found);
  if(found){$('selection').textContent=(found.hand==='right'?'Right':'Left')+' hand · Bar '+(found.b+1)+' · '+(found.event.kind==='rest'?'Rest':found.event.step+found.event.octave)+' · '+NAMES[found.event.den]+(found.event.dot?' dotted':'')}
- $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;
+ $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;$('instrument').value=data.instrument||'piano';
  if(priorFocus){
   const next=[...svg.querySelectorAll('g[data-id]')].find(g=>g.dataset.id===priorFocus);
   next?.focus?.({preventScroll:true});
@@ -1166,14 +1166,30 @@ function setVolume(value){
  if(masterGain&&ctx)masterGain.gain.setTargetAtTime(volume/100,ctx.currentTime,.015);
 }
 function oscillator(midi,at,duration,hand,strength=1){
- if(!ctx)return;const root=ctx.createOscillator(),gain=ctx.createGain(),harm=ctx.createOscillator(),hGain=ctx.createGain();
- const hz=440*Math.pow(2,(midi-69)/12);root.type='triangle';harm.type='sine';
- root.frequency.setValueAtTime(hz,at);harm.frequency.setValueAtTime(hz*2,at);
- const amp=(hand==='left'?.18:.15)*Math.min(1.5,Math.max(.5,strength)),hold=Math.max(.1,duration*.91),end=at+hold;
- gain.gain.setValueAtTime(.00001,at);gain.gain.exponentialRampToValueAtTime(amp,at+.012);gain.gain.exponentialRampToValueAtTime(.00001,end+.12);
- hGain.gain.setValueAtTime(.00001,at);hGain.gain.exponentialRampToValueAtTime(amp*.18,at+.012);hGain.gain.exponentialRampToValueAtTime(.00001,end+.07);
- root.connect(gain);gain.connect(ensureMaster());harm.connect(hGain);hGain.connect(ensureMaster());
- root.start(at);harm.start(at);root.stop(end+.15);harm.stop(end+.10);sounds.push(root,harm);
+ if(!ctx)return;
+ // Same four synthesised timbre families as single stave, mixed for two hands.
+ const instrument=['piano','musicbox','flute','pure'].includes(data.instrument)?data.instrument:'piano';
+ const hz=440*Math.pow(2,(midi-69)/12),end=at+Math.max(.08,duration),release=.10;
+ const partials=instrument==='musicbox'?[[1,.73,.7],[2.01,.24,2.6],[3.94,.13,5.2],[5.1,.06,7]]:
+  instrument==='flute'?[[1,.83,.08],[2,.13,.28],[3,.045,.38]]:
+  instrument==='pure'?[[1,1,.03]]:
+  [[1,.78,.63],[2.002,.32,1.15],[3.005,.16,2.1],[4.011,.075,3.2],[5.014,.034,4.3]];
+ const attack=instrument==='flute'?Math.min(.065,duration*.25):instrument==='pure'?.015:.009;
+ const peak=(hand==='left'?.22:.20)*(instrument==='flute'?.85:instrument==='musicbox'?1.03:1);
+ const hold=Math.max(at+attack+.008,end-Math.min(.08,duration*.10));
+ const bus=ensureMaster(),velocity=Math.min(1.5,Math.max(.5,strength));
+ for(const [ratio,weight,decay] of partials){
+  const osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type='sine';osc.frequency.setValueAtTime(hz*ratio,at);
+  const level=Math.max(.0001,peak*weight*velocity);
+  const natural=instrument==='flute'?.90:instrument==='pure'?.92:Math.exp(-decay*Math.max(0,hold-at));
+  gain.gain.setValueAtTime(.00001,at);
+  gain.gain.exponentialRampToValueAtTime(level,at+attack);
+  gain.gain.exponentialRampToValueAtTime(Math.max(.00011,level*natural),hold);
+  gain.gain.exponentialRampToValueAtTime(.00001,end+release);
+  osc.connect(gain);gain.connect(bus);
+  osc.start(at);osc.stop(end+release+.02);sounds.push(osc);
+ }
 }
 function midi(e,bar,index,score=data){
  const semis={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
@@ -1439,6 +1455,7 @@ function bind(){
  $('sheet').addEventListener('keydown',e=>{if(annotationTool!=='cursor')return;if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();keyboardNoteFocus=true;if(!finishSlur(id)){selected=id;render()}}});
  $('play').onclick=play;$('stop').onclick=stop;$('sheetPlay').onclick=()=>playing?stop():play();$('sheetClear').onclick=()=>{if(!confirm('Clear all right-hand and left-hand notes, rests and teacher annotations? You can Undo to restore them.'))return;snapshot();for(const bar of data.bars){bar.right=[];bar.left=[]}data.annotations=[];selected=null;selectedAnnotation=null;pendingSlur=null;commit('Score cleared. Undo restores your music.');};$('undo').onclick=undo;$('redo').onclick=redo;
  syncPlayButtons();
+ $('instrument').onchange=e=>{if(playing)stop();snapshot();data.instrument=e.target.value;commit('Playback sound: '+e.target.options[e.target.selectedIndex].text+'.')};
  $('volume').oninput=e=>setVolume(e.target.value);
  setVolume(volume);
  $('addBar').onclick=()=>{if(data.bars.length>=40){info('Maximum 40 bars.');return}snapshot();data.bars.push({right:[],left:[]});commit('Added Bar '+data.bars.length+'.')};
