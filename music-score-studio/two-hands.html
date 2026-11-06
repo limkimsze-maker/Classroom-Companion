@@ -1166,9 +1166,12 @@ function pitchPointerDown(ev){
  dragPitch={pointerId:ev.pointerId,id:ref.event.id,hand:ref.hand,
   originY:p.y,originIndex:noteIx(ref.event.step,ref.event.octave),steps:0,changed:false};
  selected=ref.event.id;
+ // Pointer capture can retarget the subsequent click to the SVG itself.
+ // Enable expressions immediately rather than relying on that click.
+ renderPersistentExpressions(ref);
  $('sheet').setPointerCapture?.(ev.pointerId);
- // Deliberately do not render here: a plain tap still goes through the
- // original clickSheet selection handler.
+ // Keep the current SVG alive throughout the gesture; rendering here would
+ // replace the pointer target before dragging can begin.
 }
 function pitchPointerMove(ev){
  const drag=dragPitch;if(!drag||ev.pointerId!==drag.pointerId)return;
@@ -1185,7 +1188,7 @@ function pitchPointerEnd(ev){
  const drag=dragPitch;if(!drag||ev.pointerId!==drag.pointerId)return;
  dragPitch=null;
  try{$('sheet').releasePointerCapture?.(ev.pointerId)}catch(_){}
- if(!drag.changed)return;
+ if(!drag.changed){render();return}
  suppressDragClick=true;
  commit('Note moved higher/lower in the '+drag.hand+' hand.');
 }
