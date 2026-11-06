@@ -1,0 +1,286 @@
+/* Consolidated Music Score Studio TEST source-level acceptance guards.
+ * Native browser/audio/touch/phone verification remains independent.
+ * node --test music-score-studio/tests/consolidated-preservation.test.cjs
+ */
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const one=fs.readFileSync(path.join(__dirname,'..','consolidated-test.html'),'utf8');
+const two=fs.readFileSync(path.join(__dirname,'..','consolidated-two-hand-test.html'),'utf8');
+const overlay=fs.readFileSync(path.join(__dirname,'..','consolidated-annotation-tools.js'),'utf8');
+const approved='Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.';
+const ids=h=>[...h.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').matchAll(/\sid="([^"]+)"/g)].map(m=>m[1]);
+function inkModel(data,positions){
+ const start=one.indexOf('function scoreInkNoteCentres('),end=one.indexOf('function staffLayout(',start);
+ assert.ok(start>0&&end>start,'Actual note-linked ink code must exist');
+ return new Function('data','eventPositions','noteIndex','bottomIndex',one.slice(start,end)+'\nreturn {scoreInkNoteCentres,reprojectScoreInk};')(data,positions,()=>0,()=>0);
+}
+const note=id=>({id,kind:'note',step:'C',octave:4,den:4,dot:false});
+const box=(left=144,top=100,width=400)=>({cells:[{bar:0,left,top,width}]});
+
+test('Both modes are linked and use one Music Score Studio identity',()=>{
+ assert.match(one,/href="\.\/consolidated-two-hand-test\.html"/);
+ assert.match(two,/href="\.\/consolidated-test\.html"/);
+ assert.match(one,/aria-current="page">♫ Single stave<\/span>/);
+ assert.match(two,/aria-current="page">🎹 Two hands<\/span>/);
+ for(const h of [one,two])assert.match(h,/<h1>Music Score Studio<\/h1>/);
+});
+test('No duplicate real element IDs in either HTML and save formats remain independent',()=>{
+ for(const h of [one,two]){const all=ids(h);assert.equal(all.length,new Set(all).size)}
+ assert.match(one,/cc-music-score-studio/);assert.match(two,/cc-music-score-studio-twohand/);
+});
+test('Approved acknowledgement and AGPL attribution preserved verbatim',()=>{
+ for(const h of [one,two]){assert.ok(h.includes(approved));assert.match(h,/GNU AGPL-3\.0/);assert.match(h,/OPEN_SOURCE_NOTICES\.md/)}
+});
+test('Production dynamics, pickup and simultaneous imported-score playback functions preserved',()=>{
+ for(const f of ['applyImportedDynamicEvents','parseMusicXML','createImportedRepeatedTiming'])
+  assert.match(one,new RegExp('function '+f+'\\('));
+ assert.match(one,/emptyImplicitNominals/);
+ assert.match(one,/if\(volume>0\)events\.push/);
+});
+test('Existing photo recognition, MusicXML imports, page controls and recognition review remain',()=>{
+ for(const id of ['omrCameraButton','omrChooseButton','omrImportButton','fullPageEditor','fullPageImported','fullPageZoomEditor','fullPageZoomImported','score','scrollZone'])
+ assert.match(one,new RegExp('id="'+id+'"'));
+ assert.match(one,/ai\/index\.html\?cc-bridge=1/);
+});
+test('Quick composition, rhythmic engraving, slur usability and hidden redundant Terms maintained',()=>{
+ for(const f of ['setQuickKeyboard','resetQuickCursor','quickEnter','engravingGap','eventPositions','captureSlurNoteTap','drawMusicConnections'])
+ assert.match(one,new RegExp('function '+f+'\\('));
+ assert.match(one,/id="quickKeyboardToggle"/);
+ assert.match(one,/#musicTermsPanel\{display:none!important\}/);
+});
+test('Two-hand annotations remain independent from musical slurs and ties',()=>{
+ for(const mode of ['cursor','select','hand','arrow','pen','highlighter','circle','eraser'])
+ assert.match(two,new RegExp('data-annotation-tool="'+mode+'"'));
+ for(const f of ['drawAnnotations','annotationAnchorPreservingNote','toggleTie','toggleSlur','performance'])
+ assert.match(two,new RegExp('function '+f+'\\('));
+});
+test('Two-hand illustrated note values, Undo Redo Add Bar and volume visible without menus',()=>{
+ const dock=two.slice(two.indexOf('class="studioDock"'),two.indexOf('class="panel quickValuesPanel"'));
+ const values=two.slice(two.indexOf('class="panel quickValuesPanel"'),two.indexOf('class="panel scorePanel"'));
+ for(const id of ['undo','redo','addBar','volume'])assert.match(dock,new RegExp('id="'+id+'"'));
+ for(const id of ['values','kind','dotted','acc'])assert.match(values,new RegExp('id="'+id+'"'));
+ assert.match(two,/NOTE_ILLUSTRATIONS\[den\]/);
+});
+test('Only one dominant Two-hand Play in normal view, full-page score Play retained',()=>{
+ assert.match(two,/#sheetPlay\{display:none!important\}/);
+ assert.match(two,/\.fullpage #sheetPlay\{display:inline-flex!important\}/);
+ assert.match(two,/id="sheetPlay"/);
+});
+test('Music-ink near one unique notehead moves with its stable note ID when spacing changes',()=>{
+ const data={bars:[[note('c')]]},api=inkModel(data,bar=>bar.length===1?[260]:[225,295]),layout=box(),prior=api.scoreInkNoteCentres(layout);
+ const ink={kind:'music',headX:260,headY:172,points:[[260,172],[262,174]]};
+ data.bars[0].push(note('d'));
+ api.reprojectScoreInk([ink],layout,layout,[[[260,172],[262,174]]],prior);
+ assert.equal(ink.headX,225);assert.equal(ink.points[0][0],225);
+});
+test('Ambiguous music sketches retain safe bar alignment instead of guessing a note',()=>{
+ const data={bars:[[note('a'),note('b')]]},api=inkModel(data,()=>[250,270]),layout=box();
+ const ink={kind:'music',headX:260,headY:172,points:[[260,172],[261,173]]},prior=api.scoreInkNoteCentres(layout);
+ api.reprojectScoreInk([ink],layout,layout,[ink.points.map(p=>p.slice())],prior);
+ assert.equal(ink.headX,260);
+});
+test('Unlinked handwriting still follows its bar on system reflow',()=>{
+ const data={bars:[[note('c')]]},api=inkModel(data,()=>[260]);
+ const old=box(),next=box(150,302,450),ink={kind:'music',headX:420,headY:172,points:[[420,172],[422,174]]};
+ api.reprojectScoreInk([ink],old,next,[ink.points.map(p=>p.slice())],api.scoreInkNoteCentres(old));
+ assert.equal(ink.headY,374);assert.ok(ink.headX>420);
+});
+
+test('print-mode music ink follows actual printed notehead, not print-only rest layout offsets',()=>{
+ const data={bars:[[note('Cnote')]]},api=inkModel(data,()=>[259.9]),editor=box();
+ const printed={cells:[{bar:0,left:144,top:302,width:250}]};
+ const old=api.scoreInkNoteCentres(editor);
+ const actualPrintedNotes=new Map([['Cnote',{x:200.85,y:374}]]);
+ const ink={kind:'music',headX:259.9,headY:172,points:[[259.9,172],[262,174]]};
+ api.reprojectScoreInk([ink],editor,printed,[ink.points.map(p=>p.slice())],old,actualPrintedNotes);
+ assert.ok(Math.abs(ink.points[0][0]-200.85)<.001);
+ assert.equal(ink.points[0][1],374);
+ assert.equal(ink.headX,200.85);
+ assert.equal(ink.headY,374);
+ assert.match(one,/reprojectScoreInk\(\[stroke\],staffLayout\(\),layout,null,scoreInkNoteCentres\(staffLayout\(\)\),notePositions\)/);
+});
+test('PNG export uses same print-mode layout dimensions as SVG, even with new systems',()=>{
+ assert.match(one,/function vectorString\(\)\{const svg=makeScore\(true\)/);
+ assert.match(one,/const canvas=document\.createElement\('canvas'\),layout=staffLayout\(true\),scale=2/);
+ assert.match(one,/canvas\.height=layout\.H\*scale/);
+});
+function overlayModel(items,geometryRef){
+ const start=overlay.indexOf('function scoreGeometry(){'),end=overlay.indexOf('function sync(){',start);
+ assert.ok(start>=0&&end>start,'TEST-only annotation anchoring functions');
+ const state={items},window={musicScoreAnnotationGeometry:()=>geometryRef.value};
+ let saved=0,painted=0;
+ const api=new Function('state','activeView','window','persist','render',
+  overlay.slice(start,end)+'\nreturn {anchorForItem,reflowTeacherMarks};')(
+   state,()=> 'editor',window,()=>saved++,()=>painted++);
+ return {...api,state,counts:()=>({saved,painted})};
+}
+test('TEST-only teacher overlay keeps note-local pen ink fixed through a new score system',()=>{
+ const g1={width:1120,height:296,notes:[{id:'C',x:260/1120,y:172/296}],
+  bars:[{left:144/1120,width:400/1120,top:100/296}]};
+ const ref={value:g1},mark={type:'pen',points:[[257/1120,169/296],[262/1120,173/296]],color:'#df654d'};
+ const api=overlayModel([mark],ref);
+ mark.anchor=api.anchorForItem(mark,g1);
+ assert.equal(mark.anchor.type,'note');
+ ref.value={width:1120,height:498,notes:[{id:'C',x:260/1120,y:374/498}],
+  bars:[{left:144/1120,width:400/1120,top:302/498}]};
+ api.reflowTeacherMarks();
+ assert.ok(Math.abs(mark.points[0][1]*498-371)<.01,'ink stays exactly 3 SVG units above printed note');
+ assert.ok(api.counts().saved>0);
+});
+test('passage highlight uses bar-relative fallback at correct SVG offset after system reflow',()=>{
+ const g1={width:1120,height:296,notes:[{id:'C',x:260/1120,y:172/296}],
+  bars:[{left:144/1120,width:400/1120,top:100/296}]};
+ const ref={value:g1},mark={type:'highlighter',points:[[150/1120,135/296],[350/1120,135/296]],color:'#df654d'};
+ const api=overlayModel([mark],ref);
+ mark.anchor=api.anchorForItem(mark,g1);
+ assert.equal(mark.anchor.type,'bar');
+ ref.value={width:1120,height:498,notes:[{id:'C',x:260/1120,y:374/498}],
+  bars:[{left:144/1120,width:400/1120,top:302/498}]};
+ api.reflowTeacherMarks();
+ assert.ok(Math.abs(mark.points[0][1]*498-337)<.01,'bar-relative highlight remains 35 SVG units below staff start');
+});
+test('new test-only overlay module is isolated from production and listens for score reflow',()=>{
+ assert.match(one,/src="\.\/consolidated-annotation-tools\.js"/);
+ assert.match(one,/musicScoreAnnotationGeometry/);
+ assert.match(one,/music-score-studio:score-layout/);
+ assert.match(overlay,/function reflowTeacherMarks\(\)/);
+ assert.match(overlay,/document\.addEventListener\('music-score-studio:score-layout',scheduleSync\)/);
+});
+
+test('orphaned teacher note annotation becomes bar-local after note deletion and system growth',()=>{
+ const g1={width:1120,height:296,notes:[{id:'C',x:260/1120,y:172/296,bar:0}],
+  bars:[{left:144/1120,width:400/1120,top:100/296}]};
+ const ref={value:g1},mark={type:'hand',points:[[260/1120,172/296]],color:'#df654d'};
+ const api=overlayModel([mark],ref);
+ mark.anchor=api.anchorForItem(mark,g1);
+ assert.equal(mark.anchor.type,'note');
+ ref.value={width:1120,height:498,notes:[],
+  bars:[{left:144/1120,width:400/1120,top:302/498}]};
+ api.reflowTeacherMarks();
+ assert.equal(mark.anchor.type,'bar');
+ assert.ok(Math.abs(mark.points[0][1]*498-374)<.01,'deleted-note mark safely follows its bar with 72-unit offset');
+});
+
+function actualEraserHarness(){
+ const extract=(a,b)=>{
+  const start=overlay.indexOf(a),end=overlay.indexOf(b,start+a.length);
+  assert.ok(start>=0&&end>start,'Expected real annotation gesture code: '+a);
+  return overlay.slice(start,end);
+ };
+ const source=[
+  extract('function remember(){','function updateButtons(){'),
+  extract('function eraseNear(','function translateShape('),
+  extract('function rememberEraseStart(','function cancelPointer('),
+  extract('function undo(){','function clearAnnotations()')
+ ].join('\n');
+ const state={tool:'eraser',hidden:false,items:[
+  {id:'inkA',type:'pen',points:[[.1,.2],[.2,.2]]},
+  {id:'inkB',type:'pen',points:[[.5,.5],[.6,.5]]}
+ ],drawing:null,selected:null,history:[],future:[],
+ layer:{setPointerCapture(){},releasePointerCapture(){}},size:{width:1000,height:1000}};
+ const methods=new Function('state','clone','position','nearestShape','persist','render','say',
+  'activeView','anchorForItem','scoreGeometry','shapeModes','$',
+  source+'\nreturn {startPointer,movePointer,endPointer,undo,redo};')(
+   state,x=>JSON.parse(JSON.stringify(x)),e=>e.pt,
+   pt=>state.items.find(x=>x.id===pt?.hit)||null,()=>{},()=>{},()=>{},
+   ()=> 'editor',()=>null,()=>null,new Set(),()=>null);
+ const event=pt=>({button:0,pointerId:4,pt,preventDefault(){}});
+ return {state,event,...methods};
+}
+test('blank-start eraser drag restores ALL marks in a single Undo/Redo step',()=>{
+ const h=actualEraserHarness();
+ h.startPointer(h.event({hit:null}));
+ assert.equal(h.state.history.length,0,'Blank start should not create empty Undo history');
+ h.movePointer(h.event({hit:'inkA'}));
+ h.movePointer(h.event({hit:'inkB'}));
+ h.endPointer(h.event({hit:null}));
+ assert.equal(h.state.items.length,0);
+ assert.equal(h.state.history.length,1,'One eraser gesture must create one history state');
+ h.undo();
+ assert.deepEqual(h.state.items.map(x=>x.id),['inkA','inkB']);
+ h.redo();
+ assert.equal(h.state.items.length,0);
+});
+test('direct eraser tap on ink preserves Undo and does not erase adjacent note ink',()=>{
+ const h=actualEraserHarness();
+ h.startPointer(h.event({hit:'inkA'}));
+ h.endPointer(h.event({hit:null}));
+ assert.deepEqual(h.state.items.map(x=>x.id),['inkB']);
+ assert.equal(h.state.history.length,1);
+ h.undo();
+ assert.deepEqual(h.state.items.map(x=>x.id),['inkA','inkB']);
+});
+test('eraser gesture that never touches a mark does not create an Undo entry',()=>{
+ const h=actualEraserHarness();
+ h.startPointer(h.event({hit:null}));
+ h.movePointer(h.event({hit:null}));
+ h.endPointer(h.event({hit:null}));
+ assert.equal(h.state.history.length,0);
+ assert.equal(h.state.items.length,2);
+});
+
+function mockEngravedCursor(frames){
+ let i=0;
+ return {
+  iterator:{get endReached(){return i>=frames.length;},get tick(){return frames[i]?.tick??NaN;}},
+  reset(){i=0;},hide(){},next(){i++;},
+  GNotesUnderCursor(){return frames[i]?.notes||[];}
+ };
+}
+function mockGraphic(midi,node,isRest=false){
+ return {sourceNote:{halfTone:midi-12,isRest:()=>isRest},getNoteheadSVGs:()=>[node]};
+}
+function mockEngravedNode(){
+ const classes=new Set();
+ return {classes,classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}}};
+}
+function actualEngravedHighlighter(notes){
+ const from=one.indexOf('function indexEngravedNoteheads('),to=one.indexOf('function resetPianoTracking(',from);
+ assert.ok(from>0&&to>from,'Actual OSMD engraving highlight helpers must exist');
+ const mapped=new Map(),api=new Function('piano','engravedNoteheads','osmdTimestampTicks',
+  one.slice(from,to)+'\nreturn {indexEngravedNoteheads,setEngravedNotePlaying};')(
+   {notes},mapped,c=>c.iterator.tick);
+ return {...api,mapped};
+}
+test('Engraved playback highlights sounding chord/part noteheads independently and clears on note-off',()=>{
+ const c=mockEngravedNode(),e=mockEngravedNode(),rest=mockEngravedNode(),later=mockEngravedNode();
+ const notes=[{start:0,midi:60},{start:0,midi:64},{start:960,midi:60}];
+ const api=actualEngravedHighlighter(notes);
+ const cursor=mockEngravedCursor([
+  {tick:0,notes:[mockGraphic(60,c),mockGraphic(64,e),mockGraphic(0,rest,true)]},
+  {tick:960,notes:[mockGraphic(60,later)]}
+ ]);
+ api.indexEngravedNoteheads({cursor,start:0,end:1920});
+ assert.equal(api.mapped.size,3,'Rest symbols are not counted as played notes');
+ api.setEngravedNotePlaying(0,true);api.setEngravedNotePlaying(1,true);
+ assert.ok(c.classes.has('engravedPlayingNotehead')&&e.classes.has('engravedPlayingNotehead'));
+ assert.equal(later.classes.size,0,'Later note is not pre-highlighted');
+ assert.equal(rest.classes.size,0,'Rests are never highlighted');
+ api.setEngravedNotePlaying(0,false);
+ assert.ok(!c.classes.has('engravedPlayingNotehead')&&e.classes.has('engravedPlayingNotehead'),
+  'One voice stopping must not clear another sounding part');
+ api.setEngravedNotePlaying(1,false);api.setEngravedNotePlaying(2,true);
+ assert.ok(!e.classes.size&&later.classes.has('engravedPlayingNotehead'));
+ api.setEngravedNotePlaying(2,false);assert.equal(later.classes.size,0);
+});
+test('Engraved page-relative tick mapping follows later imported pages without a false match',()=>{
+ const first=mockEngravedNode(),second=mockEngravedNode();
+ const notes=[{start:0,midi:60},{start:1920,midi:67}];
+ const api=actualEngravedHighlighter(notes);
+ api.indexEngravedNoteheads({cursor:mockEngravedCursor([{tick:0,notes:[mockGraphic(60,first)]}]),start:0,end:1920});
+ api.indexEngravedNoteheads({cursor:mockEngravedCursor([{tick:0,notes:[mockGraphic(67,second)]}]),start:1920,end:3840});
+ assert.equal(api.mapped.size,2);
+ api.setEngravedNotePlaying(1,true);
+ assert.ok(second.classes.has('engravedPlayingNotehead')&&!first.classes.size);
+ api.setEngravedNotePlaying(1,false);
+ assert.equal(second.classes.size,0);
+});
+test('Engraved note highlighting uses OSMD notehead SVGs and existing audio events; cursor remains functional',()=>{
+ assert.match(one,/#engravedScore \.engravedPlayingNotehead/);
+ assert.match(one,/graphic\.getNoteheadSVGs\?\.\(\)/);
+ assert.match(one,/setEngravedNotePlaying\(event\.index,true\)/);
+ assert.match(one,/setEngravedNotePlaying\(event\.index,false\)/);
+ assert.match(one,/for\(const index of engravedNoteheads\.keys\(\)\)setEngravedNotePlaying\(index,false\)/);
+ assert.match(one,/moveEngravedPlaybackCursor\(tick\)/);
+ assert.match(one,/engravedNoteheads\.clear\(\)/);
+});
