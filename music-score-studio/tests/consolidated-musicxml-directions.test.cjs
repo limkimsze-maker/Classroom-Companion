@@ -248,14 +248,14 @@ test('tracking keeps the cursor moving through silence and highlights only audib
  const classes=()=>({items:new Set(),add(x){this.items.add(x)},remove(x){this.items.delete(x)},contains(x){return this.items.has(x)}});
  const displays=x.score.notes.map(()=>({classList:classes()}));
  const chips=x.score.notes.map(()=>({classList:classes()}));
- const paneStatus={textContent:''},cursorTicks=[],scheduledFrames=[];
+ const paneStatus={textContent:''},cursorTicks=[],scheduledFrames=[],engravedTransitions=[];
  const context={currentTime:0};
  const trackingCode=slice('function startPianoTracking(', 'function ensureOSMD(');
  const makeTracking=new Function(
   'resetPianoTracking','pianoTrackingToken','pianoTrackingFrame',
   'piano','playing','context','pianoNoteNodes','simpleNoteNodes','pianoActiveIndices',
   'document','requestAnimationFrame','performance','moveEngravedPlaybackCursor',
-  'pianoSVG','renderSimpleNoteStrip','followPianoElement','simplePageStart','simpleCurrentMeasure',
+  'pianoSVG','renderSimpleNoteStrip','followPianoElement','simplePageStart','simpleCurrentMeasure','setEngravedNotePlaying',
   trackingCode+'\nreturn startPianoTracking;'
  );
  const document={
@@ -268,7 +268,7 @@ test('tracking keeps the cursor moving through silence and highlights only audib
   new Map(displays.map((e,i)=>[i,e])),
   new Map(chips.map((e,i)=>[i,e])),
   active,document,fn=>{scheduledFrames.push(fn);return scheduledFrames.length},
-  {now:()=>0},tick=>cursorTicks.push(tick),()=>{},()=>{},()=>{},0,0
+  {now:()=>0},tick=>cursorTicks.push(tick),()=>{},()=>{},()=>{},0,0,(i,on)=>engravedTransitions.push([i,on])
  );
  startTracking(0,60/96/x.score.TPQ,x.timing);
  const frameAt=time=>{
@@ -297,4 +297,5 @@ test('tracking keeps the cursor moving through silence and highlights only audib
  const afterRelease=cursorTicks.length;
  frameAt(1.80);
  assert.ok(cursorTicks.length>afterRelease,'cursor must advance after audible notes release');
+  assert.deepEqual(engravedTransitions,[[audibleIndex,true],[audibleIndex,false]],'Engraved notes follow audible on/off, never silent notes');
 });
