@@ -339,7 +339,7 @@ a.scoreModeChoice:hover{background:#fff;border-color:#a1c7d0;color:#084b59}
 </div>
 </section>
 <section class="panel scorePanel" id="paper">
-<div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="sheetClear" type="button" title="Clear all notes and annotations in both hands; confirmation required">⌫ Clear Score</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="sheetClear" type="button" title="Clear all notes and annotations in both hands; confirmation required">⌫ Clear Score</button><span class="muted" style="font-size:12px">Align: select a note, then tap the other stave</span><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
 <details class="teacherAnnotations" id="teacherAnnotations"><summary>🖍 Teacher Annotations <span class="annotationSummaryHint">· pen, highlighter and shapes</span></summary>
  <div class="annotationTools" role="group" aria-label="Teacher annotation tools (not musical notes)">
   <div class="annotationToolRow">
@@ -937,39 +937,83 @@ function render(){
  keyboardNoteFocus=false;
 }
 function point(ev){const svg=$('sheet'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const matrix=svg.getScreenCTM();return matrix?p.matrixTransform(matrix.inverse()):p}
+function restPieces(duration){
+ // The internal tick grid supports semiquaver, dotted values and demisemiquaver rests.
+ const values=[{den:1,dot:false,t:96},{den:2,dot:true,t:72},{den:2,dot:false,t:48},
+  {den:4,dot:true,t:36},{den:4,dot:false,t:24},{den:8,dot:true,t:18},
+  {den:8,dot:false,t:12},{den:16,dot:true,t:9},{den:16,dot:false,t:6},
+  {den:32,dot:false,t:3}];
+ const result=[];let left=duration;
+ if(left<-.0001||Math.abs(left/3-Math.round(left/3))>.0001)return null;
+ for(const value of values)while(left+0.0001>=value.t){
+  result.push({id:makeId(),kind:'rest',den:value.den,dot:value.dot});left-=value.t;
+ }
+ return Math.abs(left)<.0001?result:null;
+}
+function noteOnsetInBar(events,id){
+ let tick=0;for(const e of events){if(e.id===id)return tick;tick+=ticks(e)}return null;
+}
 function insert(b,hand,x,y,denOverride=null,kindOverride=null){
  const bar=data.bars[b][hand],den=denOverride||chosen,kind=kindOverride||$('kind').value;
  const e={id:makeId(),kind,den,dot:$('dotted').checked};
  if(kind==='note')Object.assign(e,{...pitchAt(y,locationForBar(b).top+(hand==='left'?SEPARATION:0),hand),acc:$('acc').value});
- if(barSum(bar)+ticks(e)>meterCap()+.0001){info('That '+NAMES[den].toLowerCase()+' will not fit in '+hand+'-hand Bar '+(b+1)+'.');return false}
- const loc=locationForBar(b),times=[];let pos=0;
- for(const item of bar){times.push(timeX(pos,ticks(item),loc.left,loc.width));pos+=ticks(item)}
- // Snap to a note onset in the other hand; both staves share one musical clock.
- const opposite=data.bars[b][hand==='right'?'left':'right'];let otherTick=0,match=null;
- for(const item of opposite){
-  const noteX=timeX(otherTick,ticks(item),loc.left,loc.width);
-  if(item.kind==='note'&&Math.abs(noteX-x)<=18&&(!match||Math.abs(noteX-x)<match.distance))
-   match={tick:otherTick,x:noteX,distance:Math.abs(noteX-x)};
-  otherTick+=ticks(item);
- }
- let index=0;while(index<times.length&&times[index]<(match?match.x:x)-0.001)index++;
- // If the selected beat lies after the end of this hand, add explicit rests.
- // This preserves timing instead of moving existing notes or creating hidden silence.
- const gap=match?match.tick-barSum(bar):0;
- const restValues=[{den:1,tick:96},{den:2,tick:48},{den:4,tick:24},{den:8,tick:12},{den:16,tick:6}];
- let padding=[],remaining=gap;
- if(gap>0&&Math.abs(gap/6-Math.round(gap/6))<.00001){
-  for(const value of restValues)while(remaining+0.00001>=value.tick){
-   padding.push({id:makeId(),kind:'rest',den:value.den,dot:false});remaining-=value.tick;
+ const cap=meterCap(),size=ticks(e),loc=locationForBar(b);
+ // Selecting a note in one hand explicitly chooses the beat for the next note
+ // entered in the opposite stave. The horizontal tap only chooses the new pitch.
+ const ref=locate(selected),reference=ref?.b===b&&ref.hand!==hand&&ref.event.kind==='note'?ref:null;
+ let target=reference?noteOnsetInBar(data.bars[b][reference.hand],reference.event.id):null;
+ let snapped=false;
+ if(target!==null){snapped=true}
+ else {
+  // Without a selected reference, snap a tap near an opposite-hand notehead.
+  let at=0,best=null;
+  for(const other of data.bars[b][hand==='right'?'left':'right']){
+   if(other.kind==='note'){
+    const dx=Math.abs(timeX(at,ticks(other),loc.left,loc.width)-x);
+    if(dx<=11&&(!best||dx<best.distance))best={tick:at,distance:dx};
+   }
+   at+=ticks(other);
   }
+  if(best){target=best.tick;snapped=true}
  }
- const canPad=match&&gap>0&&remaining<.00001&&barSum(bar)+gap+ticks(e)<=meterCap()+.0001;
- snapshot();
- if(canPad){bar.push(...padding);index=bar.length}
- bar.splice(index,0,e);selected=e.id;
- commit((hand==='right'?'Right':'Left')+' hand · '+(kind==='rest'?'Rest':e.step+e.octave)+(match&&(canPad||Math.abs(match.tick-barSum(bar)+ticks(e))<.00001)?' aligned with the other hand.':' added.'));return true;
+ if(snapped){
+  if(target+size>cap+.0001){info('The selected note will not fit at that beat. Choose a shorter value.');return false}
+  let pos=0,index=0;
+  for(;index<bar.length;index++){
+   const current=bar[index],end=pos+ticks(current);
+   if(target<end-.0001)break;
+   pos=end;
+  }
+  const existing=bar[index];
+  // Filling a rest does not move the other notes or disturb simultaneous timing.
+  if(existing&&existing.kind==='rest'&&target>=pos-.0001&&target+size<=pos+ticks(existing)+.0001){
+   const before=restPieces(target-pos),after=restPieces(pos+ticks(existing)-target-size);
+   if(before&&after){
+    snapshot();bar.splice(index,1,...before,e,...after);selected=e.id;
+    commit('Aligned with '+(reference?'selected':'nearest')+' note in the other hand.');return true;
+   }
+  }
+  // Empty time at the end of a hand is explicitly filled with rests.
+  const end=barSum(bar);
+  if(target>=end-.0001){
+   const padding=restPieces(target-end);
+   if(padding){
+    snapshot();bar.push(...padding,e);selected=e.id;
+    commit('Aligned at the same beat in both hands.');return true;
+   }
+  }
+  info('That beat is occupied in this hand. Delete or shorten the existing note, or replace a rest to align.');return false;
+ }
+ // Normal note entry retains established insert-before-note behaviour.
+ if(barSum(bar)+size>cap+.0001){info('That '+NAMES[den].toLowerCase()+' will not fit in '+hand+'-hand Bar '+(b+1)+'.');return false}
+ let index=0,elapsed=0;
+ while(index<bar.length&&timeX(elapsed,ticks(bar[index]),loc.left,loc.width)<x){
+  elapsed+=ticks(bar[index]);index++;
+ }
+ snapshot();bar.splice(index,0,e);selected=e.id;
+ commit((hand==='right'?'Right':'Left')+' hand · '+(kind==='rest'?'Rest':e.step+e.octave)+' added.');
+ return true;
 }
-
 function closeNoteContext(){contextTarget=null;$('noteContext').hidden=true}
 function pickContextValue(den){
  const target=contextTarget;closeNoteContext();if(!target||!DENS.includes(den))return;
