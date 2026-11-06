@@ -339,7 +339,7 @@ a.scoreModeChoice:hover{background:#fff;border-color:#a1c7d0;color:#084b59}
 </div>
 </section>
 <section class="panel scorePanel" id="paper">
-<div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="sheetClear" type="button" title="Clear all notes and annotations in both hands; confirmation required">⌫ Clear Score</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
 <details class="teacherAnnotations" id="teacherAnnotations"><summary>🖍 Teacher Annotations <span class="annotationSummaryHint">· pen, highlighter and shapes</span></summary>
  <div class="annotationTools" role="group" aria-label="Teacher annotation tools (not musical notes)">
   <div class="annotationToolRow">
@@ -1373,7 +1373,7 @@ function bind(){
  document.addEventListener('pointerdown',e=>{if(!$('noteContext').hidden&&!e.target.closest('#noteContext'))closeNoteContext()});
  window.addEventListener('scroll',closeNoteContext,{capture:true,passive:true});
  $('sheet').addEventListener('keydown',e=>{if(annotationTool!=='cursor')return;if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();keyboardNoteFocus=true;if(!finishSlur(id)){selected=id;render()}}});
- $('play').onclick=play;$('stop').onclick=stop;$('sheetPlay').onclick=()=>playing?stop():play();$('undo').onclick=undo;$('redo').onclick=redo;
+ $('play').onclick=play;$('stop').onclick=stop;$('sheetPlay').onclick=()=>playing?stop():play();$('sheetClear').onclick=()=>{if(!confirm('Clear all right-hand and left-hand notes, rests and teacher annotations? You can Undo to restore them.'))return;snapshot();for(const bar of data.bars){bar.right=[];bar.left=[]}data.annotations=[];selected=null;selectedAnnotation=null;pendingSlur=null;commit('Score cleared. Undo restores your music.');};$('undo').onclick=undo;$('redo').onclick=redo;
  syncPlayButtons();
  $('volume').oninput=e=>setVolume(e.target.value);
  setVolume(volume);
