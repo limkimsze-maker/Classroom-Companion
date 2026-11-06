@@ -333,6 +333,9 @@ a.scoreModeChoice:hover{background:#fff;border-color:#a1c7d0;color:#084b59}
 .persistentExpressionHint{flex:0 0 auto;font-size:11px;font-weight:750;color:#087b86}
 @media(max-width:650px){.persistentExpression{flex-wrap:wrap;gap:5px}.persistentExpressionTitle{width:100%}.persistentExpressionButtons{width:100%}.persistentExpressionButton{min-height:44px}}
 @media print{.persistentExpression{display:none!important}}
+/* Keep the note-preview action easy to spot beside Play on both hands. */
+#paper .scorehead #hearNoteSheet{background:#e3f7f1;color:#176455;border:1px solid #73bba4;font-weight:800;white-space:nowrap;min-height:40px}
+#paper .scorehead #hearNoteSheet:hover,#paper .scorehead #hearNoteSheet:focus-visible{background:#cff1e6;border-color:#489a80}
 </style>
 </head>
 <body>
@@ -376,7 +379,7 @@ a.scoreModeChoice:hover{background:#fff;border-color:#a1c7d0;color:#084b59}
 </div>
 </section>
 <section class="panel scorePanel" id="paper">
-<div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="hearNoteSheet" type="button" aria-label="Hear selected note" title="Select a musical note in either hand to hear its pitch" disabled>♫ Hear Note</button><button class="scoreClearVisible" id="sheetClear" type="button" title="Clear all notes and annotations in both hands; confirmation required">⌫ Clear Score</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="hearNoteSheet" type="button" aria-label="Hear selected note" title="Select a musical note in either hand to hear its pitch">♫ Hear Note</button><button class="scoreClearVisible" id="sheetClear" type="button" title="Clear all notes and annotations in both hands; confirmation required">⌫ Clear Score</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
 <div class="persistentExpression" role="group" aria-label="Musical expression controls">
  <strong class="persistentExpressionTitle">🎶 Musical expression</strong>
  <div id="persistentExpressionButtons" class="persistentExpressionButtons" aria-label="Choose a musical expression for the selected note"></div>
@@ -997,7 +1000,7 @@ function render(){
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  $('annotationUndo').disabled=!history.length;$('annotationRedo').disabled=!future.length;
  $('annotationSelected').hidden=!selectedAnnotation;
- const found=locate(selected);$('editPanel').hidden=!found;$('hearNoteSheet').disabled=playing||found?.event.kind!=='note';renderArticulations(found);renderPersistentExpressions(found);
+ const found=locate(selected);$('editPanel').hidden=!found;renderArticulations(found);renderPersistentExpressions(found);
  if(found){$('selection').textContent=(found.hand==='right'?'Right':'Left')+' hand · Bar '+(found.b+1)+' · '+(found.event.kind==='rest'?'Rest':found.event.step+found.event.octave)+' · '+NAMES[found.event.den]+(found.event.dot?' dotted':'')}
  $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;$('instrument').value=data.instrument||'piano';
  if(priorFocus){
@@ -1363,7 +1366,7 @@ function syncPlayButtons(){
  $('sheetPlay').setAttribute('aria-label',playing?'Stop piano playback':'Play both piano hands');
  $('sheetPlay').setAttribute('aria-pressed',String(playing));
  $('sheetPlay').classList.toggle('primary',!playing);
- $('hearNoteSheet').disabled=playing||locate(selected)?.event.kind!=='note';
+
 }
 function stopNotePreview(){
  if(previewTimer!==null){clearTimeout(previewTimer);previewTimer=null}
@@ -1376,9 +1379,9 @@ function stopNotePreview(){
  if(!playing)setPlayingNotes(new Set());
 }
 async function hearSelectedNote(){
- if(playing)return;
+ if(playing){info('Stop score playback before hearing one note.');return}
  const ref=locate(selected);
- if(!ref||ref.event.kind!=='note')return;
+ if(!ref||ref.event.kind!=='note'){info('Select a note in either stave first.');return}
  stopNotePreview();
  try{
   ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();
