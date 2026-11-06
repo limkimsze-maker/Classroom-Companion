@@ -1334,7 +1334,6 @@ function addNoteMarkButtons(container,e){
  }
  button((e.staccato?'✓ ':'')+'Staccato ·',e.staccato,'Detached note',()=>toggleNoteMark('staccato'));
  button((e.staccatissimo?'✓ ':'')+'Staccatissimo ▾',e.staccatissimo,'Very detached note',()=>toggleNoteMark('staccatissimo'));
- button((e.portato?'✓ ':'')+'Portato –·',e.portato,'Gently separated notes',()=>toggleNoteMark('portato'));
  button((e.tenuto?'✓ ':'')+'Tenuto –',e.tenuto,'Full length, slight weight',()=>toggleNoteMark('tenuto'));
  button((e.accent?'✓ ':'')+'Accent >',e.accent,'Give the note extra emphasis',()=>toggleNoteMark('accent'));
  button((e.marcato?'✓ ':'')+'Marcato ^',e.marcato,'Strong accent',()=>toggleNoteMark('marcato'));
@@ -1553,7 +1552,7 @@ function flag(g,x,y,up,count=1){
  for(let i=0;i<amount;i++){
   const off=i*10,base=y+(up?off:-off);
   if(up)g.append(el('path',{d:`M ${x} ${base} C ${x+23} ${base+5}, ${x+21} ${base+22}, ${x+10} ${base+31} C ${x+18} ${base+16}, ${x+16} ${base+11}, ${x} ${base+10} Z`,fill:'#193a4a'}));
-  else g.append(el('path',{d:`M ${x} ${base} C ${x-24} ${base-5}, ${x-22} ${base-22}, ${x-12} ${base-31} C ${x-19} ${base-15}, ${x-17} ${base-10}, ${x} ${base-9} Z`,fill:'#193a4a'}));
+  else g.append(el('path',{d:`M ${x} ${base} C ${x+24} ${base-5}, ${x+22} ${base-22}, ${x+12} ${base-31} C ${x+19} ${base-15}, ${x+17} ${base-10}, ${x} ${base-9} Z`,fill:'#193a4a'}));
  }
 }
 // Automatically beam short notes by their rhythmic beat, not by SVG distance.
