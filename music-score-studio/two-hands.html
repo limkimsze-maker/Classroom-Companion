@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Music Score Studio © 2026 Lim Kim Sze. GNU AGPL-3.0; see LICENSE and OPEN_SOURCE_NOTICES.md. -->
+<title>Music Score Studio — Two Hands</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#233e50;background:#f1f7f8}
+*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}
+button{cursor:pointer;touch-action:manipulation;border:1px solid #c6d9dd;background:white;color:#204451;border-radius:10px;padding:9px 12px;font-weight:650;min-height:42px}
+button:hover{border-color:#58a2a8}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #07a3aa;outline-offset:2px}
+button[disabled]{opacity:.45;cursor:not-allowed}.primary{background:#087e88;color:white;border-color:#087e88}.active{background:#d4f3ed;border-color:#348a79}.danger{color:#aa3943}
+header{background:#fff;border-bottom:1px solid #cddfe1;padding:12px max(16px,calc((100vw - 1250px)/2));display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{margin:0;font-size:20px;letter-spacing:-.5px}header small{color:#5f7784}a{color:#087e88}
+main{max-width:1250px;margin:auto;padding:16px;display:grid;gap:12px}
+.panel{background:#fff;border:1px solid #d6e3e6;border-radius:16px;padding:14px;box-shadow:0 3px 13px #1c485112}
+.controls,.toolbar,.row{display:flex;flex-wrap:wrap;align-items:center;gap:9px}.toolbar{justify-content:space-between}.row label{display:flex;align-items:center;gap:6px;color:#496373;font-size:13px}
+input,select{padding:8px;border:1px solid #c4d5da;border-radius:8px;background:white;color:#224451;min-height:39px}
+input[type=text]{width:min(320px,100%)}.pill{background:#edf8f6;border-radius:10px;padding:6px 10px;color:#27716f;font-size:13px}
+.values{display:flex;gap:6px;flex-wrap:wrap}.values button{min-width:85px;padding:8px 11px;font-size:13px}.values button b{display:block;font-size:21px;line-height:1.3}
+h2{font-size:16px;margin:0 0 8px}.hint{font-size:13px;color:#526e7e;margin:7px 0}.scorehead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#sheetViewport{overflow:auto;max-height:68vh;border:1px solid #dce8e9;border-radius:12px;background:white;touch-action:pan-x pan-y}
+#sheet{display:block;width:100%;min-width:780px;height:auto;cursor:crosshair;user-select:none}
+#sheet.zoomed{width:135%;min-width:1053px}
+.noteHit{cursor:grab;touch-action:none}.noteHit:active{cursor:grabbing}.noteHit:focus-visible{outline:none;stroke:#0b9cad;stroke-width:2}
+.status{min-height:20px;font-size:13px;color:#275f70}.noteContext{position:fixed;z-index:1100;background:#fff;border:1px solid #9fc8ce;border-radius:12px;box-shadow:0 10px 30px #183c4b35;padding:10px;max-width:min(310px,calc(100vw - 16px));min-width:190px}.noteContext[hidden]{display:none}.noteContext strong{display:block;margin:0 0 7px;font-size:13px;color:#234b60}.noteContext .valueChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.noteContext .valueChoices button{padding:7px;min-height:35px;font-size:12px}.noteContext .valueChoices button:last-child:nth-child(odd){grid-column:1/-1}.noteContext .contextDismiss{margin-top:7px;width:100%;min-height:32px;font-size:12px}.articulations{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.articulations button{padding:7px 9px;font-size:12px;min-height:36px}.articulations button.active{background:#d4f3ed}.slurStart{fill:none;stroke:#078f99;stroke-width:3;stroke-dasharray:4 3;pointer-events:none}.playHalo{fill:#ffc64b;fill-opacity:.55;stroke:#e19a23;stroke-width:3;pointer-events:none;opacity:0}.isPlaying .playHalo{opacity:1}
+#editPanel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0 0;border-top:1px solid #e6eef0;margin-top:10px}
+#editPanel[hidden]{display:none}.muted{color:#637985}
+.studioLabel{font-size:12px;font-weight:750;letter-spacing:.045em;text-transform:uppercase;color:#486d7b}.composeIntro{display:flex;flex-direction:column;gap:5px}.composeIntro h2{margin:0}.entryTop{display:flex;flex-wrap:wrap;align-items:start;gap:12px;justify-content:space-between}.entryOptions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;align-self:center}.entryOptions label{font-size:13px;display:flex;align-items:center;gap:6px}.transportGroup,.editGroup{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.transportLabel{font-size:12px;font-weight:750;color:#537481}.moreTools{position:relative}.moreTools>summary{cursor:pointer;list-style:none;border:1px solid #c6d9dd;background:#fff;border-radius:10px;padding:10px 12px;min-height:42px;font-size:13px;font-weight:650;display:flex;align-items:center;gap:6px}.moreTools>summary::-webkit-details-marker{display:none}.moreTools>summary:focus-visible{outline:3px solid #07a3aa;outline-offset:2px}.moreTools[open]>summary{border-color:#5ca4a8;background:#eff8f6}.moreToolsBody{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#f5fafb;border:1px solid #d8e7e9;border-radius:12px;margin-top:7px}.editHeading{font-size:12px;font-weight:750;color:#496c79;align-self:center}.controlHelp{font-size:12px;color:#607984}.scorehead h2{margin:0}.quickHelp{font-size:13px;color:#416978;background:#f1faf9;padding:9px 11px;border-radius:10px;margin:9px 0}.quickHelp strong{color:#235363}.setupPanel{padding:11px 14px}.setupPanel .row{gap:9px}.setupPanel input[type=text]{width:min(300px,100%)}.scorePanel{border-color:#bbdadd}.editPanelLabel{width:100%;font-size:12px;font-weight:750;color:#49717a}.articulations{width:100%;border-top:1px solid #e4eef0;padding-top:8px}.articulations .editHeading{min-width:100%;margin-top:3px}.actionsPanel{padding:10px 14px}.actionsPanel .toolbar{gap:10px}.contextualHint{font-size:12px;color:#5b7b87}footer{text-align:center;font-size:12px;color:#637781;margin:6px 0 18px}
+.fullpage{position:fixed!important;inset:0!important;z-index:1000!important;border-radius:0!important;margin:0!important;background:#fff;overflow:auto}
+.fullpage #sheetViewport{max-height:calc(100dvh - 160px)}
+@media(max-width:650px){.entryTop{display:block}.entryOptions{margin-top:10px}.setupPanel .row{align-items:flex-start}.transportGroup{width:100%}.actionsPanel .toolbar{align-items:flex-start}.scorehead{align-items:flex-start}.quickHelp{line-height:1.5}header h1{font-size:17px}main{padding:8px}.panel{padding:10px}.values button{min-width:66px;font-size:11px;padding:7px}.values button b{font-size:18px}.toolbar{align-items:stretch}#sheetViewport{max-height:60vh}}
+@media print{header,.controls,.toolbar,#editPanel,.scorehead button,footer,.status,.hint{display:none!important}main,.panel{display:block;border:0;box-shadow:none;margin:0;padding:0}#sheetViewport{max-height:none;overflow:visible;border:0}#sheet,#sheet.zoomed{width:100%;min-width:0}body{background:white}}
+
+/* Match the approved single-stave score-first design, not a new theme. */
+:root{--navy:#12354b;--ink:#173449;--teal:#087b86;--teal2:#e6f5f5;--surface:#fff;--page:#f1f5f6;--border:#d8e4e7;--muted:#637987;--shadow:0 12px 36px rgba(21,51,69,.085)}
+html{scroll-behavior:smooth}
+body{background:var(--page);color:var(--ink);font-size:15px;line-height:1.5}
+.studioHeader{background:linear-gradient(115deg,#103449,#17516a);color:#fff;padding:17px max(18px,calc((100vw - 1560px)/2));display:flex;justify-content:space-between;align-items:center;gap:14px}
+.studioHeader .brand{display:flex;gap:13px;align-items:center}
+.brandLogo{width:46px;height:46px;display:grid;place-items:center;border-radius:13px;background:#e9fbf6;color:#0d6f78;font:34px/1 Georgia,serif}
+.studioHeader h1{color:#fff;font-size:21px;line-height:1.2;letter-spacing:-.45px}
+.studioHeader h1 .headerMode{display:block;font-size:13px;font-weight:650;letter-spacing:0;color:#b9dce5;margin-top:4px}
+.studioHeader p{margin:4px 0 0;color:#b8dbe3;font-size:12px}
+.studioHeader .backLink{color:#e3f5f7;border:1px solid #69919f;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:650;text-decoration:none}
+.studioHeader .backLink:hover,.studioHeader .backLink:focus-visible{background:#ffffff17;border-color:#b8dbe3;color:white}
+.studioShell{max-width:1588px;display:grid;grid-template-columns:292px minmax(0,1fr);gap:16px;padding:18px}
+.studioSidebar{display:flex;flex-direction:column;gap:14px;min-width:0}
+.studioWork{min-width:0;display:flex;flex-direction:column;gap:14px}
+.studioShell>.studioSidebar>.panel,.studioWork>.panel{margin:0}
+.panel{border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);background:var(--surface)}
+.setupPanel{order:2;padding:16px}
+.studioSidebar>.panel[aria-label="Compose notes"]{order:1;padding:17px}
+.studioSidebar .entryTop{display:block}
+.studioSidebar .entryOptions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:15px}
+.studioSidebar .entryOptions label{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#536c7b;font-size:12px;font-weight:650}
+.studioSidebar .entryOptions select{width:148px;max-width:75%;background:#fff}
+.studioSidebar .entryOptions input[type=checkbox]{width:17px;height:17px;accent-color:var(--teal)}
+.studioSidebar .studioLabel{color:#526b7d;letter-spacing:.3px;margin-bottom:7px}
+.studioSidebar .values{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;width:100%}
+.studioSidebar .values button{min-width:0;min-height:66px;padding:6px 1px;border:1px solid #cadde3;border-radius:9px;font-size:10px;line-height:1.15;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px}
+.studioSidebar .values button b{font:28px/1.05 Georgia,'Segoe UI Symbol',serif}
+.studioSidebar .values button.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.studioSidebar .values button:hover:not(.active){border-color:#5ca5b1;background:#f0f9f9}
+.studioSidebar .row{display:grid;gap:10px}
+.studioSidebar .row>label{display:block;color:#536c7b;font-size:11px;font-weight:750}
+.studioSidebar .row>label input,.studioSidebar .row>label select{display:block;width:100%;margin-top:5px}
+.actionsPanel{padding:0;overflow:visible}
+.actionsPanel .toolbar{padding:14px 16px;gap:10px}
+.transportGroup{gap:7px}
+.transportLabel{color:#526b7d;font-weight:750;letter-spacing:.02em}
+button{border-color:#ccdde2;color:var(--ink);min-height:39px;font-size:13px}
+button.primary,.primary{background:var(--teal);border-color:var(--teal);color:white}
+button.primary:hover{background:#08636d}
+button.active:not(.primary){background:#e6f5f5;color:#087b86}
+.scorePanel{padding:0;overflow:hidden;border-color:var(--border)}
+.scorehead{background:linear-gradient(90deg,#f9fcfc,#edf6f6);border-bottom:1px solid #dce7e8;padding:12px 16px;margin:0}
+.scorehead h2{font-size:14px;letter-spacing:-.1px;color:#213f52}
+.scorehead .controls{justify-content:flex-end}
+.scorehead #full{background:#e9f3ff;border-color:#9dc8ed;color:#194e86;font-weight:800}
+.scorehead #full:hover{background:#d2e9ff}
+.scorehead #sheetPlay{font-size:13px}
+.quickHelp{background:#f8fbfc;padding:9px 16px;border-radius:0;margin:0;border-bottom:1px solid #e6eef0;font-size:12px}
+#sheetViewport{border:none;border-radius:0;max-height:68vh;background:#fff;overflow:auto;overscroll-behavior:contain}
+#sheet{min-width:880px;width:100%;display:block}
+#sheet.zoomed{min-width:1160px;width:135%}
+#editPanel{padding:11px 16px 13px;margin:0;background:#f7fbfb;border-top:0;border-bottom:1px solid #dbe7e9;gap:7px}
+#editPanel .editPanelLabel{color:#496c79}
+#editPanel .articulations{border-top:1px solid #dce8eb}
+#status{display:block;border-top:1px solid #e1ecee;background:#fbfdfd;padding:10px 16px;margin:0}
+.fullpage{z-index:3500!important;display:flex!important;flex-direction:column!important;max-height:100dvh!important;overflow:hidden!important;box-shadow:none!important;border:0!important}
+.fullpage>.scorehead{flex:0 0 auto;background:linear-gradient(100deg,#e7f6ff,#f3f0ff)}
+.fullpage>#editPanel{flex:0 0 auto;max-height:28dvh;overflow-y:auto}
+.fullpage>#sheetViewport{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:auto!important}
+.fullpage #sheet{min-width:0;width:100%;height:auto}
+.fullpage #sheet.zoomed{min-width:880px;width:135%}
+.fullpage>.quickHelp{flex:0 0 auto}
+.fullpage>#status{flex:0 0 auto}
+@media(max-width:850px){
+ .studioShell{display:flex;flex-direction:column;padding:10px;gap:12px}
+ .studioSidebar{gap:10px}
+ .studioSidebar>.panel[aria-label="Compose notes"]{padding:12px}
+ .studioSidebar .entryTop{display:flex;gap:12px}
+ .studioSidebar .entryOptions{display:flex;flex-wrap:wrap;margin-top:0;align-items:center;gap:8px}
+ .studioSidebar .entryOptions label{justify-content:flex-start}
+ .studioSidebar .entryOptions select{width:auto}
+ .studioSidebar .values{width:auto;grid-template-columns:repeat(5,minmax(54px,1fr));max-width:370px}
+ .setupPanel{padding:10px 12px}
+ .studioSidebar .row{display:flex;flex-wrap:wrap}
+ .studioSidebar .row>label input,.studioSidebar .row>label select{width:auto;max-width:100%}
+ .studioWork{gap:10px}
+}
+@media(max-width:650px){
+ .studioHeader{padding:12px 14px}
+ .studioHeader .brandLogo{width:39px;height:39px;font-size:27px}
+ .studioHeader h1{font-size:17px}
+ .studioHeader p{display:none}
+ .studioShell{padding:8px;gap:8px}
+ .studioSidebar .entryTop{display:block}
+ .studioSidebar .entryOptions{margin-top:10px}
+ .studioSidebar .values{max-width:none;width:100%}
+ .studioSidebar .values button{min-height:61px;font-size:9px}
+ .actionsPanel .toolbar{padding:10px}
+ .scorehead{padding:11px 12px}
+ .scorehead .controls{gap:5px}
+ .scorehead .controls button{font-size:12px;padding:7px 9px}
+ .quickHelp{padding:8px 12px;line-height:1.45}
+ #sheetViewport{max-height:62vh}
+ .fullpage #sheetViewport{max-height:none}
+ .fullpage .quickHelp{display:none}
+ .fullpage #editPanel{max-height:23dvh}
+}
+@media print{
+ header,.studioSidebar,.actionsPanel,.quickHelp,#editPanel,.scorehead button,footer,.status{display:none!important}
+ .studioShell,.studioWork,.scorePanel{display:block!important;padding:0!important;margin:0!important;max-width:none;border:0!important;box-shadow:none!important}
+ #sheetViewport{overflow:visible!important;max-height:none!important}
+ #sheet,#sheet.zoomed{width:100%!important;min-width:0!important}
+}
+
+
+.teacherAnnotations{border-bottom:1px solid #dce7e8;background:#f9fcfc}
+.teacherAnnotations>summary{list-style:none;cursor:pointer;min-height:39px;padding:10px 16px;display:flex;align-items:center;gap:8px;color:#245367;font-size:13px;font-weight:750}
+.teacherAnnotations>summary::-webkit-details-marker{display:none}
+.teacherAnnotations>summary:focus-visible{outline:3px solid #84cfde;outline-offset:-3px}
+.teacherAnnotations[open]>summary{background:#edf7f7;border-bottom:1px solid #dce7e8}
+.annotationSummaryHint{font-size:12px;font-weight:450;color:#6b7e86}
+.annotationTools{padding:10px 14px;display:grid;gap:9px;background:#fff}
+.annotationToolRow{display:flex;flex-wrap:wrap;gap:6px}
+.annotationToolRow button{min-height:36px;padding:6px 10px;font-size:12px}
+.annotationToolRow button[aria-pressed=true]{background:#087b86;color:#fff;border-color:#087b86}
+.annotationOptions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px}
+.annotationOptions select{font-size:12px;padding:6px;min-height:36px}
+.annotationOptions #annotationSelected{display:inline-flex;flex-wrap:wrap;gap:6px}
+.annotationOptions #annotationSelected[hidden]{display:none}
+.annotationOptions #annotationSelected button{min-height:32px;font-size:12px;padding:5px 8px}
+.annotationGuide{color:#51707c;font-size:12px}
+#sheet.annotating{cursor:crosshair;touch-action:none}
+#sheet.annotating [data-id],#sheet.annotating .noteHit{cursor:crosshair}
+@media(max-width:650px){.teacherAnnotations>summary{padding:8px 12px}.annotationTools{padding:8px}.annotationToolRow button{flex:1 1 auto}.annotationSummaryHint{display:none}}
+@media print{.teacherAnnotations{display:none!important}}
+
+/* Phone Fit must remain readable: the score scrolls rather than shrinking to 300px. */
+.fullpage #sheet{min-width:880px!important;width:100%!important;height:auto!important}
+.fullpage #sheet.zoomed{min-width:1160px!important;width:135%!important}
+.fullpage #sheetViewport{overflow:auto!important;overscroll-behavior:contain}
+.fullpage>.teacherAnnotations{flex:0 0 auto;max-height:29dvh;overflow:auto}
+.studioSidebar .values button{font-size:11px;line-height:1.2;min-height:74px}
+.articulations button{min-height:42px;font-size:12px}
+#editPanel button{min-height:42px}
+.expressionMore{width:100%;border-top:1px solid #e4eef0;padding-top:5px}
+.expressionMore>summary{font-size:12px;font-weight:700;color:#376678;cursor:pointer;padding:9px 7px}
+.expressionMore>summary:focus-visible{outline:3px solid #84cfde;outline-offset:1px}
+.expressionMoreInner{display:flex;flex-wrap:wrap;gap:6px;padding-top:6px}
+@media(max-width:650px){
+ .studioSidebar .values button{font-size:11px;min-height:78px;padding:5px 3px}
+ .studioSidebar .values button b{font-size:26px}
+ .articulations button{min-height:44px}
+ .fullpage #sheet{min-width:880px!important}
+ .fullpage #sheet.zoomed{min-width:1160px!important}
+}
+
+/* One common visual language across the single-stave and two-hand score pages. */
+.studioHeader{padding:18px max(18px,calc((100vw - 1560px)/2));min-height:82px}
+.studioHeader h1{font-size:21px;line-height:1.1}
+.studioHeader p{display:block;color:#b8dbe3}
+.studioHeader .top-pill{font-size:12px;border:1px solid #69919f;padding:6px 11px;border-radius:999px;color:#e3f5f7;white-space:nowrap}
+.scoreModeNav{background:#f8fcff;border-bottom:1px solid #bdd9e7;box-shadow:0 5px 18px #12354b0c}
+.scoreModeInner{max-width:1588px;margin:auto;display:flex;align-items:center;flex-wrap:wrap;gap:11px;padding:10px 18px;min-height:62px}
+.scoreModeLabel{color:#225276;font-size:12px;font-weight:850;letter-spacing:.035em}
+.scoreModeChoices{display:inline-flex;gap:4px;background:#e9f2f5;border-radius:12px;padding:4px}
+.scoreModeChoice{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 14px;border:1px solid transparent;border-radius:9px;color:#234c6a;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap}
+a.scoreModeChoice:hover{background:#fff;border-color:#a1c7d0;color:#084b59}
+.scoreModeChoice.current{background:#087b86;color:white;box-shadow:0 2px 7px #12354b23}
+.scoreModeNote{font-size:12px;color:#577380}
+.testPill{margin-left:auto;font-size:11px;font-weight:800;letter-spacing:.04em;background:#fff0bd;color:#674400;padding:6px 9px;border-radius:8px}
+.sectionEyebrow{font-size:11px;font-weight:800;color:#526b7d;letter-spacing:.05em;margin-bottom:6px}
+.studioSidebar>.panel[aria-label="Compose notes"]{padding:17px}
+.studioSidebar .entryOptions{border-top:1px solid #e1e9ec;padding-top:13px}
+.studioSidebar>.setupPanel{padding:15px 17px}
+.scoreSettingsDrawer>summary{cursor:pointer;font-weight:850;color:#264e79;font-size:15px;padding:3px 0 9px;list-style:revert}
+.scoreSettingsDrawer>summary span{font-size:11px;font-weight:550;color:#6a8194;margin-left:6px}
+.scoreSettingsDrawer[open]>summary{border-bottom:1px solid #e0e9f2;margin-bottom:8px}
+.scoreSettingsDrawer .intro{font-size:12px;line-height:1.5;color:#637987;margin:7px 0 12px}
+.scoreSettingsDrawer>summary:focus-visible{outline:3px solid #84cfde;outline-offset:2px}
+.studioWork .actionsPanel,.studioWork .scorePanel{box-shadow:0 12px 36px rgba(21,51,69,.085)}
+.scorePanel .scorehead{padding:12px 16px}
+.scorePanel .scorehead h2{font-weight:800}
+.scorePanel .scorehead #sheetPlay{min-height:40px}
+.scorePanel .scorehead #zoom{min-height:40px}
+.scorePanel .scorehead #full{min-height:40px}
+@media(max-width:650px){
+ .studioHeader{min-height:64px;padding:12px 14px}
+ .studioHeader h1{font-size:18px}
+ .studioHeader p{font-size:11px}
+ .studioHeader .top-pill{font-size:10px;padding:5px 8px}
+ .scoreModeInner{padding:8px 10px;gap:7px}
+ .scoreModeNote{display:none}
+ .scoreModeLabel{display:none}
+ .scoreModeChoices{flex:1;min-width:0}
+ .scoreModeChoice{flex:1;min-width:0;min-height:44px;font-size:12px;padding:6px 8px}
+ .testPill{margin-left:0}
+ .studioSidebar>.setupPanel{padding:12px}
+}
+@media print{.scoreModeNav{display:none!important}}
+
+
+/* Single-stave-style compact score dock: no persistent left-side editor. */
+.studioShell.singleColumn{max-width:1588px!important;display:block!important;margin:auto!important;padding:14px 18px!important}
+.singleColumn .studioWork{width:100%;display:flex;flex-direction:column;gap:13px;min-width:0}
+.singleColumn .actionsPanel{overflow:visible;position:relative;z-index:50;padding:0}
+.studioDock{min-height:62px;display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:9px 14px;background:#f8fcff}
+.studioDockTitle{font-size:13px;font-weight:850;color:#225276;white-space:nowrap}
+.studioDockQuick{display:flex;gap:7px;align-items:center}
+.studioDockSpacer{flex:1;min-width:0}
+.composeDrawer,.dockTools{position:relative}
+.composeDrawer>summary,.dockTools>summary{list-style:none;cursor:pointer;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 14px;border:1px solid #b9d3e4;border-radius:12px;background:#fff;color:#234c6a;font-size:13px;font-weight:850;white-space:nowrap}
+.composeDrawer>summary::-webkit-details-marker,.dockTools>summary::-webkit-details-marker{display:none}
+.composeDrawer>summary:hover,.dockTools>summary:hover{background:#eaf6fc}
+.composeDrawer[open]>summary,.dockTools[open]>summary{background:#e8f5ff;border-color:#7ab5d6}
+.composeDrawer>summary:focus-visible,.dockTools>summary:focus-visible{outline:3px solid #84cfde;outline-offset:2px}
+.composeDrawerBody,.dockToolsBody{position:absolute;right:0;top:calc(100% + 8px);z-index:150;width:min(590px,calc(100vw - 26px));max-height:min(75dvh,740px);overflow:auto;overscroll-behavior:contain;background:#fff;border:1px solid #bfd8e2;border-radius:16px;padding:14px;box-shadow:0 22px 50px #12354b35}
+.composeDrawerBody{width:min(400px,calc(100vw - 26px));display:grid;gap:11px}
+.composeDrawerBody>.panel{padding:10px 5px;border:none;box-shadow:none;border-radius:0;margin:0}
+.composeDrawerBody>.setupPanel{border-top:1px solid #e0e9f2;padding-top:13px}
+.composeDrawerBody .entryTop{display:block}
+.composeDrawerBody .entryOptions{display:flex;flex-wrap:wrap;align-items:center;gap:11px;margin-top:12px;padding-top:12px;border-top:1px solid #e3e9eb}
+.composeDrawerBody .entryOptions label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:650}
+.composeDrawerBody .entryOptions select{width:auto;max-width:none}
+.composeDrawerBody .values{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.composeDrawerBody .values button{min-width:0;min-height:75px;font-size:11px;padding:6px 3px}
+.composeDrawerBody .values button b{font-size:27px}
+.composeDrawerBody .row{display:grid;gap:10px}
+.composeDrawerBody .row label{display:block;font-size:12px;font-weight:750}
+.composeDrawerBody .row input,.composeDrawerBody .row select{display:block;width:100%;max-width:100%;margin-top:5px}
+.dockToolsBody .toolbar{padding:0;display:flex;gap:12px;justify-content:flex-start}
+.dockToolsBody .transportGroup{display:flex;flex-wrap:wrap;gap:7px}
+.dockToolsBody .transportLabel{display:none}
+.dockToolsBody .moreToolsBody{max-width:100%}
+.singleColumn .scorePanel{width:100%;min-width:0}
+.singleColumn .scorePanel .scorehead{padding:12px 16px}
+@media(max-width:650px){
+ .studioShell.singleColumn{padding:8px!important}
+ .studioDock{padding:8px;gap:6px}
+ .studioDockTitle{display:none}
+ .studioDockQuick button{font-size:12px;min-height:44px;padding:8px 10px}
+ .studioDockSpacer{display:none}
+ .composeDrawer,.dockTools{flex:1}
+ .composeDrawer>summary,.dockTools>summary{width:100%;padding:8px 9px}
+ .composeDrawerBody,.dockToolsBody{right:0;top:calc(100% + 6px)}
+ .composeDrawerBody .values button{font-size:10px;min-height:75px}
+}
+@media print{.actionsPanel{display:none!important}.studioShell.singleColumn{padding:0!important}}
+
+
+.consolidatedModes{display:inline-flex;gap:5px;align-items:center;padding:4px;background:#eff8fa;border:1px solid #99cbd4;border-radius:13px}
+.consolidatedModes a,.consolidatedModes [aria-current="page"]{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:6px 12px;border-radius:9px;font:800 13px system-ui,sans-serif;text-decoration:none;white-space:nowrap}
+.consolidatedModes a{color:#1e5262}.consolidatedModes a:hover,.consolidatedModes a:focus-visible{background:#d4eeee}
+.consolidatedModes [aria-current="page"]{color:white;background:#087b86}
+.consolidatedModes small{font-size:10px;color:#345966}
+.studioDockCommon{display:flex;align-items:center;flex-wrap:wrap;gap:6px}.studioDockCommon button{min-height:42px}
+.studioDockQuick{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.studioDockQuick label{display:flex;align-items:center;gap:5px;font-size:12px}.studioDockQuick input[type=range]{max-width:105px}
+.quickValuesPanel{padding:10px 14px!important;margin:0!important}
+.quickValuesPanel .entryTop{display:flex;align-items:center;flex-wrap:wrap;gap:12px;width:100%}
+.quickValuesPanel .entryTop>div:first-child{flex:1 1 450px;min-width:0}
+.quickValuesPanel .values{display:grid;grid-template-columns:repeat(5,minmax(75px,1fr));gap:7px;margin-top:5px}
+.quickValuesPanel .values button{min-width:0;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:7px 3px;border:1px solid #bdd3db;background:#fff;border-radius:10px;color:#25495a}
+.quickValuesPanel .values button.active{background:#087b86;border-color:#087b86;color:white}
+.quickValuesPanel .values button .noteStampGraphic{display:block;width:28px;height:38px;flex:0 0 auto}
+.quickValuesPanel .values button.active .noteStampGraphic{filter:brightness(0) invert(1)}
+.quickValueName{font-size:12px;line-height:1.1;font-weight:750}.quickValueBeats{font-size:10px;line-height:1.1;opacity:.82}
+.quickPaletteTitle{margin:0 0 3px;font-size:13px;color:#36566a}.quickPaletteTitle small{font-size:11px;font-weight:450;color:#587382}
+.quickValuesPanel .entryOptions{display:flex;flex-wrap:wrap;gap:9px;margin:0;padding:0;align-items:center}
+.quickValuesPanel .entryOptions label{display:flex;gap:5px;align-items:center;font-size:12px}.quickValuesPanel .entryOptions select{min-height:42px}
+#sheetPlay{display:none!important}.fullpage #sheetPlay{display:inline-flex!important}
+.quickHelp{padding:6px 12px!important;font-size:11px!important}.teacherAnnotations>summary{padding:7px 12px!important;font-size:12px!important}
+@media(max-width:690px){.consolidatedModes{width:100%;justify-content:center}.consolidatedModes a,.consolidatedModes [aria-current="page"]{flex:1;min-height:44px}.quickValuesPanel .values{grid-template-columns:repeat(3,minmax(0,1fr))}.quickValuesPanel .values button{min-height:76px}.studioDockQuick{width:100%}.studioDockCommon{order:1;width:100%}}
+@media print{.quickValuesPanel,.consolidatedModes{display:none!important}}
+
+</style>
+</head>
+<body>
+<header class="studioHeader"><div class="brand"><span class="brandLogo" aria-hidden="true">♫</span><div><h1>Music Score Studio</h1><p>Compose · Listen · Explore</p></div></div><nav class="consolidatedModes" aria-label="Choose score mode"><a href="./index.html">♫ Single stave</a><span aria-current="page">🎹 Two hands</span><small>TEST</small></nav><span class="top-pill">Free · No account · Made for teaching</span></header>
+
+<main class="studioShell singleColumn">
+<div class="studioWork">
+<section class="panel actionsPanel" aria-label="Compose, playback and editing">
+<div class="studioDock">
+ <span class="studioDockTitle">🎼 My music</span>
+ <div class="studioDockQuick"><button class="primary" id="play">▶ Play both hands</button><button id="stop" disabled>■ Stop</button><label class="row" for="volume">🔊 Volume <input id="volume" type="range" min="0" max="100" value="75" step="5" aria-label="Piano playback volume" style="width:110px;accent-color:#087e88"><output id="volumeValue" for="volume">75%</output></label></div>
+ <div class="studioDockCommon" role="group" aria-label="Editing controls"><button id="undo" title="Undo last edit (Ctrl+Z)" disabled>↶ Undo</button><button id="redo" title="Redo last edit (Ctrl+Shift+Z)" disabled>↷ Redo</button><button id="addBar" title="Add another bar to both hands">+ Bar</button></div><div class="studioDockSpacer"></div>
+ <details class="composeDrawer" id="composeDrawer"><summary>⚙ Score setup</summary>
+ <div class="composeDrawerBody">
+
+<section class="panel setupPanel">
+<details class="scoreSettingsDrawer" id="scoreSettingsDrawer" open>
+<summary>⚙ Score setup <span>Time · tempo · title</span></summary>
+<p class="intro">Use the same note values and editing controls as the single-stave composer.</p>
+<div class="row">
+<label>Score title <input id="title" type="text" maxlength="100" value="My Piano Piece" aria-label="Score title"></label>
+<label>Time signature <select id="meter"><option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option><option value="6/8">6/8</option></select></label>
+<label>Tempo (BPM) <input id="tempo" type="number" min="40" max="220" value="96" style="width:78px"></label>
+</div>
+</details>
+</section>
+ </div></details>
+ <details class="dockTools" id="dockTools"><summary>⚙ Tools</summary><div class="dockToolsBody">
+<div class="toolbar">
+<div class="transportGroup"><span class="transportLabel">LISTEN &amp; LEARN</span></div>
+<div class="transportGroup">
+<div class="moreToolsBody" role="group" aria-label="File and bar tools"><button id="removeBar">− Empty bar</button><button id="save">Save JSON</button><button id="open">Open JSON</button><input id="openFile" type="file" accept=".json,application/json" hidden><button id="musicxml">Export MusicXML</button><button id="print">Print / PDF</button></div></div>
+</div>
+</div></details>
+</div>
+</section>
+<section class="panel quickValuesPanel" aria-label="Compose notes and rests">
+<div class="entryTop">
+<div><h2 class="quickPaletteTitle">Choose a note value <small>· tap a stave to add</small></h2><div id="values" class="values" role="group" aria-label="British note values"></div></div>
+<div class="entryOptions"><label>Write <select id="kind" aria-label="Write note or rest"><option value="note">Note</option><option value="rest">Rest</option></select></label><label><input type="checkbox" id="dotted"> Dotted (+½)</label><label>Accidental <select id="acc"><option value="">None</option><option value="#">♯ Sharp</option><option value="b">♭ Flat</option><option value="n">♮ Natural</option></select></label></div>
+</div>
+</section>
+<section class="panel scorePanel" id="paper">
+<div class="scorehead"><h2>Your music sheet <span id="count" class="muted"></span></h2><div class="controls"><button class="primary" id="sheetPlay" type="button" aria-label="Play both piano hands" title="Play both hands, or stop playback">▶ Play</button><button id="zoom">🔎 Larger</button><button id="full">⛶ Full page</button></div></div>
+<details class="teacherAnnotations" id="teacherAnnotations"><summary>🖍 Teacher Annotations <span class="annotationSummaryHint">· pen, highlighter and shapes</span></summary>
+ <div class="annotationTools" role="group" aria-label="Teacher annotation tools (not musical notes)">
+  <div class="annotationToolRow">
+   <button type="button" data-annotation-tool="cursor" aria-pressed="true" title="Return to adding, selecting and dragging musical notes">↖ Cursor</button>
+   <button type="button" data-annotation-tool="select" aria-pressed="false" title="Select and move existing annotation marks">▣ Selector</button>
+   <button type="button" data-annotation-tool="hand" aria-pressed="false" title="Place a pointing-hand marker">👆 Hand</button>
+   <button type="button" data-annotation-tool="arrow" aria-pressed="false" title="Drag an arrow to point at music">➜ Arrow</button>
+   <button type="button" data-annotation-tool="pen" aria-pressed="false" title="Teacher pen: underline or circle music; not note recognition">✎ Pen</button>
+   <button type="button" data-annotation-tool="highlighter" aria-pressed="false" title="Translucent highlight for teaching">🖍 Highlighter</button>
+   <button type="button" data-annotation-tool="circle" aria-pressed="false" title="Drag to circle a note or musical passage">◯ Circle</button>
+   <button type="button" data-annotation-tool="eraser" aria-pressed="false" title="Tap a teacher mark to erase it; notes will remain">⌫ Eraser</button>
+  </div>
+  <div class="annotationOptions">
+   <label>Colour <select id="annotationColour" aria-label="Teacher annotation colour"><option value="#df654d">Coral red</option><option value="#127f9b">Ocean blue</option><option value="#2e9657">Green</option><option value="#262f43">Black</option></select></label>
+   <span id="annotationGuide" class="annotationGuide" role="status">Cursor: compose notes as normal.</span>
+   <button type="button" id="annotationUndo" title="Undo last note or annotation change">↶ Undo</button><button type="button" id="annotationRedo" title="Redo last note or annotation change">↷ Redo</button>
+   <span id="annotationSelected" hidden><button type="button" id="annotationSmaller" title="Reduce selected annotation size">− Size</button><button type="button" id="annotationLarger" title="Increase selected annotation size">+ Size</button><button type="button" id="annotationDelete" class="danger">Delete mark</button></span>
+  </div>
+ </div>
+</details>
+<p class="quickHelp" id="composeHint"><strong>Right hand</strong> · Treble clef &nbsp; <strong>Left hand</strong> · Bass clef &nbsp; <span>Tap to add · Drag notes up or down · Right-click for values</span></p>
+<div id="editPanel" hidden><span class="editPanelLabel">Edit selected note</span><strong id="selection"></strong><button id="shorter">Shorter value</button><button id="longer">Longer value</button><button class="danger" id="delete">Delete selected</button><div id="articulations" class="articulations" role="group" aria-label="Expression and articulation for selected note"></div></div>
+<div id="sheetViewport" class="paperScroll"><svg id="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 500" role="img" aria-label="Editable two-hand piano score. Tap on a stave to add notes or rests."></svg></div>
+
+<p id="status" class="status" role="status" aria-live="polite">Ready · Select a value and tap either stave.</p>
+</section>
+</div>
+</main>
+<div id="noteContext" class="noteContext" hidden role="dialog" aria-label="Note values"><strong id="noteContextTitle">Choose a note value</strong><div id="contextValues" class="valueChoices"></div><button type="button" class="contextDismiss" id="contextClose">Cancel</button></div>
+<footer>Music Score Studio © 2026 Lim Kim Sze · Experimental two-hand composition · Review notation before teaching · Works locally in your browser.<div style="margin-top:6px">Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.</div><div style="margin-top:6px">Licensed under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a> · <a href="https://github.com/limkimsze-maker/Classroom-Companion/tree/main/music-score-studio" target="_blank" rel="noopener noreferrer">Source code</a> · <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/OPEN_SOURCE_NOTICES.md" target="_blank" rel="noopener noreferrer">Open-source notices</a>.</div></footer>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='cc-music-twohand-v1';
+const NAMES={1:'Semibreve',2:'Minim',4:'Crotchet',8:'Quaver',16:'Semiquaver'};
+const NOTE_ILLUSTRATIONS={"1":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#fff\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>","2":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"33\" y1=\"42\" x2=\"33\" y2=\"6\" stroke=\"#183f54\" stroke-width=\"3\" stroke-linecap=\"round\"/><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#fff\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>","4":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"33\" y1=\"42\" x2=\"33\" y2=\"6\" stroke=\"#183f54\" stroke-width=\"3\" stroke-linecap=\"round\"/><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#183f54\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>","8":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"33\" y1=\"42\" x2=\"33\" y2=\"6\" stroke=\"#183f54\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z\" fill=\"#183f54\"/><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#183f54\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>","16":"<svg viewBox=\"0 0 54 68\" class=\"noteStampGraphic\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><line x1=\"33\" y1=\"42\" x2=\"33\" y2=\"6\" stroke=\"#183f54\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M33 7 C49 10 48 24 38 32 C44 20 43 15 33 19 Z\" fill=\"#183f54\"/><path d=\"M33 18 C49 21 48 35 38 43 C44 31 43 26 33 30 Z\" fill=\"#183f54\"/><ellipse cx=\"22\" cy=\"43\" rx=\"12\" ry=\"7.3\" transform=\"rotate(-18 22 43)\" fill=\"#183f54\" stroke=\"#183f54\" stroke-width=\"2.8\"/></svg>"};
+const GLYPHS={1:'𝅝',2:'𝅗𝅥',4:'♩',8:'♪',16:'♬'},STEPS=['C','D','E','F','G','A','B'],DENS=[1,2,4,8,16];
+const ticks=e=>96/e.den*(e.dot?1.5:1),newProject=()=>({format:'cc-music-score-studio-twohand',version:1,title:'My Piano Piece',meter:'4/4',tempo:96,bars:Array.from({length:4},()=>({right:[],left:[]})),annotations:[]});
+let data=newProject(),chosen=4,selectedAnnotation=null,annotationTool='cursor',annotationDrag=null,annotationDraft=null,selected=null,pendingSlur=null,contextTarget=null,dragPitch=null,suppressDragClick=false,keyboardNoteFocus=false,activeNotes=new Set(),history=[],future=[],serial=0,ctx=null,sounds=[],timers=[],playing=false,zoomed=false,volume=75,masterGain=null;
+const MARKS=['staccato','staccatissimo','portato','tenuto','accent','marcato','fermata'];
+const MARK_LABELS={staccato:'Staccato ·',staccatissimo:'Staccatissimo ▾',portato:'Portato –·',tenuto:'Tenuto –',accent:'Accent >',marcato:'Marcato ^',fermata:'Fermata 𝄐'};
+const makeId=()=> 'ph'+Date.now().toString(36)+(++serial).toString(36);
+const meterCap=()=>{let [a,b]=data.meter.split('/').map(Number);return a*96/b};
+const barSum=events=>events.reduce((n,e)=>n+ticks(e),0);
+const noteIx=(step,oct)=>oct*7+STEPS.indexOf(step);
+const pitchFromIx=n=>({step:STEPS[((n%7)+7)%7],octave:Math.floor(n/7)});
+const base=hand=>hand==='right'?noteIx('E',4):noteIx('G',2);
+const pitchAt=(y,top,hand)=>pitchFromIx(Math.max(9,Math.min(47,base(hand)+Math.round((top+72-y)/9))));
+const yAt=(e,top,hand)=>top+72-(noteIx(e.step,e.octave)-base(hand))*9;
+const info=text=>{$('status').textContent=text};
+const escapeXml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+function el(name,attrs={},text){const n=document.createElementNS(NS,name);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=String(text);return n}
+function drawLine(svg,x1,y1,x2,y2,stroke='#294553',w=1.3){svg.append(el('line',{x1,y1,x2,y2,stroke,'stroke-width':w}))}
+function drawText(svg,x,y,text,size=13,attrs={}){svg.append(el('text',{x,y,fill:'#2b5261','font-family':'system-ui,Segoe UI,Arial', 'font-size':size,...attrs},text))}
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function snapshot(){history.push(clone(data));if(history.length>60)history.shift();future=[];if(playing)stop()}
+function store(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){}}
+function commit(message){pruneLinks();store();render();if(message)info(message)}
+function locate(id){for(let b=0;b<data.bars.length;b++)for(const hand of ['right','left']){const i=data.bars[b][hand].findIndex(e=>e.id===id);if(i>=0)return {b,hand,i,event:data.bars[b][hand][i]}}return null}
+function validate(raw){
+ if(!raw||raw.format!=='cc-music-score-studio-twohand'||!Array.isArray(raw.bars)||!raw.bars.length||raw.bars.length>40)throw Error('Invalid two-hand project (maximum 40 bars).');
+ if(!['2/4','3/4','4/4','6/8'].includes(raw.meter))throw Error('Unsupported metre');
+ const out={format:'cc-music-score-studio-twohand',version:1,title:String(raw.title||'My Piano Piece').slice(0,100),meter:raw.meter,tempo:Math.max(40,Math.min(220,Number(raw.tempo)||96)),bars:[],annotations:[]};
+ const cap=Number(raw.meter.split('/')[0])*96/Number(raw.meter.split('/')[1]);
+ const seenIds=new Set();
+ for(const bar of raw.bars){const entry={right:[],left:[]};for(const hand of ['right','left']){
+  if(!Array.isArray(bar?.[hand])||bar[hand].length>100)throw Error('Invalid '+hand+'-hand bar');
+  entry[hand]=bar[hand].map(e=>{
+   if(!e||!DENS.includes(e.den)||!['note','rest'].includes(e.kind))throw Error('Invalid note/rest');
+   const v={id:makeId(),kind:e.kind,den:e.den,dot:!!e.dot};
+   if(e.kind==='note'){if(!STEPS.includes(e.step)||!Number.isInteger(e.octave)||e.octave<1||e.octave>6)throw Error('Invalid pitch');Object.assign(v,{step:e.step,octave:e.octave,acc:['','#','b','n'].includes(e.acc)?e.acc:''});
+    for(const mark of MARKS)if(e[mark]===true)v[mark]=true;
+    if(typeof e.slurTo==='string')v.slurTo=e.slurTo.slice(0,128);
+    if(typeof e.tieTo==='string')v.tieTo=e.tieTo.slice(0,128);
+    // Keep stable saved IDs, but drop duplicates and invalid characters.
+    if(typeof e.id==='string'&&/^[a-zA-Z0-9_-]{1,128}$/.test(e.id))v.id=e.id;
+    if(seenIds.has(v.id))throw Error('Duplicate note ID in imported project');
+    seenIds.add(v.id);
+   }
+   return v;
+  });
+  if(barSum(entry[hand])>cap+.0001)throw Error('Too many beats in '+hand+'-hand bar');
+ }out.bars.push(entry)}
+ // Annotations are presentation-only, with bounded colour, geometry and
+ // complexity. They cannot change musical notes or playback.
+ if(Array.isArray(raw.annotations))out.annotations=raw.annotations.slice(0,250).flatMap(a=>{
+  if(!a||!['pen','highlighter','arrow','circle','hand'].includes(a.tool)||!Array.isArray(a.points)||a.points.length<1||a.points.length>500)return [];
+  const noteIds=new Set(out.bars.flatMap(bar=>['right','left'].flatMap(hand=>bar[hand].filter(n=>n.kind==='note').map(n=>n.id))));
+  const points=a.points.flatMap(p=>{
+   if(!Number.isInteger(p?.bar)||p.bar<0||p.bar>=out.bars.length||
+    !Number.isFinite(p.dx)||!Number.isFinite(p.dy)||Math.abs(p.dx)>600||Math.abs(p.dy)>600)return [];
+   const q={bar:p.bar,dx:p.dx,dy:p.dy};
+   if(typeof p.noteId==='string'&&noteIds.has(p.noteId)&&
+    Number.isFinite(p.noteDx)&&Number.isFinite(p.noteDy)&&
+    Math.abs(p.noteDx)<=600&&Math.abs(p.noteDy)<=600)
+    Object.assign(q,{noteId:p.noteId,noteDx:p.noteDx,noteDy:p.noteDy});
+   return [q];
+  });
+  if(!points.length)return [];
+  const color=/^#[0-9a-fA-F]{6}$/.test(a.color)?a.color:'#df654d';
+  return [{id:makeId(),tool:a.tool,points,color,size:Number.isFinite(a.size)?Math.max(16,Math.min(64,a.size)):31}];
+ });
+ // Validated links never cross hands, never point backwards, and ties connect
+ // adjacent notes of the same written and sounding pitch.
+ for(const hand of ['right','left']){
+  const refs=out.bars.flatMap((bar,b)=>bar[hand].map((e,i)=>({e,b,i})));
+  const indices=new Map(refs.map((r,i)=>[r.e.id,i]));
+  for(let i=0;i<refs.length;i++){
+   const e=refs[i].e;
+   if(e.kind!=='note')continue;
+   const end=indices.get(e.slurTo);
+   if(end===undefined||end<=i||refs[end].e.kind!=='note')delete e.slurTo;
+   const next=refs[i+1];
+   if(!next||e.tieTo!==next.e.id||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||!tiePitchMatches(e,out.bars[refs[i].b][hand],refs[i].i,next.e,out.bars[next.b][hand],next.i,out)||
+     (refs[i].b!==next.b&&(next.b!==refs[i].b+1||next.i!==0||
+      Math.abs(barSum(out.bars[refs[i].b][hand])-cap)>.001)))delete e.tieTo;
+  }
+ }
+ return out;
+}
+
+function handRefs(hand){return data.bars.flatMap((bar,b)=>bar[hand].map((e,i)=>({e,b,i})))}
+function handLinks(hand){
+ const refs=handRefs(hand),indices=new Map(refs.map((r,i)=>[r.e.id,i]));
+ const slurs=[],ties=[],slurEnds=new Set(),tieEnds=new Set();
+ for(let i=0;i<refs.length;i++){
+  const a=refs[i],e=a.e;if(e.kind!=='note')continue;
+  const j=indices.get(e.slurTo);
+  if(j!==undefined&&j>i&&refs[j].e.kind==='note'){slurs.push([e.id,refs[j].e.id]);slurEnds.add(refs[j].e.id)}
+  const next=refs[i+1];
+  if(next?.e.kind==='note'&&next.e.id===e.tieTo&&e.step===next.e.step&&e.octave===next.e.octave&&
+   tiePitchMatches(e,data.bars[a.b][hand],a.i,next.e,data.bars[next.b][hand],next.i)&&
+   (a.b===next.b||(next.b===a.b+1&&next.i===0&&
+     Math.abs(barSum(data.bars[a.b][hand])-meterCap())<.001))){
+   ties.push([e.id,next.e.id]);tieEnds.add(next.e.id)
+  }
+ }
+ return {refs,indices,slurs,ties,slurEnds,tieEnds};
+}
+function pruneLinks(){
+ for(const hand of ['right','left']){
+  const links=handLinks(hand);
+  for(const {e} of links.refs)if(e.kind==='note'){
+   if(e.slurTo&&!links.slurs.some(pair=>pair[0]===e.id))delete e.slurTo;
+   if(e.tieTo&&!links.ties.some(pair=>pair[0]===e.id))delete e.tieTo;
+  }
+ }
+}
+function toggleMark(mark){
+ const ref=locate(selected);if(!ref||ref.event.kind!=='note'||!MARKS.includes(mark))return;
+ const links=handLinks(ref.hand),e=ref.event;
+ if(['staccato','staccatissimo','portato'].includes(mark)&&
+  (links.ties.some(pair=>pair[0]===e.id)||links.tieEnds.has(e.id))){
+  info('A tied note must sustain. Remove its tie first.');return
+ }
+ snapshot();const on=!!e[mark];
+ if(['staccato','staccatissimo','portato','tenuto'].includes(mark))
+  for(const key of ['staccato','staccatissimo','portato','tenuto'])delete e[key];
+ if(['accent','marcato'].includes(mark))for(const key of ['accent','marcato'])delete e[key];
+ if(!on)e[mark]=true;commit((on?'Removed ':'Added ')+mark+'.');
+}
+function toggleTie(){
+ const ref=locate(selected);if(!ref||ref.event.kind!=='note')return;
+ const e=ref.event;if(e.tieTo){snapshot();delete e.tieTo;commit('Tie removed.');return}
+ const refs=handRefs(ref.hand),n=refs.findIndex(r=>r.e.id===e.id),next=refs[n+1];
+ if(!next||next.e.kind!=='note'||e.step!==next.e.step||e.octave!==next.e.octave||
+  !tiePitchMatches(e,data.bars[ref.b][ref.hand],ref.i,next.e,data.bars[next.b][ref.hand],next.i)||
+  (ref.b!==next.b&&(next.b!==ref.b+1||next.i!==0||
+   Math.abs(barSum(data.bars[ref.b][ref.hand])-meterCap())>.001))){
+  info('A tie joins the next same-pitch note in the same hand.');return
+ }
+ snapshot();e.tieTo=next.e.id;
+ for(const v of [e,next.e])for(const key of ['staccato','staccatissimo','portato'])delete v[key];
+ commit('Tie added: one sustained sound.');
+}
+function toggleSlur(){
+ const ref=locate(selected);if(!ref||ref.event.kind!=='note')return;
+ if(pendingSlur){pendingSlur=null;render();info('Slur cancelled.');return}
+ if(ref.event.slurTo){snapshot();delete ref.event.slurTo;commit('Slur removed.');return}
+ pendingSlur={id:ref.event.id,hand:ref.hand};
+ render();info('Tap the other note on the same hand. Escape cancels.');
+}
+function finishSlur(id){
+ if(!pendingSlur)return false;
+ const pending=pendingSlur,ref=locate(id);
+ if(!ref||ref.hand!==pending.hand||ref.event.kind!=='note'){
+  info('Tap another note on the same hand.');return true;
+ }
+ pendingSlur=null;
+ if(id===pending.id){render();info('Slur cancelled.');return true}
+ const links=handLinks(ref.hand),i=links.indices.get(pending.id),j=links.indices.get(id);
+ if(i===undefined||j===undefined){render();return true}
+ const a=Math.min(i,j),b=Math.max(i,j);
+ if(links.slurs.some(([from,to])=>a<links.indices.get(to)&&links.indices.get(from)<b)){
+  render();info('Overlapping slurs are not supported.');return true
+ }
+ snapshot();links.refs[a].e.slurTo=links.refs[b].e.id;selected=id;commit('Musical slur added.');
+ return true;
+}
+function renderArticulations(ref){
+ const dock=$('articulations');dock.replaceChildren();if(!ref||ref.event.kind!=='note')return;
+ const mk=(label,pressed,fn,dest=dock)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.className=pressed?'active':'';button.setAttribute('aria-pressed',String(!!pressed));button.onclick=fn;dest.append(button)};
+ const heading=text=>{const label=document.createElement('span');label.className='editHeading';label.textContent=text;dock.append(label)};
+ heading('Pitch');
+ for(const [label,direction] of [['↑ Higher',1],['↓ Lower',-1]])mk(label,false,()=>adjustPitch(direction));
+ heading('Expression and musical connections');
+ for(const mark of ['staccato','tenuto','accent'])mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark));
+ mk(pendingSlur?'✕ Cancel slur':ref.event.slurTo?'Remove slur':'Slur ⌒',!!pendingSlur,()=>toggleSlur());
+ mk(ref.event.tieTo?'Remove tie':'Tie ⌣',!!ref.event.tieTo,()=>toggleTie());
+ const advanced=document.createElement('details');advanced.className='expressionMore';
+ const summary=document.createElement('summary');summary.textContent='⋯ More musical expression';advanced.append(summary);
+ const inner=document.createElement('div');inner.className='expressionMoreInner';advanced.append(inner);
+ for(const mark of ['staccatissimo','portato','marcato','fermata'])mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark),inner);
+ dock.append(advanced);
+ if(pendingSlur){const hint=document.createElement('span');hint.className='muted';hint.textContent='Tap the other note (same hand)';dock.append(hint)}
+}
+const CLEF_TREBLE_PATH='M314 801Q300 854 291.0 906.0Q282 958 282 1012Q282 1059 288.5 1100.5Q295 1142 307 1177Q320 1217 341.0 1252.5Q362 1288 385.5 1311.0Q409 1334 427 1334Q451 1334 493 1249Q514 1206 524.0 1156.0Q534 1106 534 1049Q534 978 515.0 907.5Q496 837 459.5 775.0Q423 713 372 666L407 498Q422 500 432.0 501.0Q442 502 447 502Q508 502 556.0 467.5Q604 433 632.5 377.0Q661 321 661 254Q661 177 621.5 115.5Q582 54 503 25Q508 8 532 -117Q538 -147 541.0 -164.5Q544 -182 545.0 -195.0Q546 -208 546 -225Q546 -275 521.5 -314.5Q497 -354 455.5 -376.0Q414 -398 363 -398Q311 -398 271.0 -378.5Q231 -359 208.0 -324.5Q185 -290 185 -245Q185 -197 211.5 -165.0Q238 -133 287 -133Q329 -133 355.5 -163.5Q382 -194 382 -236Q382 -272 357.0 -299.0Q332 -326 292 -326H282Q308 -365 364 -365Q433 -365 472.0 -320.0Q511 -275 511 -205Q511 -188 507.0 -159.5Q503 -131 493 -91Q483 -51 477.5 -25.0Q472 1 470 12Q436 2 390 2Q304 2 222 52Q142 102 96.0 184.0Q50 266 50 361Q50 451 91 530Q132 609 192.5 675.0Q253 741 314 801ZM341 826Q364 838 390.0 870.5Q416 903 440.0 945.0Q464 987 479.0 1029.5Q494 1072 494 1106Q494 1142 483.0 1163.0Q472 1184 445 1184Q421 1184 398.5 1162.0Q376 1140 358.5 1103.5Q341 1067 331.0 1022.0Q321 977 321 930Q321 898 327.5 872.0Q334 846 341 826ZM398 379Q371 373 347.0 353.5Q323 334 308.5 306.5Q294 279 294 248Q294 223 307.0 196.5Q320 170 339 154Q352 142 365 136Q380 129 380 123Q380 120 370 117Q332 126 301.5 151.0Q271 176 253.5 211.5Q236 247 236 287Q236 330 253.5 370.0Q271 410 302.5 442.0Q334 474 374 490L345 641Q229 547 174.5 456.5Q120 366 120 277Q120 212 154.0 156.0Q188 100 247.0 65.5Q306 31 380 31Q400 31 420.5 35.0Q441 39 464 45ZM495 55Q593 97 593 227Q593 270 571.0 305.5Q549 341 512.0 362.0Q475 383 429 383Z';
+const CLEF_BASS_PATH='M50 123Q216 231 288 301Q336 348 373.0 408.5Q410 469 431.5 536.0Q453 603 453 669Q453 728 435.0 773.5Q417 819 383.0 845.0Q349 871 302 871Q284 871 264.5 867.0Q245 863 224 855Q181 839 158.0 813.5Q135 788 135 765Q135 756 143.0 752.0Q151 748 158 748Q168 748 183 752Q190 754 196.5 755.0Q203 756 210 756Q248 756 272.0 733.5Q296 711 296 674Q296 638 266.0 612.0Q236 586 195 586Q146 586 111.0 617.0Q76 648 76 697Q76 756 109.0 802.0Q142 848 198.5 874.0Q255 900 324 900Q400 900 460.0 867.0Q520 834 555.5 776.5Q591 719 591 646Q591 551 538 464Q511 419 476.5 379.0Q442 339 389.0 297.5Q336 256 256.0 208.0Q176 160 57 101ZM687 809Q710 809 726.0 793.0Q742 777 742 754Q742 731 726.0 715.5Q710 700 687 700Q664 700 648.0 715.5Q632 731 632 754Q632 777 648.0 793.0Q664 809 687 809ZM687 589Q710 589 726.0 573.0Q742 557 742 534Q742 511 726.0 495.5Q710 480 687 480Q664 480 648.0 495.5Q632 511 632 534Q632 557 648.0 573.0Q664 589 687 589Z';
+function drawClef(svg,hand,x,top){
+ // Exact approved Noto Music SVG outlines used by the single-stave editor;
+ // no dependence on installed fonts on classroom devices or printers.
+ const treble=hand==='right',outline=el('g',{transform:'translate('+x+' '+(top+(treble?72:66))+') scale(0.072 -0.072)',
+  role:'img','aria-label':treble?'Treble clef':'Bass clef'});
+ outline.append(el('path',{d:treble?CLEF_TREBLE_PATH:CLEF_BASS_PATH,fill:'#193a4a'}));
+ svg.append(outline);
+}
+function drawEvent(svg,e,x,top,hand,isSelected,beamed=false){
+ const y=e.kind==='note'?yAt(e,top,hand):top+38,fill='#204451';
+ const group=el('g',{'data-id':e.id,'class':activeNotes.has(e.id)?'isPlaying':'',role:'button',tabindex:0,'aria-label':(hand==='right'?'Right':'Left')+' hand '+(e.kind==='rest'?'rest':e.step+e.octave)+' '+NAMES[e.den]});svg.append(group);
+ if(isSelected)group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:20,fill:'#c3f1e7'}));
+ if(e.kind==='note')group.append(el('ellipse',{cx:x,cy:y,rx:23,ry:18,class:'playHalo'}));
+ if(pendingSlur?.id===e.id)group.append(el('ellipse',{cx:x,cy:y,rx:27,ry:21,class:'slurStart'}));
+ if(e.kind==='rest'){
+  drawText(group,x-9,y+6,e.den===1?'𝄻':e.den===2?'𝄼':e.den===4?'𝄽':e.den===8?'𝄾':'𝄿',30,{'font-family':'Noto Music,Segoe UI Symbol,serif'});
+ }else{
+  for(let yy=top+72;yy<=y-12;yy+=18)drawLine(group,x-15,yy,x+15,yy,fill,1.3);
+  for(let yy=top;yy>=y+12;yy-=18)drawLine(group,x-15,yy,x+15,yy,fill,1.3);
+  if(e.acc)drawText(group,x-31,y+7,e.acc==='#'?'♯':e.acc==='b'?'♭':'♮',24,{'font-family':'serif'});
+  group.append(el('ellipse',{cx:x,cy:y,rx:e.den===1?12.5:11.5,ry:7,transform:'rotate(-17 '+x+' '+y+')',fill:e.den>=4?fill:'#fff',stroke:fill,'stroke-width':2}));
+  if(e.den!==1&&!beamed){const up=y>=top+36,sx=x+(up?10:-10),ey=y+(up?-49:49);drawLine(group,sx,y,sx,ey,fill,2.2);
+   if(e.den>=8&&!beamed){const count=e.den===8?1:2;for(let k=0;k<count;k++)group.append(el('path',{d:'M '+sx+' '+(ey+(up?k*9:-k*9))+' q '+(up?24:-24)+' '+(up?-6:6)+' '+(up?11:-11)+' '+(up?26:-26),fill:'none',stroke:fill,'stroke-width':3}))}
+  }
+ }
+ if(e.dot)group.append(el('circle',{cx:x+19,cy:y-4,r:2.9,fill}));
+ if(e.kind==='note'){
+  const above=hand==='left'?y+19:y-17;
+  if(e.staccato)group.append(el('circle',{cx:x,cy:above,r:2.6,fill}));
+  if(e.staccatissimo)drawText(group,x-5,above+4,'▾',13);
+  if(e.tenuto)drawLine(group,x-8,above,x+8,above,fill,2.2);
+  if(e.portato){drawLine(group,x-8,above,x+8,above,fill,2);group.append(el('circle',{cx:x,cy:above+(hand==='left'?6:-6),r:2.4,fill}))}
+  if(e.accent)drawText(group,x-10,above+5,'>',21,{'font-weight':800});
+  if(e.marcato)drawText(group,x-9,above+5,'^',22,{'font-weight':800});
+  if(e.fermata)drawText(group,x-13,hand==='left'?y+36:y-28,'𝄐',23,{'font-family':'Noto Music,Segoe UI Symbol,serif'});
+ }
+ group.append(el('rect',{x:x-20,y:y-21,width:40,height:42,fill:'transparent',class:'noteHit','data-id':e.id}));
+ return group;
+}
+
+// Beam neighbouring quavers/semiquavers inside a crotchet beat (or a
+// dotted-crotchet beat in 6/8). Keep both hands independent.
+function pianoBeamGroups(events){
+ const unit=data.meter==='6/8'?36:24,groups=[];
+ let group=[],pos=0,prevBeat=-1;
+ const finish=()=>{if(group.length>1)groups.push(group);group=[]};
+ for(let i=0;i<events.length;i++){
+  const e=events[i],length=ticks(e),beat=Math.floor((pos+.00001)/unit);
+  const crosses=Math.floor((pos+length-.00001)/unit)!==beat;
+  // A straddling note must not be beamed across the primary pulse.
+  if(e.kind!=='note'||e.den<8||beat!==prevBeat||crosses)finish();
+  if(e.kind==='note'&&e.den>=8&&!crosses)group.push(i);
+  pos+=length;prevBeat=crosses?-1:beat;
+ }
+ finish();return groups;
+}
+function drawPianoBeams(svg,events,groups,left,width,top,hand){
+ const dark='#204451';
+ const offsets=[];let elapsed=0;
+ events.forEach(e=>{offsets.push(timeX(elapsed,ticks(e),left,width));elapsed+=ticks(e)});
+ for(const indices of groups){
+  const ys=indices.map(i=>yAt(events[i],top,hand));
+  const up=ys.reduce((a,b)=>a+b,0)/ys.length>=top+36;
+  const xs=indices.map(i=>offsets[i]+(up?10:-10)),anchor=up?
+   Math.min(...ys)-48:Math.max(...ys)+48;
+  const g=el('g',{'aria-hidden':'true','pointer-events':'none'});svg.append(g);
+  indices.forEach((i,k)=>drawLine(g,xs[k],ys[k],xs[k],anchor,dark,2.25));
+  const y2=anchor+(up?5.5:-5.5);
+  g.append(el('path',{d:'M '+xs[0]+' '+anchor+' L '+xs.at(-1)+' '+anchor+' L '+xs.at(-1)+' '+y2+' L '+xs[0]+' '+y2+' Z',fill:dark}));
+  for(let k=0;k<indices.length-1;k++){
+   if(events[indices[k]].den<16||events[indices[k+1]].den<16)continue;
+   const shift=up?10:-10;
+   g.append(el('path',{d:'M '+xs[k]+' '+(anchor+shift)+' L '+xs[k+1]+' '+(anchor+shift),
+    fill:'none',stroke:dark,'stroke-width':5.5}));
+  }
+ }
+}
+const LEFT=155,W=1140,BARW=230,TOP=110,SYSHEIGHT=286,SEPARATION=123;
+function locationForBar(index){const line=Math.floor(index/4),slot=index%4;return {line,left:LEFT+slot*BARW,width:BARW,top:TOP+line*SYSHEIGHT}}
+function timeX(start,length,left,width){return left+24+(Math.min(start,meterCap())/meterCap())*(width-48)}
+
+function drawPianoConnections(svg,positions){
+ for(const hand of ['right','left']){
+  const links=handLinks(hand);
+  for(const [kind,pairs] of [['slur',links.slurs],['tie',links.ties]]){
+   for(const [fromId,toId] of pairs){
+    const from=positions.get(fromId),to=positions.get(toId);if(!from||!to)continue;
+    const side=hand==='left'?1:-1,delta=kind==='tie'?8:21;
+    const curve=(a,b)=>{
+     const x1=a.x+11,x2=b.x-11;if(x2<=x1)return;
+     const y1=a.y+side*delta,y2=b.y+side*delta,span=x2-x1,arc=side*(kind==='tie'?10:Math.min(38,Math.max(15,span*.19)));
+     svg.append(el('path',{d:'M '+x1+' '+y1+' C '+(x1+span*.27)+' '+(y1+arc)+' '+(x2-span*.27)+' '+(y2+arc)+' '+x2+' '+y2,fill:'none',stroke:'#294553','stroke-width':kind==='tie'?2.1:2.7,'stroke-linecap':'round','pointer-events':'none',class:kind==='tie'?'pianoTie':'pianoSlur'}))
+    };
+    if(from.sys===to.sys){curve(from,to);continue}
+    curve(from,{x:LEFT+Math.min(4,data.bars.length-from.sys*4)*BARW-8,y:from.y});
+    for(let sys=from.sys+1;sys<=to.sys;sys++){
+     const top=TOP+sys*SYSHEIGHT+(hand==='left'?SEPARATION:0);
+     const yy=top+(from.y-(TOP+from.sys*SYSHEIGHT+(hand==='left'?SEPARATION:0)));
+     curve({x:LEFT-20,y:sys===to.sys?to.y:yy},sys===to.sys?to:{x:LEFT+Math.min(4,data.bars.length-sys*4)*BARW-8,y:yy})
+    }
+   }
+  }
+ }
+}
+
+// Teacher mark positions are stored relative to their bar, not as fixed
+// screen pixels. Marks stay with their musical bar when systems reflow.
+function annotationAnchor(p){
+ const row=Math.max(0,Math.min(Math.ceil(data.bars.length/4)-1,Math.floor((p.y-TOP+35)/SYSHEIGHT)));
+ const slot=Math.max(0,Math.min(Math.min(4,data.bars.length-row*4)-1,Math.floor((p.x-LEFT)/BARW)));
+ const bar=Math.max(0,Math.min(data.bars.length-1,row*4+slot)),loc=locationForBar(bar);
+ return {bar,dx:Math.round((p.x-loc.left)*10)/10,dy:Math.round((p.y-loc.top)*10)/10};
+}
+function notePosition(id){
+ const ref=locate(id);if(!ref||ref.event.kind!=='note')return null;
+ const loc=locationForBar(ref.b),top=loc.top+(ref.hand==='left'?SEPARATION:0);
+ const bar=data.bars[ref.b][ref.hand],elapsed=bar.slice(0,ref.i).reduce((n,e)=>n+ticks(e),0);
+ return {x:timeX(elapsed,ticks(ref.event),loc.left,loc.width),
+  y:yAt(ref.event,top,ref.hand)};
+}
+function annotationXY(p){
+ if(p.noteId){
+  const note=notePosition(p.noteId);
+  if(note)return {x:note.x+p.noteDx,y:note.y+p.noteDy};
+ }
+ const loc=locationForBar(Math.max(0,Math.min(data.bars.length-1,p.bar)));
+ return {x:loc.left+p.dx,y:loc.top+p.dy};
+}
+function attachAnnotationToNote(p,noteId){
+ const fallback=annotationAnchor(p),target=notePosition(noteId);
+ return target?{...fallback,noteId,noteDx:+(p.x-target.x).toFixed(1),
+  noteDy:+(p.y-target.y).toFixed(1)}:fallback;
+}
+function nearestWrittenNote(p,maxDistance=49){
+ let closest=null,distance=maxDistance;
+ for(const bar of data.bars)for(const hand of ['right','left'])for(const e of bar[hand]){
+  if(e.kind!=='note')continue;
+  const pos=notePosition(e.id),d=Math.hypot(p.x-pos.x,p.y-pos.y);
+  if(d<distance){closest=e.id;distance=d}
+ }
+ return closest;
+}
+function linkTeacherMark(mark){
+ if(mark.tool==='hand'){
+  const p=annotationXY(mark.points[0]),id=nearestWrittenNote(p,55);
+  if(id)mark.points[0]=attachAnnotationToNote(p,id);
+ }else if(mark.tool==='circle'&&mark.points.length>1){
+  const p=annotationXY(mark.points[0]),q=annotationXY(mark.points[1]);
+  const id=nearestWrittenNote({x:(p.x+q.x)/2,y:(p.y+q.y)/2},56);
+  if(id)mark.points=mark.points.map(x=>attachAnnotationToNote(annotationXY(x),id));
+ }else if(mark.tool==='arrow'&&mark.points.length>1){
+  const n=mark.points.length-1,p=annotationXY(mark.points[n]),id=nearestWrittenNote(p,37);
+  if(id)mark.points[n]=attachAnnotationToNote(p,id);
+ }else if(mark.tool==='pen'&&mark.points.length>=2){
+  const pts=mark.points.map(annotationXY);
+  const centre={x:pts.reduce((n,p)=>n+p.x,0)/pts.length,y:pts.reduce((n,p)=>n+p.y,0)/pts.length};
+  // Attach only a short, localised mark by one unambiguous notehead.
+  // Long underlines, passage markings and highlighter strokes stay bar-relative.
+  const spread=Math.max(...pts.map(p=>Math.hypot(p.x-centre.x,p.y-centre.y)));
+  if(spread<=23){
+   const candidates=[];
+   for(const bar of data.bars)for(const hand of ['right','left'])for(const note of bar[hand]){
+    if(note.kind!=='note')continue;
+    const pos=notePosition(note.id);if(!pos)continue;
+    candidates.push({id:note.id,d:Math.hypot(centre.x-pos.x,centre.y-pos.y)});
+   }
+   candidates.sort((a,b)=>a.d-b.d);
+   if(candidates[0]?.d<=19&&(!candidates[1]||candidates[1].d-candidates[0].d>12))
+    mark.points=mark.points.map(p=>attachAnnotationToNote(annotationXY(p),candidates[0].id));
+  }
+ }
+}
+function annotationAnchorPreservingNote(p,old){
+ return old?.noteId?attachAnnotationToNote(p,old.noteId):annotationAnchor(p);
+}
+function annotationDistance(p,a,b){
+ const dx=b.x-a.x,dy=b.y-a.y,t=dx*dx+dy*dy?
+ Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy))):0;
+ return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));
+}
+function annotationHit(p){
+ let best=null,distance=21;
+ for(const a of data.annotations||[]){
+  const q=a.points.map(annotationXY);
+  if(!q.length)continue;
+  let d=Math.hypot(p.x-q[0].x,p.y-q[0].y);
+  for(let i=1;i<q.length;i++)d=Math.min(d,annotationDistance(p,q[i-1],q[i]));
+  if(a.tool==='circle'&&q.length>1){
+   const cx=(q[0].x+q[1].x)/2,cy=(q[0].y+q[1].y)/2;
+   const rx=Math.abs(q[1].x-q[0].x)/2,ry=Math.abs(q[1].y-q[0].y)/2;
+   if(rx>1&&ry>1)d=Math.min(d,Math.abs(Math.hypot((p.x-cx)/rx,(p.y-cy)/ry)-1)*Math.min(rx,ry));
+  }
+  if(d<distance){distance=d;best=a}
+ }
+ return best;
+}
+function annotationPath(points){return points.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ')}
+function drawAnnotation(svg,a,preview=false){
+ const points=a.points.map(annotationXY);if(!points.length)return;
+ const g=el('g',{'data-annotation':a.id||'draft','pointer-events':'none'}),color=a.color;
+ svg.append(g);
+ if(a.tool==='hand'){
+  drawText(g,points[0].x,points[0].y,'👆',a.size||31,{'text-anchor':'middle','font-family':'Segoe UI Emoji,Apple Color Emoji,sans-serif'});
+ }else if(a.tool==='circle'&&points.length>1){
+  const p=points[0],q=points[points.length-1];
+  g.append(el('ellipse',{cx:(p.x+q.x)/2,cy:(p.y+q.y)/2,rx:Math.max(3,Math.abs(q.x-p.x)/2),ry:Math.max(3,Math.abs(q.y-p.y)/2),fill:'none',stroke:color,'stroke-width':3.2,'stroke-linecap':'round'}));
+ }else if(a.tool==='arrow'&&points.length>1){
+  const p=points[0],q=points[points.length-1],angle=Math.atan2(q.y-p.y,q.x-p.x);
+  g.append(el('path',{d:annotationPath([p,q]),fill:'none',stroke:color,'stroke-width':3.6,'stroke-linecap':'round'}));
+  const arm=13,theta=.5;
+  g.append(el('path',{d:annotationPath([q,
+    {x:q.x-arm*Math.cos(angle-theta),y:q.y-arm*Math.sin(angle-theta)},q,
+    {x:q.x-arm*Math.cos(angle+theta),y:q.y-arm*Math.sin(angle+theta)}]),fill:'none',stroke:color,'stroke-width':3.6,'stroke-linecap':'round','stroke-linejoin':'round'}));
+ }else if(points.length>1){
+  g.append(el('path',{d:annotationPath(points),fill:'none',stroke:color,
+   'stroke-width':a.tool==='highlighter'?19:2.9,'stroke-opacity':a.tool==='highlighter'?.27:1,
+   'stroke-linecap':'round','stroke-linejoin':'round'}));
+ }
+ if(a.id===selectedAnnotation&&!preview){
+  const x=points.reduce((n,p)=>n+p.x,0)/points.length,y=points.reduce((n,p)=>n+p.y,0)/points.length;
+  g.append(el('circle',{cx:x,cy:y,r:12,fill:'none',stroke:'#078b9c','stroke-width':2,'stroke-dasharray':'4 3'}));
+ }
+}
+function drawAnnotations(svg){
+ for(const mark of data.annotations||[])drawAnnotation(svg,mark);
+ if(annotationDraft)drawAnnotation(svg,annotationDraft,true);
+}
+function setAnnotationTool(tool){
+ if(!['cursor','select','hand','arrow','pen','highlighter','circle','eraser'].includes(tool))return;
+ annotationTool=tool;annotationDrag=null;annotationDraft=null;selectedAnnotation=null;
+ if(tool!=='cursor'){selected=null;pendingSlur=null;keyboardNoteFocus=false;}
+ $('sheet').classList.toggle('annotating',tool!=='cursor');
+ document.querySelectorAll('[data-annotation-tool]').forEach(b=>{
+  const active=b.dataset.annotationTool===tool;b.setAttribute('aria-pressed',String(active));
+ });
+ const guides={cursor:'Cursor: compose and move musical notes as normal.',
+  select:'Selector: tap a teacher mark to select it, drag to move it, or use Size.',
+  hand:'Hand: tap the score to point at a note.',
+  arrow:'Arrow: drag from the start to the point of the arrow.',
+  pen:'Pen: draw on either stave. These marks are not musical notes.',
+  highlighter:'Highlighter: drag over a passage to emphasise it.',
+  circle:'Circle: drag a box around the notes you want to circle.',
+  eraser:'Eraser: tap an annotation to remove it; musical notes are protected.'};
+ $('annotationGuide').textContent=guides[tool];render();
+}
+function annotationPointerDown(ev){
+ if(annotationTool==='cursor'||ev.button!==0)return;
+ ev.preventDefault();
+ const p=point(ev);
+ if(annotationTool==='eraser'){
+  const hit=annotationHit(p);
+  if(hit){snapshot();data.annotations=data.annotations.filter(a=>a.id!==hit.id);selectedAnnotation=null;commit('Teacher mark erased.')}
+  else info('Tap a teacher annotation to erase it.');
+  return;
+ }
+ if(annotationTool==='select'){
+  const hit=annotationHit(p);
+  selectedAnnotation=hit?.id||null;
+  annotationDrag=hit?{pointer:ev.pointerId,mode:'move',id:hit.id,start:p,
+   original:clone(hit.points),changed:false}:null;
+  if(hit)$('annotationColour').value=hit.color;
+  render();
+  if(!hit){info('Tap an existing mark to select it.');return}
+ }else{
+  if((data.annotations||[]).length>=250){info('Maximum 250 teacher annotations.');return}
+  const first=annotationAnchor(p);
+  annotationDraft={id:makeId(),tool:annotationTool,points:[first],
+   color:$('annotationColour').value,size:31};
+  annotationDrag={pointer:ev.pointerId,mode:'draw',start:p,changed:false};
+  if(annotationTool==='hand')annotationPointerEnd(ev);
+ }
+ try{$('sheet').setPointerCapture?.(ev.pointerId)}catch(_){}
+}
+function annotationPointerMove(ev){
+ const drag=annotationDrag;if(!drag||drag.pointer!==ev.pointerId)return;
+ const p=point(ev);
+ if(drag.mode==='move'){
+  if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)<3&&!drag.changed)return;
+  const mark=data.annotations.find(a=>a.id===drag.id);if(!mark)return;
+  mark.points=drag.original.map(q=>{const xy=annotationXY(q);return annotationAnchorPreservingNote({x:xy.x+p.x-drag.start.x,y:xy.y+p.y-drag.start.y},q)});
+  drag.changed=true;render();return;
+ }
+ if(!annotationDraft)return;
+ if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)<2&&!drag.changed)return;
+ drag.changed=true;const last=annotationAnchor(p);
+ if(['pen','highlighter'].includes(annotationDraft.tool)){
+  if(annotationDraft.points.length<500){const prior=annotationXY(annotationDraft.points.at(-1));
+   if(Math.hypot(p.x-prior.x,p.y-prior.y)>=2.5)annotationDraft.points.push(last)}
+ }else annotationDraft.points=[annotationDraft.points[0],last];
+ render();
+}
+function annotationPointerEnd(ev){
+ const drag=annotationDrag;
+ if(!drag||drag.pointer!==ev.pointerId)return;
+ annotationDrag=null;
+ try{$('sheet').releasePointerCapture?.(ev.pointerId)}catch(_){}
+ if(drag.mode==='move'){
+  if(drag.changed){
+   const changed=data.annotations.find(a=>a.id===drag.id),newPoints=changed&&clone(changed.points);
+   if(changed){changed.points=drag.original;snapshot();changed.points=newPoints;commit('Teacher mark moved.')}
+  }
+  return;
+ }
+ const mark=annotationDraft;annotationDraft=null;
+ if(!mark)return;
+ if(mark.tool==='hand'||mark.points.length>1){
+  linkTeacherMark(mark);
+  snapshot();data.annotations.push(mark);selectedAnnotation=mark.id;
+  commit('Teacher '+mark.tool+' annotation added.');
+ }else render();
+}
+function annotationPointerCancel(ev){
+ if(!annotationDrag||annotationDrag.pointer!==ev.pointerId)return;
+ const drag=annotationDrag;annotationDrag=null;annotationDraft=null;
+ if(drag.mode==='move'){
+  const mark=data.annotations.find(a=>a.id===drag.id);if(mark)mark.points=drag.original;
+ }
+ render();
+}
+function deleteAnnotation(){
+ if(!selectedAnnotation)return;
+ const id=selectedAnnotation;if(!data.annotations.some(a=>a.id===id))return;
+ snapshot();data.annotations=data.annotations.filter(a=>a.id!==id);
+ selectedAnnotation=null;commit('Teacher annotation deleted.');
+}
+function resizeAnnotation(scale){
+ const mark=data.annotations.find(a=>a.id===selectedAnnotation);if(!mark)return;
+ const points=mark.points.map(annotationXY),cx=points.reduce((n,p)=>n+p.x,0)/points.length,
+ cy=points.reduce((n,p)=>n+p.y,0)/points.length;
+ snapshot();mark.points=points.map((p,i)=>annotationAnchorPreservingNote({x:cx+(p.x-cx)*scale,y:cy+(p.y-cy)*scale},mark.points[i]));
+ if(mark.tool==='hand')mark.size=Math.max(16,Math.min(64,(mark.size||31)*scale));
+ commit('Teacher annotation resized.');
+}
+
+function render(){
+ const svg=$('sheet'),priorFocus=keyboardNoteFocus?document.activeElement?.closest?.('[data-id]')?.dataset?.id:null,systems=Math.ceil(data.bars.length/4),h=TOP+systems*SYSHEIGHT+6,positions=new Map();
+ svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+W+' '+h);
+ svg.append(el('rect',{width:W,height:h,fill:'#fff'}));
+ drawText(svg,W/2,41,data.title,22,{'text-anchor':'middle','font-weight':800,fill:'#234b60'});
+ for(let sys=0;sys<systems;sys++){
+  const top=TOP+sys*SYSHEIGHT,leftTop=top,leftBottom=top+SEPARATION;
+  for(const staffTop of [leftTop,leftBottom])for(let j=0;j<5;j++)drawLine(svg,35,staffTop+j*18,LEFT+Math.min(4,data.bars.length-sys*4)*BARW,staffTop+j*18);
+  // One brace connects both hands; it repeats at each system.
+  svg.append(el('path',{d:'M 23 '+(top-5)+' C 6 '+(top+15)+' 33 '+(top+57)+' 17 '+(top+96)+' C 32 '+(top+134)+' 6 '+(top+173)+' 23 '+(top+200),fill:'none',stroke:'#244855','stroke-width':3.3}));
+  drawClef(svg,'right',49,top);drawClef(svg,'left',49,top+SEPARATION);
+  if(sys===0){const [n,d]=data.meter.split('/');for(const staffTop of [leftTop,leftBottom]){
+   drawText(svg,113,staffTop+32,n,30,{'font-weight':800,'text-anchor':'middle'});
+   drawText(svg,113,staffTop+64,d,30,{'font-weight':800,'text-anchor':'middle'});
+  }}
+  drawText(svg,38,top-22,'Right hand',11);drawText(svg,38,top+SEPARATION-14,'Left hand',11);
+ }
+ for(let b=0;b<data.bars.length;b++){
+  const layout=locationForBar(b),{top,left,width}=layout,right=left+width;
+  for(const hand of ['right','left']){
+   const staffTop=top+(hand==='left'?SEPARATION:0),events=data.bars[b][hand],used=barSum(events);
+   const hit=el('rect',{x:left,y:staffTop-10,width,height:95,fill:'transparent','data-bar':b,'data-hand':hand,'data-top':staffTop,'data-left':left,'data-width':width});svg.append(hit);
+   const beams=pianoBeamGroups(events),beamed=new Set(beams.flat());
+   let position=0;for(let i=0;i<events.length;i++){const e=events[i],x=timeX(position,ticks(e),left,width);drawEvent(svg,e,x,staffTop,hand,e.id===selected,beamed.has(i));if(e.kind==='note')positions.set(e.id,{x,y:yAt(e,staffTop,hand),sys:layout.line,hand});position+=ticks(e)}
+   drawPianoBeams(svg,events,beams,left,width,staffTop,hand);
+   const lineWeight=b===data.bars.length-1?2:1.4;drawLine(svg,right,staffTop,right,staffTop+72,'#234657',lineWeight);
+   if(b===data.bars.length-1)drawLine(svg,right+5,staffTop,right+5,staffTop+72,'#234657',3);
+   if(hand==='right'){drawText(svg,left+9,top-20,'Bar '+(b+1),11);if(used>meterCap())drawText(svg,right-5,top-20,'Overfull',10,{'text-anchor':'end',fill:'#bd4545'})}
+  }
+ }
+ drawPianoConnections(svg,positions);
+ drawAnnotations(svg);
+ $('count').textContent='· '+data.bars.length+' bar'+(data.bars.length===1?'':'s');
+ $('undo').disabled=!history.length;$('redo').disabled=!future.length;
+ $('annotationUndo').disabled=!history.length;$('annotationRedo').disabled=!future.length;
+ $('annotationSelected').hidden=!selectedAnnotation;
+ const found=locate(selected);$('editPanel').hidden=!found;renderArticulations(found);
+ if(found){$('selection').textContent=(found.hand==='right'?'Right':'Left')+' hand · Bar '+(found.b+1)+' · '+(found.event.kind==='rest'?'Rest':found.event.step+found.event.octave)+' · '+NAMES[found.event.den]+(found.event.dot?' dotted':'')}
+ $('title').value=data.title;$('meter').value=data.meter;$('tempo').value=data.tempo;
+ if(priorFocus){
+  const next=[...svg.querySelectorAll('g[data-id]')].find(g=>g.dataset.id===priorFocus);
+  next?.focus?.({preventScroll:true});
+ }
+ keyboardNoteFocus=false;
+}
+function point(ev){const svg=$('sheet'),p=svg.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const matrix=svg.getScreenCTM();return matrix?p.matrixTransform(matrix.inverse()):p}
+function insert(b,hand,x,y,denOverride=null,kindOverride=null){
+ const bar=data.bars[b][hand],den=denOverride||chosen,kind=kindOverride||$('kind').value;
+ const e={id:makeId(),kind,den,dot:$('dotted').checked};
+ if(kind==='note')Object.assign(e,{...pitchAt(y,locationForBar(b).top+(hand==='left'?SEPARATION:0),hand),acc:$('acc').value});
+ if(barSum(bar)+ticks(e)>meterCap()+.0001){info('That '+NAMES[den].toLowerCase()+' will not fit in '+hand+'-hand Bar '+(b+1)+'.');return false}
+ const loc=locationForBar(b),times=[];let pos=0;
+ for(const item of bar){times.push(timeX(pos,ticks(item),loc.left,loc.width));pos+=ticks(item)}
+ let index=0;while(index<times.length&&times[index]<x)index++;
+ snapshot();bar.splice(index,0,e);selected=e.id;commit((hand==='right'?'Right':'Left')+' hand · '+(kind==='rest'?'Rest':e.step+e.octave)+' added.');return true;
+}
+
+function closeNoteContext(){contextTarget=null;$('noteContext').hidden=true}
+function pickContextValue(den){
+ const target=contextTarget;closeNoteContext();if(!target||!DENS.includes(den))return;
+ if(target.type==='edit'){
+  const found=locate(target.id);if(!found||found.event.kind!=='note')return;
+  const bar=data.bars[found.b][found.hand],e=found.event;
+  if(barSum(bar)-ticks(e)+ticks({...e,den})>meterCap()+.0001){info('That '+NAMES[den].toLowerCase()+' would overfill this bar.');return}
+  snapshot();e.den=den;selected=e.id;commit('Changed to '+NAMES[den]+'.');
+ }else if(target.type==='insert'){
+  insert(target.b,target.hand,target.x,target.y,den,'note');
+ }
+}
+function openNoteContext(ev){
+ if(annotationTool!=='cursor'){ev.preventDefault();return}
+ const svg=$('sheet'),p=point(ev);
+ const target=ev.target.closest('[data-id],[data-bar]');
+ let result=null;
+ if(target?.dataset?.id){
+  const ref=locate(target.dataset.id);
+  if(ref?.event.kind==='note')result={type:'edit',id:ref.event.id};
+ }else if(target?.dataset?.bar!==undefined){
+  const b=Number(target.dataset.bar),hand=target.dataset.hand;
+  if(data.bars[b]&&['right','left'].includes(hand))result={type:'insert',b,hand,x:p.x,y:p.y};
+ }
+ if(!result){
+  // Musical glyphs (e.g. clefs and staff lines) can intercept hitboxes.
+  // Determine the stave from its actual score position as a fallback.
+  const row=Math.floor((p.y-TOP)/SYSHEIGHT),within=p.y-(TOP+row*SYSHEIGHT);
+  const hand=within>=SEPARATION-10&&within<=SEPARATION+92?'left':
+   within>=-10&&within<=94?'right':null;
+  const b=row*4+Math.floor((p.x-LEFT)/BARW);
+  const loc=locationForBar(b);
+  if(hand&&b>=0&&b<data.bars.length&&loc.line===row&&p.x>=loc.left&&p.x<=loc.left+loc.width)
+   result={type:'insert',b,hand,x:p.x,y:p.y};
+ }
+ if(!result)return;
+ ev.preventDefault();ev.stopPropagation();
+ contextTarget=result;
+ const title=result.type==='edit'?'Change selected note value':(result.hand==='right'?'Right-hand':'Left-hand')+' note · Bar '+(result.b+1);
+ $('noteContextTitle').textContent=title;
+ const menu=$('noteContext');menu.hidden=false;
+ const rect=menu.getBoundingClientRect();
+ menu.style.left=Math.max(8,Math.min(ev.clientX,window.innerWidth-rect.width-8))+'px';
+ menu.style.top=Math.max(8,Math.min(ev.clientY,window.innerHeight-rect.height-8))+'px';
+ menu.querySelector('button')?.focus();
+}
+function clickSheet(ev){
+ keyboardNoteFocus=false;
+ if(annotationTool!=='cursor')return;
+ if(suppressDragClick){suppressDragClick=false;return}
+ const target=ev.target.closest('[data-id],[data-bar]');if(!target)return;
+ const id=target.dataset.id;
+ if(id){if(finishSlur(id))return;selected=id;render();return}
+ const b=Number(target.dataset.bar),hand=target.dataset.hand;if(!data.bars[b]||!['right','left'].includes(hand))return;
+ const p=point(ev);insert(b,hand,p.x,p.y);
+}
+
+function adjustPitch(direction){
+ const ref=locate(selected);if(!ref||ref.event.kind!=='note')return false;
+ const ix=noteIx(ref.event.step,ref.event.octave)+direction;
+ // Match the existing single-stave note pitch bounds and diatonic steps.
+ if(ix<8||ix>48)return false;
+ snapshot();
+ Object.assign(ref.event,pitchFromIx(ix));
+ commit((ref.hand==='right'?'Right':'Left')+' hand · '+ref.event.step+ref.event.octave+'.');
+ return true;
+}
+// The score's SVG is the stable pointer-capture owner, so redrawing note
+// groups during a drag never loses the ongoing mouse/pen/touch gesture.
+function pitchPointerDown(ev){
+ if(annotationTool!=='cursor')return;
+ // Some browsers omit the click after a dragged SVG target is redrawn.
+ // Clear any leftover suppression on the next actual pointer gesture.
+ if(suppressDragClick)suppressDragClick=false;
+ if(ev.button!==0||pendingSlur||!$('noteContext').hidden)return;
+ const target=ev.target.closest('[data-id]');
+ if(!target)return;
+ const ref=locate(target.dataset.id);if(!ref||ref.event.kind!=='note')return;
+ const p=point(ev);
+ dragPitch={pointerId:ev.pointerId,id:ref.event.id,hand:ref.hand,
+  originY:p.y,originIndex:noteIx(ref.event.step,ref.event.octave),steps:0,changed:false};
+ selected=ref.event.id;
+ $('sheet').setPointerCapture?.(ev.pointerId);
+ // Deliberately do not render here: a plain tap still goes through the
+ // original clickSheet selection handler.
+}
+function pitchPointerMove(ev){
+ const drag=dragPitch;if(!drag||ev.pointerId!==drag.pointerId)return;
+ const p=point(ev),delta=drag.originY-p.y;
+ if(Math.abs(delta)<5&&!drag.changed)return;
+ const steps=Math.round(delta/9),ix=Math.max(8,Math.min(48,drag.originIndex+steps));
+ if(ix===drag.originIndex+drag.steps)return;
+ const ref=locate(drag.id);if(!ref||ref.event.kind!=='note')return;
+ if(!drag.changed){snapshot();drag.changed=true}
+ Object.assign(ref.event,pitchFromIx(ix));drag.steps=ix-drag.originIndex;
+ render();
+}
+function pitchPointerEnd(ev){
+ const drag=dragPitch;if(!drag||ev.pointerId!==drag.pointerId)return;
+ dragPitch=null;
+ try{$('sheet').releasePointerCapture?.(ev.pointerId)}catch(_){}
+ if(!drag.changed)return;
+ suppressDragClick=true;
+ commit('Note moved higher/lower in the '+drag.hand+' hand.');
+}
+function changeValue(sign){
+ const ref=locate(selected);if(!ref)return;
+ const i=DENS.indexOf(ref.event.den),n=i+sign;if(n<0||n>=DENS.length)return;
+ const den=DENS[n],bar=data.bars[ref.b][ref.hand];
+ if(barSum(bar)-ticks(ref.event)+ticks({...ref.event,den})>meterCap()+1e-4){info('Not enough beats in this bar.');return}
+ snapshot();ref.event.den=den;commit('Changed to '+NAMES[den]+'.')
+}
+function remove(){const ref=locate(selected);if(!ref)return;snapshot();data.bars[ref.b][ref.hand].splice(ref.i,1);pendingSlur=null;selected=null;commit('Note or rest deleted.')}
+function undo(){if(!history.length)return;selectedAnnotation=null;annotationDraft=null;annotationDrag=null;pendingSlur=null;if(playing)stop();future.push(clone(data));data=history.pop();selected=null;commit('Undone.')}
+function redo(){if(!future.length)return;selectedAnnotation=null;annotationDraft=null;annotationDrag=null;pendingSlur=null;if(playing)stop();history.push(clone(data));data=future.pop();selected=null;commit('Redone.')}
+// One shared output bus supports classroom volume and gentle peak limiting.
+function ensureMaster(){
+ if(!ctx)return null;
+ if(masterGain)return masterGain;
+ const limiter=ctx.createDynamicsCompressor();
+ limiter.threshold.value=-16;limiter.knee.value=12;limiter.ratio.value=4;
+ limiter.attack.value=.005;limiter.release.value=.18;
+ masterGain=ctx.createGain();masterGain.gain.value=volume/100;
+ masterGain.connect(limiter);limiter.connect(ctx.destination);
+ return masterGain;
+}
+function setVolume(value){
+ volume=Math.max(0,Math.min(100,Number(value)||0));
+ $('volume').value=String(volume);$('volumeValue').textContent=volume+'%';
+ if(masterGain&&ctx)masterGain.gain.setTargetAtTime(volume/100,ctx.currentTime,.015);
+}
+function oscillator(midi,at,duration,hand,strength=1){
+ if(!ctx)return;const root=ctx.createOscillator(),gain=ctx.createGain(),harm=ctx.createOscillator(),hGain=ctx.createGain();
+ const hz=440*Math.pow(2,(midi-69)/12);root.type='triangle';harm.type='sine';
+ root.frequency.setValueAtTime(hz,at);harm.frequency.setValueAtTime(hz*2,at);
+ const amp=(hand==='left'?.18:.15)*Math.min(1.5,Math.max(.5,strength)),hold=Math.max(.1,duration*.91),end=at+hold;
+ gain.gain.setValueAtTime(.00001,at);gain.gain.exponentialRampToValueAtTime(amp,at+.012);gain.gain.exponentialRampToValueAtTime(.00001,end+.12);
+ hGain.gain.setValueAtTime(.00001,at);hGain.gain.exponentialRampToValueAtTime(amp*.18,at+.012);hGain.gain.exponentialRampToValueAtTime(.00001,end+.07);
+ root.connect(gain);gain.connect(ensureMaster());harm.connect(hGain);hGain.connect(ensureMaster());
+ root.start(at);harm.start(at);root.stop(end+.15);harm.stop(end+.10);sounds.push(root,harm);
+}
+function midi(e,bar,index,score=data){
+ const semis={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+ let alter=e.acc==='#'?1:e.acc==='b'?-1:0;
+ if(!e.acc){
+  let writtenEarlier=false;
+  for(let i=index-1;i>=0;i--){
+   const p=bar[i];
+   if(p.kind==='note'&&p.step===e.step&&p.octave===e.octave&&p.acc){
+    alter=p.acc==='#'?1:p.acc==='b'?-1:0;writtenEarlier=true;break
+   }
+  }
+  // Conventional tied continuation across a barline retains the source
+  // accidental even when the new bar does not display another sharp/flat.
+  // Only the connected first note inherits pitch; later re-struck notes
+  // in this bar return to the bar's ordinary accidental state.
+  if(!writtenEarlier&&index===0){
+   const location=score.bars.findIndex(b=>b.right===bar||b.left===bar);
+   if(location>0){
+    const hand=score.bars[location].right===bar?'right':'left';
+    const previousBar=score.bars[location-1][hand];
+    const previous=previousBar.at(-1);
+    if(previous?.kind==='note'&&previous.tieTo===e.id&&
+       previous.step===e.step&&previous.octave===e.octave&&
+       Math.abs(barSum(previousBar)-score.meter.split('/').map(Number).reduce((n,d,i)=>i===0?n*d:n/d,96))<.001)
+     return midi(previous,previousBar,previousBar.length-1,score);
+   }
+  }
+ }
+ return 12*(e.octave+1)+semis[e.step]+alter;
+}
+// Compare written notes and their actual sounding pitch. Across a barline,
+// an unmarked continuation is allowed to inherit an accidental only through
+// the explicit tie; a newly struck note never inherits that alteration.
+function tiePitchMatches(from,fromBar,fromIndex,to,toBar,toIndex,score=data){
+ if(from.kind!=='note'||to.kind!=='note'||
+    from.step!==to.step||from.octave!==to.octave)return false;
+ const start=midi(from,fromBar,fromIndex,score);
+ if(fromBar!==toBar){
+  const sourceBar=score.bars.findIndex(b=>b.right===fromBar||b.left===fromBar);
+  const targetBar=score.bars.findIndex(b=>b.right===toBar||b.left===toBar);
+  const [beats,beatType]=score.meter.split('/').map(Number);
+  // A tie never jumps over another measure, even if that hand has no
+  // written events in the intervening measure. It must join the first
+  // note of the immediately following bar after a complete source bar.
+  if(sourceBar<0||targetBar!==sourceBar+1||toIndex!==0||
+     fromIndex!==fromBar.length-1||
+     Math.abs(barSum(fromBar)-beats*96/beatType)>.001)return false;
+  if(!to.acc)return true;
+ }
+ return start===midi(to,toBar,toIndex,score);
+}
+function performance(){
+ const pulse=data.meter==='6/8'?36:24;
+ const secPerTick=60/Math.max(40,Number(data.tempo)||96)/pulse,events=[];
+ for(const hand of ['right','left']){
+  const links=handLinks(hand),legato=new Set();
+  for(const [from,to] of links.slurs){
+   const a=links.indices.get(from),b=links.indices.get(to);
+   for(let k=a;k<b;k++)if(links.refs[k].e.kind==='note')legato.add(links.refs[k].e.id);
+  }
+  const notes=[],ids=new Map();
+  for(let b=0;b<data.bars.length;b++){
+   let offset=0;const bar=data.bars[b][hand];
+   for(let i=0;i<bar.length;i++){
+    const e=bar[i],length=ticks(e),at=(b*meterCap()+offset)*secPerTick;
+    if(e.kind==='note'){
+     const entry={bar:b,hand,index:i,event:e,at,length:length*secPerTick,
+       pitch:midi(e,bar,i),ids:[e.id],id:e.id};
+     entry.segments=[{id:e.id,at,end:at+entry.length}];notes.push(entry);ids.set(e.id,entry);
+    }
+    offset+=length;
+   }
+  }
+  const tiedTo=new Set(links.ties.map(pair=>pair[1]));
+  for(const entry of notes){
+   if(tiedTo.has(entry.id))continue;
+   const e=entry.event;
+   let duration=entry.length,current=entry,count=0;
+   while(count++<40){
+    const link=links.ties.find(pair=>pair[0]===current.id);
+    if(!link)break;
+    const next=ids.get(link[1]);
+    if(!next||Math.abs(next.at-(entry.at+duration))>.0001)break;
+    duration+=next.length;entry.ids.push(next.id);entry.segments.push({id:next.id,at:next.at,end:next.at+next.length});current=next;
+   }
+   const factor=e.staccatissimo?.32:e.staccato?.53:e.portato?.80:e.tenuto?1:
+     legato.has(e.id)?1.03:.96;
+   entry.duration=Math.max(.06,duration*factor)+(e.fermata?Math.max(.2,duration*.55):0);
+   entry.gain=e.marcato?1.43:e.accent?1.25:1;
+   events.push(entry);
+  }
+ }
+ events.sort((a,b)=>a.at-b.at||a.hand.localeCompare(b.hand));
+ const nominal=data.bars.length*meterCap()*secPerTick;
+ return {events,duration:Math.max(nominal,...events.map(e=>e.at+e.duration))};
+}
+function setPlayingNotes(ids){
+ if(ids.size===activeNotes.size&&[...ids].every(id=>activeNotes.has(id)))return;
+ activeNotes=new Set(ids);
+ // Only update the existing note symbols: do not recreate the SVG or steal
+ // keyboard focus every time a playback highlight changes.
+ $('sheet')?.querySelectorAll?.('g[data-id]').forEach(g=>g.classList.toggle('isPlaying',activeNotes.has(g.getAttribute('data-id'))));
+ // Follow the sounding notes when playback moves to another stave system.
+ // Respect teacher scrolling while the current sounding system is in view.
+ if(!ids.size)return;
+ const first=locate(ids.values().next().value),viewport=$('sheetViewport'),svg=$('sheet');
+ const viewHeight=svg?.viewBox?.baseVal?.height,displayHeight=svg?.getBoundingClientRect?.().height;
+ if(!first||!viewport||!viewHeight||!displayHeight)return;
+ const line=Math.floor(first.b/4),top=(TOP+line*SYSHEIGHT-22)*displayHeight/viewHeight;
+ const bottom=(TOP+(line+1)*SYSHEIGHT-24)*displayHeight/viewHeight;
+ if(top<viewport.scrollTop||bottom>viewport.scrollTop+viewport.clientHeight)
+  viewport.scrollTop=Math.max(0,top);
+}
+function syncPlayButtons(){
+ $('play').disabled=playing;$('stop').disabled=!playing;
+ $('sheetPlay').textContent=playing?'■ Stop':'▶ Play';
+ $('sheetPlay').setAttribute('aria-label',playing?'Stop piano playback':'Play both piano hands');
+ $('sheetPlay').setAttribute('aria-pressed',String(playing));
+ $('sheetPlay').classList.toggle('primary',!playing);
+}
+async function play(){
+ if(playing)return;
+ try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();await ctx.resume();ensureMaster()}catch(e){info('Audio could not start in this browser.');return}
+ const perf=performance(),start=ctx.currentTime+.08;playing=true;
+ for(const e of perf.events)oscillator(e.pitch,start+e.at,e.duration,e.hand,e.gain);
+ syncPlayButtons();
+ info('Playing both hands · Gold rings show notes currently sounding.');
+ timers.push(setInterval(()=>{
+  if(!playing)return;
+  const t=ctx.currentTime-start,visible=new Set();
+  for(const e of perf.events){
+   if(t<e.at||t>=e.at+e.duration)continue;
+   for(let i=0;i<e.segments.length;i++){
+    const segment=e.segments[i],until=i===e.segments.length-1?e.at+e.duration:segment.end;
+    if(segment.at<=t&&t<until)visible.add(segment.id);
+   }
+  }
+  setPlayingNotes(visible);
+ },45));
+ timers.push(setTimeout(()=>stop(),Math.ceil((perf.duration+.3)*1000)));
+}
+function stop(){
+ for(const s of sounds)try{s.stop()}catch(_){}
+ sounds=[];timers.forEach(clearInterval);timers=[];playing=false;
+ setPlayingNotes(new Set());syncPlayButtons();info('Stopped.');
+}
+function download(content,name,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),6000)}
+function typeName(den){return ({1:'whole',2:'half',4:'quarter',8:'eighth',16:'16th',32:'32nd'})[den]}
+function printBar(bar){
+ const out=bar.map(e=>({...e})),cap=meterCap(),unit=data.meter==='6/8'?36:24;
+ let pos=barSum(bar);
+ // Only the MusicXML presentation is completed. Saved notes are untouched.
+ // Keep primary pulse boundaries, including dotted-crotchet beats in 6/8.
+ const choices=[{den:1,dot:false,t:96},{den:2,dot:true,t:72},
+  {den:2,dot:false,t:48},{den:4,dot:true,t:36},
+  {den:4,dot:false,t:24},{den:8,dot:true,t:18},
+  {den:8,dot:false,t:12},{den:16,dot:true,t:9},
+  {den:16,dot:false,t:6},{den:32,dot:false,t:3}];
+ function spell(total){
+  const best=Array(total+1).fill(null);
+  best[0]={cost:0,items:[]};
+  for(let n=1;n<=total;n++)for(const option of choices){
+   if(option.t>n||!best[n-option.t])continue;
+   const prev=best[n-option.t],cost=prev.cost+1+(option.t===3?.5:0)+(option.t===6?.1:0);
+   if(!best[n]||cost<best[n].cost-1e-8)
+    best[n]={cost,items:[...prev.items,{kind:'rest',den:option.den,dot:option.dot}]};
+  }
+  return best[total]?.items||[];
+ }
+ while(pos<cap-.0001){
+  let end=Math.min(cap,(Math.floor((pos+.0001)/unit)+1)*unit);
+  if(data.meter==='4/4'&&Math.abs(pos-48)<.0001)end=cap;
+  const room=Math.round(end-pos),rests=spell(room);
+  if(!rests.length)break;
+  out.push(...rests);
+  pos+=rests.reduce((n,e)=>n+ticks(e),0);
+ }
+ return out;
+}
+function exportXml(){
+ let xml='<?xml version="1.0" encoding="utf-8"?>\n<score-partwise version="4.0"><work><work-title>'+escapeXml(data.title)+'</work-title></work><movement-title>'+escapeXml(data.title)+'</movement-title>';
+ xml+='<part-list><part-group number="1" type="start"><group-name>Piano</group-name><group-symbol>brace</group-symbol><group-barline>yes</group-barline></part-group><score-part id="P1"><part-name>Piano Right Hand</part-name><part-abbreviation>RH</part-abbreviation><score-instrument id="I1"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I1"><midi-channel>1</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>';
+ xml+='<score-part id="P2"><part-name>Piano Left Hand</part-name><part-abbreviation>LH</part-abbreviation><score-instrument id="I2"><instrument-name>Piano</instrument-name></score-instrument><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>1</midi-program></midi-instrument></score-part><part-group number="1" type="stop"/></part-list>';
+ const [n,d]=data.meter.split('/');
+ for(const [hand,part,sign,line] of [['right','P1','G','2'],['left','P2','F','4']]){
+  const links=handLinks(hand),tieStarts=new Set(links.ties.map(([id])=>id)),slurStarts=new Set(links.slurs.map(([id])=>id));
+  xml+='<part id="'+part+'">';
+  for(let b=0;b<data.bars.length;b++){
+   xml+='<measure number="'+(b+1)+'">';
+   if(b===0)xml+='<attributes><divisions>24</divisions><key><fifths>0</fifths></key><time><beats>'+n+'</beats><beat-type>'+d+'</beat-type></time><clef><sign>'+sign+'</sign><line>'+line+'</line></clef></attributes><direction><direction-type><metronome><beat-unit>quarter</beat-unit>'+(data.meter==='6/8'?'<beat-unit-dot/>':'')+'<per-minute>'+data.tempo+'</per-minute></metronome></direction-type><sound tempo="'+(data.meter==='6/8'?data.tempo*1.5:data.tempo)+'"/></direction>';
+   const original=data.bars[b][hand],bar=printBar(original);
+   if(!original.length)bar.splice(0,bar.length,{kind:'rest',measureRest:true,den:1,dot:false});
+   for(let i=0;i<bar.length;i++){
+    const e=bar[i];
+    xml+='<note>';
+    if(e.kind==='rest')xml+=e.measureRest?'<rest measure="yes"/>':'<rest/>';
+    else {
+     const natural={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[e.step],
+      effective=midi(e,original,i)-12*(e.octave+1)-natural;
+     xml+='<pitch><step>'+e.step+'</step>'+(effective?'<alter>'+effective+'</alter>':'')+'<octave>'+e.octave+'</octave></pitch>';
+    }
+    xml+='<duration>'+Math.round(e.measureRest?meterCap():ticks(e))+'</duration>';
+    if(e.kind==='note'){
+     if(links.tieEnds.has(e.id))xml+='<tie type="stop"/>';
+     if(tieStarts.has(e.id))xml+='<tie type="start"/>';
+    }
+    if(!e.measureRest)xml+='<type>'+typeName(e.den)+'</type>';
+    if(e.dot&&!e.measureRest)xml+='<dot/>';
+    if(e.kind==='note'&&e.acc)xml+='<accidental>'+(e.acc==='#'?'sharp':e.acc==='b'?'flat':'natural')+'</accidental>';
+    if(e.kind==='note'){
+     const notations=[];
+     if(links.tieEnds.has(e.id))notations.push('<tied type="stop"/>');
+     if(tieStarts.has(e.id))notations.push('<tied type="start"/>');
+     if(links.slurEnds.has(e.id))notations.push('<slur number="1" type="stop"/>');
+     if(slurStarts.has(e.id))notations.push('<slur number="1" type="start"/>');
+     if(e.fermata)notations.push('<fermata type="upright"/>');
+     const articulation=[];
+     for(const [key,xmlTag] of [['staccato','staccato'],['staccatissimo','staccatissimo'],['portato','detached-legato'],['tenuto','tenuto'],['accent','accent'],['marcato','strong-accent']])
+      if(e[key])articulation.push('<'+xmlTag+'/>');
+     if(articulation.length)notations.push('<articulations>'+articulation.join('')+'</articulations>');
+     if(notations.length)xml+='<notations>'+notations.join('')+'</notations>';
+    }
+    xml+='</note>';
+   }xml+='</measure>';
+  }xml+='</part>';
+ }
+ xml+='</score-partwise>';
+ download(xml,'two-hand-piano.musicxml','application/vnd.recordare.musicxml+xml');
+ info('MusicXML exported with two simultaneous piano parts.');
+}
+function bind(){
+ $('composeDrawer').addEventListener('toggle',()=>{if($('composeDrawer').open)$('dockTools').open=false});
+ $('dockTools').addEventListener('toggle',()=>{if($('dockTools').open)$('composeDrawer').open=false});
+ $('values').replaceChildren();
+ for(const den of DENS){const b=document.createElement('button');b.type='button';b.innerHTML=NOTE_ILLUSTRATIONS[den]+'<span class="quickValueName">'+NAMES[den]+'</span><small class="quickValueBeats">'+(den===1?'4 beats':den===2?'2 beats':den===4?'1 beat':den===8?'½ beat':'¼ beat')+'</small>';b.dataset.den=den;b.onclick=()=>{chosen=den;refreshValues();info(NAMES[den]+' selected. Tap a stave to insert.')};$('values').append(b)}
+ refreshValues();
+ $('sheet').addEventListener('click',clickSheet);
+ $('sheet').addEventListener('pointerdown',()=>{keyboardNoteFocus=false});
+ $('sheet').addEventListener('pointerdown',annotationPointerDown);
+ $('sheet').addEventListener('pointermove',annotationPointerMove);
+ $('sheet').addEventListener('pointerup',annotationPointerEnd);
+ $('sheet').addEventListener('pointercancel',annotationPointerCancel);
+ document.querySelectorAll('[data-annotation-tool]').forEach(b=>b.onclick=()=>setAnnotationTool(b.dataset.annotationTool));
+ $('annotationDelete').onclick=deleteAnnotation;
+ $('annotationUndo').onclick=undo;$('annotationRedo').onclick=redo;
+ $('annotationLarger').onclick=()=>resizeAnnotation(1.15);
+ $('annotationSmaller').onclick=()=>resizeAnnotation(1/1.15);
+ $('annotationColour').onchange=e=>{if(!selectedAnnotation)return;const mark=data.annotations.find(a=>a.id===selectedAnnotation);if(!mark)return;snapshot();mark.color=e.target.value;commit('Annotation colour updated.')};
+ $('sheet').addEventListener('pointerdown',pitchPointerDown);
+ $('sheet').addEventListener('pointermove',pitchPointerMove);
+ $('sheet').addEventListener('pointerup',pitchPointerEnd);
+ $('sheet').addEventListener('pointercancel',pitchPointerEnd);
+ $('sheet').addEventListener('contextmenu',openNoteContext);
+ const contextChoices=$('contextValues');contextChoices.replaceChildren();
+ for(const den of DENS){
+  const button=document.createElement('button');button.type='button';
+  button.textContent=GLYPHS[den]+' '+NAMES[den];button.onclick=()=>pickContextValue(den);contextChoices.append(button);
+ }
+ $('contextClose').onclick=closeNoteContext;
+ document.addEventListener('pointerdown',e=>{if(!$('noteContext').hidden&&!e.target.closest('#noteContext'))closeNoteContext()});
+ window.addEventListener('scroll',closeNoteContext,{capture:true,passive:true});
+ $('sheet').addEventListener('keydown',e=>{if(annotationTool!=='cursor')return;if(e.key!=='Enter'&&e.key!==' ')return;const id=e.target?.dataset?.id;if(id){e.preventDefault();keyboardNoteFocus=true;if(!finishSlur(id)){selected=id;render()}}});
+ $('play').onclick=play;$('stop').onclick=stop;$('sheetPlay').onclick=()=>playing?stop():play();$('undo').onclick=undo;$('redo').onclick=redo;
+ syncPlayButtons();
+ $('volume').oninput=e=>setVolume(e.target.value);
+ setVolume(volume);
+ $('addBar').onclick=()=>{if(data.bars.length>=40){info('Maximum 40 bars.');return}snapshot();data.bars.push({right:[],left:[]});commit('Added Bar '+data.bars.length+'.')};
+ $('removeBar').onclick=()=>{const last=data.bars.at(-1);if(data.bars.length<=1||last.right.length||last.left.length||data.annotations?.some(a=>a.points.some(p=>p.bar===data.bars.length-1))){info('Only an unannotated final empty bar can be removed.');return}snapshot();data.bars.pop();selected=null;commit('Removed final bar.')};
+ $('shorter').onclick=()=>changeValue(1);$('longer').onclick=()=>changeValue(-1);$('delete').onclick=remove;
+ $('title').onchange=e=>{snapshot();data.title=e.target.value.slice(0,100)||'My Piano Piece';commit('Title updated.')};
+ $('meter').onchange=e=>{const [n,d]=e.target.value.split('/').map(Number),cap=n*96/d;if(data.bars.some(b=>barSum(b.right)>cap||barSum(b.left)>cap)){e.target.value=data.meter;info('Shorten overfull bars before changing the metre.');return}snapshot();data.meter=e.target.value;commit('Time signature updated.')};
+ $('tempo').onchange=e=>{snapshot();data.tempo=Math.max(40,Math.min(220,Number(e.target.value)||96));commit('Tempo updated.')};
+ $('save').onclick=()=>download(JSON.stringify(data,null,2),'two-hand-piano.json','application/json');
+ $('open').onclick=()=>$('openFile').click();$('openFile').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{const raw=validate(JSON.parse(await file.text()));snapshot();data=raw;selected=null;commit('Two-hand project opened.')}catch(err){info('Could not open file: '+err.message)}};
+ $('musicxml').onclick=exportXml;$('print').onclick=()=>window.print();
+ $('zoom').onclick=()=>{zoomed=!zoomed;$('sheet').classList.toggle('zoomed',zoomed);$('zoom').textContent=zoomed?'↘ Fit page':'🔎 Larger'};
+ $('full').onclick=()=>{const full=$('paper').classList.toggle('fullpage');$('full').textContent=full?'⊟ Minimise':'⛶ Full page';$('full').setAttribute('aria-pressed',String(full))};
+ window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&annotationTool!=='cursor'){
+   setAnnotationTool('cursor');
+   if($('paper').classList.contains('fullpage'))$('full').click();
+   e.preventDefault();return
+  }
+  if(e.key==='Escape'&&!$('noteContext').hidden){closeNoteContext();e.preventDefault();return}
+  if(e.key==='Escape'&&pendingSlur){pendingSlur=null;render();info('Slur cancelled.');e.preventDefault();return}
+  if(e.key==='Escape'&&$('paper').classList.contains('fullpage')){$('full').click();e.preventDefault();return}
+  const active=document.activeElement;if(['INPUT','TEXTAREA','SELECT'].includes(active?.tagName)||active?.closest('button,a,summary'))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();return}
+  if(e.key==='Delete'&&selectedAnnotation){e.preventDefault();deleteAnnotation();return}
+  if(e.key==='Delete'&&selected){e.preventDefault();remove()}
+ });
+}
+function refreshValues(){document.querySelectorAll('#values button').forEach(b=>{const active=Number(b.dataset.den)===chosen;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))})}
+try{const old=localStorage.getItem(KEY);if(old)data=validate(JSON.parse(old))}catch(_){data=newProject()}
+bind();render();
+window.addEventListener('pagehide',()=>{if(playing)stop()});
+})();
+</script>
+</body>
+</html>
