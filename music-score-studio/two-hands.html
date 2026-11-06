@@ -551,7 +551,7 @@ function renderArticulations(ref){
  const advanced=document.createElement('details');advanced.className='expressionMore';
  const summary=document.createElement('summary');summary.textContent='⋯ More musical expression';advanced.append(summary);
  const inner=document.createElement('div');inner.className='expressionMoreInner';advanced.append(inner);
- for(const mark of ['staccatissimo','portato','marcato','fermata'])mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark),inner);
+ for(const mark of ['staccatissimo','marcato','fermata'])mk(MARK_LABELS[mark],ref.event[mark],()=>toggleMark(mark),inner);
  dock.append(advanced);
  if(pendingSlur){const hint=document.createElement('span');hint.className='muted';hint.textContent='Tap the other note (same hand)';dock.append(hint)}
 }
@@ -579,7 +579,7 @@ function drawEvent(svg,e,x,top,hand,isSelected,beamed=false){
   if(e.acc)drawText(group,x-31,y+7,e.acc==='#'?'♯':e.acc==='b'?'♭':'♮',24,{'font-family':'serif'});
   group.append(el('ellipse',{cx:x,cy:y,rx:e.den===1?12.5:11.5,ry:7,transform:'rotate(-17 '+x+' '+y+')',fill:e.den>=4?fill:'#fff',stroke:fill,'stroke-width':2}));
   if(e.den!==1&&!beamed){const up=y>=top+36,sx=x+(up?10:-10),ey=y+(up?-49:49);drawLine(group,sx,y,sx,ey,fill,2.2);
-   if(e.den>=8&&!beamed){const count=e.den===8?1:2;for(let k=0;k<count;k++)group.append(el('path',{d:'M '+sx+' '+(ey+(up?k*9:-k*9))+' q '+(up?24:-24)+' '+(up?-6:6)+' '+(up?11:-11)+' '+(up?26:-26),fill:'none',stroke:fill,'stroke-width':3}))}
+   if(e.den>=8&&!beamed){const count=e.den===8?1:2;for(let k=0;k<count;k++)group.append(el('path',{d:'M '+sx+' '+(ey+(up?k*9:-k*9))+' q '+24+' '+6+' '+11+' '+(up?26:-26),fill:'none',stroke:fill,'stroke-width':3}))}
   }
  }
  if(e.dot)group.append(el('circle',{cx:x+19,cy:y-4,r:2.9,fill}));
@@ -944,8 +944,30 @@ function insert(b,hand,x,y,denOverride=null,kindOverride=null){
  if(barSum(bar)+ticks(e)>meterCap()+.0001){info('That '+NAMES[den].toLowerCase()+' will not fit in '+hand+'-hand Bar '+(b+1)+'.');return false}
  const loc=locationForBar(b),times=[];let pos=0;
  for(const item of bar){times.push(timeX(pos,ticks(item),loc.left,loc.width));pos+=ticks(item)}
- let index=0;while(index<times.length&&times[index]<x)index++;
- snapshot();bar.splice(index,0,e);selected=e.id;commit((hand==='right'?'Right':'Left')+' hand · '+(kind==='rest'?'Rest':e.step+e.octave)+' added.');return true;
+ // Snap to a note onset in the other hand; both staves share one musical clock.
+ const opposite=data.bars[b][hand==='right'?'left':'right'];let otherTick=0,match=null;
+ for(const item of opposite){
+  const noteX=timeX(otherTick,ticks(item),loc.left,loc.width);
+  if(item.kind==='note'&&Math.abs(noteX-x)<=18&&(!match||Math.abs(noteX-x)<match.distance))
+   match={tick:otherTick,x:noteX,distance:Math.abs(noteX-x)};
+  otherTick+=ticks(item);
+ }
+ let index=0;while(index<times.length&&times[index]<(match?match.x:x)-0.001)index++;
+ // If the selected beat lies after the end of this hand, add explicit rests.
+ // This preserves timing instead of moving existing notes or creating hidden silence.
+ const gap=match?match.tick-barSum(bar):0;
+ const restValues=[{den:1,tick:96},{den:2,tick:48},{den:4,tick:24},{den:8,tick:12},{den:16,tick:6}];
+ let padding=[],remaining=gap;
+ if(gap>0&&Math.abs(gap/6-Math.round(gap/6))<.00001){
+  for(const value of restValues)while(remaining+0.00001>=value.tick){
+   padding.push({id:makeId(),kind:'rest',den:value.den,dot:false});remaining-=value.tick;
+  }
+ }
+ const canPad=match&&gap>0&&remaining<.00001&&barSum(bar)+gap+ticks(e)<=meterCap()+.0001;
+ snapshot();
+ if(canPad){bar.push(...padding);index=bar.length}
+ bar.splice(index,0,e);selected=e.id;
+ commit((hand==='right'?'Right':'Left')+' hand · '+(kind==='rest'?'Rest':e.step+e.octave)+(match&&(canPad||Math.abs(match.tick-barSum(bar)+ticks(e))<.00001)?' aligned with the other hand.':' added.'));return true;
 }
 
 function closeNoteContext(){contextTarget=null;$('noteContext').hidden=true}
