@@ -28,6 +28,19 @@
   test('Flat enharmonic spelling',()=>{const n=C.changeAccidental({midi:62,beats:1,spelling:{step:1,alter:0,octave:4}},-1);assert(n.midi===61&&n.spelling.alter===-1);assert(C.validateScore({meter:'4/4',tempo:96,notes:[n]}).length===1)});
   test('All four selected time signatures',()=>{for(const [meter,spec] of Object.entries(C.METERS)){const b=C.measures([{midi:60,beats:10}],meter);near(b[0].reduce((s,n)=>s+n.beats,0),spec.beats,.001);assert(b.length>=3)}});
   test('6/8 dotted crotchet tempo',()=>{near(C.beatSeconds(60,'6/8'),2/3,.000001);near(C.beatSeconds(60,'4/4'),1,.000001)});
+  test('Calibration estimates natural tempo in 4/4',()=>{
+   const voiced=frames([[60,1.25]],.025),notes=[{midi:60,beats:2}];
+   near(C.matchRecordedTempo(notes,voiced,'4/4'),96,1);
+  });
+  test('Calibration uses dotted-beat tempo in 6/8',()=>{
+   const voiced=frames([[60,2]],.025),notes=[{midi:60,beats:3}];
+   near(C.matchRecordedTempo(notes,voiced,'6/8'),60,1);
+  });
+  test('Calibration refuses unreliable or absent recordings',()=>{
+   assert(C.matchRecordedTempo([{midi:60,beats:1}],[],'4/4')===null);
+   assert(C.matchRecordedTempo([{midi:60,beats:1}],frames([[null,1,.002,.1]]),'4/4')===null);
+   assert(C.matchRecordedTempo([{midi:60,beats:1}],frames([[60,.1,.1,.3]]),'4/4')===null);
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
