@@ -53,7 +53,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <section class="card" aria-label="Generated musical score">
 <div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2>My melody</h2><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="faithful" class="primary" type="button" disabled>▶ Play detected melody</button><button id="play" type="button" disabled>▶ Play written score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>↓ Save JSON</button><button id="open" type="button">↑ Open JSON / session</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
 <div class="controls score-loudness"><label for="instrument">Instrument</label><select id="instrument" aria-label="Playback instrument"><option value="piano" selected>Warm piano</option><option value="guitar">Acoustic guitar</option><option value="flute">Flute</option><option value="violin">Violin</option><option value="xylophone">Xylophone</option></select><label for="scoreVolume">Instrument volume <output id="scoreVolumeValue" for="scoreVolume">160%</output></label><input id="scoreVolume" type="range" min="100" max="190" step="10" value="160" aria-label="Instrument playback volume"></div>
-<details id="scoreSetup" class="calibration"><summary>Score setup · clef and key signature</summary><div class="controls"><label for="clefMode">Clef</label><select id="clefMode" aria-label="Score clef"><option value="auto" selected>Automatic</option><option value="treble">Treble clef</option><option value="bass">Bass clef</option></select><label for="keyFifths">Key signature</label><select id="keyFifths" aria-label="Written key signature"><option value="-7">C♭ major</option><option value="-6">G♭ major</option><option value="-5">D♭ major</option><option value="-4">A♭ major</option><option value="-3">E♭ major</option><option value="-2">B♭ major</option><option value="-1">F major</option><option value="0" selected>No sharps/flats (C major / A minor)</option><option value="1">G major</option><option value="2">D major</option><option value="3">A major</option><option value="4">E major</option><option value="5">B major</option><option value="6">F♯ major</option><option value="7">C♯ major</option></select></div><p>Key signatures affect how notes are written, not the sound. Choose the key yourself; the app does not claim to detect it automatically.</p></details>
+<details id="scoreSetup" class="calibration"><summary>Score setup · clef and key signature</summary><div class="controls"><label for="clefMode">Clef</label><select id="clefMode" aria-label="Score clef"><option value="auto" selected>Automatic</option><option value="treble">Treble clef</option><option value="bass">Bass clef</option></select><label for="keyFifths">Key signature</label><select id="keyFifths" aria-label="Written key signature"><option value="-7">C♭ major</option><option value="-6">G♭ major</option><option value="-5">D♭ major</option><option value="-4">A♭ major</option><option value="-3">E♭ major</option><option value="-2">B♭ major</option><option value="-1">F major</option><option value="0" selected>No sharps/flats (C major / A minor)</option><option value="1">G major</option><option value="2">D major</option><option value="3">A major</option><option value="4">E major</option><option value="5">B major</option><option value="6">F♯ major</option><option value="7">C♯ major</option></select></div><p>Choose the clef and key signature yourself. They change the notation, not the sound. The time signature is also teacher-selected; the app cannot reliably infer metre from a short melody.</p></details>
 <div class="scoreArea"><svg xmlns="http://www.w3.org/2000/svg" id="score" viewBox="0 0 850 190" role="img" aria-label="Generated single-stave music score"><text x="24" y="58" font-size="20">Your musical score will appear here.</text></svg></div>
 <details id="calibration" class="calibration">
 <summary>🎚 Match the score to my humming</summary>
@@ -238,6 +238,10 @@ async function builtInFallback(reason){
  return true;
 }
 function sample(){if(recording||requesting||basicPitchBusy||recognitionPending)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
+function writtenPitchName(n){if(n.midi===null)return 'Rest';
+ const s=n.spelling||C.spelling(n.midi,keyFifths()<0);
+ return ['C','D','E','F','G','A','B'][s.step]+(s.alter===-1?'♭':s.alter===1?'♯':'')+s.octave;
+}
 function noteDiatonic(n){const s=n.spelling||C.spelling(n.midi,keyFifths()<0);return (s.octave+1)*7+s.step}
 function clefOf(){const forced=clefMode();if(forced!=='auto')return forced;
  const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);
@@ -270,7 +274,7 @@ function glyph(p,base,clef,beamInfo=null){
   if(n.uncertain&&!n.reviewed)inner+=el('circle',{class:'uncertain-ring',cx:x,cy:y,r:16})+el('text',{x:x+11,y:y-14,'font-size':16,fill:'#bb7500','font-weight':'bold'},'?');
  }
  const isSelected=selected===n.origin,cls='event'+(isRest?' rest':' note')+(isSelected?' selected':'');
- return el('g',{class:cls,'data-origin':n.origin,tabindex:0,role:'button','aria-label':(n.fullMeasureRest?'Select full-bar rest in '+meter():'Select '+(isRest?'rest':C.pitchName(n.midi))+' '+(C.NAMES[String(n.beats)]||n.beats+' beats'))+(n.uncertain&&!n.reviewed?' uncertain':''),'aria-pressed':isSelected},inner);
+ return el('g',{class:cls,'data-origin':n.origin,tabindex:0,role:'button','aria-label':(n.fullMeasureRest?'Select full-bar rest in '+meter():'Select '+(isRest?'rest':writtenPitchName(n))+' '+(C.NAMES[String(n.beats)]||n.beats+' beats'))+(n.uncertain&&!n.reviewed?' uncertain':''),'aria-pressed':isSelected},inner);
 }
 function positionsFor(bar,left,width){const weights=bar.map(n=>Math.max(.7,Math.sqrt(n.beats))+(n.displayAccidental?.55:0));
  const sum=weights.reduce((a,b)=>a+b,0)||1;let cursor=0;return bar.map((n,i)=>{const x=left+width*(cursor+weights[i]*.5)/sum;cursor+=weights[i];return {n,x}})}
@@ -292,10 +296,10 @@ function render(){
  $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
  ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental','playSelected','markReviewed'].forEach(id=>$(id).disabled=!isNote);
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
- $('editing').textContent=!valid?'Select a note or rest':(isNote?C.pitchName(notes[selected].midi):'Rest')+' · '+(notes[selected].uncertain&&!notes[selected].reviewed?'Check pitch':'Selected');
+ $('editing').textContent=!valid?'Select a note or rest':(isNote?writtenPitchName(notes[selected]):'Rest')+' · '+(notes[selected].uncertain&&!notes[selected].reviewed?'Check pitch':'Selected');
  const candidate=isNote?notes[selected]:null;
  $('reviewInfo').textContent=!candidate?'Tap a note to see its pitch, duration and confidence.'
-  :C.pitchName(candidate.midi)+' · '+(C.NAMES[String(candidate.beats)]||candidate.beats+' beats')+
+  :writtenPitchName(candidate)+' · '+(C.NAMES[String(candidate.beats)]||candidate.beats+' beats')+
    ' · Recognition confidence: '+Math.round((candidate.confidence??1)*100)+'%'+
    (candidate.reviewed?' · Teacher checked':candidate.uncertain?' · Please review':' · Ready to review');
  if(valid){$('duration').value=String(notes[selected].beats);$('accidental').value=isNote?String((notes[selected].spelling||C.spelling(notes[selected].midi)).alter):'keep'}
@@ -559,7 +563,7 @@ async function playSelected(){
  const index=selected;
  timers.push(setTimeout(()=>{stopPlayback();say('Selected note finished. Tap another note to compare.')},(duration+.13)*1000));
  document.querySelectorAll('#score [data-origin="'+index+'"]').forEach(e=>e.classList.add('playing'));
- say('Playing selected '+C.pitchName(n.midi)+' as '+$('instrument').selectedOptions[0].text+'.');
+ say('Playing selected '+writtenPitchName(n)+' as '+$('instrument').selectedOptions[0].text+'.');
 }
 function markReviewed(){
  if(selected===null||notes[selected]?.midi===null)return;
