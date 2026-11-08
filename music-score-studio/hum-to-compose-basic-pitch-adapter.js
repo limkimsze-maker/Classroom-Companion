@@ -174,7 +174,7 @@ export function verifyPerformance(noteEvents,pcm,rate,pitchEstimator){
  const octaves=verifyOctaves(noteEvents,pcm,rate,pitchEstimator);
  const input=octaves.notes,processed=[];
  const summary={checked:octaves.checked,octavesCorrected:octaves.corrected,
-  pitchCorrected:0,pausesRestored:0,boundariesTrimmed:0,noiseRejected:0,review:0};
+  pitchCorrected:0,noteSplits:0,pausesRestored:0,boundariesTrimmed:0,noiseRejected:0,review:0};
  if(!(pcm instanceof Float32Array)||!(rate>0))return {notes:input,summary};
  for(const note of input){
   const start=Number(note.startTimeSeconds),duration=Number(note.durationSeconds);
@@ -257,8 +257,51 @@ export function verifyPerformance(noteEvents,pcm,rate,pitchEstimator){
    markReview(fragment);processed.push(fragment);
   }
  }
- summary.review=processed.filter(n=>n.octaveStatus==='review'||n.qualityStatus==='review'||n.octaveStatus==='corrected'||n.qualityStatus==='corrected').length;
- return {notes:processed,summary};
+ // Look for one missing note transition within a very long Spotify event.
+ // Two stable YIN plateaus and agreement with one Spotify pitch are required.
+ // Limit analysis windows so short audio stays usable on mid-range phones.
+ const withTransitions=[];let remainingSamples=90;
+ for(const n of processed){
+  const length=Number(n.durationSeconds),start=Number(n.startTimeSeconds);
+  if(!Number.isFinite(n.pitchMidi)||length<.62||!Number.isFinite(start)
+   ||typeof pitchEstimator!=='function'||remainingSamples<4){
+   withTransitions.push(n);continue;
+  }
+  const frames=Math.min(12,Math.floor(length/.095),remainingSamples);
+  remainingSamples-=frames;
+  const reads=[];
+  for(let i=0;i<frames;i++){
+   const relative=.12+(.76*(i+.5)/frames);
+   const window=octaveSample(pcm,rate,start,length,relative);
+   const found=window&&pitchEstimator(window,rate,null);
+   const reliable=found&&found.confidence>.94&&Number.isFinite(found.midi)&&
+    Math.abs(found.midi-Math.round(found.midi))<.32;
+   reads.push({t:start+relative*length,pitch:reliable?Math.round(found.midi):null});
+  }
+  const reliable=reads.filter(x=>x.pitch!==null);
+  if(reliable.length<5){withTransitions.push(n);continue}
+  const variants=[...new Set(reliable.map(x=>x.pitch))];
+  if(variants.length!==2){withTransitions.push(n);continue}
+  const [m1,m2]=variants;const same=r=>r.pitch===m1?1:r.pitch===m2?2:0;
+  const ordered=reads.map(same),switchAt=ordered.findIndex(x=>x===2);
+  const before=ordered.slice(0,switchAt),after=ordered.slice(switchAt);
+  const clean=before.length>=2&&after.length>=2&&before.every(x=>x===1)&&after.every(x=>x===2);
+  const edge=clean?(reads[switchAt-1].t+reads[switchAt].t)/2:null;
+  if(!clean||!(Math.abs(m1-m2)>=2&&Math.abs(m1-m2)<12)
+   ||Math.min(Math.abs(m1-n.pitchMidi),Math.abs(m2-n.pitchMidi))>.7
+   ||!(edge-start>.20&&start+length-edge>.20)){
+   // There may be a missed note, but not enough evidence to invent a split.
+   if(variants.length>1){const candidate={...n};markReview(candidate);withTransitions.push(candidate)}
+   else withTransitions.push(n);
+   continue;
+  }
+  const first={...n,startTimeSeconds:start,durationSeconds:edge-start,pitchMidi:m1};
+  const second={...n,startTimeSeconds:edge,durationSeconds:start+length-edge,pitchMidi:m2};
+  markReview(first);markReview(second);
+  withTransitions.push(first,second);summary.noteSplits++;
+ }
+ summary.review=withTransitions.filter(n=>n.octaveStatus==='review'||n.qualityStatus==='review'||n.octaveStatus==='corrected'||n.qualityStatus==='corrected').length;
+ return {notes:withTransitions,summary};
 }
 
 /* Basic Pitch can return simultaneous notes. This is an experimental
