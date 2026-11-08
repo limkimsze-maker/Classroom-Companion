@@ -257,14 +257,14 @@ function transcribeAlignedEvents(events,bpm,meter='4/4'){
 function auditScore(score,meter){
  if(!METERS[meter]||!Array.isArray(score))return {ok:false,reason:'Invalid notation input'};
  let beats=0;for(const note of score){
-  if(!Number.isFinite(note.beats)||note.beats<.25||Math.round(note.beats*4)!==note.beats*4)
+  if(!Number.isFinite(note.beats)||note.beats<.25||Math.round(note.beats*8)!==note.beats*8)
    return {ok:false,reason:'Invalid note or rest duration'};
   if(note.midi!==null&&(!Number.isInteger(note.midi)||note.midi<36||note.midi>95))
    return {ok:false,reason:'Invalid note pitch'};
   beats+=note.beats;
   if(beats>64.001)return {ok:false,reason:'Score exceeds the 64-beat limit'};
  }
- return {ok:score.some(x=>x.midi!==null),beats,reason:score.length?'No pitched notes':'Empty score'};
+ return {ok:score.some(x=>x.midi!==null),beats,reason:!score.length?'Empty score':score.every(x=>x.midi===null)?'No pitched notes':'OK'};
 }
 /* Adapter for Spotify Basic Pitch NoteEventTime output.
    Keeps this app's monophonic score and playback constraints; concurrent
