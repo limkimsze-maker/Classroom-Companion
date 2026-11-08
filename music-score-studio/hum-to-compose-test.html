@@ -95,9 +95,11 @@ let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser
 let playing=false,voices=[],timers=[],comparisonPending=false,detectedEvents=[];
 let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false,recognitionPending=false;
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
+const keyFifths=()=>{const v=Number($('keyFifths').value);return Number.isInteger(v)&&v>=-7&&v<=7?v:0};
+const clefMode=()=>['treble','bass'].includes($('clefMode').value)?$('clefMode').value:'auto';
 const scoreLevel=()=>Math.min(1.9,Math.max(1,Number($('scoreVolume').value)/100||1.6));
-const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),detectedEvents});
-function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;detectedEvents=s.detectedEvents||[];$('meter').value=s.meter;$('tempo').value=String(s.tempo);render();recordingControls()}
+const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),clefMode:clefMode(),fifths:keyFifths(),detectedEvents});
+function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;detectedEvents=s.detectedEvents||[];$('meter').value=s.meter;$('tempo').value=String(s.tempo);$('clefMode').value=s.clefMode||'auto';$('keyFifths').value=String(s.fifths??0);render();recordingControls()}
 function checkpoint(){history.push(snapshot());if(history.length>100)history.shift();future=[]}
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
@@ -236,8 +238,10 @@ async function builtInFallback(reason){
  return true;
 }
 function sample(){if(recording||requesting||basicPitchBusy||recognitionPending)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
-function noteDiatonic(n){const s=n.spelling||C.spelling(n.midi);return (s.octave+1)*7+s.step}
-function clefOf(){const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);return !pitched.length||pitched[Math.floor(pitched.length/2)]>=60?'treble':'bass'}
+function noteDiatonic(n){const s=n.spelling||C.spelling(n.midi,keyFifths()<0);return (s.octave+1)*7+s.step}
+function clefOf(){const forced=clefMode();if(forced!=='auto')return forced;
+ const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);
+ return !pitched.length||pitched[Math.floor(pitched.length/2)]>=60?'treble':'bass'}
 function restGlyph(n,x,base){const d=n.beats,root=n.fullMeasureRest?4:([.375,.75,1.5,3].includes(d)?d/1.5:d),dot=!n.fullMeasureRest&&[.375,.75,1.5,3].includes(d);
  let art='',y=base+25;
  if(root>=4)art=el('rect',{class:'rest-symbol',x:x-8,y:base+10,width:16,height:7,fill:'#29495d'});
@@ -284,13 +288,18 @@ function beamGroups(points,pulse){
 }
 function render(){
  const has=notes.length>0,valid=selected!==null&&notes[selected],isNote=valid&&notes[selected].midi!==null;
- $('play').disabled=!has||playing;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null)||playing;$('save').disabled=!has;$('saveLocal').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
+ $('play').disabled=!has||playing;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null)||playing;$('save').disabled=!has;$('xml').disabled=!has;$('saveSession').disabled=!has;$('saveLocal').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
  $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
- ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental'].forEach(id=>$(id).disabled=!isNote);
+ ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental','playSelected','markReviewed'].forEach(id=>$(id).disabled=!isNote);
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  $('editing').textContent=!valid?'Select a note or rest':(isNote?C.pitchName(notes[selected].midi):'Rest')+' · '+(notes[selected].uncertain&&!notes[selected].reviewed?'Check pitch':'Selected');
+ const candidate=isNote?notes[selected]:null;
+ $('reviewInfo').textContent=!candidate?'Tap a note to see its pitch, duration and confidence.'
+  :C.pitchName(candidate.midi)+' · '+(C.NAMES[String(candidate.beats)]||candidate.beats+' beats')+
+   ' · Recognition confidence: '+Math.round((candidate.confidence??1)*100)+'%'+
+   (candidate.reviewed?' · Teacher checked':candidate.uncertain?' · Please review':' · Ready to review');
  if(valid){$('duration').value=String(notes[selected].beats);$('accidental').value=isNote?String((notes[selected].spelling||C.spelling(notes[selected].midi)).alter):'keep'}
- const bars=C.displayAccidentals(C.measures(notes,meter())),rows=[],clef=clefOf();
+ const bars=C.displayAccidentals(C.measures(notes,meter()),keyFifths()),rows=[],clef=clefOf();
  for(let b=0;b<bars.length;){if(b+1<bars.length&&bars[b].length+bars[b+1].length<=12){rows.push([b,b+1]);b+=2}else{rows.push([b]);b++}}
  if(!rows.length)rows.push([]);
  const height=rows.length*174+38;let out=el('title',{},'Hum to Compose editable music score');
@@ -298,8 +307,22 @@ function render(){
  rows.forEach((row,r)=>{const base=39+r*174;
   for(let k=0;k<5;k++)out+=el('line',{class:'staff',x1:20,x2:880,y1:base+k*10,y2:base+k*10});
   out+=el('text',{x:26,y:base+40,'font-size':60},clef==='treble'?'𝄞':'𝄢');
-  if(r===0){const [top,bottom]=meter().split('/');out+=el('text',{x:68,y:base+19,'font-size':22,'font-weight':'bold'},top)+el('text',{x:68,y:base+41,'font-size':22,'font-weight':'bold'},bottom)}
-  const left=100,width=row.length===2?388:776;
+  const fifths=keyFifths(),count=Math.abs(fifths),extra=count*12;
+  const sharpNames=['F5','C5','G5','D5','A4','E5','B4'];
+  const flatNames=clef==='bass'?['B2','E3','A2','D3','G2','C3','F3']:
+   ['B4','E5','A4','D5','G4','C5','F4'];
+  const signMidi={F5:77,C5:72,G5:79,D5:74,A4:69,E5:76,B4:71,
+   B2:47,E3:52,A2:45,D3:50,G2:43,C3:48,F3:53};
+  for(let i=0;i<count;i++){
+   const midi=signMidi[(fifths>0?sharpNames:flatNames)[i]]-(fifths>0&&clef==='bass'?24:0);
+   const spelled=C.spelling(midi),lower=clef==='treble'?C.spelling(64):C.spelling(43);
+   const y=base+40-(((spelled.octave+1)*7+spelled.step)-((lower.octave+1)*7+lower.step))*5;
+   out+=el('text',{class:'key-signature',x:67+i*12,y:y+7,'font-size':25},fifths>0?'♯':'♭');
+  }
+  if(r===0){const [top,bottom]=meter().split('/');
+   out+=el('text',{x:68+extra,y:base+19,'font-size':22,'font-weight':'bold'},top)+
+    el('text',{x:68+extra,y:base+41,'font-size':22,'font-weight':'bold'},bottom)}
+  const left=100+extra,width=(776-extra)/(row.length===2?2:1);
   row.forEach((b,j)=>{const start=left+j*width,p=positionsFor(bars[b],start+13,width-24);
    const pulse=C.METERS[meter()].pulse;const beam=beamGroups(p,pulse);
    // A beamed group follows standard stem direction: notes above the
@@ -543,6 +566,8 @@ $('save').addEventListener('click',exportJSON);$('saveLocal').addEventListener('
 $('open').addEventListener('click',()=>$('file').click());$('file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>200000)throw Error('Too large');importState(JSON.parse(await file.text()))}catch(err){say('Could not open score JSON: '+err.message,true)}e.target.value=''});
 $('score').addEventListener('click',choose);$('score').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('g[data-origin]')){e.preventDefault();choose(e)}});
 ['tempo','meter'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='tempo')$('tempo').value=String(tempo());stopPlayback();render()}));
+['clefMode','keyFifths'].forEach(id=>$(id).addEventListener('change',()=>{stopPlayback();render();
+ say('Notation: '+clefOf()+' clef, '+C.KEY_NAMES[String(keyFifths())]+'. Sounding pitches are unchanged.');}));
 window.addEventListener('pagehide',()=>{recording=false;closeMic();stopPlayback();setOriginal(null);if(playerCtx)playerCtx.close().catch(()=>{})});
 render();recordingControls();
 })();
