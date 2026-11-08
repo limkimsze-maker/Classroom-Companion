@@ -103,6 +103,52 @@
     assert(C.measures(score,m)[0].reduce((s,n)=>s+n.beats,0)<=C.METERS[m].beats,'bar '+m);
    }
   });
+  test('Basic Pitch adapter aligns notes and inserts actual rests',()=>{
+   const p=C.basicPitchToPerformance([
+    {startTimeSeconds:.5,durationSeconds:.5,pitchMidi:60,amplitude:.9},
+    {startTimeSeconds:1.25,durationSeconds:.5,pitchMidi:62,amplitude:.85}
+   ]);
+   assert(p.length===3,JSON.stringify(p));
+   near(p[0].start,0,.0001);near(p[0].duration,.5,.001);
+   assert(p[1].midi===null&&Math.abs(p[1].duration-.25)<.0001,'missing rest');
+   assert(p[2].midi===62,'wrong pitch');
+  });
+  test('Basic Pitch overlapping pitches reduce to one source note',()=>{
+   const p=C.basicPitchToPerformance([
+    {startTimeSeconds:0,durationSeconds:1,pitchMidi:60,amplitude:.9},
+    {startTimeSeconds:.25,durationSeconds:.5,pitchMidi:64,amplitude:.4}
+   ]);
+   assert(p.length===1&&p[0].midi===60,'polyphonic overlap was not resolved monophonically '+JSON.stringify(p));
+  });
+  test('Basic Pitch overlapping stronger notes override only their own span',()=>{
+   const p=C.basicPitchToPerformance([
+    {startTimeSeconds:0,durationSeconds:1,pitchMidi:60,amplitude:.2},
+    {startTimeSeconds:.25,durationSeconds:.5,pitchMidi:64,amplitude:.9}
+   ]);
+   assert(p.map(x=>x.midi).join(',')==='60,64,60',JSON.stringify(p.map(x=>x.midi)));
+  });
+  test('Basic Pitch separate same-pitch attacks remain separate',()=>{
+   const p=C.basicPitchToPerformance([
+    {startTimeSeconds:0,durationSeconds:.25,pitchMidi:60,amplitude:.8},
+    {startTimeSeconds:.25,durationSeconds:.25,pitchMidi:60,amplitude:.8}
+   ]);
+   assert(p.length===2&&p[0].midi===p[1].midi,'repeated pitch attack merged');
+  });
+  test('Basic Pitch adapter rejects invalid events and respects 20-second limit',()=>{
+   const p=C.basicPitchToPerformance([
+    {startTimeSeconds:0,durationSeconds:1,pitchMidi:12,amplitude:1},
+    {startTimeSeconds:0,durationSeconds:1,pitchMidi:60,amplitude:1},
+    {startTimeSeconds:19.9,durationSeconds:12,pitchMidi:62,amplitude:1},
+    {startTimeSeconds:23,durationSeconds:2,pitchMidi:65,amplitude:1}
+   ],20);
+   assert(p.filter(x=>x.midi!==null).length===2,'invalid notes remained');
+   near(p.at(-1).end,20,.0001);
+  });
+  test('Basic Pitch score conversion flags ML notes for review',()=>{
+   const p=C.basicPitchToPerformance([{startTimeSeconds:0,durationSeconds:.5,pitchMidi:60,amplitude:.95}]);
+   const score=C.transcribeDetectedEvents(p,120,'4/4');
+   assert(score.length===1&&score[0].midi===60&&score[0].uncertain,'new model notes must be reviewable');
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
