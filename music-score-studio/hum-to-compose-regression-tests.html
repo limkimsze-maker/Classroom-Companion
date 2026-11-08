@@ -22,6 +22,7 @@ async function run(){
   check('Calibration tools remain folded away by default',!!id('calibration')&&!id('calibration').open);
   check('Detected-performance playback is labelled distinctly from score playback',id('faithful').textContent.includes('detected melody')&&id('play').textContent.includes('written score'));
   check('Detected-performance playback unavailable before recording',id('faithful').disabled);
+  check('Score volume slider starts louder at 160 percent',id('scoreVolume').value==='160'&&id('scoreVolumeValue').textContent==='160%');
   check('Local audio-file fallback visible',!!id('audioUpload')&&id('audioFile').accept.includes('audio/*'));
   check('Voice Recorder alternative explained without upload',d.body.textContent.includes('Voice Recorder')&&d.body.textContent.includes('Nothing is uploaded.'));
   check('Meter selector exposes all 4 options',[...id('meter').options].map(x=>x.value).join(',')==='2/4,3/4,4/4,6/8');
@@ -56,10 +57,10 @@ async function run(){
   check('Narrow viewport fits core controls without page-level overflow',d.documentElement.scrollWidth<=w.innerWidth+2,'viewport='+w.innerWidth+', page='+d.documentElement.scrollWidth);
   frame.style.width='100%';
   // Mock audio to inspect scheduling and highlighted note start/end without using speakers.
-  const audioStarts=[],peakGains=[],sustainGains=[];class MockAudioContext{
+  const audioStarts=[],peakGains=[],sustainGains=[],oscTypes=[];class MockAudioContext{
    constructor(){this.currentTime=0;this.destination={}}
    async resume(){}
-   createOscillator(){return {type:'sine',frequency:{setValueAtTime(){}},connect(){},start(t){audioStarts.push(t)},stop(){}}}
+   createOscillator(){return {type:'sine',frequency:{setValueAtTime(){}},connect(){},start(t){audioStarts.push(t);oscTypes.push(this.type)},stop(){}}}
    createGain(){return {gain:{setValueAtTime(value){if(value>.1)sustainGains.push(value)},linearRampToValueAtTime(value){if(value>.1)peakGains.push(value)}},connect(){}}}
    async close(){}
   }
@@ -67,11 +68,18 @@ async function run(){
   id('example').click();id('tempo').value='140';id('tempo').dispatchEvent(new w.Event('change',{bubbles:true}));
   id('play').click();await wait(200);
   check('Playback schedules single attack per pitched note',audioStarts.length===5,'starts='+audioStarts.length);
-  check('Generated score has a stronger yet bounded audio envelope',peakGains.length===5&&peakGains.every(v=>v===.36)&&sustainGains.length===5&&sustainGains.every(v=>v===.28),'peak='+peakGains[0]+', sustain='+sustainGains[0]);
+  check('Score volume boosts the note envelope by 160 percent',peakGains.length===5&&peakGains.every(v=>Math.abs(v-.576)<.00001)&&sustainGains.length===5&&sustainGains.every(v=>Math.abs(v-.448)<.00001),'peak='+peakGains[0]+', sustain='+sustainGains[0]);
+  check('Score tone uses brighter triangle waveform for phone speaker',oscTypes.length===5&&oscTypes.every(t=>t==='triangle'));
   check('Current note highlighted in playback',d.querySelectorAll('#score .playing').length>0);
   await wait(500);
   check('Previous note highlight clears after its duration',!d.querySelector('#score [data-origin="0"].playing'));
   id('stop').click();check('Stop clears all note highlights',d.querySelectorAll('#score .playing').length===0);
+  peakGains.length=0;sustainGains.length=0;audioStarts.length=0;oscTypes.length=0;
+  id('scoreVolume').value='190';id('scoreVolume').dispatchEvent(new w.Event('input',{bubbles:true}));
+  check('Volume output label updates when user adjusts it',id('scoreVolumeValue').textContent==='190%');
+  id('play').click();await wait(100);
+  check('Maximum score volume stays below digital clipping',peakGains.length===5&&peakGains.every(v=>v>0.6&&v<.70));
+  id('stop').click();
   // Mock denied mic permission, with no hardware access at all.
   const rejectMic=async()=>{const e=new Error('denied');e.name='NotAllowedError';throw e};
   Object.defineProperty(w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:rejectMic}});
