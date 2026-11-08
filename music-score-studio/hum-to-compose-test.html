@@ -36,7 +36,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <main>
 <section class="card" aria-label="Record melody">
 <h2>Hum a tune. See the notes.</h2>
-<p class="muted">Hum naturally. Spotify Basic Pitch creates the draft score and automatically checks for octave mistakes. Any doubtful notes are marked for review.</p>
+<p class="muted">Hum naturally. The TEST app checks pitches, octaves, note changes, pauses and rhythm automatically, then shows a draft score for review.</p>
 <div class="steps"><span class="step">1 · Hum</span><span class="step">2 · Review the score</span><span class="step">3 · Play</span><span class="step">4 · Save</span></div>
 <div class="controls">
 <button id="record" class="primary" type="button">🎤 Start recording</button>
@@ -68,7 +68,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="matchSpeed" type="button" disabled>Match recorded speed</button>
 <button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button></div>
 <p>The TEST app now estimates tempo automatically when you finish humming. Change BPM and rebuild only if the score rhythms are wrong. Natural-timing playback remains available for comparison. Rebuilding replaces edits; Undo can restore them.</p></div>
-<p class="small muted">Spotify Basic Pitch is the default recognition engine. After transcription, the app checks the recorded fundamental pitch for octave errors. Confident corrections happen automatically; uncertain results are highlighted for review. The model requires internet on first use and processes the recording locally.</p>
+<p class="small muted">Spotify Basic Pitch is the main recogniser. The TEST app compares the result with your recorded voice, correcting clear pitch mistakes, missed changes and rests, and aligning the score rhythm. Doubtful notes are highlighted for review. The model needs internet on first use; audio stays in your browser.</p>
 </details>
 <div class="editor" aria-label="Review and correct score">
 <span id="editing">Select a note or rest</span>
@@ -227,8 +227,8 @@ async function builtInFallback(reason){
  }
  if(!raw.length){say('Spotify Basic Pitch is unavailable: '+reason+' No usable audio was found for the built-in fallback.',true);return false}
  const events=C.performanceFromFrames(raw),estimated=C.estimateNaturalTempo(events,meter());
- const bpm=estimated.bpm||tempo(),draft=C.transcribeDetectedEvents(events,bpm,meter());
- if(!draft.some(n=>n.midi!==null)){say('Spotify Basic Pitch could not run ('+reason+'). Built-in recognition also found no clear notes.',true);return false}
+ const bpm=estimated.bpm||tempo(),draft=C.transcribeAlignedEvents(events,bpm,meter());
+ if(!C.auditScore(draft,meter()).ok){say('Spotify Basic Pitch could not run ('+reason+'). Built-in recognition also found no clear notes.',true);return false}
  change(()=>{samples=raw;detectedEvents=events;notes=draft;selected=null;
    if(estimated.bpm)$('tempo').value=String(bpm)});
  say('Spotify Basic Pitch could not run ('+reason+'). Used the built-in fallback recogniser; review all notes.',true);
@@ -349,7 +349,7 @@ function transposeAll(semitones){if(recording||!notes.some(n=>n.midi!==null))ret
 function matchSpeed(){if(!samples.length||!notes.length)return;const fitted=C.matchRecordedTempo(notes,samples,meter());
  if(fitted===null){say('Not enough steady humming to estimate tempo reliably. You can set BPM manually and compare.',true);return}
  change(()=>{$('tempo').value=String(fitted)});say('Estimated '+fitted+' BPM from the overall humming length. Listen and correct individual rhythms if needed.')}
-function rebuild(){if(!detectedEvents.length)return;const result=C.transcribeDetectedEvents(detectedEvents,tempo(),meter());if(!result.some(n=>n.midi!==null)){say('Not enough clear notes in the recording to rebuild.',true);return}
+function rebuild(){if(!detectedEvents.length)return;const result=C.transcribeAlignedEvents(detectedEvents,tempo(),meter());if(!C.auditScore(result,meter()).ok){say('Not enough clear notes in the recording to rebuild.',true);return}
  change(()=>{notes=result;selected=null});say('Rhythm rebuilt at '+tempo()+' BPM from the local humming analysis. Previous edits can be restored with Undo.')}
 
 async function tryBasicPitch(){
@@ -375,17 +375,20 @@ async function tryBasicPitch(){
   const newPerformance=answer.events;
   const guessed=C.estimateNaturalTempo(newPerformance,meter());
   const bpm=guessed.bpm||tempo();
-  const newScore=C.transcribeDetectedEvents(newPerformance,bpm,meter());
-  if(!newScore.some(n=>n.midi!==null))throw Error('The model found no usable melody.');
+  const newScore=C.transcribeAlignedEvents(newPerformance,bpm,meter());
+  const quality=C.auditScore(newScore,meter());
+  if(!quality.ok)throw Error('The generated notation needs review: '+quality.reason);
   change(()=>{notes=newScore;selected=null;detectedEvents=newPerformance;
    if(guessed.bpm)$('tempo').value=String(bpm)});
   $('basicPitchProgress').textContent='Spotify Basic Pitch complete · main recognition engine';
-  const octaveInfo=answer.octaveCheck;
-  const octaveMessage=octaveInfo
-   ? ' Automatic octave check: '+octaveInfo.corrected+' corrected, '+octaveInfo.review+' to review.'
-   : ' Octave check result unavailable; review doubtful notes.';
+  const v=answer.verification,octaveInfo=answer.octaveCheck;
+  const corrections=v
+   ? ' Automatic checks: '+v.octavesCorrected+' octave, '+v.pitchCorrected+
+     ' pitch, '+v.noteSplits+' note splits, '+v.pausesRestored+' rests restored; '+v.review+' notes to review.'
+   : octaveInfo ? ' Automatic octave check: '+octaveInfo.corrected+' corrected, '+octaveInfo.review+' to review.'
+   : ' Automatic verification was unavailable; review doubtful notes.';
   say('Spotify Basic Pitch created '+newScore.filter(n=>n.midi!==null).length+
-   ' draft note groups.'+octaveMessage+' Compare with the original humming; Undo restores the earlier score.');
+   ' draft note groups.'+corrections+' Compare with your original humming; Undo restores the earlier score.');
  }catch(error){
   $('basicPitchProgress').textContent='Spotify Basic Pitch unavailable';
   if(recordingBlob===sourceAudioBlob&&JSON.stringify(notes)===originalScore)
@@ -441,7 +444,7 @@ async function playDetected(){
  say('Playing detected melody with a warm piano-like sound; note timing and pitch movement are preserved. The original voice recording is unchanged.');
 }
 async function playScore(){
- if(!notes.length||recording)return;stopPlayback();
+ if(!notes.length||recording)return;const validity=C.auditScore(notes,meter());if(!validity.ok){say('This score cannot play until its notes are corrected: '+validity.reason,true);return}stopPlayback();
  try{playerCtx=playerCtx||new(window.AudioContext||window.webkitAudioContext)();await playerCtx.resume()}catch(_){say('Score sound is unavailable in this browser.',true);return}
  playing=true;$('play').disabled=true;$('stop').disabled=false;const begin=playerCtx.currentTime+.12,sec=C.beatSeconds(tempo(),meter());let at=0;
  const highlights=()=>document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));
