@@ -38,3 +38,19 @@ jobs:
         run: node music-score-studio/hum-to-compose-features-tests.cjs
       - name: Parse exported MusicXML in all clefs and key signatures
         run: node music-score-studio/hum-to-compose-musicxml-structure-tests.cjs
+
+  spotify-real-model-browser-smoke:
+    name: Actual Spotify browser inference (eight generated melodies)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Playwright browser test dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Infer eight synthetic melodies through real Spotify model
+        run: node music-score-studio/hum-to-compose-live-spotify-smoke.cjs
