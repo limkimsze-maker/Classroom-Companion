@@ -41,6 +41,37 @@
    assert(C.matchRecordedTempo([{midi:60,beats:1}],frames([[null,1,.002,.1]]),'4/4')===null);
    assert(C.matchRecordedTempo([{midi:60,beats:1}],frames([[60,.1,.1,.3]]),'4/4')===null);
   });
+  test('Detected performance retains fractional pitch and measured durations',()=>{
+   let raw=frames([[60,.5],[62,.5]],.025);
+   raw=raw.map(f=>({...f,rawMidi:f.pitch+.21}));
+   const p=C.performanceFromFrames(raw);
+   assert(p.length===2,'expected two distinct note events');
+   near(p[0].midi,60.21,.001);
+   near(p[1].start,.5,.03);
+   near(p[0].duration,.5,.03);
+   assert(p[0].points.length>=10&&p[0].points.some(x=>x.midi>60),'pitch trace lost');
+  });
+  test('Detected performance retains natural pauses and separate attacks',()=>{
+   const s=frames([[60,.125],[60,.125,.22,.96,true],[null,.15,.002,0],[62,.3]],.025);
+   const p=C.performanceFromFrames(s);
+   assert(p.filter(x=>x.midi!==null).length===3,JSON.stringify(p.map(x=>[x.midi,x.duration])));
+   assert(p.some(x=>x.midi===null&&x.duration>=.125),'pause missing');
+  });
+  test('Small vibrato stays one note with pitch movement retained',()=>{
+   const f=frames([[60,.6]],.025).map((x,i)=>({...x,rawMidi:60+0.3*Math.sin(2*Math.PI*i/11)}));
+   const p=C.performanceFromFrames(f);
+   assert(p.length===1,'vibrato fragmented into different notes');
+   assert(Math.max(...p[0].points.map(x=>x.midi))-Math.min(...p[0].points.map(x=>x.midi))>.5);
+  });
+  test('Automatic tempo chooses simple pulses at 80, 120 and 150 BPM',()=>{
+   for(const [bpm,duration] of [[80,.75],[120,.5],[150,.4]]){
+    const events=[0,1,2,3].map(()=>({midi:60,duration}));
+    near(C.estimateNaturalTempo(events,'4/4').bpm,bpm,1);
+   }
+  });
+  test('Auto tempo refuses to guess from just one note',()=>{
+   assert(C.estimateNaturalTempo([{midi:60,duration:1}],'4/4').bpm===null);
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
