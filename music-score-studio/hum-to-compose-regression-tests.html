@@ -141,6 +141,15 @@ async function run(){
    window.HumCore.auditScore(window.HumCore.transcribeAlignedEvents(
     adapter.toSingleMelody(missedPitch.notes),120,'4/4'),'4/4').ok);
 
+  const bent=adapter.toSingleMelody([{
+   startTimeSeconds:.2,durationSeconds:.6,pitchMidi:69,amplitude:.95,
+   pitchBends:[0,1.5,3,-1.5,0]
+  }]);
+  check('Spotify pitch bends are available in detected melody playback',
+   bent.length===1&&bent[0].points.length>=4&&
+   bent[0].points.some(x=>x.midi>69.4)&&bent[0].points.some(x=>x.midi<68.6));
+  check('Pitch-bend effects do not change the written note pitch',
+   bent[0].midi===69&&window.HumCore.transcribeAlignedEvents(bent,120,'4/4')[0].midi===69);
   check('Spotify integration pins library version and official model commit',
    adapter.BASIC_PITCH_VERSION==='@spotify/basic-pitch@1.0.1'&&adapter.BASIC_PITCH_MODEL.includes('2d498f82b61c71898edf0e8dd661b99076676c8b'));
 
@@ -215,6 +224,14 @@ async function run(){
    g.linear.some(x=>Math.abs(x.v-.688)<.00001)&&g.exp.some(x=>Math.abs(x.v-.368)<.00001)),
    'master gain count='+masters().length);
   check('Piano pitch harmonics are scheduled at the same note onset',audioStarts[0]===audioStarts[1]&&audioStarts[1]===audioStarts[2]);
+  check('Warm piano pitches use correct A4-based frequencies',
+   frequencies.length>=3&&Math.abs(frequencies[0].v-261.625565)<.1&&
+   Math.abs(frequencies[1].v-261.625565*2.002)<.2&&
+   Math.abs(frequencies[2].v-261.625565*3.008)<.3);
+  check('Piano note starts follow the chosen score tempo',
+   Math.abs((audioStarts[3]-audioStarts[0])-60/140)<.02);
+  check('Piano peak is bounded for monophonic playback at maximum volume',
+   .43*1.9*(.74+.19+.06)<1);
   check('Current note highlighted in playback',d.querySelectorAll('#score .playing').length>0);
   await wait(500);
   check('Previous note highlight clears after its duration',!d.querySelector('#score [data-origin="0"].playing'));
@@ -261,6 +278,9 @@ async function run(){
   await wait(600);
   check('Import automatically runs Spotify as the main engine',spotifyRuns===1&&id('status').textContent.includes('Spotify Basic Pitch created'),'status='+id('status').textContent);
   check('Spotify result becomes an editable score',!id('play').disabled&&!id('faithful').disabled);
+  check('Match recorded speed is available after Spotify transcription',!id('matchSpeed').disabled);
+  id('matchSpeed').click();
+  check('Tempo fitting uses detected performance after Spotify import',id('status').textContent.includes('Matched the score duration'));
   check('Automatic octave verification results are explained to the user',id('status').textContent.includes('1 corrected, 1 to review'));
   check('Original local audio is available after import',!id('original').disabled);
   // Now make the Spotify engine fail; the app must label the built-in fallback.
