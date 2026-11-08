@@ -121,7 +121,7 @@ function keyDefaults(fifths=0){
 function displayAccidentals(bars,fifths=0){const defaults=keyDefaults(fifths);return bars.map(bar=>{const active=new Map();
 
  return bar.map(n=>{if(n.midi===null)return {...n,displayAccidental:null};
-   const s=n.spelling||spelling(n.midi);
+   const s=n.spelling||spelling(n.midi,fifths<0);
    const key=s.step+':'+s.octave,old=active.has(key)?active.get(key):defaults[s.step];
    // A tied accidental carries across the barline only to the tied note.
    // It must NOT affect the next untied note's accidental state.
