@@ -367,7 +367,7 @@ async function playDetected(){
   osc.connect(gain);gain.connect(playerCtx.destination);
   osc.start(when);osc.stop(end+.005);voices.push(osc);
  }
- const total=performance[detectedEvents.length-1].end;
+ const total=detectedEvents[detectedEvents.length-1].end;
  timers.push(setTimeout(()=>{stopPlayback();say('Detected melody finished. Play written score to hear how the notation differs.')},(total+.17)*1000));
  say('Playing detected melody with its measured note lengths, pauses and pitch movement. The instrument sound will differ from your voice.');
 }
