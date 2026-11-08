@@ -6,12 +6,57 @@
 <h1>🎼 Known melody benchmark — TEST ONLY</h1>
 <p>This test synthesises known-pitch, known-duration melodies, then measures how the independent audio checker corrects <strong>deliberately seeded</strong> note mistakes. It does <strong>not</strong> run Spotify Basic Pitch and cannot certify human humming accuracy.</p>
 <p class="note">No microphone, voice recording, sound playback, audio uploads or paid services are used. This benchmark may take some time on a phone.</p>
-<button id="run">Run 84 known-melody cases</button><pre id="result" role="status" aria-live="polite">Ready to run offline synthetic verification.</pre>
+<button id="run">Run 84 verification cases (offline)</button><pre id="result" role="status" aria-live="polite">Ready to run offline synthetic verification.</pre><h2>Optional: test the actual Spotify model</h2><p>This separate test runs Spotify Basic Pitch itself on four generated melodies. It downloads the pinned model on first use, but audio is generated and processed locally. No microphone or recording is used.</p><button id="runSpotify">Run Spotify on four generated melodies</button><pre id="spotifyResult" role="status" aria-live="polite">Not run. Real-model accuracy is not included in the offline scores above.</pre>
 <p><a href="./hum-to-compose-test.html">Return to Hum to Compose TEST</a></p>
 </main>
 <script src="./hum-to-compose-core.js"></script><script src="./hum-to-compose-benchmark.js"></script>
 <script type="module">
 const button=document.getElementById('run'),output=document.getElementById('result');
+const spotifyButton=document.getElementById('runSpotify'),spotifyOutput=document.getElementById('spotifyResult');
+spotifyButton.addEventListener('click',async()=>{
+ spotifyButton.disabled=true;
+ const checks=['pattern0-pure-correct','pattern1-rich-correct','pattern2-pure-correct','pattern3-rich-correct'];
+ let evaluated=0,matched=0,total=0,restHits=0;
+ try{
+  spotifyOutput.textContent='Loading pinned Spotify Basic Pitch model…';
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const fixtures=window.HumBenchmark.deterministicCases().filter(x=>checks.includes(x.name));
+  for(const fixture of fixtures){
+   spotifyOutput.textContent='Spotify Basic Pitch recognising '+(evaluated+1)+'/'+fixtures.length+': '+fixture.name;
+   await new Promise(resolve=>setTimeout(resolve,25));
+   const pcm=window.HumBenchmark.makeClip(fixture.notes,fixture.voice);
+   const audio={sampleRate:window.HumBenchmark.RATE,length:pcm.length,
+    numberOfChannels:1,getChannelData:()=>pcm};
+   const found=await adapter.recognise(audio,progress=>{
+    spotifyOutput.textContent=fixture.name+' · '+progress;
+   },window.HumCore.estimatePitch);
+   const predicted=found.events.filter(e=>e.midi!==null);
+   const truth=fixture.notes.map(n=>({start:n.start-fixture.notes[0].start,
+    end:n.end-fixture.notes[0].start,midi:n.midi}));
+   for(const note of truth){
+    total++;
+    const overlapping=predicted.map(p=>({
+     p,overlap:Math.max(0,Math.min(note.end,p.end)-Math.max(note.start,p.start))
+    })).filter(x=>x.overlap>.05).sort((a,b)=>b.overlap-a.overlap);
+    if(overlapping.length&&overlapping[0].p.midi===note.midi)matched++;
+   }
+   if(found.events.some(e=>e.midi===null&&e.duration>.07))restHits++;
+   evaluated++;
+  }
+  spotifyOutput.textContent=[
+   'ACTUAL Spotify Basic Pitch inference on generated waveforms',
+   'Melodies successfully analysed: '+evaluated+'/'+checks.length,
+   'Known pitches matched: '+matched+'/'+total+' ('+(total?100*matched/total:0).toFixed(1)+'%)',
+   'Pauses recognised: '+restHits+'/'+evaluated,
+   '',
+   'This tests synthetic melodies with the real model, NOT human voice reliability.',
+   'Teacher-reviewed human recordings remain necessary before release.'
+  ].join('\n');
+ }catch(e){
+  spotifyOutput.textContent='Real Spotify benchmark stopped after '+evaluated+' completed cases: '+e.message+
+   '\nNo score is claimed for unfinished cases. Check the model network connection and browser compatibility.';
+ }finally{spotifyButton.disabled=false}
+});
 button.addEventListener('click',async()=>{
  button.disabled=true;output.textContent='Calculating the known-melody comparisons…';
  try{
