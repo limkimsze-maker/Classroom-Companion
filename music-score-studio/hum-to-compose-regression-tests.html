@@ -20,9 +20,12 @@ async function run(){
   check('Time signature and audio level indicators have distinct IDs',d.querySelectorAll('#meter').length===1&&d.querySelectorAll('#levelMeter').length===1);
   check('Tempo is editable in whole BPM increments',id('tempo').type==='number'&&id('tempo').min==='40'&&id('tempo').max==='200');
   check('Calibration tools remain folded away by default',!!id('calibration')&&!id('calibration').open);
+  check('Detected-performance playback is labelled distinctly from score playback',id('faithful').textContent.includes('detected melody')&&id('play').textContent.includes('written score'));
+  check('Detected-performance playback unavailable before recording',id('faithful').disabled);
   check('Meter selector exposes all 4 options',[...id('meter').options].map(x=>x.value).join(',')==='2/4,3/4,4/4,6/8');
   id('example').click();check('Sample draws score symbols',d.querySelectorAll('#score .event').length>=6);
   check('Compare and recorded-speed matching need a real recording',id('compare').disabled&&id('matchSpeed').disabled);
+  check('Sample score cannot impersonate a real recorded performance',id('faithful').disabled);
   const pitchBefore=d.querySelector('#score .note')?.getAttribute('aria-label');
   id('allUp').click();
   const pitchAfter=d.querySelector('#score .note')?.getAttribute('aria-label');
