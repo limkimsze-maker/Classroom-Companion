@@ -103,5 +103,60 @@ test('All supported metres respect the notated limit',()=>{
   assert.ok(score.reduce((s,n)=>s+n.beats,0)<=64);
  }
 });
+
+/* Instrument playback smoke tests, using actual TEST-page synthesiser code,
+   mocked Web Audio and no audio downloads. */
+const instrumentPage=fs.readFileSync(path.join(__dirname,'hum-to-compose-test.html'),'utf8');
+const instrumentStart=instrumentPage.indexOf('function scheduleWarmPiano(');
+const instrumentEnd=instrumentPage.indexOf('async function playDetected(){',instrumentStart);
+assert.ok(instrumentStart>0&&instrumentEnd>instrumentStart,'Instrument scheduler missing');
+const instrumentCode=instrumentPage.slice(instrumentStart,instrumentEnd);
+function testInstrument(name,volume=1.9,duration=.8){
+ const result={osc:[],stops:[],frequencies:[],gains:[],voices:[]};
+ const audioContext={destination:{},sampleRate:48000,
+  createOscillator(){return {type:'sine',
+   frequency:{setValueAtTime(freq,at){result.frequencies.push([freq,at])}},
+   connect(){},start(at){result.osc.push([at,this.type])},stop(at){result.stops.push(at)}
+  }},
+  createGain(){const env={ramp:[]};result.gains.push(env);
+   return {gain:{setValueAtTime(){},linearRampToValueAtTime(v,at){env.ramp.push([v,at])},exponentialRampToValueAtTime(){}},connect(){}}
+  }
+ };
+ const f=new Function('playerCtx','scoreLevel','voices','$',
+  instrumentCode+String.fromCharCode(10)+'return {scheduleInstrument,INSTRUMENTS};');
+ const engine=f(audioContext,()=>volume,result.voices,id=>({value:name}));
+ engine.scheduleInstrument(69,.15,duration,[{t:.12,midi:69.3,confidence:.95}]);
+ return {...result,profiles:engine.INSTRUMENTS};
+}
+for(const [name,partials,peak] of [
+ ['piano',3,.43],['guitar',4,.45],['flute',3,.31],
+ ['violin',5,.31],['xylophone',3,.43]
+]){
+ test('Instrument '+name+' tunes A4 correctly with bounded gain',()=>{
+  const r=testInstrument(name);
+  assert.equal(r.osc.length,partials);
+  assert.equal(r.voices.length,partials);
+  assert.equal(r.stops.length,partials);
+  assert.equal(r.frequencies[0][0],440);
+  assert.ok(r.osc.every(x=>x[1]==='sine'));
+  assert.ok(Math.abs(Math.max(...r.gains.flatMap(g=>g.ramp.map(x=>x[0])))-peak*1.9)<1e-8);
+  assert.ok(peak*1.9<1);
+  assert.equal(r.frequencies.filter(x=>Math.abs(x[1]-.27)<1e-6).length,partials);
+ });
+}
+test('Guitar and violin envelopes have distinct attack speed',()=>{
+ const a=testInstrument('guitar'),b=testInstrument('violin');
+ assert.ok(a.gains.find(x=>x.ramp.length).ramp[0][1]<
+           b.gains.find(x=>x.ramp.length).ramp[0][1]);
+});
+test('Xylophone strikes decay before a long note ends',()=>{
+ assert.ok(testInstrument('xylophone').stops.every(at=>at<.65));
+ assert.ok(testInstrument('flute').stops.every(at=>at>.95));
+});
+test('Both score players share instrument while Original hum remains separate',()=>{
+ assert.ok(instrumentPage.includes('scheduleInstrument(n.midi,start,duration)'));
+ assert.ok(instrumentPage.includes('scheduleInstrument(e.midi,begin+e.start,e.duration,e.points||[])'));
+ assert.ok(instrumentPage.includes('originalAudio.play()'));
+});
 console.log(passed+' synthetic audio verification checks passed.');
 if(process.exitCode)process.exit(1);
