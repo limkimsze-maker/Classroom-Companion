@@ -36,7 +36,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <main>
 <section class="card" aria-label="Record melody">
 <h2>Hum a tune. See the notes.</h2>
-<p class="muted">Hum naturally. The TEST app keeps your recorded timing and detected pitches for comparison, then creates a readable draft score. Check uncertain notes before teaching.</p>
+<p class="muted">Hum naturally. Spotify Basic Pitch automatically creates your draft score from the recording. Check doubtful notes before teaching.</p>
 <div class="steps"><span class="step">1 · Hum</span><span class="step">2 · Review the score</span><span class="step">3 · Play</span><span class="step">4 · Save</span></div>
 <div class="controls">
 <button id="record" class="primary" type="button">🎤 Start recording</button>
@@ -47,7 +47,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <div class="field"><label for="meter">Time</label><select id="meter"><option value="2/4">2/4</option><option value="3/4">3/4</option><option value="4/4" selected>4/4</option><option value="6/8">6/8</option></select></div><div class="field"><label for="tempo">Tempo (BPM)</label><input id="tempo" type="number" min="40" max="200" value="96" step="1" inputmode="numeric" aria-label="Tempo in beats per minute"></div>
 </div>
 <div class="controls" style="margin-top:12px"><span id="timer">0:00 / 0:20</span><div id="levelMeter" aria-label="Microphone level"><div id="meterFill"></div></div><span id="livePitch" aria-live="off">—</span></div>
-<div id="status" role="status" aria-live="polite">Ready. Try the sample melody or press Start recording and allow microphone access.</div>
+<div id="status" role="status" aria-live="polite">Ready. Record or choose an audio file. Spotify Basic Pitch will transcribe it automatically.</div><p id="basicPitchProgress" class="small muted" aria-live="polite" style="margin-top:8px"></p>
 <p class="small muted" style="margin-top:12px">🔒 Microphone audio and chosen audio files are processed locally in this browser. Nothing is uploaded. If microphone recording fails, record a short hum using your phone’s Voice Recorder and choose its saved audio file. Maximum analysed length: 20 seconds.</p>
 </section>
 <section class="card" aria-label="Generated musical score">
@@ -68,10 +68,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="matchSpeed" type="button" disabled>Match recorded speed</button>
 <button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button></div>
 <p>The TEST app now estimates tempo automatically when you finish humming. Change BPM and rebuild only if the score rhythms are wrong. Natural-timing playback remains available for comparison. Rebuilding replaces edits; Undo can restore them.</p></div>
-<div class="calibration-group"><strong>4. Compare an established recognition engine</strong>
-<div class="controls"><button id="basicPitch" type="button" disabled>✨ Try Spotify Basic Pitch (TEST)</button><span id="basicPitchProgress" class="small muted" role="status" aria-live="polite"></span></div>
-<p>Optional: processes the same recording using an independent open-source audio-to-MIDI engine. Requires internet to download code and model on first use; recorded audio stays in your browser. May be slower on phones. Replaces the draft score only if recognition succeeds. Use Undo to restore the previous version. Not affiliated with or endorsed by Spotify.</p>
-</div>
+<p class="small muted">Spotify Basic Pitch is the default recognition engine. On first use, it downloads its model (internet required), then analyses audio locally. If it cannot run, the app clearly identifies when the built-in fallback is used.</p>
 </details>
 <div class="editor" aria-label="Review and correct score">
 <span id="editing">Select a note or rest</span>
@@ -84,7 +81,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="saveLocal" type="button" disabled>Save here</button><button id="loadLocal" type="button">Open saved</button><button id="clear" type="button" disabled>Clear</button>
 </div><p class="small muted" style="margin-top:9px">Amber ? = uncertain transcription. Select a symbol to correct it. Pitch arrows move by one semitone. 6/8 tempo counts dotted crotchets. Your recording stays on this device.</p>
 </section>
-<p class="footer">Experimental demonstration only · One melody at a time · Rhythm detection remains approximate · Teachers must review before classroom use<br>Music Score Studio developed by Lim Kim Sze · Master Javis Lim contributed helpful user feedback.<br>Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.<br>Prototype code is provided under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a>.<br>Optional recognition via Spotify Basic Pitch © 2022 Spotify AB, <a href="https://github.com/spotify/basic-pitch-ts" target="_blank" rel="noopener noreferrer">source</a>, <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache 2.0 licence</a>; <a href="./hum-to-compose-third-party-notices.md" target="_blank" rel="noopener noreferrer">third-party attribution and licences</a>. Not affiliated with Spotify.</p>
+<p class="footer">Experimental demonstration only · One melody at a time · Rhythm detection remains approximate · Teachers must review before classroom use<br>Music Score Studio developed by Lim Kim Sze · Master Javis Lim contributed helpful user feedback.<br>Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.<br>Prototype code is provided under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a>.<br>Default humming recognition uses Spotify Basic Pitch © 2022 Spotify AB, <a href="https://github.com/spotify/basic-pitch-ts" target="_blank" rel="noopener noreferrer">source</a>, <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache 2.0 licence</a>; <a href="./hum-to-compose-third-party-notices.md" target="_blank" rel="noopener noreferrer">third-party attribution and licences</a>. Not affiliated with Spotify.</p>
 </main>
 <script src="./hum-to-compose-core.js"></script>
 <script>
@@ -95,7 +92,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const el=(tag,a={},inner='')=>'<'+tag+' '+Object.entries(a).map(([k,v])=>k+'="'+esc(v)+'"').join(' ')+'>'+inner+'</'+tag+'>';
 let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser=null,analysisCtx=null,playerCtx=null,mediaRecorder=null,chunks=[],originalUrl=null,originalAudio=new Audio(),recording=false,requesting=false,frame=null,lastFrame=0,started=0,samples=[],previousMidi=null;
 let playing=false,voices=[],timers=[],comparisonPending=false,detectedEvents=[];
-let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false;
+let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false,recognitionPending=false;
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
 const scoreLevel=()=>Math.min(1.9,Math.max(1,Number($('scoreVolume').value)/100||1.6));
 const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),detectedEvents});
@@ -104,7 +101,7 @@ function checkpoint(){history.push(snapshot());if(history.length>100)history.shi
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('basicPitch').disabled=recording||requesting||basicPitchBusy||!sourceAudioBlob;$('audioUpload').disabled=recording||requesting||basicPitchBusy;$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
+function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
 function closeMic(){if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
@@ -130,7 +127,7 @@ function microphoneAdvice(error,stage){
  return 'Recording could not start ('+name+'). '+reason+fallback;
 }
 async function start(){
- if(recording||requesting)return;
+ if(recording||requesting||basicPitchBusy||recognitionPending)return;
  if(!navigator.mediaDevices?.getUserMedia){
   say('This browser cannot access the microphone ('+(window.isSecureContext?'microphone API unavailable':'insecure page')+'). Open the TEST link in Chrome or Samsung Internet, or choose “Use audio file”.',true);return;
  }
@@ -155,8 +152,11 @@ async function start(){
   stage='audio';
   analyser=analysisCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
   source=analysisCtx.createMediaStreamSource(stream);source.connect(analyser);
-  detectedEvents=[];samples=[];previousMidi=null;chunks=[];setOriginal(null);
-  if(typeof MediaRecorder!=='undefined'){try{const rec=new MediaRecorder(stream);mediaRecorder=rec;rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};rec.onstop=()=>{if(chunks.length){const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});setOriginal(URL.createObjectURL(blob),blob)}};rec.start()}catch(_){mediaRecorder=null}}
+  detectedEvents=[];samples=[];previousMidi=null;chunks=[];recognitionPending=false;setOriginal(null);
+  if(typeof MediaRecorder!=='undefined'){try{const rec=new MediaRecorder(stream);mediaRecorder=rec;rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};rec.onstop=()=>{if(chunks.length){const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});setOriginal(URL.createObjectURL(blob),blob)}
+    const shouldRecognise=recognitionPending;recognitionPending=false;
+    if(shouldRecognise){if(sourceAudioBlob)void tryBasicPitch();else void builtInFallback('The browser did not save usable audio.');}
+    recordingControls();};rec.start()}catch(_){mediaRecorder=null}}
   recording=true;requesting=false;started=window.performance.now();lastFrame=0;recordingControls();say('Recording locally… hum clearly, with short pauses between repeated notes.');analyse();
  }catch(e){
   requesting=false;recording=false;closeMic();recordingControls();say(microphoneAdvice(e,stage),true);
@@ -173,66 +173,68 @@ function analyse(){if(!recording||!analyser||!analysisCtx)return;const now=windo
   $('livePitch').textContent=pitch===null?'Listening…':C.pitchName(pitch)+(p.uncertain?' ?':'');
   if(t>=MAX_SECONDS){finish();return}
  }frame=requestAnimationFrame(analyse)}
-function finish(){if(!recording)return;recording=false;closeMic();recordingControls();$('meterFill').style.width='0';$('livePitch').textContent='—';
- detectedEvents=C.performanceFromFrames(samples);
- const guessed=C.estimateNaturalTempo(detectedEvents,meter());
- const autoBpm=guessed.bpm||tempo();
- const result=C.transcribeDetectedEvents(detectedEvents,autoBpm,meter());
- if(!result.some(n=>n.midi!==null)){detectedEvents=[];say('No reliable notes found. Try a quiet room, and hum with clear attacks and pauses.',true);return}
- change(()=>{notes=result;selected=null;if(guessed.bpm)$('tempo').value=String(autoBpm)});
- recordingControls();
- say('Draft generated'+(guessed.bpm?' · estimated '+autoBpm+' BPM'+(guessed.ambiguous?' (pulse uncertain)':''):' · tempo needs checking')+'. Listen to Play detected melody first, then Play written score. Check any amber ? notes.')}
+function finish(){
+ if(!recording)return;
+ // MediaRecorder.onstop has the encoded audio; start Basic Pitch only then.
+ const hasAudioRecorder=!!(mediaRecorder&&mediaRecorder.state!=='inactive');
+ recording=false;recognitionPending=hasAudioRecorder;closeMic();
+ $('meterFill').style.width='0';$('livePitch').textContent='—';recordingControls();
+ if(hasAudioRecorder)say('Recording complete. Starting Spotify Basic Pitch transcription…');
+ else void builtInFallback('This browser cannot save microphone audio for Spotify Basic Pitch.');
+}
 async function useAudioFile(file){
- if(!file||recording||requesting)return;
- if(file.size>25*1024*1024){say('Audio file is too large (maximum 25 MB). Choose a short recording.',true);return;}
+ if(!file||recording||requesting||basicPitchBusy||recognitionPending)return;
+ if(file.size>25*1024*1024){say('Audio file is too large (maximum 25 MB). Choose a short recording.',true);return}
  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
- if(!AudioContextClass){say('This browser cannot decode audio. Try opening the TEST link in Chrome or Samsung Internet.',true);return;}
- requesting=true;recordingControls();stopPlayback();
- let decoder=null;
+ if(!AudioContextClass){say('Web Audio decoding is unavailable in this browser.',true);return}
+ requesting=true;recordingControls();stopPlayback();let decoder=null;
  try{
   decoder=new AudioContextClass();
-  // All decoding and pitch detection happen locally; never upload the file.
-  const bytes=await file.arrayBuffer();
-  const audio=await decoder.decodeAudioData(bytes);
-  if(!audio||!audio.length||audio.duration<.15)throw Error('The recording is too short or empty.');
-  const rate=audio.sampleRate, channels=Array.from({length:Math.min(2,audio.numberOfChannels)},(_,i)=>audio.getChannelData(i));
-  const count=Math.min(audio.length,Math.floor(20*rate)),hop=Math.max(1,Math.round(rate*.04));
-  let nextSamples=[],prior=null;const frameSize=4096,buffer=new Float32Array(frameSize);
-  for(let index=0;index<count;index+=hop){
-   buffer.fill(0);
-   for(let j=0;j<frameSize&&index+j<count;j++){
-    let v=0;for(const ch of channels)v+=ch[index+j];
-    buffer[j]=v/channels.length;
-   }
-   const detected=C.estimatePitch(buffer,rate,prior);
-   const pitch=detected.midi===null?null:Math.round(detected.midi);
-   if(pitch!==null&&detected.confidence>.84)prior=pitch;
-   const previous=nextSamples.at(-1);
-   const onset=!!(previous&&pitch!==null&&previous.pitch===pitch&&previous.rms>.008&&detected.rms>previous.rms*1.9);
-   nextSamples.push({t:index/rate,pitch,rawMidi:detected.midi,rms:detected.rms,confidence:detected.confidence,onset});
-   if(nextSamples.length%12===0){
-    say('Analysing the audio file locally… '+Math.round(100*index/count)+'%');
-    await new Promise(resolve=>setTimeout(resolve,0));
-   }
-  }
-  const decodedPerformance=C.performanceFromFrames(nextSamples);
-  const estimated=C.estimateNaturalTempo(decodedPerformance,meter());
-  const bpm=estimated.bpm||tempo();
-  const detectedNotes=C.transcribeDetectedEvents(decodedPerformance,bpm,meter());
-  if(!detectedNotes.some(n=>n.midi!==null))throw Error('No clear melody found. Try humming closer to the microphone.');
-  // Change score only after decoding and transcription succeed.
-  samples=nextSamples;detectedEvents=decodedPerformance;previousMidi=prior;
-  change(()=>{notes=detectedNotes;selected=null;if(estimated.bpm)$('tempo').value=String(bpm)});
+  const audio=await decoder.decodeAudioData(await file.arrayBuffer());
+  if(!audio?.length||audio.duration<.15)throw Error('The recording is too short or empty.');
+  samples=[];detectedEvents=[];previousMidi=null;
   setOriginal(URL.createObjectURL(file),file,audio);
-  say('Local audio file analysed. Compare Original hum, Play detected melody and Play written score.'+(audio.duration>20?' Only the first 20 seconds were transcribed.':''));
- }catch(e){
-  say('Could not analyse this audio file: '+(e?.message||'unsupported or unreadable audio')+'. Try a short WAV, MP3 or M4A recording.',true);
+  requesting=false;recordingControls();
+  await tryBasicPitch();
+ }catch(error){
+  say('Could not open this audio file: '+(error?.message||'unsupported audio')+'. Try a short WAV, MP3 or M4A recording.',true);
  }finally{
   if(decoder)try{await decoder.close()}catch(_){}
   requesting=false;recordingControls();render();
  }
 }
-function sample(){if(recording||requesting)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
+async function builtInFallback(reason){
+ // Never mislabel the fallback as Spotify. Keep the fallback only for browsers
+ // where the external model is unavailable or when the microphone cannot save audio.
+ let raw=samples;
+ const audio=sourceAudioBuffer;
+ if(!raw.length&&audio){
+  const rate=audio.sampleRate,count=Math.min(audio.length,Math.floor(20*rate));
+  const channels=Array.from({length:Math.min(2,audio.numberOfChannels)},(_,i)=>audio.getChannelData(i));
+  const buffer=new Float32Array(4096),hop=Math.max(1,Math.round(rate*.04));let previousMidi=null;
+  raw=[];
+  for(let index=0;index<count;index+=hop){
+   buffer.fill(0);
+   for(let j=0;j<buffer.length&&index+j<count;j++){
+    let v=0;for(const channel of channels)v+=channel[index+j];
+    buffer[j]=v/channels.length;
+   }
+   const found=C.estimatePitch(buffer,rate,previousMidi),pitch=found.midi===null?null:Math.round(found.midi);
+   if(pitch!==null&&found.confidence>.84)previousMidi=pitch;
+   raw.push({t:index/rate,pitch,rawMidi:found.midi,rms:found.rms,confidence:found.confidence,onset:false});
+   if(index%(hop*12)===0)await new Promise(resolve=>setTimeout(resolve,0));
+  }
+ }
+ if(!raw.length){say('Spotify Basic Pitch is unavailable: '+reason+' No usable audio was found for the built-in fallback.',true);return false}
+ const events=C.performanceFromFrames(raw),estimated=C.estimateNaturalTempo(events,meter());
+ const bpm=estimated.bpm||tempo(),draft=C.transcribeDetectedEvents(events,bpm,meter());
+ if(!draft.some(n=>n.midi!==null)){say('Spotify Basic Pitch could not run ('+reason+'). Built-in recognition also found no clear notes.',true);return false}
+ change(()=>{samples=raw;detectedEvents=events;notes=draft;selected=null;
+   if(estimated.bpm)$('tempo').value=String(bpm)});
+ say('Spotify Basic Pitch could not run ('+reason+'). Used the built-in fallback recogniser; review all notes.',true);
+ return true;
+}
+function sample(){if(recording||requesting||basicPitchBusy||recognitionPending)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
 function noteDiatonic(n){const s=n.spelling||C.spelling(n.midi);return (s.octave+1)*7+s.step}
 function clefOf(){const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);return !pitched.length||pitched[Math.floor(pitched.length/2)]>=60?'treble':'bass'}
 function restGlyph(n,x,base){const d=n.beats,root=[.375,.75,1.5,3].includes(d)?d/1.5:d,dot=[.375,.75,1.5,3].includes(d);
@@ -324,7 +326,6 @@ function render(){
  if(!has)out+=el('text',{x:120,y:112,'font-size':18},'Record a melody or try the sample.');
  $('score').setAttribute('viewBox','0 0 900 '+height);$('score').innerHTML=out;
  const unsure=notes.filter(n=>n.uncertain&&!n.reviewed).length;
- $('basicPitch').disabled=recording||requesting||basicPitchBusy||!sourceAudioBlob;
  $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+bars.length+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain':'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
 }
 function choose(e){const g=e.target.closest('g[data-origin]');if(!g)return;const index=Number(g.getAttribute('data-origin'));if(!Number.isInteger(index)||!notes[index])return;selected=index;render()}
@@ -352,10 +353,10 @@ function rebuild(){if(!detectedEvents.length)return;const result=C.transcribeDet
  change(()=>{notes=result;selected=null});say('Rhythm rebuilt at '+tempo()+' BPM from the local humming analysis. Previous edits can be restored with Undo.')}
 
 async function tryBasicPitch(){
- if(basicPitchBusy||recording||requesting||!sourceAudioBlob)return;
+ if(basicPitchBusy||recording||requesting||recognitionPending||!sourceAudioBlob)return;
  const recordingBlob=sourceAudioBlob,originalScore=JSON.stringify(notes);
  basicPitchBusy=true;recordingControls();
- $('basicPitchProgress').textContent='Preparing independent recogniser…';
+ $('basicPitchProgress').textContent='Spotify Basic Pitch is analysing your recording…';
  let ctx=null;
  try{
   const AudioContextClass=window.AudioContext||window.webkitAudioContext;
@@ -378,13 +379,14 @@ async function tryBasicPitch(){
   if(!newScore.some(n=>n.midi!==null))throw Error('The model found no usable melody.');
   change(()=>{notes=newScore;selected=null;detectedEvents=newPerformance;
    if(guessed.bpm)$('tempo').value=String(bpm)});
-  $('basicPitchProgress').textContent='Spotify Basic Pitch complete';
+  $('basicPitchProgress').textContent='Spotify Basic Pitch complete · main recognition engine';
   say('Spotify Basic Pitch created '+newScore.filter(n=>n.midi!==null).length+
    ' draft note groups. Compare the original humming and check doubtful notes; Undo restores the earlier score.');
  }catch(error){
-  $('basicPitchProgress').textContent='Spotify Basic Pitch unavailable or interrupted';
-  say('Spotify Basic Pitch TEST did not replace your score: '+(error?.message||'model unavailable')+
-   '. The previous score remains available with the built-in recogniser.',true);
+  $('basicPitchProgress').textContent='Spotify Basic Pitch unavailable';
+  if(recordingBlob===sourceAudioBlob&&JSON.stringify(notes)===originalScore)
+   await builtInFallback(error?.message||'model unavailable');
+  else say('Recognition was interrupted; existing score changes were preserved.',true);
  }finally{
   if(ctx)try{await ctx.close()}catch(_){}
   basicPitchBusy=false;recordingControls();render();
@@ -448,7 +450,6 @@ $('record').addEventListener('click',start);$('audioUpload').addEventListener('c
 $('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await useAudioFile(file)});
 $('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
 $('scoreVolume').addEventListener('input',()=>{$('scoreVolumeValue').textContent=$('scoreVolume').value+'%'});
-$('basicPitch').addEventListener('click',tryBasicPitch);
 $('play').addEventListener('click',playScore);$('faithful').addEventListener('click',playDetected);$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
 $('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
