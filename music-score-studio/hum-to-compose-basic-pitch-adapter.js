@@ -80,6 +80,81 @@ export function resampleMono(audio,limitSeconds=20){
  return out;
 }
 
+/* Independent, conservative octave verification for monophonic humming.
+   Work on the original audio timeline BEFORE trimming leading silence.
+   A YIN-based fundamental estimate proposes the octave; spectral evidence
+   and a second window must agree before any automatic +/-12 correction.
+   Doubtful notes remain unchanged and are marked for teacher review.
+   Original project integration code; no copied Spotify code or audio samples. */
+function octaveFrequency(midi){return 440*Math.pow(2,(midi-69)/12)}
+function octaveEnergy(samples,rate,freq){
+ if(!(freq>60&&freq<rate*.45)||!samples?.length)return 0;
+ const coeff=2*Math.cos(2*Math.PI*freq/rate);
+ let a=0,b=0,energy=0;const n=samples.length;
+ for(let i=0;i<n;i++){
+  const weight=1-Math.abs(2*i/(n-1)-1),v=samples[i]*weight;
+  const c=v+coeff*a-b;b=a;a=c;energy+=v*v;
+ }
+ return Math.max(0,a*a+b*b-coeff*a*b)/(energy*n+1e-9);
+}
+function octaveSample(pcm,rate,start,length,position=.5){
+ const count=Math.min(4096,Math.floor((length-.025)*rate));
+ if(count<Math.max(2048,Math.ceil(rate*.105)))return null;
+ const min=Math.max(0,Math.ceil((start+.010)*rate));
+ const max=Math.min(pcm.length-count,Math.floor((start+length-.010)*rate)-count);
+ if(max<min)return null;
+ const center=Math.floor((start+position*length)*rate-count/2);
+ const begin=Math.min(max,Math.max(min,center));
+ return pcm.subarray(begin,begin+count);
+}
+export function verifyOctaves(noteEvents,pcm,rate,pitchEstimator){
+ if(!Array.isArray(noteEvents))return {notes:[],checked:0,corrected:0,review:0};
+ const copy=noteEvents.map(note=>({...note}));
+ if(!(pcm instanceof Float32Array)||!(rate>0)||typeof pitchEstimator!=='function')
+  return {notes:copy,checked:0,corrected:0,review:0};
+ let checked=0,corrected=0,review=0;
+ for(const note of copy){
+  const midi=Number(note.pitchMidi),start=Number(note.startTimeSeconds);
+  const length=Math.min(Number(note.durationSeconds),20-start);
+  if(!Number.isFinite(midi)||midi<36||midi>95||!Number.isFinite(start)||!(length>0))continue;
+  // Short notes or unreliable audio cannot support an automatic octave shift.
+  if(length<.14){note.octaveStatus='review';review++;continue}
+  const primary=octaveSample(pcm,rate,start,length,.5);
+  if(!primary){note.octaveStatus='review';review++;continue}
+  const result=pitchEstimator(primary,rate,null);
+  if(!result||!Number.isFinite(result.midi)||result.confidence<.89){
+   note.octaveStatus='review';review++;continue
+  }
+  checked++;
+  const difference=result.midi-midi;
+  if(Math.abs(Math.abs(difference)-12)>.70){
+   if(Math.abs(difference)>1.5){note.octaveStatus='review';review++}
+   else note.octaveStatus='matched';
+   continue;
+  }
+  const direction=difference>0?1:-1,target=midi+direction*12;
+  if(target<36||target>95){note.octaveStatus='review';review++;continue}
+  const f0=octaveFrequency(result.midi),low=octaveEnergy(primary,rate,f0/2);
+  const current=octaveEnergy(primary,rate,f0);
+  const overtone=octaveEnergy(primary,rate,f0*2);
+  // Up: model pitch is below the fundamental; low-frequency model
+  // component must be nearly absent, with little odd harmonic evidence.
+  // Down: independently detected lower fundamental must be audible.
+  const supported=direction>0
+   ? current>low*8&&current>.005&&octaveEnergy(primary,rate,f0*1.5)<current*.22
+   : current>overtone*.6&&current>.005;
+  const secondary=octaveSample(pcm,rate,start,length,.32);
+  const confirm=secondary&&pitchEstimator(secondary,rate,null);
+  const stable=confirm&&Number.isFinite(confirm.midi)&&confirm.confidence>=.88&&
+   Math.abs(confirm.midi-result.midi)<.7;
+  if(supported&&stable){
+   note.originalPitchMidi=note.pitchMidi;
+   note.pitchMidi=target;note.octaveStatus='corrected';corrected++;
+  }else{note.octaveStatus='review';review++}
+ }
+ return {notes:copy,checked,corrected,review};
+}
+
 /* Basic Pitch can return simultaneous notes. This is an experimental
    single-stave monophonic adapter: keep the strongest active note per
    interval. Preserve separate attacks even when the repeated pitch matches. */
@@ -89,7 +164,7 @@ export function toSingleMelody(noteEvents,maxDuration=20){
   const start=Math.max(0,Number(n.startTimeSeconds));
   const duration=Number(n.durationSeconds),pitch=Math.round(Number(n.pitchMidi));
   const end=Math.min(maxDuration,start+duration);
-  return {index,start,end,pitch,amplitude:Math.max(0,Math.min(1,Number(n.amplitude)||0))};
+  return {index,start,end,pitch,octaveStatus:n.octaveStatus||'unchecked',amplitude:Math.max(0,Math.min(1,Number(n.amplitude)||0))};
  }).filter(n=>Number.isFinite(n.start)&&Number.isFinite(n.end)&&n.end-n.start>=.06&&n.pitch>=36&&n.pitch<=95);
  if(!clean.length)return [];
  const boundaries=[...new Set(clean.flatMap(n=>[n.start,n.end]))].sort((a,b)=>a-b);
@@ -102,7 +177,7 @@ export function toSingleMelody(noteEvents,maxDuration=20){
   const best=active[0]||null,id=best?best.index:null,pitch=best?best.pitch:null;
   if(last&&last.index===id&&Math.abs(last.end-start)<.0001){last.end=end;last.duration=end-last.start}
   else{
-   last={index:id,start,end,duration:end-start,midi:pitch,confidence:best?Math.max(.25,best.amplitude):1,points:[]};
+   last={index:id,start,end,duration:end-start,midi:pitch,confidence:best?(best.octaveStatus==='corrected'||best.octaveStatus==='review'?Math.min(.75,Math.max(.25,best.amplitude)):Math.max(.25,best.amplitude)):1,octaveStatus:best?.octaveStatus||'unchecked',points:[]};
    timeline.push(last);
   }
  }
@@ -112,11 +187,11 @@ export function toSingleMelody(noteEvents,maxDuration=20){
  return timeline.filter(n=>n.end>start&&n.start<end).map(n=>({
   start:Math.max(0,n.start-start),end:Math.min(end-start,n.end-start),
   duration:Math.min(end,n.end)-Math.max(start,n.start),
-  midi:n.midi,confidence:n.confidence,points:n.midi===null?[]:[{t:0,midi:n.midi,confidence:n.confidence}]
+  midi:n.midi,confidence:n.confidence,octaveStatus:n.octaveStatus,points:n.midi===null?[]:[{t:0,midi:n.midi,confidence:n.confidence}]
  })).filter(n=>n.duration>=.025).slice(0,256);
 }
 
-export async function recognise(audioBuffer,onProgress=()=>{}){
+export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=null){
  if(!audioBuffer)throw Error('No recorded audio to analyse');
  onProgress('Preparing audio for Spotify Basic Pitch…');
  const audio=resampleMono(audioBuffer,20);
@@ -127,7 +202,9 @@ export async function recognise(audioBuffer,onProgress=()=>{}){
  await model.evaluateModel(audio,(f,o,_contours)=>{frames.push(...f);onsets.push(...o)},
   pct=>onProgress('Analysing Spotify Basic Pitch… '+Math.round(pct*100)+'%'));
  const raw=library.noteFramesToTime(library.outputToNotesPoly(frames,onsets,.25,.25,5));
- const melody=toSingleMelody(raw,20);
+ onProgress('Checking octaves against the original audio…');
+ const octaveCheck=verifyOctaves(raw,audio,22050,pitchEstimator);
+ const melody=toSingleMelody(octaveCheck.notes,20);
  if(!melody.some(n=>n.midi!==null))throw Error('Spotify Basic Pitch could not detect clear melody notes');
- return {events:melody,rawNoteCount:raw.length,engine:'Spotify Basic Pitch 1.0.1'};
+ return {events:melody,rawNoteCount:raw.length,engine:'Spotify Basic Pitch 1.0.1',octaveCheck:{checked:octaveCheck.checked,corrected:octaveCheck.corrected,review:octaveCheck.review}};
 }
