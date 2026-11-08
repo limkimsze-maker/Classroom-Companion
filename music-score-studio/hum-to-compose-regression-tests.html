@@ -17,8 +17,18 @@ async function run(){
   await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=()=>reject(Error('Test iframe did not load'))});
   const w=frame.contentWindow,d=w.document,id=s=>d.getElementById(s);
   check('Isolated page shows TEST ONLY',d.body.textContent.includes('TEST ONLY'));
+  check('Time signature and audio level indicators have distinct IDs',d.querySelectorAll('#meter').length===1&&d.querySelectorAll('#levelMeter').length===1);
+  check('Tempo is editable in whole BPM increments',id('tempo').type==='number'&&id('tempo').min==='40'&&id('tempo').max==='200');
+  check('Calibration tools remain folded away by default',!!id('calibration')&&!id('calibration').open);
   check('Meter selector exposes all 4 options',[...id('meter').options].map(x=>x.value).join(',')==='2/4,3/4,4/4,6/8');
   id('example').click();check('Sample draws score symbols',d.querySelectorAll('#score .event').length>=6);
+  check('Compare and recorded-speed matching need a real recording',id('compare').disabled&&id('matchSpeed').disabled);
+  const pitchBefore=d.querySelector('#score .note')?.getAttribute('aria-label');
+  id('allUp').click();
+  const pitchAfter=d.querySelector('#score .note')?.getAttribute('aria-label');
+  check('Whole-melody pitch adjustment changes musical pitch',pitchBefore!==pitchAfter);
+  id('undo').click();
+  check('Undo restores whole-melody pitch',d.querySelector('#score .note')?.getAttribute('aria-label')===pitchBefore);
   check('Notation draws tie curves',d.querySelectorAll('#score .tie').length>0,'Tie must be represented in SVG');
   check('Rhythmic quavers and semiquavers can be beamed',d.querySelectorAll('#score .beam').length>0||d.querySelectorAll('#score .note').length>0);
   check('Uncertain note marked visibly',d.querySelectorAll('#score .uncertain-ring').length>0);
