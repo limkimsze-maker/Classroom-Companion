@@ -4,7 +4,7 @@
  *
  * Spotify Basic Pitch is Copyright 2022 Spotify AB, licensed Apache-2.0:
  * https://github.com/spotify/basic-pitch-ts/blob/main/LICENSE
- * A full licence copy is included in hum-to-compose-basic-pitch-LICENSE.txt.
+ * A full licence copy is included in hum-to-compose-APACHE-2.0-LICENSE.txt.
  * No Spotify code is copied into this adapter. Spotify does not endorse this tool.
  *
  * The pinned library and model are fetched only when the user chooses the
