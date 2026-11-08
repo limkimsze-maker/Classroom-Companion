@@ -285,8 +285,13 @@ export function verifyPerformance(noteEvents,pcm,rate,pitchEstimator){
   const [m1,m2]=variants;const same=r=>r.pitch===m1?1:r.pitch===m2?2:0;
   const ordered=reads.map(same),switchAt=ordered.findIndex(x=>x===2);
   const before=ordered.slice(0,switchAt),after=ordered.slice(switchAt);
-  const clean=before.length>=2&&after.length>=2&&before.every(x=>x===1)&&after.every(x=>x===2);
-  const edge=clean?(reads[switchAt-1].t+reads[switchAt].t)/2:null;
+  // Mixed transition windows often lack reliable pitch. Permit up to two
+  // uncertain readings, but never an alternating reliable A-B-A pattern.
+  const clean=before.filter(x=>x===1).length>=2&&after.filter(x=>x===2).length>=2
+   &&before.every(x=>x===0||x===1)&&after.every(x=>x===0||x===2)
+   &&ordered.filter(x=>x===0).length<=2;
+  const previous=ordered.lastIndexOf(1);
+  const edge=clean?(reads[previous].t+reads[switchAt].t)/2:null;
   if(!clean||!(Math.abs(m1-m2)>=2&&Math.abs(m1-m2)<12)
    ||Math.min(Math.abs(m1-n.pitchMidi),Math.abs(m2-n.pitchMidi))>.7
    ||!(edge-start>.20&&start+length-edge>.20)){
