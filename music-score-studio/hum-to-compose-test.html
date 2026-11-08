@@ -68,6 +68,10 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="matchSpeed" type="button" disabled>Match recorded speed</button>
 <button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button></div>
 <p>The TEST app now estimates tempo automatically when you finish humming. Change BPM and rebuild only if the score rhythms are wrong. Natural-timing playback remains available for comparison. Rebuilding replaces edits; Undo can restore them.</p></div>
+<div class="calibration-group"><strong>4. Compare an established recognition engine</strong>
+<div class="controls"><button id="basicPitch" type="button" disabled>✨ Try Spotify Basic Pitch (TEST)</button><span id="basicPitchProgress" class="small muted" role="status" aria-live="polite"></span></div>
+<p>Optional: processes the same recording using an independent open-source audio-to-MIDI engine. Requires internet to download code and model on first use; recorded audio stays in your browser. May be slower on phones. Replaces the draft score only if recognition succeeds. Use Undo to restore the previous version. Not affiliated with or endorsed by Spotify.</p>
+</div>
 </details>
 <div class="editor" aria-label="Review and correct score">
 <span id="editing">Select a note or rest</span>
@@ -80,7 +84,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="saveLocal" type="button" disabled>Save here</button><button id="loadLocal" type="button">Open saved</button><button id="clear" type="button" disabled>Clear</button>
 </div><p class="small muted" style="margin-top:9px">Amber ? = uncertain transcription. Select a symbol to correct it. Pitch arrows move by one semitone. 6/8 tempo counts dotted crotchets. Your recording stays on this device.</p>
 </section>
-<p class="footer">Experimental demonstration only · One melody at a time · Rhythm detection remains approximate · Teachers must review before classroom use<br>Music Score Studio developed by Lim Kim Sze · Master Javis Lim contributed helpful user feedback.<br>Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.<br>Prototype code is provided under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a>.</p>
+<p class="footer">Experimental demonstration only · One melody at a time · Rhythm detection remains approximate · Teachers must review before classroom use<br>Music Score Studio developed by Lim Kim Sze · Master Javis Lim contributed helpful user feedback.<br>Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.<br>Prototype code is provided under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a>.<br>Optional recognition via Spotify Basic Pitch © 2022 Spotify AB, <a href="https://github.com/spotify/basic-pitch-ts" target="_blank" rel="noopener noreferrer">source</a>, <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache 2.0 licence</a>; <a href="./hum-to-compose-third-party-notices.md" target="_blank" rel="noopener noreferrer">third-party attribution and licences</a>. Not affiliated with Spotify.</p>
 </main>
 <script src="./hum-to-compose-core.js"></script>
 <script>
@@ -91,19 +95,23 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const el=(tag,a={},inner='')=>'<'+tag+' '+Object.entries(a).map(([k,v])=>k+'="'+esc(v)+'"').join(' ')+'>'+inner+'</'+tag+'>';
 let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser=null,analysisCtx=null,playerCtx=null,mediaRecorder=null,chunks=[],originalUrl=null,originalAudio=new Audio(),recording=false,requesting=false,frame=null,lastFrame=0,started=0,samples=[],previousMidi=null;
 let playing=false,voices=[],timers=[],comparisonPending=false,detectedEvents=[];
+let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false;
+const BASIC_PITCH_MODULE='https://esm.sh/@spotify/basic-pitch@1.0.1?bundle';
+const BASIC_PITCH_MODEL='https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json';
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
 const scoreLevel=()=>Math.min(1.9,Math.max(1,Number($('scoreVolume').value)/100||1.6));
-const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo()});
-function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;$('meter').value=s.meter;$('tempo').value=String(s.tempo);render()}
+const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),detectedEvents});
+function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;detectedEvents=s.detectedEvents||[];$('meter').value=s.meter;$('tempo').value=String(s.tempo);render();recordingControls()}
 function checkpoint(){history.push(snapshot());if(history.length>100)history.shift();future=[]}
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('audioUpload').disabled=recording||requesting;$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
+function recordingControls(){$('basicPitch').disabled=recording||requesting||basicPitchBusy||!sourceAudioBlob;$('audioUpload').disabled=recording||requesting||basicPitchBusy;$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
 function closeMic(){if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
-function setOriginal(url){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';$('original').disabled=!url;$('compare').disabled=!url||!notes.length}
+function setOriginal(url,blob=null,audioBuffer=null){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';
+ sourceAudioBlob=blob;sourceAudioBuffer=audioBuffer;$('original').disabled=!url;$('compare').disabled=!url||!notes.length;recordingControls()}
 function stopPlayback(){comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null);$('stop').disabled=true;$('original').textContent='▶ Original hum'}
 function stopBoth(){stopPlayback();say('Playback stopped.')}
 function microphoneAdvice(error,stage){
@@ -150,7 +158,7 @@ async function start(){
   analyser=analysisCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
   source=analysisCtx.createMediaStreamSource(stream);source.connect(analyser);
   detectedEvents=[];samples=[];previousMidi=null;chunks=[];setOriginal(null);
-  if(typeof MediaRecorder!=='undefined'){try{const rec=new MediaRecorder(stream);mediaRecorder=rec;rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};rec.onstop=()=>{if(chunks.length){const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});setOriginal(URL.createObjectURL(blob))}};rec.start()}catch(_){mediaRecorder=null}}
+  if(typeof MediaRecorder!=='undefined'){try{const rec=new MediaRecorder(stream);mediaRecorder=rec;rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};rec.onstop=()=>{if(chunks.length){const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});setOriginal(URL.createObjectURL(blob),blob)}};rec.start()}catch(_){mediaRecorder=null}}
   recording=true;requesting=false;started=window.performance.now();lastFrame=0;recordingControls();say('Recording locally… hum clearly, with short pauses between repeated notes.');analyse();
  }catch(e){
   requesting=false;recording=false;closeMic();recordingControls();say(microphoneAdvice(e,stage),true);
@@ -217,7 +225,7 @@ async function useAudioFile(file){
   // Change score only after decoding and transcription succeed.
   samples=nextSamples;detectedEvents=decodedPerformance;previousMidi=prior;
   change(()=>{notes=detectedNotes;selected=null;if(estimated.bpm)$('tempo').value=String(bpm)});
-  setOriginal(URL.createObjectURL(file));
+  setOriginal(URL.createObjectURL(file),file,audio);
   say('Local audio file analysed. Compare Original hum, Play detected melody and Play written score.'+(audio.duration>20?' Only the first 20 seconds were transcribed.':''));
  }catch(e){
   say('Could not analyse this audio file: '+(e?.message||'unsupported or unreadable audio')+'. Try a short WAV, MP3 or M4A recording.',true);
@@ -318,6 +326,7 @@ function render(){
  if(!has)out+=el('text',{x:120,y:112,'font-size':18},'Record a melody or try the sample.');
  $('score').setAttribute('viewBox','0 0 900 '+height);$('score').innerHTML=out;
  const unsure=notes.filter(n=>n.uncertain&&!n.reviewed).length;
+ $('basicPitch').disabled=recording||requesting||basicPitchBusy||!sourceAudioBlob;
  $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+bars.length+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain':'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
 }
 function choose(e){const g=e.target.closest('g[data-origin]');if(!g)return;const index=Number(g.getAttribute('data-origin'));if(!Number.isInteger(index)||!notes[index])return;selected=index;render()}
@@ -344,6 +353,61 @@ function matchSpeed(){if(!samples.length||!notes.length)return;const fitted=C.ma
 function rebuild(){if(!detectedEvents.length)return;const result=C.transcribeDetectedEvents(detectedEvents,tempo(),meter());if(!result.some(n=>n.midi!==null)){say('Not enough clear notes in the recording to rebuild.',true);return}
  change(()=>{notes=result;selected=null});say('Rhythm rebuilt at '+tempo()+' BPM from the local humming analysis. Previous edits can be restored with Undo.')}
 
+async function tryBasicPitch(){
+ if(basicPitchBusy||recording||requesting||!sourceAudioBlob)return;
+ const recordingBlob=sourceAudioBlob;
+ basicPitchBusy=true;recordingControls();
+ $('basicPitchProgress').textContent='Loading open-source model…';
+ let ctx=null;
+ try{
+  // Pin the public Apache-2.0 npm release. No user audio is sent to the CDN;
+  // browser downloads only the reusable library and model files on request.
+  const bp=await import(BASIC_PITCH_MODULE);
+  if(typeof bp.BasicPitch!=='function'||typeof bp.outputToNotesPoly!=='function'||
+     typeof bp.addPitchBendsToNoteEvents!=='function'||typeof bp.noteFramesToTime!=='function')
+   throw Error('Basic Pitch library exports were not available.');
+  if(recordingBlob!==sourceAudioBlob)throw Error('Recording changed during model loading.');
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)throw Error('Web Audio is not available in this browser.');
+  ctx=new AudioContextClass();
+  const decoded=sourceAudioBuffer||await ctx.decodeAudioData(await recordingBlob.arrayBuffer());
+  const sampleCount=Math.min(decoded.length,Math.floor(20*decoded.sampleRate));
+  let audio=decoded;
+  if(sampleCount<decoded.length){
+   audio=ctx.createBuffer(decoded.numberOfChannels,sampleCount,decoded.sampleRate);
+   for(let c=0;c<decoded.numberOfChannels;c++)audio.getChannelData(c).set(decoded.getChannelData(c).subarray(0,sampleCount));
+  }
+  if(audio.duration<.15)throw Error('Recording is too short.');
+  $('basicPitchProgress').textContent='Analysing locally…';
+  const frames=[],onsets=[],contours=[];
+  const engine=new bp.BasicPitch(BASIC_PITCH_MODEL);
+  await engine.evaluateModel(audio,(f,o,c)=>{frames.push(...f);onsets.push(...o);contours.push(...c)},p=>{
+   $('basicPitchProgress').textContent='Analysing locally… '+Math.round(Math.min(1,Math.max(0,p))*100)+'%';
+  });
+  if(recordingBlob!==sourceAudioBlob)throw Error('Recording changed during analysis.');
+  if(!frames.length||!onsets.length)throw Error('The model returned no note frames.');
+  const eventFrames=bp.outputToNotesPoly(frames,onsets,.25,.25,5);
+  const events=bp.noteFramesToTime(bp.addPitchBendsToNoteEvents(contours,eventFrames));
+  const newPerformance=C.basicPitchToPerformance(events,20);
+  if(!newPerformance.some(e=>e.midi!==null))throw Error('No usable melody was detected.');
+  const guessed=C.estimateNaturalTempo(newPerformance,meter());
+  const bpm=guessed.bpm||tempo();
+  const newScore=C.transcribeDetectedEvents(newPerformance,bpm,meter());
+  if(!newScore.some(n=>n.midi!==null))throw Error('The detected notes could not form a usable score.');
+  change(()=>{notes=newScore;selected=null;detectedEvents=newPerformance;
+   if(guessed.bpm)$('tempo').value=String(bpm)});
+  $('basicPitchProgress').textContent='Analysis complete';
+  say('Spotify Basic Pitch produced '+newScore.filter(n=>n.midi!==null).length+
+   ' draft notes. All detected pitches need teacher review. Play the score and compare with your original; Undo restores the previous score.');
+ }catch(error){
+  $('basicPitchProgress').textContent='Model unavailable or no usable notes';
+  say('Spotify Basic Pitch TEST could not complete: '+(error?.message||'unknown problem')+
+   '. Your previous score was kept. You can still use the built-in recogniser.',true);
+ }finally{
+  if(ctx)try{await ctx.close()}catch(_){}
+  basicPitchBusy=false;recordingControls();render();
+ }
+}
 async function playDetected(){
  if(!detectedEvents.some(n=>n.midi!==null)||recording)return;
  stopPlayback();
@@ -402,6 +466,7 @@ $('record').addEventListener('click',start);$('audioUpload').addEventListener('c
 $('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await useAudioFile(file)});
 $('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
 $('scoreVolume').addEventListener('input',()=>{$('scoreVolumeValue').textContent=$('scoreVolume').value+'%'});
+$('basicPitch').addEventListener('click',tryBasicPitch);
 $('play').addEventListener('click',playScore);$('faithful').addEventListener('click',playDetected);$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
 $('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
