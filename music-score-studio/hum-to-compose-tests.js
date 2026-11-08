@@ -207,6 +207,46 @@
    assert(C.matchPerformanceTempo([{midi:60,beats:2}],[{start:0,end:.05,midi:60},{start:.05,end:.1,midi:62}],'4/4')===null);
    assert(C.matchPerformanceTempo([{midi:60,beats:1},{midi:62,beats:1}],[{start:0,end:.5,midi:60},{start:.5,end:1,midi:62}],'9/9')===null);
   });
+  test('Whole-measure rests engrave as semibreve rest in every metre',()=>{
+   for(const metre of ['2/4','3/4','4/4','6/8']){
+    const total=C.METERS[metre].beats,bar=C.measures([{midi:null,beats:total}],metre)[0];
+    assert(bar.length===1&&bar[0].midi===null&&bar[0].fullMeasureRest===true,
+     metre+' full bar rest missing');
+    assert(bar[0].beats===total,'full-bar rest must keep its original duration');
+   }
+   const partial=C.measures([{midi:null,beats:2}],'3/4')[0][0];
+   assert(!partial.fullMeasureRest,'incomplete bar wrongly received full-bar rest');
+  });
+  test('A tied sharp across the barline does not alter a following untied sharp',()=>{
+   const bars=C.displayAccidentals(C.measures([
+    {midi:61,beats:4.5},{midi:61,beats:1}
+   ],'4/4'));
+   assert(bars[0][0].displayAccidental==='♯','first C sharp missing');
+   assert(bars[1][0].tiePrev&&!bars[1][0].displayAccidental,'tied accidental repeated');
+   assert(bars[1][1].displayAccidental==='♯','next untied C sharp MUST display a new sharp');
+  });
+  test('Following natural after a tied sharp needs no redundant natural',()=>{
+   const bars=C.displayAccidentals(C.measures([
+    {midi:61,beats:4.5},{midi:60,beats:1}
+   ],'4/4'));
+   assert(bars[1][0].tiePrev&&!bars[1][0].displayAccidental,'tied sharp sign repeated');
+   assert(!bars[1][1].displayAccidental,'natural after barline already default');
+  });
+  test('A tied flat uses correct accidental scope in the next bar',()=>{
+   const flat={midi:61,beats:4.5,spelling:C.spelling(61,true)};
+   const repeat={midi:61,beats:1,spelling:C.spelling(61,true)};
+   const bars=C.displayAccidentals(C.measures([flat,repeat],'4/4'));
+   assert(bars[0][0].displayAccidental==='♭','flat missing');
+   assert(bars[1][0].tiePrev&&bars[1][0].displayAccidental===null,'tied flat repeated');
+   assert(bars[1][1].displayAccidental==='♭','untied flat omitted');
+  });
+  test('Within-bar ties do not repeat accidentals or change note duration',()=>{
+   const bars=C.displayAccidentals(C.measures([{midi:61,beats:2.5}],'4/4'));
+   assert(bars[0].length===2,'2.5 beats expected a minim tied to a quaver');
+   assert(bars[0][0].displayAccidental==='♯'&&bars[0][1].displayAccidental===null);
+   assert(bars[0][0].tieNext&&bars[0][1].tiePrev);
+   near(bars[0].reduce((sum,x)=>sum+x.beats,0),2.5,.0001);
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
