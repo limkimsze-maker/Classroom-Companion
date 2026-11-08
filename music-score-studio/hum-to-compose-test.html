@@ -110,9 +110,9 @@ function restGlyph(n,x,base){const d=n.beats,root=[.375,.75,1.5,3].includes(d)?d
  if(root>=4)art=el('rect',{class:'rest-symbol',x:x-8,y:base+10,width:16,height:7,fill:'#29495d'});
  else if(root>=2)art=el('rect',{class:'rest-symbol',x:x-8,y:base+13,width:16,height:7,fill:'#29495d'});
  else if(root>=1)art=el('path',{class:'rest-symbol',d:'M '+(x+2)+' '+(base+4)+' l -6 11 8 7 -9 8 4 7 -6 8',fill:'none',stroke:'#29495d','stroke-width':3,'stroke-linecap':'round'});
- else{const two=root<=.25;art=el('path',{class:'rest-symbol',d:'M '+(x+8)+' '+(base+5)+' l -8 37',fill:'none',stroke:'#29495d','stroke-width':2.5});
+ else{const two=root<=.25,three=root<=.125;art=el('path',{class:'rest-symbol',d:'M '+(x+8)+' '+(base+5)+' l -8 37',fill:'none',stroke:'#29495d','stroke-width':2.5});
   art+=el('path',{class:'rest-symbol',d:'M '+(x-2)+' '+(base+11)+' q 17 0 12 -9 M '+(x-2)+' '+(base+11)+' l -4 -4',stroke:'#29495d','stroke-width':2,fill:'none'});
-  if(two)art+=el('path',{class:'rest-symbol',d:'M '+(x-4)+' '+(base+22)+' q 17 0 12 -9',stroke:'#29495d','stroke-width':2,fill:'none'})}
+  if(two)art+=el('path',{class:'rest-symbol',d:'M '+(x-4)+' '+(base+22)+' q 17 0 12 -9',stroke:'#29495d','stroke-width':2,fill:'none'});if(three)art+=el('path',{class:'rest-symbol',d:'M '+(x-6)+' '+(base+33)+' q 17 0 12 -9',stroke:'#29495d','stroke-width':2,fill:'none'})}
  if(dot)art+=el('circle',{cx:x+16,cy:y,r:2.3,fill:'#29495d'});return art}
 function glyph(p,base,clef,beamed=false,beamY=null){
  const n=p.n,x=p.x,isRest=n.midi===null;let inner='',y=base+20;
@@ -126,7 +126,7 @@ function glyph(p,base,clef,beamed=false,beamY=null){
   inner+=el('ellipse',{class:'head',cx:x,cy:y,rx:9,ry:6,transform:'rotate(-21 '+x+' '+y+')',fill:hollow?'white':'#233f53',stroke:'#233f53','stroke-width':1.8});
   if(root<4){const up=beamed||step<4,xStem=up?x+8:x-8,stemEnd=beamed?beamY:(up?y-35:y+35);
    inner+=el('line',{x1:xStem,x2:xStem,y1:y,y2:stemEnd,stroke:'#233f53','stroke-width':2});
-   if(root<=.5&&!beamed){const flags=root<=.25?2:1;for(let k=0;k<flags;k++)inner+=el('path',{d:up?'M '+xStem+' '+(stemEnd+k*9)+' q 20 7 5 22':'M '+xStem+' '+(stemEnd-k*9)+' q -20 -7 -5 -22',fill:'none',stroke:'#233f53','stroke-width':2.5})}
+   if(root<=.5&&!beamed){const flags=root<=.125?3:root<=.25?2:1;for(let k=0;k<flags;k++)inner+=el('path',{d:up?'M '+xStem+' '+(stemEnd+k*9)+' q 20 7 5 22':'M '+xStem+' '+(stemEnd-k*9)+' q -20 -7 -5 -22',fill:'none',stroke:'#233f53','stroke-width':2.5})}
   }
   if(dot)inner+=el('circle',{cx:x+18,cy:y-2,r:2.5,fill:'#233f53'});
   if(n.uncertain&&!n.reviewed)inner+=el('circle',{class:'uncertain-ring',cx:x,cy:y,r:16})+el('text',{x:x+11,y:y-14,'font-size':16,fill:'#bb7500','font-weight':'bold'},'?');
@@ -136,13 +136,17 @@ function glyph(p,base,clef,beamed=false,beamY=null){
 }
 function positionsFor(bar,left,width){const weights=bar.map(n=>Math.max(.7,Math.sqrt(n.beats))+(n.displayAccidental?.55:0));
  const sum=weights.reduce((a,b)=>a+b,0)||1;let cursor=0;return bar.map((n,i)=>{const x=left+width*(cursor+weights[i]*.5)/sum;cursor+=weights[i];return {n,x}})}
-function beamGroups(points,base,pulse){
- const groups=[],assigned=new Map();let acc=0,current=[];
- function flush(){if(current.length>=2&&current.every(p=>p.n.beats===current[0].n.beats)){const group=current.slice(),beamY=Math.min(...group.map(p=>base+40-((noteDiatonic(p.n)-noteDiatonic({midi:64,spelling:C.spelling(64)}))*5)))-38; // corrected below per clef
-  groups.push({group,beamY});group.forEach(p=>assigned.set(p,beamY))}current=[]}
- points.forEach(p=>{const n=p.n,groupIndex=Math.floor((acc+.00001)/pulse);if(current.length&&(n.midi===null||n.beats>.5||Math.floor((acc+.00001)/pulse)!==Math.floor((acc-current.reduce((s,q)=>s+q.n.beats,0)+.00001)/pulse)||n.beats!==current[0].n.beats))flush();
-  if(n.midi!==null&&n.beats<=.5)current.push(p);else flush();acc+=n.beats;
- });flush();return {groups,assigned};
+function flagCount(n){const root=[.375,.75,1.5,3].includes(n.beats)?n.beats/1.5:n.beats;return root<=.125?3:root<=.25?2:root<=.5?1:0}
+function beamGroups(points,pulse){
+ const groups=[],assigned=new Map();let elapsed=0,current=[],currentPulse=-1;
+ function flush(){if(current.length>=2){groups.push({group:current.slice(),beamY:0});current.forEach(p=>assigned.set(p,0))}current=[]}
+ for(const p of points){
+  const flags=p.n.midi===null?0:flagCount(p.n),startPulse=Math.floor((elapsed+.00001)/pulse),endPulse=Math.floor((elapsed+p.n.beats-.00001)/pulse);
+  if(!flags||startPulse!==endPulse||current.length&&startPulse!==currentPulse)flush();
+  if(flags&&startPulse===endPulse){current.push(p);currentPulse=startPulse}
+  elapsed+=p.n.beats;
+ }
+ flush();return {groups,assigned}
 }
 function render(){
  const has=notes.length>0,valid=selected!==null&&notes[selected],isNote=valid&&notes[selected].midi!==null;
@@ -162,12 +166,21 @@ function render(){
   if(r===0){const [top,bottom]=meter().split('/');out+=el('text',{x:68,y:base+19,'font-size':22,'font-weight':'bold'},top)+el('text',{x:68,y:base+41,'font-size':22,'font-weight':'bold'},bottom)}
   const left=100,width=row.length===2?388:776;
   row.forEach((b,j)=>{const start=left+j*width,p=positionsFor(bars[b],start+13,width-24);
-   const pulse=C.METERS[meter()].pulse;const beam=beamGroups(p,base,pulse);
+   const pulse=C.METERS[meter()].pulse;const beam=beamGroups(p,pulse);
    // Make all note stems rise to an appropriate common beam above the group's heads.
    beam.groups.forEach(g=>{g.beamY=Math.min(...g.group.map(pt=>{const lower=clef==='treble'?C.spelling(64):C.spelling(43);return base+40-(noteDiatonic(pt.n)-((lower.octave+1)*7+lower.step))*5}))-38;g.group.forEach(pt=>beam.assigned.set(pt,g.beamY))});
    p.forEach(pt=>{out+=glyph(pt,base,clef,beam.assigned.has(pt),beam.assigned.get(pt));all.push({...pt,base,row:r})});
-   beam.groups.forEach(g=>{const x1=g.group[0].x+8,x2=g.group.at(-1).x+8,y=g.beamY;out+=el('path',{class:'beam',d:'M '+x1+' '+y+' L '+x2+' '+y+' L '+x2+' '+(y+5)+' L '+x1+' '+(y+5)+' Z'});
-    if(g.group[0].n.beats<=.25)out+=el('path',{class:'beam',d:'M '+x1+' '+(y+11)+' L '+x2+' '+(y+11)+' L '+x2+' '+(y+15)+' L '+x1+' '+(y+15)+' Z'})});
+   beam.groups.forEach(g=>{const x1=g.group[0].x+8,x2=g.group.at(-1).x+8,y=g.beamY;
+    const bar=(l,r,level)=>el('path',{class:'beam',d:'M '+l+' '+(y+level*10)+' L '+r+' '+(y+level*10)+' L '+r+' '+(y+level*10+5)+' L '+l+' '+(y+level*10+5)+' Z'});
+    out+=bar(x1,x2,0);
+    for(let level=1;level<=2;level++)for(let idx=0;idx<g.group.length;idx++){
+     const p=g.group[idx],count=flagCount(p.n),prev=g.group[idx-1],next=g.group[idx+1];
+     if(count<=level)continue;
+     const px=p.x+8,withNext=next&&flagCount(next.n)>level,withPrev=prev&&flagCount(prev.n)>level;
+     if(withNext)out+=bar(px,next.x+8,level);
+     else if(!withPrev){const towards=next?Math.min(17,(next.x-p.x)/2):prev?-Math.min(17,(p.x-prev.x)/2):0;out+=bar(Math.min(px,px+towards),Math.max(px,px+towards),level)}
+    }
+   });
    out+=el('line',{class:'barline',x1:start+width,y1:base,x2:start+width,y2:base+40});
   });
  });
