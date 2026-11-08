@@ -348,6 +348,60 @@ async function run(){
   check('Granted microphone reaches active recording without performance.now TypeError',!id('finish').disabled&&id('status').textContent.includes('Recording locally'),id('status').textContent);
   id('finish').click();await wait(50);
   check('Finish releases the successful mocked microphone',stopped===1&&!id('record').disabled);
+  // Inspect the actual generated SVG, using known, imported note sequences.
+  // Browser tests don't claim real microphone or audio-speaker validation.
+  async function loadEngraving(signature,melody){
+   const bytes=JSON.stringify({meter:signature,tempo:96,notes:melody});
+   const file=new w.File([bytes],'engraving-check.json',{type:'application/json'});
+   Object.defineProperty(id('file'),'files',{configurable:true,value:[file]});
+   id('file').dispatchEvent(new w.Event('change',{bubbles:true}));
+   await wait(85);
+  }
+  const stemPair=()=>[...d.querySelectorAll('#score .event.note')].slice(0,2).map(g=>({
+   head:g.querySelector('.head'),
+   stem:[...g.querySelectorAll('line')].find(e=>!e.classList.contains('ledger'))
+  }));
+  await loadEngraving('4/4',[{midi:76,beats:.5},{midi:77,beats:.5},{midi:79,beats:3}]);
+  const aboveStems=stemPair();
+  check('High beamed notes have stems descending from the left',
+   aboveStems.length===2&&aboveStems.every(p=>p.head&&p.stem&&
+    Number(p.stem.getAttribute('x1'))<Number(p.head.getAttribute('cx'))&&
+    Number(p.stem.getAttribute('y2'))>Number(p.stem.getAttribute('y1'))));
+  check('High-note beam is still displayed',d.querySelectorAll('#score .beam').length>0);
+  await loadEngraving('4/4',[{midi:60,beats:.5},{midi:62,beats:.5},{midi:64,beats:3}]);
+  const belowStems=stemPair();
+  check('Low beamed notes have stems ascending from the right',
+   belowStems.length===2&&belowStems.every(p=>p.head&&p.stem&&
+    Number(p.stem.getAttribute('x1'))>Number(p.head.getAttribute('cx'))&&
+    Number(p.stem.getAttribute('y2'))<Number(p.stem.getAttribute('y1'))));
+  await loadEngraving('4/4',[{midi:76,beats:4.5},{midi:76,beats:1}]);
+  const tiedAbove=d.querySelector('#score .tie');
+  const tieNumbers=tiedAbove?[...tiedAbove.getAttribute('d').matchAll(/-?\d+(?:\.\d+)?/g)].map(m=>Number(m[0])):[];
+  check('Ties above the middle line arc upwards',tieNumbers.length>=6&&tieNumbers[3]<tieNumbers[1]);
+  await loadEngraving('4/4',[{midi:61,beats:4.5},{midi:61,beats:1}]);
+  const sharpAfterTie=[...d.querySelectorAll('#score .event.note')];
+  check('Tied sharp does not suppress subsequent untied sharp',
+   sharpAfterTie.length===3&&
+   sharpAfterTie[0].querySelector('.accidental')?.textContent==='♯'&&
+   !sharpAfterTie[1].querySelector('.accidental')&&
+   sharpAfterTie[2].querySelector('.accidental')?.textContent==='♯');
+  for(const signature of ['2/4','3/4','4/4','6/8']){
+   await loadEngraving(signature,[{midi:null,beats:w.HumCore.METERS[signature].beats}]);
+   const rest=d.querySelector('#score .event.rest');
+   check('Full '+signature+' bar shows a semibreve rest',
+    rest?.getAttribute('aria-label')?.includes('full-bar rest')&&
+    Number(rest.querySelector('.rest-symbol')?.getAttribute('y'))===49);
+  }
+  await loadEngraving('4/4',[{midi:64,beats:1.5},{midi:65,beats:1.5}]);
+  const dotted=[...d.querySelectorAll('#score .event.note')].slice(0,2).map(g=>({
+   headY:Number(g.querySelector('.head')?.getAttribute('cy')),
+   dotY:Number(g.querySelector('.augmentation-dot')?.getAttribute('cy'))
+  }));
+  check('Dot on a note on a line goes into the space above',
+   dotted[0]&&Math.abs(dotted[0].dotY-(dotted[0].headY-5))<.01);
+  check('Dot on a note in a space stays in that space',
+   dotted[1]&&Math.abs(dotted[1].dotY-dotted[1].headY)<.01);
+
  }catch(e){output.push('ERROR '+e.message)}
  finally{result.textContent=output.join('\n')+'\n\n'+output.filter(x=>x.startsWith('PASS')).length+'/'+output.filter(x=>x.startsWith('PASS')||x.startsWith('FAIL')||x.startsWith('ERROR')).length+' checks passed';running=false;$('run').disabled=false}
 }
