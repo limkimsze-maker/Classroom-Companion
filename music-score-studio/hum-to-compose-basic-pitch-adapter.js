@@ -185,6 +185,7 @@ export function verifyPerformance(noteEvents,pcm,rate,pitchEstimator){
   if(stop<=start){processed.push(note);continue}
   const valid=Number.isFinite(note.pitchMidi)&&note.pitchMidi>=36&&note.pitchMidi<=95;
   const checked={...note};
+  if(Array.isArray(checked.pitchBends)){checked.originalBendStart=Number(note.startTimeSeconds);checked.originalBendDuration=Number(note.durationSeconds)}
   const overallRms=sectionRms(pcm,rate,start,stop);
   if(overallRms<.0015){
    if((Number(note.amplitude)||0)<.5){summary.noiseRejected++;continue}
@@ -318,7 +319,11 @@ export function toSingleMelody(noteEvents,maxDuration=20){
   const start=Math.max(0,Number(n.startTimeSeconds));
   const duration=Number(n.durationSeconds),pitch=Math.round(Number(n.pitchMidi));
   const end=Math.min(maxDuration,start+duration);
-  return {index,start,end,pitch,octaveStatus:n.octaveStatus||'unchecked',qualityStatus:n.qualityStatus||'unchecked',amplitude:Math.max(0,Math.min(1,Number(n.amplitude)||0))};
+  return {index,start,end,pitch,octaveStatus:n.octaveStatus||'unchecked',qualityStatus:n.qualityStatus||'unchecked',
+  amplitude:Math.max(0,Math.min(1,Number(n.amplitude)||0)),
+  pitchBends:Array.isArray(n.pitchBends)?n.pitchBends:null,
+  bendStart:Number.isFinite(n.originalBendStart)?n.originalBendStart:start,
+  bendDuration:Number.isFinite(n.originalBendDuration)?n.originalBendDuration:end-start};
  }).filter(n=>Number.isFinite(n.start)&&Number.isFinite(n.end)&&n.end-n.start>=.06&&n.pitch>=36&&n.pitch<=95);
  if(!clean.length)return [];
  const boundaries=[...new Set(clean.flatMap(n=>[n.start,n.end]))].sort((a,b)=>a-b);
@@ -331,18 +336,35 @@ export function toSingleMelody(noteEvents,maxDuration=20){
   const best=active[0]||null,id=best?best.index:null,pitch=best?best.pitch:null;
   if(last&&last.index===id&&Math.abs(last.end-start)<.0001){last.end=end;last.duration=end-last.start}
   else{
-   last={index:id,start,end,duration:end-start,midi:pitch,confidence:best?((best.octaveStatus==='corrected'||best.octaveStatus==='review'||best.qualityStatus==='corrected'||best.qualityStatus==='review')?Math.min(.75,Math.max(.25,best.amplitude)):Math.max(.25,best.amplitude)):1,octaveStatus:best?.octaveStatus||'unchecked',qualityStatus:best?.qualityStatus||'unchecked',points:[]};
+   last={index:id,start,end,duration:end-start,midi:pitch,
+    confidence:best?((best.octaveStatus==='corrected'||best.octaveStatus==='review'||
+     best.qualityStatus==='corrected'||best.qualityStatus==='review')
+     ?Math.min(.75,Math.max(.25,best.amplitude)):Math.max(.25,best.amplitude)):1,
+    octaveStatus:best?.octaveStatus||'unchecked',qualityStatus:best?.qualityStatus||'unchecked',
+    bends:best?.pitchBends||null,bendStart:best?.bendStart,bendDuration:best?.bendDuration};
    timeline.push(last);
   }
  }
  const first=timeline.find(n=>n.midi!==null),lastPitch=[...timeline].reverse().find(n=>n.midi!==null);
  if(!first||!lastPitch)return [];
  const start=first.start,end=lastPitch.end;
- return timeline.filter(n=>n.end>start&&n.start<end).map(n=>({
-  start:Math.max(0,n.start-start),end:Math.min(end-start,n.end-start),
-  duration:Math.min(end,n.end)-Math.max(start,n.start),
-  midi:n.midi,confidence:n.confidence,octaveStatus:n.octaveStatus,qualityStatus:n.qualityStatus,points:n.midi===null?[]:[{t:0,midi:n.midi,confidence:n.confidence}]
- })).filter(n=>n.duration>=.025).slice(0,256);
+ return timeline.filter(n=>n.end>start&&n.start<end).map(n=>{
+  const at=Math.max(0,n.start-start),until=Math.min(end-start,n.end-start),duration=until-at;
+  const points=n.midi===null?[]:[{t:0,midi:n.midi,confidence:n.confidence}];
+  if(n.midi!==null&&Array.isArray(n.bends)&&n.bends.length>=2&&Number.isFinite(n.bendStart)&&n.bendDuration>0){
+   // Spotify contours are spaced at one third of a semitone per bin.
+   // Keep the score pitch discrete and bound short playback inflections.
+   const step=Math.max(1,Math.ceil(n.bends.length/24));
+   for(let i=0;i<n.bends.length;i+=step){
+    const bend=Number(n.bends[i]);if(!Number.isFinite(bend))continue;
+    const t=n.bendStart+(i/n.bends.length)*n.bendDuration-n.start;
+    if(t<=0||t>=duration)continue;
+    points.push({t,midi:n.midi+Math.max(-1.5,Math.min(1.5,bend/3)),confidence:n.confidence});
+   }
+  }
+  return {start:at,end:until,duration,midi:n.midi,confidence:n.confidence,
+   octaveStatus:n.octaveStatus,qualityStatus:n.qualityStatus,points};
+ }).filter(n=>n.duration>=.025).slice(0,256);
 }
 
 export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=null){
@@ -351,11 +373,14 @@ export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=nul
  const audio=resampleMono(audioBuffer,20);
  onProgress('Loading Spotify Basic Pitch (first use needs a network connection)…');
  const {library,model}=await engine();
- const frames=[],onsets=[];
+ const frames=[],onsets=[],contours=[];
  onProgress('Analysing melody with Spotify Basic Pitch…');
- await model.evaluateModel(audio,(f,o,_contours)=>{frames.push(...f);onsets.push(...o)},
+ await model.evaluateModel(audio,(f,o,c)=>{frames.push(...f);onsets.push(...o);contours.push(...c)},
   pct=>onProgress('Analysing Spotify Basic Pitch… '+Math.round(pct*100)+'%'));
- const raw=library.noteFramesToTime(library.outputToNotesPoly(frames,onsets,.25,.25,5));
+ let noteFrames=library.outputToNotesPoly(frames,onsets,.25,.25,5);
+ if(typeof library.addPitchBendsToNoteEvents==='function'&&contours.length)
+  noteFrames=library.addPitchBendsToNoteEvents(contours,noteFrames);
+ const raw=library.noteFramesToTime(noteFrames);
  onProgress('Verifying pitch, pauses and note boundaries against the recording…');
  const verified=verifyPerformance(raw,audio,22050,pitchEstimator);
  const melody=toSingleMelody(verified.notes,20);
