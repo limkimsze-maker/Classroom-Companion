@@ -39,6 +39,9 @@ async function run(){
   check('Time signature and audio level indicators have distinct IDs',d.querySelectorAll('#meter').length===1&&d.querySelectorAll('#levelMeter').length===1);
   check('Tempo is editable in whole BPM increments',id('tempo').type==='number'&&id('tempo').min==='40'&&id('tempo').max==='200');
   check('Calibration tools remain folded away by default',!!id('calibration')&&!id('calibration').open);
+  check('Spotify Basic Pitch is the automatic primary recogniser',!id('basicPitch')&&d.body.textContent.includes('Spotify Basic Pitch automatically creates'));
+  check('Spotify no longer has an optional launch button',!d.querySelector('button#basicPitch'));
+  check('Spotify attribution remains visible',d.body.textContent.includes('Spotify Basic Pitch')&&d.body.textContent.includes('Apache 2.0'));
   check('Detected-performance playback is labelled distinctly from score playback',id('faithful').textContent.includes('detected melody')&&id('play').textContent.includes('written score'));
   check('Detected-performance playback unavailable before recording',id('faithful').disabled);
   check('Score volume slider starts louder at 160 percent',id('scoreVolume').value==='160'&&id('scoreVolumeValue').textContent==='160%');
@@ -121,10 +124,24 @@ async function run(){
   MockAudioContext.prototype.decodeAudioData=async()=>({sampleRate:rate,length,numberOfChannels:1,duration:.75,getChannelData:()=>pcm});
   const fakeFile=new w.File([new Uint8Array(8)],'local-hum.wav',{type:'audio/wav'});
   Object.defineProperty(id('audioFile'),'files',{configurable:true,value:[fakeFile]});
+  let spotifyRuns=0;
+  w.__humTestAdapter={async recognise(audio,progress){
+   spotifyRuns++;progress('Mock Spotify 100%');
+   return {events:w.HumCore.basicPitchToPerformance([
+     {startTimeSeconds:0,durationSeconds:.3,pitchMidi:60,amplitude:.95},
+     {startTimeSeconds:.45,durationSeconds:.3,pitchMidi:62,amplitude:.93}
+   ])};
+  }};
   id('audioFile').dispatchEvent(new w.Event('change',{bubbles:true}));
   await wait(600);
-  check('Audio-file fallback transcribes without requesting microphone',!id('play').disabled&&!id('faithful').disabled,'status='+id('status').textContent);
+  check('Import automatically runs Spotify as the main engine',spotifyRuns===1&&id('status').textContent.includes('Spotify Basic Pitch created'),'status='+id('status').textContent);
+  check('Spotify result becomes an editable score',!id('play').disabled&&!id('faithful').disabled);
   check('Original local audio is available after import',!id('original').disabled);
+  // Now make the Spotify engine fail; the app must label the built-in fallback.
+  w.__humTestAdapter={async recognise(){throw Error('mock model offline')}};
+  id('audioFile').dispatchEvent(new w.Event('change',{bubbles:true}));
+  await wait(650);
+  check('Built-in recognition is fallback only and labelled clearly',id('status').textContent.includes('built-in fallback'),'status='+id('status').textContent);
   // Successful getUserMedia/startup regression: the previous implementation
   // shadowed window.performance with a local array and threw TypeError at .now().
   w.MediaRecorder=undefined;
