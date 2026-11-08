@@ -34,3 +34,5 @@ jobs:
         run: node music-score-studio/hum-to-compose-engraving-tests.cjs
       - name: No-singing benchmark (quantified synthetic verification)
         run: node music-score-studio/hum-to-compose-benchmark-tests.cjs
+      - name: Teacher controls and save/reopen round trips
+        run: node music-score-studio/hum-to-compose-features-tests.cjs
