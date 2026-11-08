@@ -195,7 +195,7 @@ function estimateNaturalTempo(events,meter='4/4'){
  if(voiced.length<3)return {bpm:null,confidence:0};
  const durations=events.map(e=>e.duration).filter(d=>Number.isFinite(d)&&d>=.08);
  const preferred=[.25,.5,.75,1,1.5,2,3,4];
- const complexity={'.25':.08,'.5':.03,'.75':.065,'1':0,'1.5':.035,'2':.04,'3':.07,'4':.08};
+ const complexity={'0.25':.08,'0.5':.03,'0.75':.065,'1':0,'1.5':.035,'2':.04,'3':.07,'4':.08};
  const candidates=[];
  for(let bpm=40;bpm<=200;bpm++){
   const beat=beatSeconds(bpm,meter);
