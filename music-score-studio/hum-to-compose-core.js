@@ -2,8 +2,8 @@
    Experimental: return uncertainty instead of claiming infallible transcription. */
 (function(root,factory){'use strict';const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.HumCore=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){'use strict';
 const METERS={'2/4':{beats:2,upper:2,lower:4,pulse:1},'3/4':{beats:3,upper:3,lower:4,pulse:1},'4/4':{beats:4,upper:4,lower:4,pulse:1},'6/8':{beats:3,upper:6,lower:8,pulse:1.5}};
-const LENGTHS=[4,3,2,1.5,1,.75,.5,.375,.25];
-const NAMES={'0.25':'Semiquaver','0.375':'Dotted semiquaver','0.5':'Quaver','0.75':'Dotted quaver','1':'Crotchet','1.5':'Dotted crotchet','2':'Minim','3':'Dotted minim','4':'Semibreve'};
+const LENGTHS=[4,3,2,1.5,1,.75,.5,.375,.25,.125];
+const NAMES={'0.125':'Demisemiquaver','0.25':'Semiquaver','0.375':'Dotted semiquaver','0.5':'Quaver','0.75':'Dotted quaver','1':'Crotchet','1.5':'Dotted crotchet','2':'Minim','3':'Dotted minim','4':'Semibreve'};
 const NATURAL=[0,2,4,5,7,9,11],SHARP=[[0,0],[0,1],[1,0],[1,1],[2,0],[3,0],[3,1],[4,0],[4,1],[5,0],[5,1],[6,0]],FLAT=[[0,0],[1,-1],[1,0],[2,-1],[2,0],[3,0],[4,-1],[4,0],[5,-1],[5,0],[6,-1],[6,0]];
 function beatSeconds(bpm,meter){if(!METERS[meter]||!(bpm>0))throw Error('Invalid tempo or metre');return 60/bpm*(meter==='6/8'?2/3:1)}
 function rmsOf(buf){let x=0;for(let i=0;i<buf.length;i++)x+=buf[i]*buf[i];return Math.sqrt(x/buf.length)}
@@ -106,10 +106,23 @@ function measures(notes,meter='4/4'){
    Math.abs(bar[0].beats-spec.beats)<.0001)bar[0].fullMeasureRest=true;
  return bars;
 }
-function displayAccidentals(bars){return bars.map(bar=>{const active=new Map();
+/* Key signatures are explicit teacher choices; no automatic guessing of key.
+   The defaults are the conventional circle-of-fifths alterations.
+   Per-bar accidental memory resets, except a tie which applies only to the
+   held note and never to subsequent untied notes. */
+const SHARP_STEPS=[3,0,4,1,5,2,6],FLAT_STEPS=[6,2,5,1,4,0,3];
+const KEY_NAMES={'-7':'C♭ major','-6':'G♭ major','-5':'D♭ major','-4':'A♭ major','-3':'E♭ major','-2':'B♭ major','-1':'F major','0':'C major / A minor','1':'G major','2':'D major','3':'A major','4':'E major','5':'B major','6':'F♯ major','7':'C♯ major'};
+function keyDefaults(fifths=0){
+ if(!Number.isInteger(fifths)||fifths<-7||fifths>7)throw Error('Invalid key signature');
+ const map=[0,0,0,0,0,0,0],steps=fifths>0?SHARP_STEPS:FLAT_STEPS;
+ for(let i=0;i<Math.abs(fifths);i++)map[steps[i]]=fifths>0?1:-1;
+ return map;
+}
+function displayAccidentals(bars,fifths=0){const defaults=keyDefaults(fifths);return bars.map(bar=>{const active=new Map();
+
  return bar.map(n=>{if(n.midi===null)return {...n,displayAccidental:null};
    const s=n.spelling||spelling(n.midi);
-   const key=s.step+':'+s.octave,old=active.has(key)?active.get(key):0;
+   const key=s.step+':'+s.octave,old=active.has(key)?active.get(key):defaults[s.step];
    // A tied accidental carries across the barline only to the tied note.
    // It must NOT affect the next untied note's accidental state.
    if(n.tiePrev)return {...n,spelling:s,displayAccidental:null};
@@ -346,11 +359,75 @@ function estimateNaturalTempo(events,meter='4/4'){
  const separation=runner?Math.max(0,runner.error-winner.error):0;
  return {bpm:winner.bpm,confidence:Math.min(.95,Math.max(.22,separation*8)),ambiguous:separation<.018};
 }
+/* Portable single-stave MusicXML 4.0 export. Divisions count crotchets,
+   including 6/8's dotted-crotchet tempo marking. This faithfully represents
+   the verified written notation; it does not pretend to preserve raw audio. */
+function scoreToMusicXML(notes,meter='4/4',bpm=96,options={}){
+ const clef=options.clef==='bass'?'bass':'treble',fifths=options.fifths??0;
+ keyDefaults(fifths);
+ if(!Number.isFinite(bpm)||bpm<40||bpm>200)throw Error('Invalid export tempo');
+ const quality=auditScore(notes,meter,Infinity);
+ if(!quality.ok)throw Error('Cannot export invalid written score: '+quality.reason);
+ const escapeXML=text=>String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+ const title=escapeXML(options.title||'My melody'),beats=meter.split('/');
+ const durationType=value=>{
+  const dotted=[.375,.75,1.5,3].includes(value);
+  const undotted=dotted?value/1.5:value;
+  const type=({4:'whole',2:'half',1:'quarter',.5:'eighth',.25:'16th',.125:'32nd'})[String(undotted)];
+  if(!type)throw Error('Unrepresentable note value: '+value);
+  return {type,dotted};
+ };
+ const bars=displayAccidentals(measures(notes,meter),fifths),letters=['C','D','E','F','G','A','B'];
+ let output='<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE score-partwise  PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n';
+ output+='<score-partwise version="4.0"><work><work-title>'+title+'</work-title></work><movement-title>'+title+'</movement-title>';
+ output+='<identification><creator type="software">Music Score Studio Hum to Compose TEST</creator></identification>';
+ output+='<defaults><scaling><millimeters>7</millimeters><tenths>40</tenths></scaling></defaults>';
+ output+='<part-list><score-part id="P1"><part-name>Melody</part-name><part-abbreviation>Mel.</part-abbreviation><score-instrument id="Ib"> <instrument-name>Voice</instrument-name></score-instrument></score-part></part-list><part id="P1">';
+ for(let i=0;i<bars.length;i++){
+  output+='<measure implicit="no" number="'+(i+1)+'">';
+  if(i===0){
+   output+='<attributes><divisions>480</divisions><key><fifths>'+fifths+'</fifths><mode>major</mode></key>';
+   output+='<time><beats>'+beats[0]+'</beats><beat-type>'+beats[1]+'</beat-type></time>';
+   output+='<clef><sign>'+(clef==='bass'?'F':'G')+'</sign><line>'+(clef==='bass'?4:2)+'</line></clef></attributes>';
+   const beatUnit=meter==='6/8'?'<beat-unit>quarter</beat-unit><beat-unit-dot/>':'<beat-unit>quarter</beat-unit>';
+   output+='<direction placement="above"><direction-type><metronome parentheses="no">'+beatUnit+'<per-minute>'+bpm+'</per-minute></metronome></direction-type><sound tempo="'+(meter==='6/8'?Math.round(bpm*1.5):bpm)+'"/></direction>';
+  }
+  for(const n of bars[i]){
+   const {type,dotted}=durationType(n.fullMeasureRest?4:n.beats);
+   const dur=Math.round(n.beats*480);
+   output+='<note>';
+   if(n.midi===null)output+=n.fullMeasureRest?'<rest measure="yes"/>':'<rest/>';
+   else{
+    const spell=n.spelling||spelling(n.midi,fifths<0);
+    if(midiFromSpelling(spell)!==n.midi)throw Error('Score has inconsistent note spelling');
+    output+='<pitch><step>'+letters[spell.step]+'</step>';
+    if(spell.alter)output+='<alter>'+spell.alter+'</alter>';
+    output+='<octave>'+spell.octave+'</octave></pitch>';
+   }
+   output+='<duration>'+dur+'</duration><type>'+type+'</type>';
+   if(dotted&&!n.fullMeasureRest)output+='<dot/>';
+   if(n.midi!==null){
+    if(n.displayAccidental)output+='<accidental>'+({'♯':'sharp','♭':'flat','♮':'natural'}[n.displayAccidental])+'</accidental>';
+    if(n.tiePrev)output+='<tie type="stop"/>';
+    if(n.tieNext)output+='<tie type="start"/>';
+    if(n.tiePrev||n.tieNext){
+     output+='<notations>';
+     if(n.tiePrev)output+='<tied type="stop"/>';
+     if(n.tieNext)output+='<tied type="start"/>';
+     output+='</notations>';
+    }
+   }
+   output+='</note>';
+  }
+  output+='</measure>';
+ }
+ return output+'</part></score-partwise>';
+}
 function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&data.tempo<=240)||!Array.isArray(data.notes)||data.notes.length>256)throw Error('Unsupported score file');
  return data.notes.map(n=>{if(n.midi!==null&&(!Number.isInteger(n.midi)||n.midi<36||n.midi>95))throw Error('Invalid pitch');
  if(!Number.isFinite(n.beats)||n.beats<.25||n.beats>64||Math.abs(n.beats*8-Math.round(n.beats*8))>.001)throw Error('Invalid length');
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
 });
