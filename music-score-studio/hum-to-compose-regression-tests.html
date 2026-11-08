@@ -150,6 +150,17 @@ async function run(){
    bent[0].points.some(x=>x.midi>69.4)&&bent[0].points.some(x=>x.midi<68.6));
   check('Pitch-bend effects do not change the written note pitch',
    bent[0].midi===69&&window.HumCore.transcribeAlignedEvents(bent,120,'4/4')[0].midi===69);
+  const ambiguousHarmonic=adapter.verifyPerformance([
+   verifiedNote(.27,.65,57,.95)
+  ],makeOctaveTone(220,[.02,1,.8]),toneRate,window.HumCore.estimatePitch);
+  check('Strong overtones never force a false correction of the true lower octave',
+   ambiguousHarmonic.notes[0].pitchMidi===57&&ambiguousHarmonic.summary.octavesCorrected===0);
+  const doubtfulOctave=adapter.verifyPerformance([
+   verifiedNote(.27,.65,45,.95)
+  ],makeOctaveTone(220,[.02,1,.8]),toneRate,window.HumCore.estimatePitch);
+  check('Octave ambiguity is flagged rather than silently shifted',
+   doubtfulOctave.notes[0].pitchMidi===45&&doubtfulOctave.summary.review>0);
+
   check('Spotify integration pins library version and official model commit',
    adapter.BASIC_PITCH_VERSION==='@spotify/basic-pitch@1.0.1'&&adapter.BASIC_PITCH_MODEL.includes('2d498f82b61c71898edf0e8dd661b99076676c8b'));
 
