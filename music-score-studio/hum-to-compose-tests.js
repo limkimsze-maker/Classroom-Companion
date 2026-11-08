@@ -247,6 +247,56 @@
    assert(bars[0][0].tieNext&&bars[0][1].tiePrev);
    near(bars[0].reduce((sum,x)=>sum+x.beats,0),2.5,.0001);
   });
+  test('Key signatures have the standard sharp and flat order',()=>{
+   assert(JSON.stringify(C.keyDefaults(2))===JSON.stringify([1,0,0,1,0,0,0]));
+   assert(JSON.stringify(C.keyDefaults(-2))===JSON.stringify([0,0,-1,0,0,0,-1]));
+   let bad=false;try{C.keyDefaults(8)}catch(_){bad=true}assert(bad);
+  });
+  test('Key G major omits F sharp, but displays F natural and return sharp',()=>{
+   const b=C.displayAccidentals(C.measures([{midi:66,beats:1},{midi:65,beats:1},
+    {midi:66,beats:1}],'4/4'),1)[0];
+   assert(b[0].displayAccidental===null&&b[1].displayAccidental==='♮'&&
+    b[2].displayAccidental==='♯');
+  });
+  test('B flat key spells B-flat, not A-sharp, with implicit signature',()=>{
+   const b=C.displayAccidentals(C.measures([{midi:70,beats:1},{midi:71,beats:1}],
+    '4/4'),-2)[0];
+   assert(b[0].spelling.step===6&&b[0].spelling.alter===-1&&
+    b[0].displayAccidental===null&&b[1].displayAccidental==='♮');
+  });
+  test('MusicXML exports crotchets, quavers, dotted notes and rests',()=>{
+   const xml=C.scoreToMusicXML([{midi:60,beats:1},{midi:null,beats:.5},
+    {midi:62,beats:1.5},{midi:64,beats:1}],'4/4',120);
+   assert(xml.includes('<score-partwise version="4.0">'));
+   assert(xml.includes('<rest/><duration>240</duration><type>eighth</type>'));
+   assert(xml.includes('<duration>720</duration><type>quarter</type><dot/>'));
+   assert(xml.includes('<clef><sign>G</sign><line>2</line></clef>'));
+  });
+  test('MusicXML exports bass clef, 6/8 and dotted-crotchet pulse',()=>{
+   const xml=C.scoreToMusicXML([{midi:43,beats:1.5},{midi:45,beats:1.5}],
+    '6/8',96,{clef:'bass',fifths:-1});
+   assert(xml.includes('<time><beats>6</beats><beat-type>8</beat-type></time>'));
+   assert(xml.includes('<key><fifths>-1</fifths>'));
+   assert(xml.includes('<clef><sign>F</sign><line>4</line></clef>'));
+   assert(xml.includes('<beat-unit-dot/><per-minute>96</per-minute>'));
+  });
+  test('MusicXML exports two directions of tie across barlines',()=>{
+   const xml=C.scoreToMusicXML([{midi:61,beats:4.5},{midi:61,beats:1}],'4/4',96);
+   assert(xml.includes('<tie type="start"/>')&&xml.includes('<tie type="stop"/>'));
+   assert(xml.includes('<tied type="start"/>')&&xml.includes('<tied type="stop"/>'));
+   const bar2=xml.split('<measure implicit="no" number="2">')[1];
+   assert(bar2.includes('<accidental>sharp</accidental>'));
+  });
+  test('MusicXML represents whole-measure rest in 3/4',()=>{
+   const xml=C.scoreToMusicXML([{midi:60,beats:3},{midi:null,beats:3}],
+    '3/4',96);
+   assert(xml.includes('<rest measure="yes"/><duration>1440</duration><type>whole</type>'));
+  });
+  test('MusicXML escapes untrusted work titles',()=>{
+   const xml=C.scoreToMusicXML([{midi:60,beats:1}],'2/4',96,{title:'A & <B> "Song"'});
+   assert(xml.includes('A &amp; &lt;B&gt; &quot;Song&quot;'));
+   assert(!xml.includes('<B>'));
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
