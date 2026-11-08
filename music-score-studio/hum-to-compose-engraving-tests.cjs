@@ -110,6 +110,15 @@ let passed=0;async function check(name,fn){
   assert.equal((svg.match(/𝄞/g)||[]).length,2,'Continuation clef missing');
   assert.doesNotMatch(svg,/<line class="barline" x1="100"/,'Redundant opening barline');
  });
+ await check('40-bar score survives actual SVG engraving and remains scrollable',async()=>{
+  const melody=Array.from({length:40},(_,i)=>({midi:60+i%7,beats:4}));
+  const svg=await engraved('4/4',melody);
+  assert.equal(events(svg,'note').length,40,'Notes were truncated in the SVG');
+  assert.equal((svg.match(/class="barline"/g)||[]).length,40,'Bars were lost from engraving');
+  assert.equal((svg.match(/𝄞/g)||[]).length,20,'Expected 20 continuation systems');
+  assert.equal(elem('score').viewBox,'0 0 900 3518','Long SVG viewBox clipped');
+  assert.match(elem('scoreHint').textContent,/40 bars/,'Score bar-count label incorrect');
+ });
  console.log(passed+' SVG music engraving checks passed.');
  if(process.exitCode)process.exit(1);
 })().catch(err=>{console.error(err);process.exit(1)});
