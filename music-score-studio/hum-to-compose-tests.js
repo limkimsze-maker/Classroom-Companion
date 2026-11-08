@@ -149,6 +149,53 @@
    const score=C.transcribeDetectedEvents(p,120,'4/4');
    assert(score.length===1&&score[0].midi===60&&score[0].uncertain,'new model notes must be reviewable');
   });
+  test('Aligned transcription avoids cumulative duration-rounding drift',()=>{
+   const e=Array.from({length:8},(_,i)=>({start:i*.47,end:(i+1)*.47,duration:.47,midi:60+i%4,confidence:.97}));
+   const n=C.transcribeAlignedEvents(e,120,'4/4'),total=n.reduce((a,x)=>a+x.beats,0);
+   near(total,Math.round(e.at(-1).end/.5*4)/4,.001);
+   assert(n.filter(x=>x.midi!==null).length===8,'lost pitched notes');
+  });
+  test('Aligned score preserves separate repeated notes and silence',()=>{
+   const e=[
+    {start:0,end:.25,duration:.25,midi:60,confidence:.96},
+    {start:.25,end:.50,duration:.25,midi:60,confidence:.96},
+    {start:.50,end:.75,duration:.25,midi:null,confidence:1},
+    {start:.75,end:1,duration:.25,midi:62,confidence:.96}
+   ];
+   const n=C.transcribeAlignedEvents(e,120,'4/4');
+   assert(n.map(x=>x.midi).join(',')==='60,60,,62',JSON.stringify(n));
+   assert(n.every(x=>x.beats===.5),'durations wrong');
+  });
+  test('Aligned transcription flags independently corrected pitches',()=>{
+   const e=[{start:0,end:.50,duration:.50,midi:64,confidence:.95,qualityStatus:'corrected'}];
+   const n=C.transcribeAlignedEvents(e,120,'4/4');
+   assert(n.length===1&&n[0].midi===64&&n[0].uncertain,'teacher review missing');
+  });
+  test('Aligned transcription handles 6/8 and a 64-beat cap',()=>{
+   for(const metre of ['2/4','3/4','4/4','6/8']){
+    const beat=C.beatSeconds(120,metre),events=Array.from({length:100},(_,i)=>({
+     start:i*beat,end:(i+1)*beat,duration:beat,midi:60,confidence:.95
+    }));
+    const s=C.transcribeAlignedEvents(events,120,metre),sum=s.reduce((n,x)=>n+x.beats,0);
+    assert(sum<=64.001&&sum>=63.75,'wrong cap '+metre+' '+sum);
+    assert(C.auditScore(s,metre).ok,'audit failed '+metre);
+    for(const bar of C.measures(s,metre))
+     assert(bar.reduce((n,x)=>n+x.beats,0)<=C.METERS[metre].beats+.001,'overfilled bar '+metre);
+   }
+  });
+  test('Score audit permits dotted semiquavers and rejects illegal values',()=>{
+   assert(C.auditScore([{midi:60,beats:.375}], '4/4').ok,'dotted semiquaver rejected');
+   assert(!C.auditScore([{midi:60,beats:.125}], '4/4').ok,'too-short note accepted');
+   assert(!C.auditScore([{midi:60,beats:1.1}], '4/4').ok,'invalid beat accepted');
+   assert(!C.auditScore([{midi:97,beats:1}], '4/4').ok,'invalid MIDI accepted');
+   assert(!C.auditScore([{midi:null,beats:1}], '4/4').ok,'rest-only score accepted');
+  });
+  test('Rhythm verification flags contradictory event timing',()=>{
+   const e=[{start:0,end:.5,duration:.2,midi:60,confidence:.99},
+    {start:.5,end:1,duration:.2,midi:62,confidence:.99}];
+   const notes=C.transcribeAlignedEvents(e,120,'4/4');
+   assert(notes.some(x=>x.uncertain),'contradictory duration/onset must be reviewable');
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
