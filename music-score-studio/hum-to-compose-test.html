@@ -366,7 +366,7 @@ async function tryBasicPitch(){
   if(recordingBlob!==sourceAudioBlob)throw Error('Recording changed while reading audio.');
   // Adapter performs required 22050 Hz mono resampling. The Spotify library
   // rejects an ordinary 44100/48000 Hz stereo AudioBuffer passed directly.
-  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const adapter=window.location?.search?.includes('regression=')&&window.__humTestAdapter ? window.__humTestAdapter : await import('./hum-to-compose-basic-pitch-adapter.js');
   const answer=await adapter.recognise(decoded,p=>{
    if(recordingBlob===sourceAudioBlob)$('basicPitchProgress').textContent=p;
   });
