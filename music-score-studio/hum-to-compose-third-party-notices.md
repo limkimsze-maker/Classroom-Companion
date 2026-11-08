@@ -17,11 +17,18 @@ The experimental interface dynamically loads unmodified upstream package code
 from a **version-pinned** ESM CDN URL:
 https://esm.sh/@spotify/basic-pitch@1.0.1?bundle
 
-The experimental TensorFlow.js model is loaded from version-pinned npm assets:
-https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json
+The experimental TensorFlow.js model is pinned to Spotify's public
+`basic-pitch-ts` upstream repository commit `2d498f82b61c71898edf0e8dd661b99076676c8b`.
 
-The model's `group1-shard1of1.bin` is referenced by that model manifest and
-is loaded by the library from the same model path.
+The browser tries the immutable repository snapshot on jsDelivr:
+https://cdn.jsdelivr.net/gh/spotify/basic-pitch-ts@2d498f82b61c71898edf0e8dd661b99076676c8b/model/model.json
+
+If that host fails, the browser tries the same pinned manifest from the official
+Spotify GitHub repository:
+https://raw.githubusercontent.com/spotify/basic-pitch-ts/2d498f82b61c71898edf0e8dd661b99076676c8b/model/model.json
+
+The `group1-shard1of1.bin` weights file is referenced by that manifest and
+loaded from the same model host. Both paths are pinned to the same source revision.
 
 **No Spotify source files or model weights are copied into this repository**;
 the browser obtains them from those public distributions when the user explicitly
