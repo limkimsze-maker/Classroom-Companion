@@ -22,6 +22,8 @@ async function run(){
   check('Calibration tools remain folded away by default',!!id('calibration')&&!id('calibration').open);
   check('Detected-performance playback is labelled distinctly from score playback',id('faithful').textContent.includes('detected melody')&&id('play').textContent.includes('written score'));
   check('Detected-performance playback unavailable before recording',id('faithful').disabled);
+  check('Local audio-file fallback visible',!!id('audioUpload')&&id('audioFile').accept.includes('audio/*'));
+  check('Voice Recorder alternative explained without upload',d.body.textContent.includes('Voice Recorder')&&d.body.textContent.includes('Nothing is uploaded.'));
   check('Meter selector exposes all 4 options',[...id('meter').options].map(x=>x.value).join(',')==='2/4,3/4,4/4,6/8');
   id('example').click();check('Sample draws score symbols',d.querySelectorAll('#score .event').length>=6);
   check('Compare and recorded-speed matching need a real recording',id('compare').disabled&&id('matchSpeed').disabled);
@@ -74,7 +76,28 @@ async function run(){
   const rejectMic=async()=>{const e=new Error('denied');e.name='NotAllowedError';throw e};
   Object.defineProperty(w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:rejectMic}});
   id('record').click();await wait(80);
-  check('Denied permission handled with helpful error',id('status').textContent.toLowerCase().includes('microphone')&&id('finish').disabled);
+  check('Denied permission gives actionable Chrome/Samsung advice',id('status').textContent.includes('NotAllowedError')&&id('status').textContent.includes('Samsung Internet')&&id('finish').disabled);
+  // Mock the microphone being occupied by another recording app.
+  w.navigator.mediaDevices.getUserMedia=async()=>{const e=new Error('busy');e.name='NotReadableError';throw e};
+  id('record').click();await wait(90);
+  check('Busy microphone explains the actual error',id('status').textContent.includes('NotReadableError')&&id('status').textContent.includes('Close other recording'));
+  w.navigator.mediaDevices.getUserMedia=async()=>{const e=new Error('no device');e.name='NotFoundError';throw e};
+  id('record').click();await wait(90);
+  check('Missing microphone is distinguished from denied permission',id('status').textContent.includes('NotFoundError'));
+
+  // Browser upload fallback: fake a *local* decoded PCM file; no microphone or network.
+  const rate=16000,length=Math.round(rate*.75),pcm=new Float32Array(length);
+  for(let i=0;i<length;i++){
+   const hz=i<length*.5?261.6256:293.6648;
+   pcm[i]=.3*Math.sin(2*Math.PI*hz*i/rate);
+  }
+  MockAudioContext.prototype.decodeAudioData=async()=>({sampleRate:rate,length,numberOfChannels:1,duration:.75,getChannelData:()=>pcm});
+  const fakeFile={size:1200,name:'local-hum.wav',arrayBuffer:async()=>new ArrayBuffer(8)};
+  Object.defineProperty(id('audioFile'),'files',{configurable:true,value:[fakeFile]});
+  id('audioFile').dispatchEvent(new w.Event('change',{bubbles:true}));
+  await wait(600);
+  check('Audio-file fallback transcribes without requesting microphone',!id('play').disabled&&!id('faithful').disabled,'status='+id('status').textContent);
+  check('Original local audio is available after import',!id('original').disabled);
  }catch(e){output.push('ERROR '+e.message)}
  finally{result.textContent=output.join('\n')+'\n\n'+output.filter(x=>x.startsWith('PASS')).length+'/'+output.filter(x=>x.startsWith('PASS')||x.startsWith('FAIL')||x.startsWith('ERROR')).length+' checks passed';running=false;$('run').disabled=false}
 }
