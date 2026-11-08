@@ -97,6 +97,7 @@ let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false,recognition
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
 const keyFifths=()=>{const v=Number($('keyFifths').value);return Number.isInteger(v)&&v>=-7&&v<=7?v:0};
 const clefMode=()=>['treble','bass'].includes($('clefMode').value)?$('clefMode').value:'auto';
+let lastSetup={clefMode:'auto',fifths:0};
 const scoreLevel=()=>Math.min(1.9,Math.max(1,Number($('scoreVolume').value)/100||1.6));
 const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),clefMode:clefMode(),fifths:keyFifths(),detectedEvents});
 function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;detectedEvents=s.detectedEvents||[];$('meter').value=s.meter;$('tempo').value=String(s.tempo);$('clefMode').value=s.clefMode||'auto';$('keyFifths').value=String(s.fifths??0);render();recordingControls()}
@@ -377,6 +378,7 @@ function render(){
  $('score').setAttribute('viewBox','0 0 900 '+height);$('score').innerHTML=out;
  const unsure=notes.filter(n=>n.uncertain&&!n.reviewed).length;
  $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+bars.length+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain':'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
+ lastSetup={clefMode:clefMode(),fifths:keyFifths()};
 }
 function choose(e){const g=e.target.closest('g[data-origin]');if(!g)return;const index=Number(g.getAttribute('data-origin'));if(!Number.isInteger(index)||!notes[index])return;selected=index;render()}
 function editPitch(delta){if(selected===null||notes[selected]?.midi===null)return;change(()=>{const n=notes[selected],m=Math.min(95,Math.max(36,n.midi+delta));notes[selected]={...n,midi:m,spelling:C.spelling(m),uncertain:false,reviewed:true}})}
@@ -661,8 +663,13 @@ $('saveLocal').addEventListener('click',localSave);$('loadLocal').addEventListen
 $('open').addEventListener('click',()=>$('file').click());$('file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12000000)throw Error('File exceeds 12 MB');importState(JSON.parse(await file.text()))}catch(err){say('Could not open score JSON: '+err.message,true)}e.target.value=''});
 $('score').addEventListener('click',choose);$('score').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('g[data-origin]')){e.preventDefault();choose(e)}});
 ['tempo','meter'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='tempo')$('tempo').value=String(tempo());stopPlayback();render()}));
-['clefMode','keyFifths'].forEach(id=>$(id).addEventListener('change',()=>{stopPlayback();render();
- say('Notation: '+clefOf()+' clef, '+C.KEY_NAMES[String(keyFifths())]+'. Sounding pitches are unchanged.');}));
+['clefMode','keyFifths'].forEach(id=>$(id).addEventListener('change',()=>{
+ if(clefMode()===lastSetup.clefMode&&keyFifths()===lastSetup.fifths)return;
+ const before={...snapshot(),clefMode:lastSetup.clefMode,fifths:lastSetup.fifths};
+ stopPlayback();history.push(before);if(history.length>100)history.shift();future=[];
+ render();say('Notation: '+clefOf()+' clef, '+C.KEY_NAMES[String(keyFifths())]+
+  '. Sounding pitches are unchanged. Use Undo to restore the previous notation.');
+}));
 window.addEventListener('pagehide',()=>{recording=false;closeMic();stopPlayback();setOriginal(null);if(playerCtx)playerCtx.close().catch(()=>{})});
 render();recordingControls();
 })();
