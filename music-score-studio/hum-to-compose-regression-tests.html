@@ -44,7 +44,7 @@ async function run(){
   check('Spotify attribution remains visible',d.body.textContent.includes('Spotify Basic Pitch')&&d.body.textContent.includes('Apache 2.0'));
   check('Detected-performance playback is labelled distinctly from score playback',id('faithful').textContent.includes('detected melody')&&id('play').textContent.includes('written score'));
   check('Detected-performance playback unavailable before recording',id('faithful').disabled);
-  check('Score volume slider starts louder at 160 percent',id('scoreVolume').value==='160'&&id('scoreVolumeValue').textContent==='160%');
+  check('Piano volume slider starts at 160 percent',id('scoreVolume').value==='160'&&id('scoreVolumeValue').textContent==='160%');
   check('Local audio-file fallback visible',!!id('audioUpload')&&id('audioFile').accept.includes('audio/*'));
   check('Voice Recorder alternative explained without upload',d.body.textContent.includes('Voice Recorder')&&d.body.textContent.includes('Nothing is uploaded.'));
   check('Meter selector exposes all 4 options',[...id('meter').options].map(x=>x.value).join(',')==='2/4,3/4,4/4,6/8');
@@ -107,7 +107,7 @@ async function run(){
   await wait(500);
   check('Previous note highlight clears after its duration',!d.querySelector('#score [data-origin="0"].playing'));
   id('stop').click();check('Stop clears all note highlights',d.querySelectorAll('#score .playing').length===0);
-  check('Stop releases all piano harmonic oscillators',audioStops.length===15);
+  check('Stop explicitly releases all piano harmonic oscillators',audioStops.filter(t=>t===undefined).length===15);
   gainEnvelopes.length=0;audioStarts.length=0;oscTypes.length=0;
   id('scoreVolume').value='190';id('scoreVolume').dispatchEvent(new w.Event('input',{bubbles:true}));
   check('Piano volume output label updates',id('scoreVolumeValue').textContent==='190%');
