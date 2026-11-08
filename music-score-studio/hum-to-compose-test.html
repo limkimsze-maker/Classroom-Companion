@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123f53">
+<title>Hum to Compose — Music Score Studio TEST</title>
+<style>
+:root{color-scheme:light;--ink:#17364c;--muted:#577080;--teal:#087b86;--line:#d6e5ec;--paper:#fff;--bg:#eef7fa;--orange:#ed9c3b}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#123d52;color:white;padding:20px max(18px,calc((100% - 1140px)/2))}header h1{font-size:clamp(22px,3vw,32px);margin:0}header p{margin:3px 0;color:#c8e6ed}main{max-width:1140px;margin:auto;padding:22px 16px 50px;display:grid;grid-template-columns:minmax(0,1fr);gap:15px}
+.sandbox{display:inline-block;padding:4px 9px;background:#ffefc6;color:#6c460c;border-radius:20px;font-size:12px;font-weight:850;vertical-align:middle;margin-left:8px}
+.card{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:clamp(15px,3vw,24px);box-shadow:0 4px 15px #123f5110}
+h2{font-size:21px;margin:0 0 8px}p{margin:0 0 12px}.muted{color:var(--muted)}.steps{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 20px}.step{background:#e6f7f7;border:1px solid #b8dfe0;border-radius:10px;padding:8px 11px;font-size:14px;font-weight:700}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px}button,select{font:inherit}button{border:1px solid #9dbeca;border-radius:11px;padding:12px 17px;min-height:46px;cursor:pointer;font-weight:730;background:#fff;color:#19485b}button.primary{background:#087b86;border-color:#087b86;color:#fff}button.danger{background:#bf4348;color:#fff;border-color:#bf4348}button:disabled{opacity:.43;cursor:not-allowed}button:hover:not(:disabled){filter:brightness(.95)}button:focus-visible,select:focus-visible{outline:3px solid #e1a73f;outline-offset:3px}
+label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-items:center;gap:8px}select{padding:11px;border-radius:9px;border:1px solid #a7c6d1;background:white;min-height:46px}
+#status{border:1px solid #c5dfe4;border-radius:12px;background:#f4fbfe;padding:12px 14px;margin-top:14px;min-height:50px}#status[role="alert"]{border-color:#dca16f;background:#fff6ec}#livePitch{font-weight:800;color:#0b7683}#timer{font-variant-numeric:tabular-nums;color:#607380;font-weight:750}
+#meter{width:170px;height:10px;background:#dfedf1;border-radius:10px;overflow:hidden}#meterFill{width:0;height:100%;background:#0d8793;transition:width .08s}
+.scoreArea{overflow-x:auto;overscroll-behavior-x:contain;border:1px solid #e0e8ee;background:linear-gradient(#fff,#fafdff);border-radius:10px;padding:12px 5px}#score{width:100%;min-width:740px;height:auto;display:block}#score text{font-family:Georgia,"Times New Roman",serif;fill:#15384b}#score .note{cursor:pointer}#score .note:focus-visible .head,#score .note.selected .head{stroke:#c77210;stroke-width:3;fill:#fbb94b}#score .note.playing .head{stroke:#bd4a12;stroke-width:3;fill:#f8a93b}#score .rest{fill:#29495d}#score .staff{stroke:#829ca9;stroke-width:1.5}#score .barline{stroke:#507386;stroke-width:1.6}#score .ledger{stroke:#607b8a;stroke-width:1.5}.small{font-size:13px}.editor{display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding-top:12px;border-top:1px solid #dfe8ed;margin-top:14px}.editor button{padding:8px 13px;min-height:40px}#editing{font-weight:800;min-width:126px}.footer{font-size:13px;color:#627985;line-height:1.7;text-align:center;margin-top:8px}
+@media(max-width:580px){header{padding:16px}main{padding:12px 9px 35px;gap:10px}.card{padding:16px 12px}.controls>button{flex:1}.field{width:100%;justify-content:space-between}#meter{width:105px}.editor button{flex:1}.steps{gap:5px}.step{font-size:12px;padding:7px}}
+</style>
+</head>
+<body>
+<header><h1>🎼 Music Score Studio <span class="sandbox">TEST ONLY</span></h1><p>🎤 Hum to Compose — first experimental prototype</p></header>
+<main>
+<section class="card" aria-label="Record melody">
+<h2>Hum a tune. See the notes.</h2>
+<p class="muted">Hum one note at a time into your microphone. This first version estimates the pitches and rhythms, then builds a simple single-stave score you can edit and play.</p>
+<div class="steps"><span class="step">1 · Hum</span><span class="step">2 · Review the score</span><span class="step">3 · Play</span></div>
+<div class="controls">
+<button id="record" class="primary" type="button">🎤 Start recording</button>
+<button id="finish" class="danger" type="button" disabled>■ Finish recording</button>
+<button id="example" type="button">♫ Try sample melody</button>
+<div class="field"><label for="tempo">Tempo</label><select id="tempo"><option value="60">60 BPM</option><option value="80">80 BPM</option><option value="96" selected>96 BPM</option><option value="120">120 BPM</option><option value="140">140 BPM</option></select></div>
+</div>
+<div class="controls" style="margin-top:12px"><span id="timer">0:00 / 0:20</span><div id="meter" aria-label="Microphone level"><div id="meterFill"></div></div><span id="livePitch" aria-live="off">—</span></div>
+<div id="status" role="status" aria-live="polite">Ready. Try the sample melody or press Start recording and allow microphone access.</div>
+<p class="small muted" style="margin-top:12px">🔒 Microphone audio is analysed locally in your browser. No recording is uploaded. A quiet room and clear, steady humming give better results. Maximum recording: 20 seconds.</p>
+</section>
+<section class="card" aria-label="Generated musical score">
+<div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2>My melody</h2><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="play" class="primary" type="button" disabled>▶ Play score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>↓ Save JSON</button></div></div>
+<div class="scoreArea"><svg xmlns="http://www.w3.org/2000/svg" id="score" viewBox="0 0 850 190" role="img" aria-label="Generated single-stave music score"><text x="24" y="58" font-size="20">Your musical score will appear here.</text></svg></div>
+<div class="editor"><span id="editing">Select a note</span><button id="down" disabled type="button" title="Lower selected pitch by one semitone">♭ Lower</button><button id="up" disabled type="button" title="Raise selected pitch by one semitone">♯ Raise</button><label for="duration">Note length</label><select id="duration" disabled><option value="0.5">Quaver</option><option value="1">Crotchet</option><option value="2">Minim</option><option value="4">Semibreve</option></select><button id="remove" disabled type="button">Delete note</button></div>
+</section>
+<p class="footer">Experimental demonstration only · One melody at a time · 4/4 time · Rhythm detection is approximate · Check all notes before classroom use<br>Music Score Studio developed by Lim Kim Sze · Special thanks to Mdm Hsu Yuh Fui for her guidance on music notation and Master Javis Lim for helpful user feedback.<br>Any errors or inaccuracies remain solely my responsibility. Prototype code is provided under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a>.</p>
+</main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const MAX_SECONDS=20, TICK_MS=75, MIN_HZ=90, MAX_HZ=850;
+const NAMES={0:'C',1:'C♯',2:'D',3:'D♯',4:'E',5:'F',6:'F♯',7:'G',8:'G♯',9:'A',10:'A♯',11:'B'};
+const LENGTH_NAMES={'0.25':'Semiquaver','0.5':'Quaver','0.75':'Dotted quaver','1':'Crotchet','1.5':'Dotted crotchet','2':'Minim','3':'Dotted minim','4':'Semibreve'};
+let context=null,source=null,analyser=null,stream=null,frame=null,samples=[],recording=false,recordStart=0,lastAnalysis=0;
+let notes=[],selected=null,playing=false,voiceNodes=[],timeouts=[],audioCtx=null;
+const getTempo=()=>Number($('tempo').value), name=m=>NAMES[((m%12)+12)%12]+(Math.floor(m/12)-1);
+function report(message,error=false){$('status').textContent=message;$('status').setAttribute('role',error?'alert':'status')}
+function safeText(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function setRecordingUI(){ $('record').disabled=recording;$('finish').disabled=!recording;$('example').disabled=recording;$('tempo').disabled=recording; }
+function stopMic(){ if(frame!==null)cancelAnimationFrame(frame);frame=null;if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;if(stream)for(const track of stream.getTracks())track.stop();stream=null; if(context){context.close().catch(()=>{});context=null} }
+function detectedPitch(buffer,sampleRate){
+ const maxLag=Math.min(Math.floor(sampleRate/MIN_HZ),Math.floor(buffer.length/3));
+ const minLag=Math.max(2,Math.floor(sampleRate/MAX_HZ));
+ const window=Math.min(1600,buffer.length-maxLag-5);
+ let sum=0;for(let i=0;i<buffer.length;i++)sum+=buffer[i]*buffer[i];
+ const rms=Math.sqrt(sum/buffer.length);if(rms<.014)return {midi:null,rms};
+ const diff=new Float32Array(maxLag+1),cmndf=new Float32Array(maxLag+1);
+ let cumulative=0;
+ for(let lag=1;lag<=maxLag;lag++){
+  let d=0;
+  for(let i=0;i<window;i++){const delta=buffer[i]-buffer[i+lag];d+=delta*delta}
+  diff[lag]=d;cumulative+=d;
+  cmndf[lag]=d*lag/(cumulative||1);
+ }
+ // YIN: choose the first LOCAL minimum below the threshold, rather than
+ // the first threshold crossing (which systematically estimates pitches sharp).
+ let chosen=-1,minimum=Infinity,bestLag=-1;
+ for(let lag=minLag;lag<maxLag;lag++){
+  if(cmndf[lag]<minimum){minimum=cmndf[lag];bestLag=lag}
+  if(cmndf[lag]<.16){
+   while(lag+1<=maxLag&&cmndf[lag+1]<cmndf[lag])lag++;
+   chosen=lag;break;
+  }
+ }
+ if(chosen<0)chosen=bestLag;
+ if(chosen<0||cmndf[chosen]>.28)return {midi:null,rms};
+ let lag=chosen;
+ if(lag>1&&lag<maxLag){
+  const a=cmndf[lag-1],b=cmndf[lag],c=cmndf[lag+1],denom=2*(a-2*b+c);
+  if(Math.abs(denom)>1e-10)lag+=(a-c)/denom;
+ }
+ const hz=sampleRate/lag;
+ if(!Number.isFinite(hz)||hz<MIN_HZ||hz>MAX_HZ)return {midi:null,rms};
+ return {midi:69+12*Math.log2(hz/440),rms,confidence:1-cmndf[chosen]};
+}
+function sampleMicrophone(){
+ if(!recording||!analyser||!context)return;
+ const ms=performance.now();
+ if(ms-lastAnalysis>=TICK_MS){
+  lastAnalysis=ms;
+  const data=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(data);
+  const found=detectedPitch(data,context.sampleRate);
+  const elapsed=(ms-recordStart)/1000;
+  samples.push({t:elapsed,pitch:found.midi===null?null:Math.round(found.midi)});
+  $('meterFill').style.width=Math.min(100,found.rms*650)+'%';
+  $('timer').textContent='0:'+String(Math.min(20,Math.floor(elapsed))).padStart(2,'0')+' / 0:20';
+  $('livePitch').textContent=found.midi===null?'Listening…':name(Math.round(found.midi));
+  if(elapsed>=MAX_SECONDS){finishRecording();return}
+ }
+ frame=requestAnimationFrame(sampleMicrophone);
+}
+async function startRecording(){
+ if(recording)return;
+ if(!navigator.mediaDevices?.getUserMedia){report('This browser does not support microphone recording. Try Chrome or Edge over HTTPS.',true);return}
+ stopPlayback();stopMic();samples=[];setRecordingUI();
+ try{
+  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  context=new(window.AudioContext||window.webkitAudioContext)();await context.resume();
+  analyser=context.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
+  source=context.createMediaStreamSource(stream);source.connect(analyser);
+  recording=true;recordStart=performance.now();lastAnalysis=0;setRecordingUI();
+  report('Recording… hum separate, steady notes. Press Finish when done.');sampleMicrophone();
+ }catch(e){stopMic();recording=false;setRecordingUI();report('Microphone unavailable or permission denied. '+(e?.name==='NotAllowedError'?'Allow microphone access in your browser.':'Try using a secure HTTPS page.'),true)}
+}
+function finishRecording(){
+ if(!recording)return;recording=false;stopMic();setRecordingUI();$('meterFill').style.width='0';$('livePitch').textContent='—';
+ const processed=transcribe(samples,getTempo());
+ if(!processed.length){report('No clear melody detected. Try again in a quieter room, humming one sustained note at a time.',true);return}
+ notes=processed;selected=null;render();report('Generated '+notes.filter(n=>n.midi!==null).length+' notes. Review the pitches and rhythm, then press Play score.');
+}
+function transcribe(frames,bpm){
+ if(!frames.length)return [];
+ // Clean single-frame glitches: prefer a pitch supported by surrounding measurements.
+ const clean=frames.map(x=>({...x}));
+ for(let i=1;i<clean.length-1;i++){
+  const a=frames[i-1].pitch,b=frames[i].pitch,c=frames[i+1].pitch;
+  if(a!==null&&a===c&&b!==a)clean[i].pitch=a;
+ }
+ const spans=[];let start=0;
+ for(let i=1;i<=clean.length;i++){
+  if(i===clean.length||clean[i].pitch!==clean[start].pitch){
+   const end=i===clean.length?clean[i-1].t+TICK_MS/1000:clean[i].t;
+   const begin=clean[start].t;
+   if(end-begin>=.14)spans.push({start:begin,end,midi:clean[start].pitch});
+   start=i;
+  }
+ }
+ const voiced=spans.filter(x=>x.midi!==null);
+ if(!voiced.length)return [];
+ const first=voiced[0].start,secondsPerBeat=60/bpm;
+ const events=[];let cursor=0;
+ for(const p of spans){
+  if(p.end<=first)continue;
+  const begin=Math.max(0,Math.round((p.start-first)/secondsPerBeat*2)/2);
+  const end=Math.max(begin+.5,Math.round((p.end-first)/secondsPerBeat*2)/2);
+  if(begin>cursor+.01)events.push({midi:null,beats:begin-cursor});
+  const startBeat=Math.max(begin,cursor);
+  if(end>startBeat+.01)events.push({midi:p.midi,beats:end-startBeat});
+  cursor=Math.max(cursor,end);
+ }
+ // Merge adjacent equal pitches/silences; cap to a short classroom example.
+ const merged=[];
+ for(const e of events){if(e.beats<=0)continue;const old=merged[merged.length-1];if(old&&old.midi===e.midi)old.beats+=e.beats;else merged.push({...e})}
+ const result=[];let total=0;
+ for(const e of merged){const beats=Math.min(e.beats,64-total);if(beats<=0)break;result.push({midi:e.midi,beats});total+=beats}
+ return result;
+}
+const DIATONIC={0:0,1:0,2:1,3:1,4:2,5:3,6:3,7:4,8:4,9:5,10:5,11:6};
+function diatonic(m){return (Math.floor(m/12)-1)*7+DIATONIC[((m%12)+12)%12]}
+function svgNode(tag,attrs={},text=''){return '<'+tag+' '+Object.entries(attrs).map(([k,v])=>k+'="'+safeText(v)+'"').join(' ')+'>'+text+'</'+tag+'>'}
+function lengthParts(beats){const allowed=[4,3,2,1.5,1,.75,.5,.25],pieces=[];let left=Math.round(beats*4)/4;while(left>.001&&pieces.length<100){const v=allowed.find(x=>x<=left+.001)||.25;pieces.push(v);left-=v}return pieces}
+function packBars(){const bars=[[]];let used=0;
+ for(let k=0;k<notes.length;k++){
+  const note=notes[k];let remaining=note.beats,first=true;
+  while(remaining>.001&&bars.length<=17){
+   let room=4-used;if(room<.001){bars.push([]);used=0;room=4}
+   const available=Math.min(room,remaining);
+   const parts=lengthParts(available);
+   for(const part of parts){
+    const previous=bars[bars.length-1].at(-1);
+    const event={midi:note.midi,beats:part,origin:k,tiePrev:!first&&note.midi!==null};
+    if(previous&&previous.origin===k&&note.midi!==null)previous.tieNext=true;
+    bars[bars.length-1].push(event);first=false;used+=part;
+   }
+   remaining-=available;
+  }
+ }
+ if(bars.length>1&&bars.at(-1).length===0)bars.pop();
+ return bars.slice(0,16);
+}
+function eventGlyph(e,x,base,clef,number,selectedIndex){
+ const isRest=e.midi===null;
+ if(isRest){
+  const y=base+33;return svgNode('g',{'aria-label':'Rest '+e.beats+' beats'},svgNode('rect',{x:x-6,y:y-7,width:13,height:6,fill:'#30576e',rx:1})+svgNode('text',{x:x-5,y:y+16,'font-size':12},'𝄽'));
+ }
+ const clefBottom=clef==='bass'?43:64;
+ const step=diatonic(e.midi)-diatonic(clefBottom);
+ const y=base+40-step*5;
+ let art='';
+ if(step<0){for(let l=-2;l>=step;l-=2)art+=svgNode('line',{x1:x-15,x2:x+15,y1:base+40-l*5,y2:base+40-l*5,class:'ledger'})}
+ if(step>8){for(let l=10;l<=step;l+=2)art+=svgNode('line',{x1:x-15,x2:x+15,y1:base+40-l*5,y2:base+40-l*5,class:'ledger'})}
+ if([1,3,6,8,10].includes(((e.midi%12)+12)%12))art+=svgNode('text',{x:x-22,y:y+5,'font-size':19},'♯');
+ const duration=e.beats,dotted=[.75,1.5,3].includes(duration),baseDuration=dotted?duration/1.5:duration;
+ const hollow=baseDuration>=2, stem=baseDuration<4, fill=hollow?'white':'#233f53';
+ art+=svgNode('ellipse',{class:'head',cx:x,cy:y,rx:8.7,ry:5.9,transform:'rotate(-22 '+x+' '+y+')',fill,stroke:'#233f53','stroke-width':1.8});
+ if(stem){const up=step<4;art+=svgNode('line',{x1:up?x+8:x-8,y1:y,x2:up?x+8:x-8,y2:up?y-34:y+34,stroke:'#233f53','stroke-width':1.8});
+  if(baseDuration<=.5){art+=svgNode('path',{d:up?`M ${x+8} ${y-34} q 21 9 5 23`:`M ${x-8} ${y+34} q -21 -9 -5 -23`,fill:'none',stroke:'#233f53','stroke-width':2.5});if(baseDuration===.25)art+=svgNode('path',{d:up?`M ${x+8} ${y-24} q 21 9 5 23`:`M ${x-8} ${y+24} q -21 -9 -5 -23`,fill:'none',stroke:'#233f53','stroke-width':2.5})}
+ }
+ if(dotted)art+=svgNode('circle',{cx:x+17,cy:y-2,r:2.2,fill:'#233f53'});
+ if(e.tieNext)art+=svgNode('path',{d:`M ${x+6} ${y+9} q 20 13 35 -1`,stroke:'#446678','stroke-width':1.4,fill:'none','stroke-linecap':'round'});
+ const isSelected=selectedIndex===e.origin;
+ return svgNode('g',{class:'note'+(isSelected?' selected':''),'data-origin':e.origin,tabindex:'0',role:'button','aria-label':'Select '+name(e.midi)+' '+(LENGTH_NAMES[String(e.beats)]||e.beats+' beats')},art+svgNode('text',{x:x-16,y:base+92,'font-size':10},number));
+}
+function render(){
+ const has=notes.length>0;$('play').disabled=!has;$('save').disabled=!has;$('stop').disabled=!playing;
+ const hasSelection=selected!==null&&notes[selected]?.midi!==null;
+ for(const id of ['down','up','duration','remove'])$(id).disabled=!hasSelection;
+ $('editing').textContent=hasSelection?name(notes[selected].midi):'Select a note';
+ if(hasSelection&&[.5,1,2,4].includes(notes[selected].beats))$('duration').value=String(notes[selected].beats);
+ const bars=packBars(),width=850,systemH=165,rows=Math.max(1,Math.ceil(bars.length/2)),height=rows*systemH+32;
+ let content=svgNode('title',{},'Editable score generated from humming');
+ for(let row=0;row<rows;row++){
+  const base=38+row*systemH,clef=autoClef(), left=90,barWidth=370;
+  for(let l=0;l<5;l++)content+=svgNode('line',{class:'staff',x1:18,y1:base+l*10,x2:835,y2:base+l*10});
+  content+=svgNode('text',{x:25,y:base+40,'font-size':60},clef==='bass'?'𝄢':'𝄞');
+  if(row===0){content+=svgNode('text',{x:65,y:base+19,'font-size':22,'font-weight':'bold'},'4');content+=svgNode('text',{x:65,y:base+41,'font-size':22,'font-weight':'bold'},'4')}
+  else {content+=svgNode('text',{x:64,y:base+30,'font-size':12},'')}
+  for(let j=0;j<2;j++){
+   const b=row*2+j;if(b>=bars.length)continue;
+   const bx=left+j*barWidth,bar=bars[b],count=bar.length,slot=barWidth/Math.max(count,1);
+   for(let q=0;q<count;q++)content+=eventGlyph(bar[q],bx+slot*(q+.5),base,clef,`${b+1}.${q+1}`,selected);
+   content+=svgNode('line',{class:'barline',x1:bx+barWidth,y1:base,x2:bx+barWidth,y2:base+40});
+  }
+ }
+ if(!has)content+=svgNode('text',{x:110,y:105,'font-size':18},'Record a melody or choose Try sample melody.');
+ $('score').setAttribute('viewBox',`0 0 ${width} ${height}`);$('score').innerHTML=content;
+ $('scoreHint').textContent=has?`${notes.filter(n=>n.midi!==null).length} note groups · ${bars.length} bar${bars.length===1?'':'s'} · 4/4 · ${getTempo()} BPM · Approximate transcription`:'A sample or recorded melody will appear here. Notation is approximate; review before teaching.';
+}
+function autoClef(){const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi);if(!pitched.length)return 'treble';pitched.sort((a,b)=>a-b);return pitched[Math.floor(pitched.length/2)]<60?'bass':'treble'}
+function chooseFromScore(e){const g=e.target.closest('g[data-origin]');if(!g)return;const n=Number(g.getAttribute('data-origin'));if(!Number.isInteger(n)||!notes[n]||notes[n].midi===null)return;selected=n;render();}
+function editPitch(delta){if(selected===null||!notes[selected]||notes[selected].midi===null)return;notes[selected].midi=Math.min(95,Math.max(36,notes[selected].midi+delta));render()}
+function stopPlayback(){for(const v of voiceNodes)try{v.stop()}catch(_){}voiceNodes=[];for(const t of timeouts)clearTimeout(t);timeouts=[];playing=false;document.querySelectorAll('.note.playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('stop').disabled=true;}
+async function playScore(){
+ if(!notes.length||recording)return;
+ stopPlayback();try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();await audioCtx.resume()}catch(_){report('Sound playback is unavailable in this browser.',true);return}
+ playing=true;$('play').disabled=true;$('stop').disabled=false;
+ const begin=audioCtx.currentTime+.10,secondsPerBeat=60/getTempo();let at=0;
+ for(let i=0;i<notes.length;i++){
+  const n=notes[i],duration=n.beats*secondsPerBeat;
+  if(n.midi!==null){
+   const o=audioCtx.createOscillator(),gain=audioCtx.createGain();o.type='sine';o.frequency.setValueAtTime(440*Math.pow(2,(n.midi-69)/12),begin+at);
+   const peak=.19,attack=.018,end=begin+at+Math.max(.05,duration*.94);
+   gain.gain.setValueAtTime(.00001,begin+at);gain.gain.exponentialRampToValueAtTime(peak,begin+at+attack);
+   gain.gain.setValueAtTime(peak*.65,Math.max(begin+at+attack+.01,end-.06));gain.gain.exponentialRampToValueAtTime(.00001,end+.05);
+   o.connect(gain);gain.connect(audioCtx.destination);o.start(begin+at);o.stop(end+.07);voiceNodes.push(o);
+   timeouts.push(setTimeout(()=>{if(!playing)return;document.querySelectorAll('.note.playing').forEach(el=>el.classList.remove('playing'));document.querySelectorAll(`.note[data-origin="${i}"]`).forEach(el=>el.classList.add('playing'))},(at+.10)*1000));
+  }
+  at+=duration;
+ }
+ timeouts.push(setTimeout(()=>{stopPlayback();report('Playback finished. Select any note to adjust its pitch or duration.')},(at+.22)*1000));
+ report('Playing your melody. Highlighted notes show the current pitch.');
+}
+function sample(){if(recording)return;stopPlayback();notes=[{midi:60,beats:1},{midi:62,beats:1},{midi:64,beats:1},{midi:67,beats:1},{midi:64,beats:1},{midi:62,beats:1},{midi:60,beats:2}];selected=null;render();report('Sample melody loaded. Press Play score or select notes to change their pitch.')}
+function save(){if(!notes.length)return;const content=JSON.stringify({format:'music-score-studio-hum-test-v1',meter:'4/4',tempo:getTempo(),notes:notes.map(n=>({midi:n.midi,beats:n.beats}))},null,2);const blob=new Blob([content],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='hum-to-compose-test.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),5000)}
+$('record').addEventListener('click',startRecording);$('finish').addEventListener('click',finishRecording);$('example').addEventListener('click',sample);$('play').addEventListener('click',playScore);$('stop').addEventListener('click',()=>{stopPlayback();report('Playback stopped.')});$('save').addEventListener('click',save);
+$('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('remove').addEventListener('click',()=>{if(selected===null)return;notes.splice(selected,1);selected=null;render()});
+$('duration').addEventListener('change',()=>{if(selected===null||notes[selected]?.midi===null)return;notes[selected].beats=Number($('duration').value);render()});
+$('score').addEventListener('click',chooseFromScore);$('score').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseFromScore(e)}});
+$('tempo').addEventListener('change',()=>{if(playing)stopPlayback();render()});
+window.addEventListener('pagehide',()=>{recording=false;stopMic();stopPlayback();if(audioCtx)audioCtx.close().catch(()=>{})});
+render();
+})();
+</script>
+</body>
+</html>
