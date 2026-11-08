@@ -297,6 +297,38 @@
    assert(xml.includes('A &amp; &lt;B&gt; &quot;Song&quot;'));
    assert(!xml.includes('<B>'));
   });
+  test('All fifteen key signatures preserve the sound of every note',()=>{
+   for(let key=-7;key<=7;key++)for(let midi=36;midi<=95;midi++){
+    const sp=C.spellingForKey(midi,key);
+    assert(C.midiFromSpelling(sp)===midi,'Changed pitch '+midi+' in '+key);
+    assert(Math.abs(sp.alter)<=1,'Unusual unsupported accidental');
+    const [eng]=C.displayAccidentals(C.measures([{midi,beats:1}],'4/4'),key)[0];
+    assert(C.midiFromSpelling(eng.spelling)===midi,'Engraving pitch changed');
+   }
+  });
+  test('Flat signatures prefer B-flat and avoid unnecessary sharp signs',()=>{
+   for(const key of [-2,-3,-4,-5,-6,-7]){
+    const sp=C.spellingForKey(70,key);
+    assert(sp.step===6&&sp.alter===-1,'Expected B flat in '+key);
+    const n=C.displayAccidentals(C.measures([{midi:70,beats:1}],'4/4'),key)[0][0];
+    assert(!n.displayAccidental,'B-flat key signature must cover this note '+key);
+   }
+  });
+  test('Extreme key spellings C-flat and B-sharp survive export',()=>{
+   const cb=C.scoreToMusicXML([{midi:71,beats:1}],'4/4',96,{fifths:-7,clef:'treble'});
+   const bs=C.scoreToMusicXML([{midi:72,beats:1}],'4/4',96,{fifths:7,clef:'treble'});
+   assert(cb.includes('<step>C</step><alter>-1</alter><octave>5</octave>'),
+    'Expected C-flat 5 rather than B4 in C-flat major');
+   assert(bs.includes('<step>B</step><alter>1</alter><octave>4</octave>'),
+    'Expected B-sharp 4 rather than C5 in C-sharp major');
+  });
+  test('Explicit teacher spelling is never overridden by chosen key',()=>{
+   const teacher={midi:70,beats:1,spelling:{step:5,alter:1,octave:4}};
+   const displayed=C.displayAccidentals(C.measures([teacher],'4/4'),-2)[0][0];
+   assert(displayed.spelling.step===5&&displayed.spelling.alter===1);
+   const xml=C.scoreToMusicXML([teacher],'4/4',96,{fifths:-2});
+   assert(xml.includes('<step>A</step><alter>1</alter><octave>4</octave>'));
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
