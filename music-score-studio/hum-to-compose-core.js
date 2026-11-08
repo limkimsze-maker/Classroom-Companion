@@ -214,6 +214,40 @@ function transcribeDetectedEvents(events,bpm,meter='4/4'){
  }
  return out.some(x=>x.midi!==null)?out:[];
 }
+/* Adapter for Spotify Basic Pitch NoteEventTime output.
+   Keeps this app's monophonic score and playback constraints; concurrent
+   pitches are reduced to the loudest active model event, never silently
+   treated as a multi-stave score. No Spotify code is copied here. */
+function basicPitchToPerformance(noteEvents,maxSeconds=20){
+ if(!Array.isArray(noteEvents)||!(maxSeconds>0))return [];
+ const candidates=noteEvents.map((e,id)=>({
+  id,start:Math.max(0,Number(e.startTimeSeconds)),end:Math.min(maxSeconds,Number(e.startTimeSeconds)+Number(e.durationSeconds)),
+  midi:Number(e.pitchMidi),amplitude:Number.isFinite(e.amplitude)?e.amplitude:0
+ })).filter(e=>Number.isFinite(e.start)&&Number.isFinite(e.end)&&Number.isFinite(e.midi)&&
+   e.midi>=36&&e.midi<=95&&e.end-e.start>=.06&&e.start<maxSeconds);
+ if(!candidates.length)return [];
+ const first=Math.min(...candidates.map(e=>e.start));
+ const boundaries=[...new Set(candidates.flatMap(e=>[e.start,e.end]))].sort((a,b)=>a-b);
+ const segments=[];
+ for(let i=0;i<boundaries.length-1;i++){
+  const begin=boundaries[i],end=boundaries[i+1];
+  if(end-begin<.001)continue;
+  const active=candidates.filter(e=>e.start<end-.0001&&e.end>begin+.0001)
+   .sort((a,b)=>b.amplitude-a.amplitude||a.start-b.start);
+  const chosen=active[0]||null,previous=segments.at(-1);
+  if(previous&&previous.id===(chosen?chosen.id:null)&&Math.abs(previous.end-begin)<.001){
+   previous.end=end;previous.duration=end-previous.start;continue;
+  }
+  segments.push({id:chosen?chosen.id:null,start:begin,end,duration:end-begin,
+   midi:chosen?chosen.midi:null,confidence:chosen?.midi===undefined?1:.8,points:[],
+   source:'basic-pitch'});
+ }
+ return segments.filter(e=>e.end-e.start>=.025).map(e=>({
+  start:e.start-first,end:e.end-first,duration:e.duration,midi:e.midi,
+  confidence:e.confidence,points:e.midi===null?[]:[{t:0,midi:e.midi,confidence:e.confidence}],
+  source:e.source
+ }));
+}
 function estimateNaturalTempo(events,meter='4/4'){
  if(!METERS[meter]||!Array.isArray(events))return {bpm:null,confidence:0};
  const voiced=events.filter(e=>e.midi!==null&&Number.isFinite(e.duration)&&e.duration>=.07);
@@ -247,5 +281,5 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,basicPitchToPerformance,estimateNaturalTempo,validateScore};
 });
