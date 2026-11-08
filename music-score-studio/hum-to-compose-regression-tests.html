@@ -92,7 +92,7 @@ async function run(){
    pcm[i]=.3*Math.sin(2*Math.PI*hz*i/rate);
   }
   MockAudioContext.prototype.decodeAudioData=async()=>({sampleRate:rate,length,numberOfChannels:1,duration:.75,getChannelData:()=>pcm});
-  const fakeFile={size:1200,name:'local-hum.wav',arrayBuffer:async()=>new ArrayBuffer(8)};
+  const fakeFile=new w.File([new Uint8Array(8)],'local-hum.wav',{type:'audio/wav'});
   Object.defineProperty(id('audioFile'),'files',{configurable:true,value:[fakeFile]});
   id('audioFile').dispatchEvent(new w.Event('change',{bubbles:true}));
   await wait(600);
