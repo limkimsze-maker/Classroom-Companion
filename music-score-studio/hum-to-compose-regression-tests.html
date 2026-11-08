@@ -191,12 +191,13 @@ async function run(){
    return {events:w.HumCore.basicPitchToPerformance([
      {startTimeSeconds:0,durationSeconds:.3,pitchMidi:60,amplitude:.95},
      {startTimeSeconds:.45,durationSeconds:.3,pitchMidi:62,amplitude:.93}
-   ])};
+   ]),octaveCheck:{checked:2,corrected:1,review:1}};
   }};
   id('audioFile').dispatchEvent(new w.Event('change',{bubbles:true}));
   await wait(600);
   check('Import automatically runs Spotify as the main engine',spotifyRuns===1&&id('status').textContent.includes('Spotify Basic Pitch created'),'status='+id('status').textContent);
   check('Spotify result becomes an editable score',!id('play').disabled&&!id('faithful').disabled);
+  check('Automatic octave verification results are explained to the user',id('status').textContent.includes('1 corrected, 1 to review'));
   check('Original local audio is available after import',!id('original').disabled);
   // Now make the Spotify engine fail; the app must label the built-in fallback.
   w.__humTestAdapter={async recognise(){throw Error('mock model offline')}};
