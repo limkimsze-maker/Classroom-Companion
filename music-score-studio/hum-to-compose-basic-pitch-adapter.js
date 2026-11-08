@@ -15,6 +15,8 @@ export const BASIC_PITCH_VERSION = '@spotify/basic-pitch@1.0.1';
 export const BASIC_PITCH_MODULE = 'https://esm.sh/@spotify/basic-pitch@1.0.1?bundle';
 export const BASIC_PITCH_MODEL =
  'https://cdn.jsdelivr.net/gh/spotify/basic-pitch-ts@2d498f82b61c71898edf0e8dd661b99076676c8b/model/model.json';
+export const BASIC_PITCH_MODEL_FALLBACK =
+ 'https://raw.githubusercontent.com/spotify/basic-pitch-ts/2d498f82b61c71898edf0e8dd661b99076676c8b/model/model.json';
 
 let cachedEngine=null;
 async function engine(){
@@ -23,9 +25,15 @@ async function engine(){
    const library=await import(BASIC_PITCH_MODULE);
    if(!library.BasicPitch||!library.outputToNotesPoly||!library.noteFramesToTime)
     throw Error('Spotify Basic Pitch module exports were not available');
-   const model=new library.BasicPitch(BASIC_PITCH_MODEL);
-   await model.model; // Fail immediately if the model or weights cannot be loaded.
-   return {library,model};
+   let lastError=null;
+   for(const modelURL of [BASIC_PITCH_MODEL,BASIC_PITCH_MODEL_FALLBACK]){
+    try{
+     const model=new library.BasicPitch(modelURL);
+     await model.model; // Verify the graph manifest and its weights are loadable.
+     return {library,model};
+    }catch(error){lastError=error}
+   }
+   throw Error('Spotify model files could not be loaded: '+(lastError?.message||'network or browser error'));
   })().catch(err=>{cachedEngine=null;throw err});
  }
  return cachedEngine;
