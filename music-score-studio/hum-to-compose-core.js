@@ -195,17 +195,20 @@ function estimateNaturalTempo(events,meter='4/4'){
  if(voiced.length<3)return {bpm:null,confidence:0};
  const durations=events.map(e=>e.duration).filter(d=>Number.isFinite(d)&&d>=.08);
  const preferred=[.25,.5,.75,1,1.5,2,3,4];
+ const complexity={'.25':.08,'.5':.03,'.75':.065,'1':0,'1.5':.035,'2':.04,'3':.07,'4':.08};
  const candidates=[];
  for(let bpm=40;bpm<=200;bpm++){
   const beat=beatSeconds(bpm,meter);
   let error=0;
   for(const duration of durations){
-   const b=duration/beat,nearest=preferred.reduce((best,v)=>Math.abs(v-b)<Math.abs(best-b)?v:best,preferred[0]);
-   error+=Math.pow((b-nearest)/Math.max(.25,nearest),2);
-   if(b<.5)error+=.04; // Avoid arbitrary tiny note values.
+   const b=duration/beat;
+   // Most simple hummed phrases contain crotchets. Favour conventional
+   // beat-level rhythms over arbitrary 3/4 beat subdivisions on ties.
+   const cost=v=>Math.pow((b-v)/Math.max(.25,v),2)+(complexity[String(v)]||0);
+   error+=Math.min(...preferred.map(cost));
   }
-  // Weak centre preference breaks half-tempo/double-tempo ties.
-  error=error/durations.length+.0018*Math.pow((bpm-105)/60,2);
+  // Gentle prior only: ambiguous half/double-time remains flagged to teachers.
+  error=error/durations.length+.0008*Math.pow((bpm-105)/60,2);
   candidates.push({bpm,error});
  }
  candidates.sort((a,b)=>a.error-b.error);
