@@ -52,7 +52,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 </section>
 <section class="card" aria-label="Generated musical score">
 <div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2>My melody</h2><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="faithful" class="primary" type="button" disabled>▶ Play detected melody</button><button id="play" type="button" disabled>▶ Play written score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>↓ Save JSON</button><button id="open" type="button">↑ Open JSON</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
-<div class="controls score-loudness"><label for="scoreVolume">Piano volume <output id="scoreVolumeValue" for="scoreVolume">160%</output></label><input id="scoreVolume" type="range" min="100" max="190" step="10" value="160" aria-label="Piano playback volume"></div>
+<div class="controls score-loudness"><label for="instrument">Instrument</label><select id="instrument" aria-label="Playback instrument"><option value="piano" selected>Warm piano</option><option value="guitar">Acoustic guitar</option><option value="flute">Flute</option><option value="violin">Violin</option><option value="xylophone">Xylophone</option></select><label for="scoreVolume">Instrument volume <output id="scoreVolumeValue" for="scoreVolume">160%</output></label><input id="scoreVolume" type="range" min="100" max="190" step="10" value="160" aria-label="Instrument playback volume"></div>
 <div class="scoreArea"><svg xmlns="http://www.w3.org/2000/svg" id="score" viewBox="0 0 850 190" role="img" aria-label="Generated single-stave music score"><text x="24" y="58" font-size="20">Your musical score will appear here.</text></svg></div>
 <details id="calibration" class="calibration">
 <summary>🎚 Match the score to my humming</summary>
@@ -432,6 +432,48 @@ function scheduleWarmPiano(midi,start,duration,pitchPoints=[]){
   osc.start(start);osc.stop(end+.01);voices.push(osc);
  }
 }
+/* Distinct browser-generated instrument voices. These are synthesised
+   approximations, not samples of acoustic instruments. Master peaks and
+   partial strengths are bounded for monophonic playback. */
+const INSTRUMENTS=Object.freeze({
+ guitar:{attack:.009,release:.055,peak:.45,sustain:.065,fade:.16,
+  partials:[[1,.70],[2.005,.19],[3.01,.075],[4.02,.025]]},
+ flute:{attack:.075,release:.11,peak:.31,sustain:.27,
+  partials:[[1,.84],[2,.11],[3,.025]]},
+ violin:{attack:.07,release:.10,peak:.31,sustain:.29,
+  partials:[[1,.44],[2,.25],[3,.14],[4,.09],[5,.055]]},
+ xylophone:{attack:.004,release:.08,peak:.43,sustain:.0001,maxSound:.46,
+  partials:[[1,.70],[2.76,.19],[5.4,.075]]}
+});
+function scheduleInstrument(midi,start,duration,pitchPoints=[]){
+ const choice=$('instrument').value,profile=INSTRUMENTS[choice];
+ if(!profile){scheduleWarmPiano(midi,start,duration,pitchPoints);return}
+ if(!playerCtx||!Number.isFinite(midi)||!Number.isFinite(duration)||duration<=0)return;
+ const audible=Math.min(duration,profile.maxSound||duration),end=start+audible;
+ const level=scoreLevel(),attack=Math.min(profile.attack,audible*.18);
+ const release=Math.min(profile.release,audible*.24);
+ const hold=Math.max(start+attack+.001,end-release);
+ const master=playerCtx.createGain();
+ master.gain.setValueAtTime(.0001,start);
+ master.gain.linearRampToValueAtTime(profile.peak*level,start+attack);
+ master.gain.exponentialRampToValueAtTime(Math.max(.0001,profile.sustain*level),hold);
+ master.gain.linearRampToValueAtTime(.0001,end);
+ master.connect(playerCtx.destination);
+ const frequency=m=>440*Math.pow(2,(m-69)/12);
+ for(const [ratio,weight] of profile.partials){
+  const oscillator=playerCtx.createOscillator(),harmonic=playerCtx.createGain();
+  oscillator.type='sine';harmonic.gain.setValueAtTime(weight,start);
+  if(profile.fade&&ratio>1){
+   const fadeAt=Math.min(end,start+profile.fade);
+   if(fadeAt>start)harmonic.gain.exponentialRampToValueAtTime(weight*.35,fadeAt);
+  }
+  oscillator.frequency.setValueAtTime(frequency(midi)*ratio,start);
+  for(const point of pitchPoints)if(Number.isFinite(point.midi)&&point.confidence>=.45&&point.t>0&&point.t<audible)
+   oscillator.frequency.setValueAtTime(frequency(point.midi)*ratio,start+point.t);
+  oscillator.connect(harmonic);harmonic.connect(master);
+  oscillator.start(start);oscillator.stop(end+.01);voices.push(oscillator);
+ }
+}
 async function playDetected(){
  if(!detectedEvents.some(n=>n.midi!==null)||recording)return;
  stopPlayback();
@@ -441,11 +483,11 @@ async function playDetected(){
  const begin=playerCtx.currentTime+.12;
  for(const e of detectedEvents){
   if(e.midi===null||e.duration<=0)continue;
-  scheduleWarmPiano(e.midi,begin+e.start,e.duration,e.points||[]);
+  scheduleInstrument(e.midi,begin+e.start,e.duration,e.points||[]);
  }
  const total=detectedEvents[detectedEvents.length-1].end;
  timers.push(setTimeout(()=>{stopPlayback();say('Detected melody finished. Play written score to hear how the notation differs.')},(total+.17)*1000));
- say('Playing detected melody with a warm piano-like sound; note timing and pitch movement are preserved. The original voice recording is unchanged.');
+ say('Playing the detected melody with '+$('instrument').selectedOptions[0].text.toLowerCase()+'. Note timing and pitch movement are preserved; your original recording is unchanged.');
 }
 async function playScore(){
  if(!notes.length||recording)return;const validity=C.auditScore(notes,meter(),Infinity);if(!validity.ok){say('This score cannot play until its notes are corrected: '+validity.reason,true);return}stopPlayback();
@@ -453,13 +495,13 @@ async function playScore(){
  playing=true;$('play').disabled=true;$('stop').disabled=false;const begin=playerCtx.currentTime+.12,sec=C.beatSeconds(tempo(),meter());let at=0;
  const highlights=()=>document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));
  notes.forEach((n,i)=>{const duration=n.beats*sec,start=begin+at;
-  if(n.midi!==null)scheduleWarmPiano(n.midi,start,duration);
+  if(n.midi!==null)scheduleInstrument(n.midi,start,duration);
   timers.push(setTimeout(()=>{if(!playing)return;highlights();document.querySelectorAll('#score [data-origin="'+i+'"]').forEach(e=>e.classList.add('playing'))},(at+.12)*1000));
   timers.push(setTimeout(()=>{if(!playing)return;document.querySelectorAll('#score [data-origin="'+i+'"]').forEach(e=>e.classList.remove('playing'))},(at+duration+.12)*1000));
   at+=duration;
  });
  timers.push(setTimeout(()=>{stopPlayback();say('Playback finished. Compare with Original hum and correct uncertain notes.')},(at+.15)*1000));
- say('Playing the written score with a warm piano-like sound at '+$('scoreVolume').value+'% volume. Musical notation still uses rounded pitches and rhythms.')}
+ say('Playing the written score with '+$('instrument').selectedOptions[0].text.toLowerCase()+' at '+$('scoreVolume').value+'% volume. Notated pitches and rhythms are unchanged.')}
 function exportJSON(){if(!notes.length)return;const text=JSON.stringify({format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),notes},null,2),blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='hum-to-compose-test.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);say('Score JSON saved to your downloads. Recording audio is not included.')}
 function importState(data){const clean=C.validateScore(data);detectedEvents=[];samples=[];setOriginal(null);change(()=>{notes=clean;selected=null;$('meter').value=data.meter;$('tempo').value=String(data.tempo)});say('Saved written score opened. The original recording and detected performance are not stored in score JSON.')}
 function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-compose-test-v2',JSON.stringify({format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),notes}));say('Score saved in this browser only. Use Save JSON for a portable copy.')}catch(_){say('Browser storage unavailable. Use Save JSON instead.',true)}}
@@ -468,6 +510,7 @@ $('record').addEventListener('click',start);$('audioUpload').addEventListener('c
 $('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await useAudioFile(file)});
 $('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
 $('scoreVolume').addEventListener('input',()=>{$('scoreVolumeValue').textContent=$('scoreVolume').value+'%'});
+$('instrument').addEventListener('change',()=>{stopPlayback();say('Instrument: '+$('instrument').selectedOptions[0].text+'. Press Play to hear the new sound.');});
 $('play').addEventListener('click',playScore);$('faithful').addEventListener('click',playDetected);$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
 $('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
