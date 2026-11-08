@@ -72,6 +72,37 @@
   test('Auto tempo refuses to guess from just one note',()=>{
    assert(C.estimateNaturalTempo([{midi:60,duration:1}],'4/4').bpm===null);
   });
+  test('Stable event transcription preserves pitch, pauses, and repeated notes',()=>{
+   const performed=[
+    {midi:60.18,duration:.5,confidence:.95,points:[{midi:60.18}]},
+    {midi:60.11,duration:.5,confidence:.92,points:[{midi:60.11}]},
+    {midi:null,duration:.25,confidence:1,points:[]},
+    {midi:62.10,duration:.5,confidence:.94,points:[{midi:62.10}]}
+   ];
+   const score=C.transcribeDetectedEvents(performed,120,'4/4');
+   assert(score.length===4,'note count changed '+JSON.stringify(score));
+   assert(score[0].midi===60&&score[1].midi===60&&score[2].midi===null&&score[3].midi===62);
+   assert(score.map(x=>x.beats).join(',')==='1,1,0.5,1',JSON.stringify(score));
+  });
+  test('Stable performance notation resists vibrato fragmentation',()=>{
+   const input=frames([[60,.5],[62,.5]],.025)
+     .map((f,i)=>({...f,rawMidi:f.pitch+.22*Math.sin(i/3)}));
+   const stable=C.performanceFromFrames(input);
+   const score=C.transcribeDetectedEvents(stable,120,'4/4');
+   assert(score.length===2,'unexpected note split '+JSON.stringify(score));
+   assert(score.map(x=>x.midi).join(',')==='60,62','wrong pitch');
+  });
+  test('Uncertain note confidence is preserved in score conversion',()=>{
+   const out=C.transcribeDetectedEvents([{midi:60.37,duration:.38,confidence:.58,points:[{midi:60.32},{midi:60.48}]}],120,'4/4');
+   assert(out.length===1&&out[0].uncertain&&out[0].confidence===.58);
+  });
+  test('Stable score respects metre and 64-beat cap',()=>{
+   for(const m of ['2/4','3/4','4/4','6/8']){
+    const score=C.transcribeDetectedEvents(Array(100).fill(null).map(()=>({midi:60,duration:.5,confidence:1,points:[]})),120,m);
+    assert(score.reduce((s,n)=>s+n.beats,0)<=64.001,'cap '+m);
+    assert(C.measures(score,m)[0].reduce((s,n)=>s+n.beats,0)<=C.METERS[m].beats,'bar '+m);
+   }
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
