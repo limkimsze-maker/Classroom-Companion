@@ -214,6 +214,18 @@ function transcribeDetectedEvents(events,bpm,meter='4/4'){
  }
  return out.some(x=>x.midi!==null)?out:[];
 }
+/* Fit an edited score's total duration to the actual detected performance.
+   Does not change the pitches or rhythms; useful after importing audio. */
+function matchPerformanceTempo(notes,events,meter='4/4'){
+ if(!METERS[meter]||!Array.isArray(notes)||!Array.isArray(events))return null;
+ const pitches=events.filter(e=>e.midi!==null&&Number.isFinite(e.start)&&Number.isFinite(e.end)&&e.end>e.start);
+ if(pitches.length<2)return null;
+ const beginning=Math.min(...pitches.map(e=>e.start)),ending=Math.max(...pitches.map(e=>e.end));
+ const duration=ending-beginning,beats=notes.reduce((total,n)=>total+(Number(n.beats)||0),0);
+ if(duration<.15||beats<.25)return null;
+ const candidate=Math.round((meter==='6/8'?40:60)*beats/duration);
+ return candidate>=40&&candidate<=200?candidate:null;
+}
 /* Align note/rest boundaries to ONE shared musical grid.
    Quantising each duration independently accumulates drift. Using absolute
    onset/end positions preserves repeated notes and measured silent gaps,
@@ -333,5 +345,5 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,basicPitchToPerformance,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
 });
