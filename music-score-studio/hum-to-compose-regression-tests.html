@@ -41,17 +41,18 @@ async function run(){
   check('Narrow viewport fits core controls without page-level overflow',d.documentElement.scrollWidth<=w.innerWidth+2,'viewport='+w.innerWidth+', page='+d.documentElement.scrollWidth);
   frame.style.width='100%';
   // Mock audio to inspect scheduling and highlighted note start/end without using speakers.
-  const audioStarts=[];class MockAudioContext{
+  const audioStarts=[],peakGains=[],sustainGains=[];class MockAudioContext{
    constructor(){this.currentTime=0;this.destination={}}
    async resume(){}
    createOscillator(){return {type:'sine',frequency:{setValueAtTime(){}},connect(){},start(t){audioStarts.push(t)},stop(){}}}
-   createGain(){return {gain:{setValueAtTime(){},linearRampToValueAtTime(){}},connect(){}}}
+   createGain(){return {gain:{setValueAtTime(value){if(value>.1)sustainGains.push(value)},linearRampToValueAtTime(value){if(value>.1)peakGains.push(value)}},connect(){}}}
    async close(){}
   }
   w.AudioContext=MockAudioContext;w.webkitAudioContext=MockAudioContext;
   id('example').click();id('tempo').value='140';id('tempo').dispatchEvent(new w.Event('change',{bubbles:true}));
   id('play').click();await wait(200);
   check('Playback schedules single attack per pitched note',audioStarts.length===5,'starts='+audioStarts.length);
+  check('Generated score has a stronger yet bounded audio envelope',peakGains.length===5&&peakGains.every(v=>v===.36)&&sustainGains.length===5&&sustainGains.every(v=>v===.28),'peak='+peakGains[0]+', sustain='+sustainGains[0]);
   check('Current note highlighted in playback',d.querySelectorAll('#score .playing').length>0);
   await wait(500);
   check('Previous note highlight clears after its duration',!d.querySelector('#score [data-origin="0"].playing'));
