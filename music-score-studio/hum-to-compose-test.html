@@ -214,8 +214,8 @@ async function playScore(){
  const highlights=()=>document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));
  notes.forEach((n,i)=>{const duration=n.beats*sec,start=begin+at;
   if(n.midi!==null){const osc=playerCtx.createOscillator(),gain=playerCtx.createGain();osc.type='sine';osc.frequency.setValueAtTime(440*Math.pow(2,(n.midi-69)/12),start);
-   const attack=Math.min(.02,duration*.12),end=start+duration;gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(.18,start+attack);
-   gain.gain.setValueAtTime(.14,Math.max(start+attack+.001,end-.04));gain.gain.linearRampToValueAtTime(0,end);osc.connect(gain);gain.connect(playerCtx.destination);
+   const attack=Math.min(.02,duration*.12),end=start+duration;gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(.36,start+attack);
+   gain.gain.setValueAtTime(.28,Math.max(start+attack+.001,end-.04));gain.gain.linearRampToValueAtTime(0,end);osc.connect(gain);gain.connect(playerCtx.destination);
    osc.start(start);osc.stop(end+.01);voices.push(osc);
   }
   timers.push(setTimeout(()=>{if(!playing)return;highlights();document.querySelectorAll('#score [data-origin="'+i+'"]').forEach(e=>e.classList.add('playing'))},(at+.12)*1000));
