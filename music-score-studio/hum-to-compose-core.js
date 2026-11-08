@@ -109,11 +109,25 @@ function displayAccidentals(bars){return bars.map(bar=>{const active=new Map();
    const show=s.alter!==old?(s.alter===1?'♯':s.alter===-1?'♭':'♮'):null;
    active.set(key,s.alter);return {...n,spelling:s,displayAccidental:n.tiePrev?null:show};
  })})}
+/* Fit total notated duration to the first-to-last voiced span.
+   This estimates playback speed only; it cannot fix individual rhythm or pitch errors. */
+function matchRecordedTempo(notes,frames,meter='4/4'){
+ if(!METERS[meter]||!Array.isArray(notes)||!Array.isArray(frames)||!notes.length)return null;
+ const voiced=frames.filter(f=>Number.isFinite(f.t)&&f.pitch!==null&&Number.isFinite(f.pitch)&&f.confidence>=.55);
+ if(voiced.length<3)return null;
+ const first=voiced[0].t,last=voiced[voiced.length-1].t;
+ const gaps=frames.slice(1).map((f,i)=>f.t-frames[i].t).filter(g=>g>.005&&g<.15).sort((a,b)=>a-b);
+ const step=gaps.length?gaps[Math.floor(gaps.length/2)]:.03;
+ const seconds=last-first+step,beats=notes.reduce((sum,n)=>sum+n.beats,0);
+ if(!(seconds>=.15&&beats>=.25))return null;
+ const tempo=Math.round((meter==='6/8'?40:60)*beats/seconds);
+ return tempo>=40&&tempo<=200?tempo:null;
+}
 function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&data.tempo<=240)||!Array.isArray(data.notes)||data.notes.length>256)throw Error('Unsupported score file');
  return data.notes.map(n=>{if(n.midi!==null&&(!Number.isInteger(n.midi)||n.midi<36||n.midi>95))throw Error('Invalid pitch');
  if(!Number.isFinite(n.beats)||n.beats<.25||n.beats>64||Math.abs(n.beats*8-Math.round(n.beats*8))>.001)throw Error('Invalid length');
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,validateScore};
+return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,validateScore};
 });
