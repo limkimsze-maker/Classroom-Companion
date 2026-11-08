@@ -155,6 +155,112 @@ export function verifyOctaves(noteEvents,pcm,rate,pitchEstimator){
  return {notes:copy,checked,corrected,review};
 }
 
+/* Teacher-safe audio verification after Spotify inference.
+   Invariant: no new pitch is invented from audio alone. We only correct a
+   detected note after two stable independent estimates; silent gaps may
+   divide a model note but never insert an ungrounded pitch.
+   All analysis is local on the original PCM time axis (not trimmed). */
+function sectionRms(pcm,rate,start,end){
+ const a=Math.max(0,Math.floor(start*rate)),b=Math.min(pcm.length,Math.ceil(end*rate));
+ if(b-a<16)return 0;
+ let power=0;for(let i=a;i<b;i++)power+=pcm[i]*pcm[i];
+ return Math.sqrt(power/(b-a));
+}
+function markReview(note){
+ note.qualityStatus='review';
+ if(note.octaveStatus!=='corrected')note.octaveStatus='review';
+}
+export function verifyPerformance(noteEvents,pcm,rate,pitchEstimator){
+ const octaves=verifyOctaves(noteEvents,pcm,rate,pitchEstimator);
+ const input=octaves.notes,processed=[];
+ const summary={checked:octaves.checked,octavesCorrected:octaves.corrected,
+  pitchCorrected:0,pausesRestored:0,boundariesTrimmed:0,noiseRejected:0,review:0};
+ if(!(pcm instanceof Float32Array)||!(rate>0))return {notes:input,summary};
+ for(const note of input){
+  const start=Number(note.startTimeSeconds),duration=Number(note.durationSeconds);
+  if(!(Number.isFinite(start)&&Number.isFinite(duration)&&duration>.001)){
+   processed.push(note);continue;
+  }
+  const stop=Math.min(20,start+duration);
+  if(stop<=start){processed.push(note);continue}
+  const valid=Number.isFinite(note.pitchMidi)&&note.pitchMidi>=36&&note.pitchMidi<=95;
+  const checked={...note};
+  const overallRms=sectionRms(pcm,rate,start,stop);
+  if(overallRms<.0015){
+   if((Number(note.amplitude)||0)<.5){summary.noiseRejected++;continue}
+   markReview(checked);processed.push(checked);continue;
+  }
+  // Confirm small non-octave pitch discrepancies only with two independent
+  // stable measurements and strong spectral advantage over Spotify's bin.
+  // Octaves are already handled by verifyOctaves; we never double-correct.
+  if(valid&&checked.octaveStatus!=='corrected'&&duration>=.22&&typeof pitchEstimator==='function'){
+   const primary=octaveSample(pcm,rate,start,duration,.53);
+   const secondary=octaveSample(pcm,rate,start,duration,.29);
+   const a=primary&&pitchEstimator(primary,rate,null),b=secondary&&pitchEstimator(secondary,rate,null);
+   if(a&&b&&Number.isFinite(a.midi)&&Number.isFinite(b.midi)
+    &&a.confidence>.94&&b.confidence>.92&&Math.abs(a.midi-b.midi)<.30){
+    const delta=a.midi-checked.pitchMidi,whole=Math.round(delta),candidate=checked.pitchMidi+whole;
+    if(Math.abs(delta)<.55){if(checked.octaveStatus!=='review')checked.qualityStatus='matched'}
+    else if(Math.abs(whole)>=1&&Math.abs(whole)<=5&&Math.abs(delta-whole)<.30&&candidate>=36&&candidate<=95){
+     const wanted=octaveEnergy(primary,rate,octaveFrequency(a.midi));
+     const former=octaveEnergy(primary,rate,octaveFrequency(checked.pitchMidi));
+     const stableAudio=octaveEnergy(secondary,rate,octaveFrequency(b.midi))>.01;
+     if(wanted>.03&&wanted>former*2.5&&stableAudio){
+      checked.originalPitchMidi=checked.pitchMidi;
+      checked.pitchMidi=candidate;checked.qualityStatus='corrected';summary.pitchCorrected++;
+     }else markReview(checked);
+    }else if(Math.abs(delta)>.7)markReview(checked);
+   }else if(checked.octaveStatus==='review')markReview(checked);
+  }
+  // Only long enough notes can support trimming or splitting on silence.
+  if(!valid||duration<.28){processed.push(checked);continue}
+  const step=.012,window=.024;
+  const blocks=[];for(let t=start;t+window<=stop+.00001;t+=step)
+   blocks.push({time:t+window*.5,rms:sectionRms(pcm,rate,t,t+window)});
+  if(blocks.length<12){processed.push(checked);continue}
+  const peak=Math.max(...blocks.map(x=>x.rms));
+  if(peak<.012){markReview(checked);processed.push(checked);continue}
+  const threshold=Math.max(.004,peak*.12);
+  const voiced=blocks.map(x=>x.rms>=threshold);
+  const first=voiced.indexOf(true),last=voiced.lastIndexOf(true);
+  if(first<0){markReview(checked);processed.push(checked);continue}
+  // Do not invent new boundaries by shaving a few milliseconds of a soft attack.
+  const head=blocks[first].time-start,tail=stop-blocks[last].time;
+  let voiceStart=start,voiceEnd=stop;
+  if(head>.065&&head<duration*.4){voiceStart=blocks[first].time;summary.boundariesTrimmed++}
+  if(tail>.065&&tail<duration*.4){voiceEnd=blocks[last].time;summary.boundariesTrimmed++}
+  if(voiceEnd-voiceStart<.12){processed.push(checked);continue}
+  const pauses=[];
+  for(let i=Math.max(0,first);i<=last;){
+   if(voiced[i]){i++;continue}
+   const begin=i;while(i<=last&&!voiced[i])i++;
+   const from=blocks[begin].time-step*.5,to=blocks[i-1].time+step*.5;
+   if(to-from>=.075&&from-voiceStart>=.12&&voiceEnd-to>=.12)
+    pauses.push({from,to});
+  }
+  if(!pauses.length){
+   processed.push({...checked,startTimeSeconds:voiceStart,durationSeconds:voiceEnd-voiceStart});
+   continue;
+  }
+  // A real silent gap inside an otherwise voiced model note restores a rest.
+  // Preserve the original Spotify note pitch; repeated attacks are not merged.
+  let cursor=voiceStart;
+  for(const gap of pauses){
+   if(gap.from-cursor>=.12){
+    const fragment={...checked,startTimeSeconds:cursor,durationSeconds:gap.from-cursor};
+    markReview(fragment);processed.push(fragment);
+   }
+   cursor=gap.to;summary.pausesRestored++;
+  }
+  if(voiceEnd-cursor>=.12){
+   const fragment={...checked,startTimeSeconds:cursor,durationSeconds:voiceEnd-cursor};
+   markReview(fragment);processed.push(fragment);
+  }
+ }
+ summary.review=processed.filter(n=>n.octaveStatus==='review'||n.qualityStatus==='review'||n.octaveStatus==='corrected'||n.qualityStatus==='corrected').length;
+ return {notes:processed,summary};
+}
+
 /* Basic Pitch can return simultaneous notes. This is an experimental
    single-stave monophonic adapter: keep the strongest active note per
    interval. Preserve separate attacks even when the repeated pitch matches. */
@@ -164,7 +270,7 @@ export function toSingleMelody(noteEvents,maxDuration=20){
   const start=Math.max(0,Number(n.startTimeSeconds));
   const duration=Number(n.durationSeconds),pitch=Math.round(Number(n.pitchMidi));
   const end=Math.min(maxDuration,start+duration);
-  return {index,start,end,pitch,octaveStatus:n.octaveStatus||'unchecked',amplitude:Math.max(0,Math.min(1,Number(n.amplitude)||0))};
+  return {index,start,end,pitch,octaveStatus:n.octaveStatus||'unchecked',qualityStatus:n.qualityStatus||'unchecked',amplitude:Math.max(0,Math.min(1,Number(n.amplitude)||0))};
  }).filter(n=>Number.isFinite(n.start)&&Number.isFinite(n.end)&&n.end-n.start>=.06&&n.pitch>=36&&n.pitch<=95);
  if(!clean.length)return [];
  const boundaries=[...new Set(clean.flatMap(n=>[n.start,n.end]))].sort((a,b)=>a-b);
@@ -177,7 +283,7 @@ export function toSingleMelody(noteEvents,maxDuration=20){
   const best=active[0]||null,id=best?best.index:null,pitch=best?best.pitch:null;
   if(last&&last.index===id&&Math.abs(last.end-start)<.0001){last.end=end;last.duration=end-last.start}
   else{
-   last={index:id,start,end,duration:end-start,midi:pitch,confidence:best?(best.octaveStatus==='corrected'||best.octaveStatus==='review'?Math.min(.75,Math.max(.25,best.amplitude)):Math.max(.25,best.amplitude)):1,octaveStatus:best?.octaveStatus||'unchecked',points:[]};
+   last={index:id,start,end,duration:end-start,midi:pitch,confidence:best?((best.octaveStatus==='corrected'||best.octaveStatus==='review'||best.qualityStatus==='corrected'||best.qualityStatus==='review')?Math.min(.75,Math.max(.25,best.amplitude)):Math.max(.25,best.amplitude)):1,octaveStatus:best?.octaveStatus||'unchecked',qualityStatus:best?.qualityStatus||'unchecked',points:[]};
    timeline.push(last);
   }
  }
@@ -187,7 +293,7 @@ export function toSingleMelody(noteEvents,maxDuration=20){
  return timeline.filter(n=>n.end>start&&n.start<end).map(n=>({
   start:Math.max(0,n.start-start),end:Math.min(end-start,n.end-start),
   duration:Math.min(end,n.end)-Math.max(start,n.start),
-  midi:n.midi,confidence:n.confidence,octaveStatus:n.octaveStatus,points:n.midi===null?[]:[{t:0,midi:n.midi,confidence:n.confidence}]
+  midi:n.midi,confidence:n.confidence,octaveStatus:n.octaveStatus,qualityStatus:n.qualityStatus,points:n.midi===null?[]:[{t:0,midi:n.midi,confidence:n.confidence}]
  })).filter(n=>n.duration>=.025).slice(0,256);
 }
 
@@ -202,9 +308,9 @@ export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=nul
  await model.evaluateModel(audio,(f,o,_contours)=>{frames.push(...f);onsets.push(...o)},
   pct=>onProgress('Analysing Spotify Basic Pitch… '+Math.round(pct*100)+'%'));
  const raw=library.noteFramesToTime(library.outputToNotesPoly(frames,onsets,.25,.25,5));
- onProgress('Checking octaves against the original audio…');
- const octaveCheck=verifyOctaves(raw,audio,22050,pitchEstimator);
- const melody=toSingleMelody(octaveCheck.notes,20);
+ onProgress('Verifying pitch, pauses and note boundaries against the recording…');
+ const verified=verifyPerformance(raw,audio,22050,pitchEstimator);
+ const melody=toSingleMelody(verified.notes,20);
  if(!melody.some(n=>n.midi!==null))throw Error('Spotify Basic Pitch could not detect clear melody notes');
- return {events:melody,rawNoteCount:raw.length,engine:'Spotify Basic Pitch 1.0.1',octaveCheck:{checked:octaveCheck.checked,corrected:octaveCheck.corrected,review:octaveCheck.review}};
+ return {events:melody,rawNoteCount:raw.length,engine:'Spotify Basic Pitch 1.0.1',octaveCheck:{checked:verified.summary.checked,corrected:verified.summary.octavesCorrected,review:verified.summary.review},verification:verified.summary};
 }
