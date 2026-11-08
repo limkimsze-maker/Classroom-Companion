@@ -30,3 +30,5 @@ jobs:
         run: node music-score-studio/hum-to-compose-tests.js
       - name: Independent audio verification stress suite
         run: node music-score-studio/hum-to-compose-verification-tests.cjs
+      - name: SVG note engraving and notation checks
+        run: node music-score-studio/hum-to-compose-engraving-tests.cjs
