@@ -176,7 +176,10 @@ async function run(){
   check('Spotify attribution remains visible',d.body.textContent.includes('Spotify Basic Pitch')&&d.body.textContent.includes('Apache 2.0'));
   check('Detected-performance playback is labelled distinctly from score playback',id('faithful').textContent.includes('detected melody')&&id('play').textContent.includes('written score'));
   check('Detected-performance playback unavailable before recording',id('faithful').disabled);
-  check('Piano volume slider starts at 160 percent',id('scoreVolume').value==='160'&&id('scoreVolumeValue').textContent==='160%');
+  check('Instrument selector starts with Warm piano',id('instrument').value==='piano');
+  check('Five sample-free instruments are available',
+    [...id('instrument').options].map(x=>x.value).join(',')==='piano,guitar,flute,violin,xylophone');
+  check('Instrument volume slider starts at 160 percent',id('scoreVolume').value==='160'&&id('scoreVolumeValue').textContent==='160%');
   check('Local audio-file fallback visible',!!id('audioUpload')&&id('audioFile').accept.includes('audio/*'));
   check('Voice Recorder alternative explained without upload',d.body.textContent.includes('Voice Recorder')&&d.body.textContent.includes('Nothing is uploaded.'));
   check('Meter selector exposes all 4 options',[...id('meter').options].map(x=>x.value).join(',')==='2/4,3/4,4/4,6/8');
@@ -255,6 +258,36 @@ async function run(){
   check('Maximum piano note level remains bounded below digital clipping',
    masters().length===5&&masters().every(g=>g.linear.some(x=>x.v>.8&&x.v<.83)));
   id('stop').click();
+  // Each instrument must sound different without changing the written notes.
+  // These mocked checks do not substitute for real listening tests.
+  const instrumentProfiles=[
+   ['guitar',4,.45*1.9],
+   ['flute',3,.31*1.9],
+   ['violin',5,.31*1.9],
+   ['xylophone',3,.43*1.9]
+  ];
+  const baselineScore=id('scoreHint').textContent;
+  for(const [choice,partials,peak] of instrumentProfiles){
+   id('instrument').value=choice;
+   id('instrument').dispatchEvent(new w.Event('change',{bubbles:true}));
+   audioStarts.length=0;audioStops.length=0;oscTypes.length=0;frequencies.length=0;gainEnvelopes.length=0;
+   id('play').click();await wait(90);
+   check(choice+' has distinct synthesised partial count',audioStarts.length===5*partials,
+    'got='+audioStarts.length+', wanted='+5*partials);
+   check(choice+' has a bounded master envelope',masters().length===5&&masters().every(g=>
+    g.linear.some(x=>Math.abs(x.v-peak)<.00001&&x.v<1)));
+   check(choice+' preserves correct first-note pitch',Math.abs(frequencies[0].v-261.625565)<.1);
+   check(choice+' does not change the score',id('scoreHint').textContent===baselineScore);
+   check(choice+' status identifies chosen sound',id('status').textContent.includes(
+    id('instrument').selectedOptions[0].text.toLowerCase()));
+   if(choice==='xylophone')check('Xylophone has a struck-note decay rather than full-length sustain',
+    audioStops.at(-1)-audioStarts.at(-1)<.48);
+   id('stop').click();
+   check(choice+' stops all synthesised voices',audioStops.filter(x=>x===undefined).length===5*partials);
+  }
+  id('instrument').value='piano';
+  id('instrument').dispatchEvent(new w.Event('change',{bubbles:true}));
+  check('Warm piano can be restored',id('instrument').value==='piano'&&!id('play').disabled);
   // Mock denied mic permission, with no hardware access at all.
   const rejectMic=async()=>{const e=new Error('denied');e.name='NotAllowedError';throw e};
   Object.defineProperty(w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:rejectMic}});
