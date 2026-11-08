@@ -98,6 +98,22 @@ async function run(){
   await wait(600);
   check('Audio-file fallback transcribes without requesting microphone',!id('play').disabled&&!id('faithful').disabled,'status='+id('status').textContent);
   check('Original local audio is available after import',!id('original').disabled);
+  // Successful getUserMedia/startup regression: the previous implementation
+  // shadowed window.performance with a local array and threw TypeError at .now().
+  w.MediaRecorder=undefined;
+  MockAudioContext.prototype.sampleRate=16000;
+  MockAudioContext.prototype.createAnalyser=function(){
+   return {fftSize:4096,smoothingTimeConstant:0,
+    getFloatTimeDomainData(array){for(let i=0;i<array.length;i++)array[i]=.3*Math.sin(2*Math.PI*440*i/16000)},
+    disconnect(){}};
+  };
+  MockAudioContext.prototype.createMediaStreamSource=function(){return {connect(){},disconnect(){}}};
+  let stopped=0;
+  w.navigator.mediaDevices.getUserMedia=async()=>({getTracks:()=>[{stop(){stopped++}}]});
+  id('record').click();await wait(150);
+  check('Granted microphone reaches active recording without performance.now TypeError',!id('finish').disabled&&id('status').textContent.includes('Recording locally'),id('status').textContent);
+  id('finish').click();await wait(50);
+  check('Finish releases the successful mocked microphone',stopped===1&&!id('record').disabled);
  }catch(e){output.push('ERROR '+e.message)}
  finally{result.textContent=output.join('\n')+'\n\n'+output.filter(x=>x.startsWith('PASS')).length+'/'+output.filter(x=>x.startsWith('PASS')||x.startsWith('FAIL')||x.startsWith('ERROR')).length+' checks passed';running=false;$('run').disabled=false}
 }
