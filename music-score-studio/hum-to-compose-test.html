@@ -15,11 +15,18 @@ h2{font-size:21px;margin:0 0 8px}p{margin:0 0 12px}.muted{color:var(--muted)}.st
 .controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px}button,select{font:inherit}button{border:1px solid #9dbeca;border-radius:11px;padding:12px 17px;min-height:46px;cursor:pointer;font-weight:730;background:#fff;color:#19485b}button.primary{background:#087b86;border-color:#087b86;color:#fff}button.danger{background:#bf4348;color:#fff;border-color:#bf4348}button:disabled{opacity:.43;cursor:not-allowed}button:hover:not(:disabled){filter:brightness(.95)}button:focus-visible,select:focus-visible{outline:3px solid #e1a73f;outline-offset:3px}
 label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-items:center;gap:8px}select{padding:11px;border-radius:9px;border:1px solid #a7c6d1;background:white;min-height:46px}
 #status{border:1px solid #c5dfe4;border-radius:12px;background:#f4fbfe;padding:12px 14px;margin-top:14px;min-height:50px}#status[role="alert"]{border-color:#dca16f;background:#fff6ec}#livePitch{font-weight:800;color:#0b7683}#timer{font-variant-numeric:tabular-nums;color:#607380;font-weight:750}
-#meter{width:170px;height:10px;background:#dfedf1;border-radius:10px;overflow:hidden}#meterFill{width:0;height:100%;background:#0d8793;transition:width .08s}
+#levelMeter{width:170px;height:10px;background:#dfedf1;border-radius:10px;overflow:hidden}#meterFill{width:0;height:100%;background:#0d8793;transition:width .08s}
 .scoreArea{overflow-x:auto;overscroll-behavior-x:contain;border:1px solid #e0e8ee;background:linear-gradient(#fff,#fafdff);border-radius:10px;padding:12px 5px}#score{width:100%;min-width:740px;height:auto;display:block}#score text{font-family:Georgia,"Times New Roman",serif;fill:#15384b}#score .note{cursor:pointer}#score .note:focus-visible .head,#score .note.selected .head{stroke:#c77210;stroke-width:3;fill:#fbb94b}#score .note.playing .head{stroke:#bd4a12;stroke-width:3;fill:#f8a93b}#score .rest{fill:#29495d}#score .staff{stroke:#829ca9;stroke-width:1.5}#score .barline{stroke:#507386;stroke-width:1.6}#score .ledger{stroke:#607b8a;stroke-width:1.5}.small{font-size:13px}.editor{display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding-top:12px;border-top:1px solid #dfe8ed;margin-top:14px}.editor button{padding:8px 13px;min-height:40px}#editing{font-weight:800;min-width:126px}.footer{font-size:13px;color:#627985;line-height:1.7;text-align:center;margin-top:8px}
-@media(max-width:580px){header{padding:16px}main{padding:12px 9px 35px;gap:10px}.card{padding:16px 12px}.controls>button{flex:1}.field{width:100%;justify-content:space-between}#meter{width:105px}.editor button{flex:1}.steps{gap:5px}.step{font-size:12px;padding:7px}}
+@media(max-width:580px){header{padding:16px}main{padding:12px 9px 35px;gap:10px}.card{padding:16px 12px}.controls>button{flex:1}.field{width:100%;justify-content:space-between}#levelMeter{width:105px}.editor button{flex:1}.steps{gap:5px}.step{font-size:12px;padding:7px}}
 .scoreArea{overflow:auto}#score{min-width:740px}#score .event{cursor:pointer}#score .event.selected .head{stroke:#c77210;stroke-width:3;fill:#fbb94b}#score .event.playing .head{stroke:#bd4a12;stroke-width:3;fill:#f8a93b}#score .uncertain-ring{fill:none;stroke:#c77b04;stroke-width:2;stroke-dasharray:3 2}#score .event.selected .rest-symbol{stroke:#c77210;stroke-width:3}#score .event.playing .rest-symbol{stroke:#bd4a12;stroke-width:3}#score .event:focus-visible{outline:none}#score .event:focus-visible .head{stroke:#d38b06;stroke-width:3}.editor select{min-width:110px}.footer a{color:#126b89}#score .accidental{font-size:21px}#score .tie{fill:none;stroke:#32495b;stroke-width:2}#score .beam{fill:#2b4051}.editor{justify-content:flex-start}#status{overflow-wrap:anywhere}
 @media(max-width:580px){.editor label{width:auto}.editor select{flex:1}.editor button{flex:1 1 78px}.controls #original{flex:1}.controls #open{flex:1}}
+.field input[type="number"]{font:inherit;padding:10px;border:1px solid #a7c6d1;border-radius:9px;background:white;width:86px;min-height:46px}
+.calibration{border:1px solid #c9dfe6;border-radius:12px;background:#f6fbfe;padding:10px 13px;margin-top:12px}
+.calibration summary{cursor:pointer;font-weight:800;color:#185669;padding:4px 0;list-style:revert}
+.calibration .controls{margin:9px 0 10px}.calibration button{min-height:40px;padding:8px 11px}
+.calibration p{font-size:13px;color:#577080;margin:9px 0}
+.calibration .calibration-group{padding:8px 0;border-top:1px solid #dbe9ef}
+@media(max-width:580px){.calibration .controls button{flex:1 1 130px}}
 </style>
 </head>
 <body>
@@ -33,15 +40,30 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="record" class="primary" type="button">🎤 Start recording</button>
 <button id="finish" class="danger" type="button" disabled>■ Finish recording</button>
 <button id="example" type="button">♫ Try sample melody</button>
-<div class="field"><label for="meter">Time</label><select id="meter"><option value="2/4">2/4</option><option value="3/4">3/4</option><option value="4/4" selected>4/4</option><option value="6/8">6/8</option></select></div><div class="field"><label for="tempo">Tempo</label><select id="tempo"><option value="60">60 BPM</option><option value="80">80 BPM</option><option value="96" selected>96 BPM</option><option value="120">120 BPM</option><option value="140">140 BPM</option></select></div>
+<div class="field"><label for="meter">Time</label><select id="meter"><option value="2/4">2/4</option><option value="3/4">3/4</option><option value="4/4" selected>4/4</option><option value="6/8">6/8</option></select></div><div class="field"><label for="tempo">Tempo (BPM)</label><input id="tempo" type="number" min="40" max="200" value="96" step="1" inputmode="numeric" aria-label="Tempo in beats per minute"></div>
 </div>
-<div class="controls" style="margin-top:12px"><span id="timer">0:00 / 0:20</span><div id="meter" aria-label="Microphone level"><div id="meterFill"></div></div><span id="livePitch" aria-live="off">—</span></div>
+<div class="controls" style="margin-top:12px"><span id="timer">0:00 / 0:20</span><div id="levelMeter" aria-label="Microphone level"><div id="meterFill"></div></div><span id="livePitch" aria-live="off">—</span></div>
 <div id="status" role="status" aria-live="polite">Ready. Try the sample melody or press Start recording and allow microphone access.</div>
 <p class="small muted" style="margin-top:12px">🔒 Microphone audio is analysed locally in your browser. No recording is uploaded. A quiet room and clear, steady humming give better results. Maximum recording: 20 seconds.</p>
 </section>
 <section class="card" aria-label="Generated musical score">
 <div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2>My melody</h2><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="play" class="primary" type="button" disabled>▶ Play score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>↓ Save JSON</button><button id="open" type="button">↑ Open JSON</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
 <div class="scoreArea"><svg xmlns="http://www.w3.org/2000/svg" id="score" viewBox="0 0 850 190" role="img" aria-label="Generated single-stave music score"><text x="24" y="58" font-size="20">Your musical score will appear here.</text></svg></div>
+<details id="calibration" class="calibration">
+<summary>🎚 Match the score to my humming</summary>
+<p>Compare the melody, not the sound of your voice. The generated instrument has a different tone. Corrections are reversible with Undo.</p>
+<div class="calibration-group"><strong>1. Compare</strong><div class="controls">
+<button id="compare" type="button" disabled>▶ Hum, then score</button></div>
+<p>Listen for notes that are too high or low, missing pauses, or timing that is too fast or slow.</p></div>
+<div class="calibration-group"><strong>2. Adjust the whole melody's pitch</strong><div class="controls">
+<button id="allDown" type="button" disabled>♭ All down 1</button><button id="allUp" type="button" disabled>♯ All up 1</button>
+<button id="octaveDown" type="button" disabled>All down 1 octave</button><button id="octaveUp" type="button" disabled>All up 1 octave</button>
+</div><p>If every note is too high or low, adjust the whole melody. For just one wrong note, select it on the stave.</p></div>
+<div class="calibration-group"><strong>3. Correct the speed and rhythm</strong><div class="controls">
+<button id="matchSpeed" type="button" disabled>Match recorded speed</button>
+<button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button></div>
+<p>Match recorded speed estimates overall tempo from your humming. To change note lengths, enter another BPM above and rebuild the score. Rebuilding replaces edits; Undo can restore them. A human check is still needed.</p></div>
+</details>
 <div class="editor" aria-label="Review and correct score">
 <span id="editing">Select a note or rest</span>
 <button id="down" type="button" disabled title="Lower a note by a semitone">↓ Pitch</button>
@@ -63,20 +85,20 @@ const say=(s,error=false)=>{$('status').textContent=s;$('status').setAttribute('
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const el=(tag,a={},inner='')=>'<'+tag+' '+Object.entries(a).map(([k,v])=>k+'="'+esc(v)+'"').join(' ')+'>'+inner+'</'+tag+'>';
 let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser=null,analysisCtx=null,playerCtx=null,mediaRecorder=null,chunks=[],originalUrl=null,originalAudio=new Audio(),recording=false,requesting=false,frame=null,lastFrame=0,started=0,samples=[],previousMidi=null;
-let playing=false,voices=[],timers=[];
-const meter=()=> $('meter').value,tempo=()=>Number($('tempo').value);
+let playing=false,voices=[],timers=[],comparisonPending=false;
+const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
 const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo()});
 function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;$('meter').value=s.meter;$('tempo').value=String(s.tempo);render()}
 function checkpoint(){history.push(snapshot());if(history.length>100)history.shift();future=[]}
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting}
+function recordingControls(){$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length}
 function closeMic(){if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
-function setOriginal(url){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';$('original').disabled=!url}
-function stopPlayback(){voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('stop').disabled=true;$('original').textContent='▶ Original hum'}
+function setOriginal(url){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';$('original').disabled=!url;$('compare').disabled=!url||!notes.length}
+function stopPlayback(){comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('stop').disabled=true;$('original').textContent='▶ Original hum'}
 function stopBoth(){stopPlayback();say('Playback stopped.')}
 async function start(){if(recording||requesting)return;if(!navigator.mediaDevices?.getUserMedia){say('A microphone requires an HTTPS page and a supported browser such as Chrome or Edge.',true);return}
  stopPlayback();closeMic();requesting=true;recordingControls();setOriginal(null);samples=[];previousMidi=null;chunks=[];
@@ -102,7 +124,7 @@ function analyse(){if(!recording||!analyser||!analysisCtx)return;const now=perfo
 function finish(){if(!recording)return;recording=false;closeMic();recordingControls();$('meterFill').style.width='0';$('livePitch').textContent='—';
  const result=C.transcribe(samples,tempo(),meter());if(!result.some(n=>n.midi!==null)){say('No reliable notes found. Try a quiet room, and hum with clear attacks and pauses.',true);return}
  change(()=>{notes=result;selected=null});say('Draft generated. Amber ? notes need checking; compare Original hum and Play score, then correct and save.')}
-function sample(){if(recording||requesting)return;setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
+function sample(){if(recording||requesting)return;samples=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
 function noteDiatonic(n){const s=n.spelling||C.spelling(n.midi);return (s.octave+1)*7+s.step}
 function clefOf(){const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);return !pitched.length||pitched[Math.floor(pitched.length/2)]>=60?'treble':'bass'}
 function restGlyph(n,x,base){const d=n.beats,root=[.375,.75,1.5,3].includes(d)?d/1.5:d,dot=[.375,.75,1.5,3].includes(d);
@@ -151,6 +173,7 @@ function beamGroups(points,pulse){
 function render(){
  const has=notes.length>0,valid=selected!==null&&notes[selected],isNote=valid&&notes[selected].midi!==null;
  $('play').disabled=!has||playing;$('save').disabled=!has;$('saveLocal').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
+ $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild'].forEach(id=>$(id).disabled=!has||!samples.length||recording||requesting);
  ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental'].forEach(id=>$(id).disabled=!isNote);
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  $('editing').textContent=!valid?'Select a note or rest':(isNote?C.pitchName(notes[selected].midi):'Rest')+' · '+(notes[selected].uncertain&&!notes[selected].reviewed?'Check pitch':'Selected');
@@ -204,9 +227,21 @@ function insert(isRest){change(()=>{const midi=isRest?null:((selected!==null&&no
 function toggle(){if(selected===null||!notes[selected])return;change(()=>{const n=notes[selected];n.midi=n.midi===null?60:null;delete n.spelling;n.uncertain=false;n.reviewed=true})}
 function remove(){if(selected===null)return;change(()=>{notes.splice(selected,1);selected=notes.length?Math.min(selected,notes.length-1):null})}
 function clear(){if(!notes.length)return;change(()=>{notes=[];selected=null})}
-function stopOriginal(){originalAudio.pause();originalAudio.currentTime=0;$('original').textContent='▶ Original hum';$('stop').disabled=!playing}
+function stopOriginal(){comparisonPending=false;originalAudio.pause();originalAudio.currentTime=0;$('original').textContent='▶ Original hum';$('stop').disabled=!playing}
 function playOriginal(){if(!originalUrl)return;if(!originalAudio.paused){stopOriginal();return}stopPlayback();originalAudio.currentTime=0;originalAudio.play().then(()=>{$('original').textContent='■ Stop original';$('stop').disabled=false;say('Playing the original local humming recording.')}).catch(()=>say('Original audio could not be played.',true))}
-originalAudio.addEventListener('ended',stopOriginal);
+originalAudio.addEventListener('ended',()=>{const playNext=comparisonPending;stopOriginal();if(playNext)playScore()});
+function compare(){if(!originalUrl||!notes.length||recording)return;stopPlayback();comparisonPending=true;originalAudio.currentTime=0;
+ originalAudio.play().then(()=>{$('original').textContent='■ Playing original';$('stop').disabled=false;say('Comparing: original humming first, then the generated score.')}).catch(()=>{comparisonPending=false;say('The original recording could not be played.',true)})}
+function transposeAll(semitones){if(recording||!notes.some(n=>n.midi!==null))return;
+ if(notes.some(n=>n.midi!==null&&(n.midi+semitones<36||n.midi+semitones>95))){say('That shift would put a note outside the supported pitch range.',true);return}
+ change(()=>{notes=notes.map(n=>{if(n.midi===null)return n;const midi=n.midi+semitones;return {...n,midi,spelling:C.spelling(midi)}})});
+ say('Moved the whole melody '+Math.abs(semitones)+' semitone'+(Math.abs(semitones)===1?'':'s')+' '+(semitones>0?'up':'down')+'. Compare with the humming; review uncertain notes individually.')}
+function matchSpeed(){if(!samples.length||!notes.length)return;const fitted=C.matchRecordedTempo(notes,samples,meter());
+ if(fitted===null){say('Not enough steady humming to estimate tempo reliably. You can set BPM manually and compare.',true);return}
+ change(()=>{$('tempo').value=String(fitted)});say('Estimated '+fitted+' BPM from the overall humming length. Listen and correct individual rhythms if needed.')}
+function rebuild(){if(!samples.length)return;const result=C.transcribe(samples,tempo(),meter());if(!result.some(n=>n.midi!==null)){say('Not enough clear notes in the recording to rebuild.',true);return}
+ change(()=>{notes=result;selected=null});say('Rhythm rebuilt at '+tempo()+' BPM from the local humming analysis. Previous edits can be restored with Undo.')}
+
 async function playScore(){
  if(!notes.length||recording)return;stopPlayback();
  try{playerCtx=playerCtx||new(window.AudioContext||window.webkitAudioContext)();await playerCtx.resume()}catch(_){say('Score sound is unavailable in this browser.',true);return}
@@ -230,13 +265,14 @@ function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-co
 function localLoad(){try{const raw=localStorage.getItem('hum-to-compose-test-v2');if(!raw){say('No saved score here yet. Use Save here or Open JSON.',true);return}importState(JSON.parse(raw))}catch(_){say('Saved data could not be opened. Use a valid Hum to Compose JSON file.',true)}}
 $('record').addEventListener('click',start);$('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
 $('play').addEventListener('click',playScore);$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
+$('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
 $('add').addEventListener('click',()=>insert(false));$('rest').addEventListener('click',()=>insert(true));$('toggle').addEventListener('click',toggle);$('remove').addEventListener('click',remove);
 $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);$('clear').addEventListener('click',clear);
 $('save').addEventListener('click',exportJSON);$('saveLocal').addEventListener('click',localSave);$('loadLocal').addEventListener('click',localLoad);
 $('open').addEventListener('click',()=>$('file').click());$('file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>200000)throw Error('Too large');importState(JSON.parse(await file.text()))}catch(err){say('Could not open score JSON: '+err.message,true)}e.target.value=''});
 $('score').addEventListener('click',choose);$('score').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('g[data-origin]')){e.preventDefault();choose(e)}});
-['tempo','meter'].forEach(id=>$(id).addEventListener('change',()=>{stopPlayback();render()}));
+['tempo','meter'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='tempo')$('tempo').value=String(tempo());stopPlayback();render()}));
 window.addEventListener('pagehide',()=>{recording=false;closeMic();stopPlayback();setOriginal(null);if(playerCtx)playerCtx.close().catch(()=>{})});
 render();recordingControls();
 })();
