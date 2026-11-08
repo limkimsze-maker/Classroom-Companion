@@ -94,5 +94,5 @@
    meanOnsetErrorSeconds:onsetCount?onsetError/onsetCount:null,rows
   };
  }
- return {RATE,MODES,deterministicCases,run};
+ return {RATE,MODES,makeClip,deterministicCases,run};
 });
