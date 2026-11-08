@@ -266,7 +266,7 @@ function transcribeAlignedEvents(events,bpm,meter='4/4'){
 }
 /* Validate score duration and pitch against the chosen metre and the 64-beat
    safety limit without altering any teacher edits. */
-function auditScore(score,meter){
+function auditScore(score,meter,maxBeats=64){
  if(!METERS[meter]||!Array.isArray(score))return {ok:false,reason:'Invalid notation input'};
  let beats=0;for(const note of score){
   if(!Number.isFinite(note.beats)||note.beats<.25||Math.round(note.beats*8)!==note.beats*8)
@@ -274,7 +274,7 @@ function auditScore(score,meter){
   if(note.midi!==null&&(!Number.isInteger(note.midi)||note.midi<36||note.midi>95))
    return {ok:false,reason:'Invalid note pitch'};
   beats+=note.beats;
-  if(beats>64.001)return {ok:false,reason:'Score exceeds the 64-beat limit'};
+  if(beats>maxBeats+.001)return {ok:false,reason:'Score exceeds the '+maxBeats+'-beat limit'};
  }
  return {ok:score.some(x=>x.midi!==null),beats,reason:!score.length?'Empty score':score.every(x=>x.midi===null)?'No pitched notes':'OK'};
 }
