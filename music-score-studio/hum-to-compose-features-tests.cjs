@@ -155,7 +155,7 @@ async function downloadedText(){
   assert.ok(js,'Benchmark browser code missing');
   assert.doesNotThrow(()=>new Function(js),'Benchmark browser JavaScript syntax invalid');
   assert.ok(bench.includes('runSpotify')&&bench.includes('adapter.recognise(audio'));
-  assert.ok(bench.includes('does not run Spotify Basic Pitch')||bench.includes('does not</strong> run Spotify Basic Pitch'));
+  assert.ok(bench.includes('<strong>not</strong> run Spotify Basic Pitch'));
   assert.ok(html.includes('hum-to-compose-benchmark.html'),'Benchmark link absent from TEST');
  });
  console.log(passed+' teacher feature and file round-trip checks passed');
