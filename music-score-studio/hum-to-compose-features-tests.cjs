@@ -79,6 +79,13 @@ async function downloadedText(){
   assert.equal(saved.clefMode,'bass');
   assert.equal(saved.fifths,-2);
  });
+ await test('Undo and Redo reverse a teacher-chosen clef without moving notes',async()=>{
+  elem('undo').click();assert.equal(elem('clefMode').value,'treble');
+  elem('redo').click();assert.equal(elem('clefMode').value,'bass');
+  elem('save').click();
+  const saved=JSON.parse((await downloadedText()).content);
+  assert.equal(saved.notes[0].midi,70);
+ });
  await test('MusicXML export preserves B-flat and chosen bass clef',async()=>{
   elem('xml').click();
   const saved=await downloadedText();
