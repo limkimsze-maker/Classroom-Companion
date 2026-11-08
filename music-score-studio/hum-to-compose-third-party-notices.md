@@ -1,6 +1,6 @@
 # Hum to Compose TEST — third-party software notices
 
-This notice applies **only to the optional Spotify Basic Pitch experiment** in
+This notice applies **to the Spotify Basic Pitch default recognition engine** in
 `music-score-studio/hum-to-compose-test.html`. The existing Music Score Studio
 application and its own licensing/attribution remain unchanged.
 
@@ -13,11 +13,11 @@ application and its own licensing/attribution remain unchanged.
 - Upstream licence: https://github.com/spotify/basic-pitch-ts/blob/main/LICENSE
 - Model documentation: https://github.com/spotify/basic-pitch-ts/tree/main/model
 
-The experimental interface dynamically loads unmodified upstream package code
+The experimental interface automatically loads unmodified upstream package code
 from a **version-pinned** ESM CDN URL:
 https://esm.sh/@spotify/basic-pitch@1.0.1?bundle
 
-The experimental TensorFlow.js model is pinned to Spotify's public
+The default TensorFlow.js model is pinned to Spotify's public
 `basic-pitch-ts` upstream repository commit `2d498f82b61c71898edf0e8dd661b99076676c8b`.
 
 The browser tries the immutable repository snapshot on jsDelivr:
@@ -31,8 +31,8 @@ The `group1-shard1of1.bin` weights file is referenced by that manifest and
 loaded from the same model host. Both paths are pinned to the same source revision.
 
 **No Spotify source files or model weights are copied into this repository**;
-the browser obtains them from those public distributions when the user explicitly
-selects the optional feature. The adaptation/glue code is our own, and Spotify's
+the browser obtains them from those public distributions when the user starts
+a microphone recording or imports audio for automatic transcription. The adaptation/glue code is our own, and Spotify's
 software is not modified. Spotify has not endorsed or sponsored this project.
 
 ## Upstream runtime dependencies
@@ -85,7 +85,8 @@ THE SOFTWARE.
 - Original recordings and chosen local audio files are analysed inside the
   user's browser; the application does not upload the recording to Spotify,
   Google, the project owner, or the CDN.
-- On first use, loading model and JavaScript files **does require network
+- Spotify Basic Pitch is the default engine. On first transcription, loading its
+  model and JavaScript files **does require network
   requests to the public CDNs**. Like ordinary CDN requests, they expose
   request metadata, such as IP address and user-agent, to those CDN operators.
 - A locally generated score is still an estimate and requires teacher review.
