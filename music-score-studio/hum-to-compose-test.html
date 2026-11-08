@@ -448,7 +448,7 @@ async function playDetected(){
  say('Playing detected melody with a warm piano-like sound; note timing and pitch movement are preserved. The original voice recording is unchanged.');
 }
 async function playScore(){
- if(!notes.length||recording)return;const validity=C.auditScore(notes,meter());if(!validity.ok){say('This score cannot play until its notes are corrected: '+validity.reason,true);return}stopPlayback();
+ if(!notes.length||recording)return;const validity=C.auditScore(notes,meter(),Infinity);if(!validity.ok){say('This score cannot play until its notes are corrected: '+validity.reason,true);return}stopPlayback();
  try{playerCtx=playerCtx||new(window.AudioContext||window.webkitAudioContext)();await playerCtx.resume()}catch(_){say('Score sound is unavailable in this browser.',true);return}
  playing=true;$('play').disabled=true;$('stop').disabled=false;const begin=playerCtx.currentTime+.12,sec=C.beatSeconds(tempo(),meter());let at=0;
  const highlights=()=>document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));
