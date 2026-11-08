@@ -77,6 +77,70 @@ async function run(){
   check('Octave check does not mutate the original Spotify note objects',
    lowDetected.notes[0].originalPitchMidi===57);
 
+  // Full deterministic audio-verification pipeline: Spotify predictions vs
+  // known-frequency, known-boundary waveforms. No internet/model download.
+  function voiceClip(segments){
+   const pcm=new Float32Array(toneRate*2);
+   for(const item of segments){
+    for(let i=Math.floor(item.start*toneRate);i<Math.ceil(item.end*toneRate);i++){
+     const t=i/toneRate;if(t<item.start||t>item.end)continue;
+     const attack=Math.max(0,Math.min(1,(t-item.start)/.02,(item.end-t)/.02));
+     pcm[i]+=.4*attack*Math.sin(2*Math.PI*item.hz*t);
+    }
+   }return pcm;
+  }
+  const verifiedNote=(start,length,pitch,amp=.95)=>({
+   startTimeSeconds:start,durationSeconds:length,pitchMidi:pitch,amplitude:amp
+  });
+  const correction=adapter.verifyPerformance([verifiedNote(.2,.7,62)],
+   voiceClip([{start:.2,end:.9,hz:329.628}]),toneRate,window.HumCore.estimatePitch);
+  check('Automatic checker fixes a strong non-octave D4 to E4 error',
+   correction.notes[0].pitchMidi===64&&correction.summary.pitchCorrected===1);
+  check('Corrected pitch is marked for teacher review',
+   adapter.toSingleMelody(correction.notes)[0].confidence<.86);
+  const correctTone=adapter.verifyPerformance([verifiedNote(.2,.7,64)],
+   voiceClip([{start:.2,end:.9,hz:329.628}]),toneRate,window.HumCore.estimatePitch);
+  check('Correct E4 remains untouched',correctTone.notes[0].pitchMidi===64&&
+   correctTone.summary.pitchCorrected===0&&correctTone.summary.noteSplits===0);
+  const repeated=adapter.verifyPerformance([verifiedNote(.2,.76,60)],
+   voiceClip([{start:.2,end:.48,hz:261.6256},{start:.65,end:.96,hz:261.6256}]),
+   toneRate,window.HumCore.estimatePitch);
+  const repeatedMelody=adapter.toSingleMelody(repeated.notes);
+  check('Silent gap inside merged note restores two attacks and a rest',
+   repeated.summary.pausesRestored===1&&
+   repeatedMelody.map(x=>x.midi).join(',')==='60,,60');
+  const repeatedScore=window.HumCore.transcribeAlignedEvents(repeatedMelody,120,'4/4');
+  check('Restored repeated-note gap reaches the written score',repeatedScore.filter(x=>x.midi===null).length===1);
+  const missedPitch=adapter.verifyPerformance([verifiedNote(.2,.97,60)],
+   voiceClip([{start:.2,end:.65,hz:261.6256},{start:.65,end:1.17,hz:329.628}]),
+   toneRate,window.HumCore.estimatePitch);
+  check('Stable two-pitch plateau splits a missed C4-to-E4 note change',
+   missedPitch.summary.noteSplits===1&&missedPitch.notes.map(x=>x.pitchMidi).join(',')==='60,64');
+  const quietSpurious=adapter.verifyPerformance([verifiedNote(.2,.6,60,.2)],
+   new Float32Array(toneRate*2),toneRate,window.HumCore.estimatePitch);
+  check('Clearly silent low-confidence false notes are removed',
+   quietSpurious.summary.noiseRejected===1&&quietSpurious.notes.length===0);
+  const silentStrong=adapter.verifyPerformance([verifiedNote(.2,.6,60,.95)],
+   new Float32Array(toneRate*2),toneRate,window.HumCore.estimatePitch);
+  check('Ambiguous silence with strong model confidence is flagged rather than deleted',
+   silentStrong.notes.length===1&&silentStrong.summary.review>0);
+  const trim=adapter.verifyPerformance([verifiedNote(.14,.84,60)],
+   voiceClip([{start:.28,end:.82,hz:261.6256}]),toneRate,window.HumCore.estimatePitch);
+  check('Large silent tails can refine a note boundary',
+   trim.summary.boundariesTrimmed>=1&&trim.notes[0].startTimeSeconds>.14);
+  const vibratoSignal=new Float32Array(toneRate*2);
+  for(let i=Math.floor(.2*toneRate);i<Math.floor(.99*toneRate);i++){
+   const t=i/toneRate,mod=.18*Math.sin(2*Math.PI*5*t),f=261.6256*Math.pow(2,mod/12);
+   vibratoSignal[i]=.35*Math.sin(2*Math.PI*f*t);
+  }
+  const vibrato=adapter.verifyPerformance([verifiedNote(.2,.79,60)],
+   vibratoSignal,toneRate,window.HumCore.estimatePitch);
+  check('Normal vibrato does not force extra melodic notes',
+   vibrato.summary.noteSplits===0);
+  check('Verified notation passes duration and pitch audit',
+   window.HumCore.auditScore(window.HumCore.transcribeAlignedEvents(
+    adapter.toSingleMelody(missedPitch.notes),120,'4/4'),'4/4').ok);
+
   check('Spotify integration pins library version and official model commit',
    adapter.BASIC_PITCH_VERSION==='@spotify/basic-pitch@1.0.1'&&adapter.BASIC_PITCH_MODEL.includes('2d498f82b61c71898edf0e8dd661b99076676c8b'));
 
@@ -87,7 +151,7 @@ async function run(){
   check('Time signature and audio level indicators have distinct IDs',d.querySelectorAll('#meter').length===1&&d.querySelectorAll('#levelMeter').length===1);
   check('Tempo is editable in whole BPM increments',id('tempo').type==='number'&&id('tempo').min==='40'&&id('tempo').max==='200');
   check('Calibration tools remain folded away by default',!!id('calibration')&&!id('calibration').open);
-  check('Spotify Basic Pitch is the automatic primary recogniser',!id('basicPitch')&&d.body.textContent.includes('Spotify Basic Pitch automatically creates'));
+  check('Spotify Basic Pitch is the automatic primary recogniser',!id('basicPitch')&&d.body.textContent.includes('Spotify Basic Pitch is the main recogniser'));
   check('Spotify no longer has an optional launch button',!d.querySelector('button#basicPitch'));
   check('Spotify attribution remains visible',d.body.textContent.includes('Spotify Basic Pitch')&&d.body.textContent.includes('Apache 2.0'));
   check('Detected-performance playback is labelled distinctly from score playback',id('faithful').textContent.includes('detected melody')&&id('play').textContent.includes('written score'));
