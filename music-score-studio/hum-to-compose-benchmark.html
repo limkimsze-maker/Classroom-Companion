@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hum to Compose — Known Melody Benchmark (TEST only)</title>
+<style>body{margin:0;background:#f1f8fa;color:#17384b;font:16px/1.5 system-ui,sans-serif}main{max-width:850px;margin:24px auto;padding:0 15px}h1{font-size:1.7rem}button{background:#087b86;color:white;border:0;padding:13px 19px;border-radius:11px;font:inherit;cursor:pointer}button:disabled{opacity:.55}table{border-collapse:collapse;width:100%;background:white}td,th{border-bottom:1px solid #d9e6eb;padding:9px;text-align:left}pre{background:white;padding:15px;white-space:pre-wrap;border:1px solid #d9e6eb;border-radius:10px;overflow:auto}.note{color:#7a4900;background:#fff6e5;padding:10px;border-radius:8px;margin-bottom:14px}a{color:#146477}</style>
+</head><body><main>
+<h1>🎼 Known melody benchmark — TEST ONLY</h1>
+<p>This test synthesises known-pitch, known-duration melodies, then measures how the independent audio checker corrects <strong>deliberately seeded</strong> note mistakes. It does <strong>not</strong> run Spotify Basic Pitch and cannot certify human humming accuracy.</p>
+<p class="note">No microphone, voice recording, sound playback, audio uploads or paid services are used. This benchmark may take some time on a phone.</p>
+<button id="run">Run 84 known-melody cases</button><pre id="result" role="status" aria-live="polite">Ready to run offline synthetic verification.</pre>
+<p><a href="./hum-to-compose-test.html">Return to Hum to Compose TEST</a></p>
+</main>
+<script src="./hum-to-compose-core.js"></script><script src="./hum-to-compose-benchmark.js"></script>
+<script type="module">
+const button=document.getElementById('run'),output=document.getElementById('result');
+button.addEventListener('click',async()=>{
+ button.disabled=true;output.textContent='Calculating the known-melody comparisons…';
+ try{
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  await new Promise(resolve=>setTimeout(resolve,25)); // show progress before synchronous synthesis
+  const m=window.HumBenchmark.run(window.HumCore,adapter);
+  output.textContent=[
+   'Test type: seeded-model, synthetic waveform verification (NOT Spotify inference)',
+   'Melodies tested: '+m.cases,
+   'Known notes checked: '+m.pitchedNotes,
+   'Correct pitches: '+m.matchedPitch+' ('+(100*m.pitchAccuracy).toFixed(1)+'%)',
+   'Corrupted melody cases fully recovered: '+m.fullyRecovered+'/'+m.correctionAttempts,
+   'Clean melody cases left correct: '+m.cleanUntouched+'/'+m.cleanCases,
+   'False pitch changes on clean inputs: '+m.falseShifts,
+   'Expected pauses detected: '+m.restDetected+'/'+m.expectedRests,
+   'Mean note-onset error: '+(m.meanOnsetErrorSeconds*1000).toFixed(1)+' ms',
+   'Needs further review: '+m.rows.filter(x=>x.correct!==x.expected).map(x=>x.name).join(', '),
+   '',
+   'Real voice and actual Spotify inference remain separate required tests.'
+  ].join('\n');
+ }catch(error){output.textContent='Benchmark could not complete: '+error.message}
+ finally{button.disabled=false}
+});
+</script></body></html>
