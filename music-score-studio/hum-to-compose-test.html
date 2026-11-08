@@ -127,6 +127,13 @@ async function start(){
  stopPlayback();closeMic();requesting=true;recordingControls();
  let stage='permission';
  try{
+  // Begin Web Audio while the Start button gesture is still active: on some
+  // mobile browsers autoplay unlocking after permission prompts can fail.
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)throw new DOMException('Web Audio unavailable','NotSupportedError');
+  stage='audio';
+  analysisCtx=new AudioContextClass();await analysisCtx.resume();
+  stage='permission';
   try{
    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
   }catch(e){
@@ -136,9 +143,6 @@ async function start(){
    stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
   }
   stage='audio';
-  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
-  if(!AudioContextClass)throw new DOMException('Web Audio unavailable','NotSupportedError');
-  analysisCtx=new AudioContextClass();await analysisCtx.resume();
   analyser=analysisCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
   source=analysisCtx.createMediaStreamSource(stream);source.connect(analyser);
   performance=[];samples=[];previousMidi=null;chunks=[];setOriginal(null);
