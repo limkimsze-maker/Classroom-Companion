@@ -6,7 +6,7 @@
 <h1>🎼 Known melody benchmark — TEST ONLY</h1>
 <p>This test synthesises known-pitch, known-duration melodies, then measures how the independent audio checker corrects <strong>deliberately seeded</strong> note mistakes. It does <strong>not</strong> run Spotify Basic Pitch and cannot certify human humming accuracy.</p>
 <p class="note">No microphone, voice recording, sound playback, audio uploads or paid services are used. This benchmark may take some time on a phone.</p>
-<button id="run">Run 84 verification cases (offline)</button><pre id="result" role="status" aria-live="polite">Ready to run offline synthetic verification.</pre><h2>Optional: test the actual Spotify model</h2><p>This separate test runs Spotify Basic Pitch itself on four generated melodies. It downloads the pinned model on first use, but audio is generated and processed locally. No microphone or recording is used.</p><button id="runSpotify">Run Spotify on four generated melodies</button><pre id="spotifyResult" role="status" aria-live="polite">Not run. Real-model accuracy is not included in the offline scores above.</pre>
+<button id="run">Run 84 verification cases (offline)</button><pre id="result" role="status" aria-live="polite">Ready to run offline synthetic verification.</pre><h2>Optional: test the actual Spotify model</h2><p>This separate test runs Spotify Basic Pitch itself on eight generated melodies, covering pure and harmonic-rich sounds. It downloads the pinned model on first use, but audio is generated and processed locally. No microphone or recording is used.</p><button id="runSpotify">Run Spotify on eight generated melodies</button><pre id="spotifyResult" role="status" aria-live="polite">Not run. Real-model accuracy is not included in the offline scores above.</pre>
 <p><a href="./hum-to-compose-test.html">Return to Hum to Compose TEST</a></p>
 </main>
 <script src="./hum-to-compose-core.js"></script><script src="./hum-to-compose-benchmark.js"></script>
@@ -15,8 +15,8 @@ const button=document.getElementById('run'),output=document.getElementById('resu
 const spotifyButton=document.getElementById('runSpotify'),spotifyOutput=document.getElementById('spotifyResult');
 spotifyButton.addEventListener('click',async()=>{
  spotifyButton.disabled=true;
- const checks=['pattern0-pure-correct','pattern1-rich-correct','pattern2-pure-correct','pattern3-rich-correct'];
- let evaluated=0,matched=0,total=0,restHits=0;
+ const checks=[0,1,2,3].flatMap(i=>['pure','rich'].map(voice=>'pattern'+i+'-'+voice+'-correct'));
+ let evaluated=0,matched=0,total=0,restHits=0,truePositive=0,falsePositive=0,falseNegative=0;
  try{
   spotifyOutput.textContent='Loading pinned Spotify Basic Pitch model…';
   const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
@@ -40,13 +40,22 @@ spotifyButton.addEventListener('click',async()=>{
     })).filter(x=>x.overlap>.05).sort((a,b)=>b.overlap-a.overlap);
     if(overlapping.length&&overlapping[0].p.midi===note.midi)matched++;
    }
+   const scored=window.HumBenchmark.scoreMelody(truth,predicted);
+   truePositive+=scored.truePositive;falsePositive+=scored.falsePositive;falseNegative+=scored.falseNegative;
    if(found.events.some(e=>e.midi===null&&e.duration>.07))restHits++;
    evaluated++;
   }
+  const precision=truePositive+falsePositive?truePositive/(truePositive+falsePositive):0;
+  const recall=truePositive+falseNegative?truePositive/(truePositive+falseNegative):0;
+  const f1=precision+recall?2*precision*recall/(precision+recall):0;
   spotifyOutput.textContent=[
    'ACTUAL Spotify Basic Pitch inference on generated waveforms',
    'Melodies successfully analysed: '+evaluated+'/'+checks.length,
    'Known pitches matched: '+matched+'/'+total+' ('+(total?100*matched/total:0).toFixed(1)+'%)',
+   'One-to-one note precision: '+(precision*100).toFixed(1)+'%',
+   'One-to-one note recall: '+(recall*100).toFixed(1)+'%',
+   'One-to-one note F1: '+(f1*100).toFixed(1)+'%',
+   'Correctly matched notes: '+truePositive+' | extra or wrong: '+falsePositive+' | missed or wrong: '+falseNegative,
    'Pauses recognised: '+restHits+'/'+evaluated,
    '',
    'This tests synthetic melodies with the real model, NOT human voice reliability.',
@@ -68,6 +77,10 @@ button.addEventListener('click',async()=>{
    'Melodies tested: '+m.cases,
    'Known notes checked: '+m.pitchedNotes,
    'Correct pitches: '+m.matchedPitch+' ('+(100*m.pitchAccuracy).toFixed(1)+'%)',
+   'One-to-one note precision: '+(100*m.notePrecision).toFixed(1)+'%',
+   'One-to-one note recall: '+(100*m.noteRecall).toFixed(1)+'%',
+   'One-to-one note F1: '+(100*m.noteF1).toFixed(1)+'%',
+   'Extra or wrong notes: '+m.falsePositive+' | missed or wrong notes: '+m.falseNegative,
    'Corrupted melody cases fully recovered: '+m.fullyRecovered+'/'+m.correctionAttempts,
    'Clean melody cases left correct: '+m.cleanUntouched+'/'+m.cleanCases,
    'False pitch changes on clean inputs: '+m.falseShifts,
