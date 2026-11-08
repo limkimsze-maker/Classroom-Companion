@@ -68,6 +68,7 @@ async function downloadedText(){
   assert.equal(elem('keyFifths').value,'-2');
   assert.equal((svg.match(/class="key-signature"/g)||[]).length,2);
   assert.equal((svg.match(/class="accidental"/g)||[]).length,1);
+  assert.match(svg,/Select B♭4 Crotchet/);
  });
  await test('User-locked bass clef changes notation without shifting pitch',async()=>{
   elem('clefMode').value='bass';elem('clefMode').handlers.change();
@@ -91,6 +92,7 @@ async function downloadedText(){
    getAttribute:k=>k==='data-origin'?'0':null}:null}});
   assert.equal(elem('playSelected').disabled,false);
   assert.match(elem('reviewInfo').textContent,/75%/);
+  assert.match(elem('reviewInfo').textContent,/B♭4/,'Review label differs from written key spelling');
   await elem('playSelected').click();
   assert.ok(scheduled.length>=3,'No instrument oscillators scheduled');
   assert.ok(Math.abs(scheduled[0]-440*Math.pow(2,(70-69)/12))<.01);
@@ -146,6 +148,15 @@ async function downloadedText(){
  await test('No global keyboard shortcut captures Tab or button activation',async()=>{
   assert.ok(!/window\.addEventListener\(['"]keydown/.test(script));
   assert.ok(script.includes("e.key==='Enter'||e.key===' '"));
+ });
+ await test('No-singing benchmark page has optional Spotify inference without microphone',async()=>{
+  const bench=fs.readFileSync(path.join(__dirname,'hum-to-compose-benchmark.html'),'utf8');
+  const js=bench.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(js,'Benchmark browser code missing');
+  assert.doesNotThrow(()=>new Function(js),'Benchmark browser JavaScript syntax invalid');
+  assert.ok(bench.includes('runSpotify')&&bench.includes('adapter.recognise(audio'));
+  assert.ok(bench.includes('does not run Spotify Basic Pitch')||bench.includes('does not</strong> run Spotify Basic Pitch'));
+  assert.ok(html.includes('hum-to-compose-benchmark.html'),'Benchmark link absent from TEST');
  });
  console.log(passed+' teacher feature and file round-trip checks passed');
  if(process.exitCode)process.exit(1);
