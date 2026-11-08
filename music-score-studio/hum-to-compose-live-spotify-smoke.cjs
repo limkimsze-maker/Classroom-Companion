@@ -35,7 +35,7 @@ async function main(){
  await page.waitForFunction(()=>{
   const result=document.querySelector('#spotifyResult')?.textContent||'';
   return result.includes('ACTUAL Spotify Basic Pitch inference')||result.includes('Real Spotify benchmark stopped after');
- },{timeout:600000});
+ },null,{timeout:600000});
  const result=await page.locator('#spotifyResult').innerText();
  console.log('\n'+result+'\n');
  assert.ok(result.startsWith('ACTUAL Spotify Basic Pitch inference'), 'Spotify model run failed: '+result+'\nPage errors: '+errors.join(' | '));
