@@ -260,7 +260,8 @@ function glyph(p,base,clef,beamInfo=null){
    inner+=el('line',{x1:xStem,x2:xStem,y1:y,y2:stemEnd,stroke:'#233f53','stroke-width':2});
    if(root<=.5&&!beamed){const flags=root<=.125?3:root<=.25?2:1;for(let k=0;k<flags;k++)inner+=el('path',{d:up?'M '+xStem+' '+(stemEnd+k*9)+' q 20 7 5 22':'M '+xStem+' '+(stemEnd-k*9)+' q -20 -7 -5 -22',fill:'none',stroke:'#233f53','stroke-width':2.5})}
   }
-  if(dot)inner+=el('circle',{cx:x+18,cy:y-2,r:2.5,fill:'#233f53'});
+  // Augmentation dots belong in a space, never directly on a stave line.
+   if(dot)inner+=el('circle',{class:'augmentation-dot',cx:x+18,cy:y-(step%2===0?5:0),r:2.5,fill:'#233f53'});
   if(n.uncertain&&!n.reviewed)inner+=el('circle',{class:'uncertain-ring',cx:x,cy:y,r:16})+el('text',{x:x+11,y:y-14,'font-size':16,fill:'#bb7500','font-weight':'bold'},'?');
  }
  const isSelected=selected===n.origin,cls='event'+(isRest?' rest':' note')+(isSelected?' selected':'');
