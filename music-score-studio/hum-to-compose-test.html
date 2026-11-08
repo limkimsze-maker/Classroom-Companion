@@ -101,7 +101,7 @@ function checkpoint(){history.push(snapshot());if(history.length>100)history.shi
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
+function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null));$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
 function closeMic(){if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
@@ -283,7 +283,7 @@ function beamGroups(points,pulse){
 function render(){
  const has=notes.length>0,valid=selected!==null&&notes[selected],isNote=valid&&notes[selected].midi!==null;
  $('play').disabled=!has||playing;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null)||playing;$('save').disabled=!has;$('saveLocal').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
- $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild'].forEach(id=>$(id).disabled=!has||!samples.length||recording||requesting);
+ $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
  ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental'].forEach(id=>$(id).disabled=!isNote);
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  $('editing').textContent=!valid?'Select a note or rest':(isNote?C.pitchName(notes[selected].midi):'Rest')+' · '+(notes[selected].uncertain&&!notes[selected].reviewed?'Check pitch':'Selected');
@@ -346,9 +346,13 @@ function transposeAll(semitones){if(recording||!notes.some(n=>n.midi!==null))ret
  if(notes.some(n=>n.midi!==null&&(n.midi+semitones<36||n.midi+semitones>95))){say('That shift would put a note outside the supported pitch range.',true);return}
  change(()=>{notes=notes.map(n=>{if(n.midi===null)return n;const midi=n.midi+semitones;return {...n,midi,spelling:C.spelling(midi)}})});
  say('Moved the whole melody '+Math.abs(semitones)+' semitone'+(Math.abs(semitones)===1?'':'s')+' '+(semitones>0?'up':'down')+'. Compare with the humming; review uncertain notes individually.')}
-function matchSpeed(){if(!samples.length||!notes.length)return;const fitted=C.matchRecordedTempo(notes,samples,meter());
- if(fitted===null){say('Not enough steady humming to estimate tempo reliably. You can set BPM manually and compare.',true);return}
- change(()=>{$('tempo').value=String(fitted)});say('Estimated '+fitted+' BPM from the overall humming length. Listen and correct individual rhythms if needed.')}
+function matchSpeed(){
+ if(!detectedEvents.some(n=>n.midi!==null)||!notes.length)return;
+ const fitted=C.matchPerformanceTempo(notes,detectedEvents,meter());
+ if(fitted===null){say('Not enough reliable timing information to fit the tempo. Adjust BPM and rebuild the rhythm manually.',true);return}
+ change(()=>{$('tempo').value=String(fitted)});
+ say('Matched the score duration to your detected performance at '+fitted+' BPM. Individual note rhythms still need review.');
+}
 function rebuild(){if(!detectedEvents.length)return;const result=C.transcribeAlignedEvents(detectedEvents,tempo(),meter());if(!C.auditScore(result,meter()).ok){say('Not enough clear notes in the recording to rebuild.',true);return}
  change(()=>{notes=result;selected=null});say('Rhythm rebuilt at '+tempo()+' BPM from the local humming analysis. Previous edits can be restored with Undo.')}
 
@@ -388,7 +392,7 @@ async function tryBasicPitch(){
    : octaveInfo ? ' Automatic octave check: '+octaveInfo.corrected+' corrected, '+octaveInfo.review+' to review.'
    : ' Automatic verification was unavailable; review doubtful notes.';
   say('Spotify Basic Pitch created '+newScore.filter(n=>n.midi!==null).length+
-   ' draft note groups.'+corrections+' Compare with your original humming; Undo restores the earlier score.');
+   ' draft note groups.'+corrections+(guessed.ambiguous?' Tempo is uncertain; adjust BPM if needed.':'')+' Compare with your original humming; Undo restores the earlier score.');
  }catch(error){
   $('basicPitchProgress').textContent='Spotify Basic Pitch unavailable';
   if(recordingBlob===sourceAudioBlob&&JSON.stringify(notes)===originalScore)
