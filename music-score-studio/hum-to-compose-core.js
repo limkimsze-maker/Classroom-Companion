@@ -123,11 +123,101 @@ function matchRecordedTempo(notes,frames,meter='4/4'){
  const tempo=Math.round((meter==='6/8'?40:60)*beats/seconds);
  return tempo>=40&&tempo<=200?tempo:null;
 }
+
+/* Preserve detected absolute timing and fractional MIDI, separate from quantised notation.
+   A synthetic playback can follow these, while Original hum replays the actual audio. */
+function performanceFromFrames(frames){
+ if(!Array.isArray(frames)||!frames.length)return [];
+ const raw=frames.filter(f=>Number.isFinite(f.t)&&f.t>=0)
+  .sort((a,b)=>a.t-b.t).map(f=>({
+   t:f.t, midi:Number.isFinite(f.rawMidi)?f.rawMidi:(Number.isFinite(f.pitch)?f.pitch:null),
+   confidence:Number.isFinite(f.confidence)?Math.max(0,Math.min(1,f.confidence)):.75,
+   rms:Number.isFinite(f.rms)?f.rms:.1,onset:f.onset===true
+  })).filter(f=>f.midi===null||f.midi>=36&&f.midi<=95);
+ if(!raw.length)return [];
+ const gaps=raw.slice(1).map((f,i)=>f.t-raw[i].t).filter(x=>x>.003&&x<.16).sort((a,b)=>a-b);
+ const step=gaps.length?gaps[Math.floor(gaps.length/2)]:.03;
+ // Isolated low-confidence outliers and short high-energy detector dropouts
+ // should not create extra attacks or pauses.
+ for(let i=1;i<raw.length-1;i++){
+  const p=raw[i-1],f=raw[i],n=raw[i+1],close=n.t-p.t<.11;
+  if(!close||p.midi===null||n.midi===null||Math.abs(p.midi-n.midi)>.65)continue;
+  if(f.midi===null&&f.rms>.016||f.midi!==null&&Math.abs(f.midi-p.midi)>2){
+   f.midi=(p.midi+n.midi)/2;f.confidence=Math.min(.68,p.confidence,n.confidence);
+  }
+ }
+ // Hold pitch changes long enough to reject one-frame vibrato/glitches, unless
+ // a clear onset occurs. Explicit attacks preserve repeated same-pitch notes.
+ const segments=[];let start=0;
+ const same=(a,b)=>a.midi===null&&b.midi===null||a.midi!==null&&b.midi!==null&&Math.abs(a.midi-b.midi)<.75;
+ function flush(i){
+  const part=raw.slice(start,i),end=i<raw.length?raw[i].t:raw[i-1].t+step;
+  if(!part.length||end-raw[start].t<Math.min(.045,step*1.5))return;
+  const pitched=part.filter(x=>x.midi!==null),midi=pitched.length
+   ?pitched.map(x=>x.midi).sort((a,b)=>a-b)[Math.floor(pitched.length/2)]:null;
+  const confidence=pitched.length?pitched.reduce((x,f)=>x+f.confidence,0)/pitched.length:1;
+  segments.push({start:raw[start].t,end,midi,confidence,
+   points:pitched.map(p=>({t:p.t-raw[start].t,midi:p.midi,confidence:p.confidence}))});
+ }
+ for(let i=1;i<=raw.length;i++){
+  const last=raw[start],current=raw[i],prev=raw[i-1];
+  if(i===raw.length){flush(i);break}
+  const pitchSwitch=!same(current,last)&&
+   (i+1===raw.length||same(current,raw[i+1])||current.onset);
+  const renewed=!!(current.onset&&current.midi!==null&&same(current,last)&&current.t-last.t>=.065);
+  const volumeAttack=current.midi!==null&&last.midi!==null&&same(current,last)&&i>=3&&i-start>=3
+   &&current.rms>.025&&prev.rms>.006&&current.rms>prev.rms*2.1
+   &&prev.rms<raw[i-2].rms*.75&&current.t-last.t>=.09;
+  // Silence needs at least two frames before it is treated as a rest.
+  const silence=last.midi!==null&&current.midi===null&&i+1<raw.length&&raw[i+1].midi===null;
+  if(pitchSwitch||renewed||volumeAttack||silence){flush(i);start=i}
+ }
+ const first=segments.find(x=>x.midi!==null),last=[...segments].reverse().find(x=>x.midi!==null);
+ if(!first||!last)return [];
+ const origin=first.start,tail=last.end;
+ const result=[];let cursor=0;
+ for(const e of segments){
+  if(e.end<=origin||e.start>=tail)continue;
+  const start=Math.max(0,e.start-origin),end=Math.min(tail-origin,e.end-origin);
+  if(start>cursor+.03)result.push({start:cursor,end:start,duration:start-cursor,midi:null,confidence:1,points:[]});
+  if(end>start+.025)result.push({start,end,duration:end-start,midi:e.midi,confidence:e.confidence,
+    points:e.points.filter(p=>e.start+p.t>=origin).map(p=>({t:p.t,midi:p.midi,confidence:p.confidence}))});
+  cursor=Math.max(cursor,end);
+ }
+ return result;
+}
+/* Infer a basic musical pulse from short performed note durations, not
+   from total length of an already-quantised score. Mark ambiguity rather
+   than promising an objectively correct metre or tempo. */
+function estimateNaturalTempo(events,meter='4/4'){
+ if(!METERS[meter]||!Array.isArray(events))return {bpm:null,confidence:0};
+ const voiced=events.filter(e=>e.midi!==null&&Number.isFinite(e.duration)&&e.duration>=.07);
+ if(voiced.length<3)return {bpm:null,confidence:0};
+ const durations=events.map(e=>e.duration).filter(d=>Number.isFinite(d)&&d>=.08);
+ const preferred=[.25,.5,.75,1,1.5,2,3,4];
+ const candidates=[];
+ for(let bpm=40;bpm<=200;bpm++){
+  const beat=beatSeconds(bpm,meter);
+  let error=0;
+  for(const duration of durations){
+   const b=duration/beat,nearest=preferred.reduce((best,v)=>Math.abs(v-b)<Math.abs(best-b)?v:best,preferred[0]);
+   error+=Math.pow((b-nearest)/Math.max(.25,nearest),2);
+   if(b<.5)error+=.04; // Avoid arbitrary tiny note values.
+  }
+  // Weak centre preference breaks half-tempo/double-tempo ties.
+  error=error/durations.length+.0018*Math.pow((bpm-105)/60,2);
+  candidates.push({bpm,error});
+ }
+ candidates.sort((a,b)=>a.error-b.error);
+ const winner=candidates[0],runner=candidates.find(x=>Math.abs(x.bpm-winner.bpm)>12)||candidates[1];
+ const separation=runner?Math.max(0,runner.error-winner.error):0;
+ return {bpm:winner.bpm,confidence:Math.min(.95,Math.max(.22,separation*8)),ambiguous:separation<.018};
+}
 function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&data.tempo<=240)||!Array.isArray(data.notes)||data.notes.length>256)throw Error('Unsupported score file');
  return data.notes.map(n=>{if(n.midi!==null&&(!Number.isInteger(n.midi)||n.midi<36||n.midi>95))throw Error('Invalid pitch');
  if(!Number.isFinite(n.beats)||n.beats<.25||n.beats>64||Math.abs(n.beats*8-Math.round(n.beats*8))>.001)throw Error('Invalid length');
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,validateScore};
+return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,estimateNaturalTempo,validateScore};
 });
