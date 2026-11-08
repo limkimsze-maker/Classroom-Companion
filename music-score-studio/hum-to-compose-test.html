@@ -38,13 +38,15 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <div class="steps"><span class="step">1 · Hum</span><span class="step">2 · Review the score</span><span class="step">3 · Play</span><span class="step">4 · Save</span></div>
 <div class="controls">
 <button id="record" class="primary" type="button">🎤 Start recording</button>
+<button id="audioUpload" type="button">♫ Use audio file</button>
+<input type="file" id="audioFile" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.webm" hidden>
 <button id="finish" class="danger" type="button" disabled>■ Finish recording</button>
 <button id="example" type="button">♫ Try sample melody</button>
 <div class="field"><label for="meter">Time</label><select id="meter"><option value="2/4">2/4</option><option value="3/4">3/4</option><option value="4/4" selected>4/4</option><option value="6/8">6/8</option></select></div><div class="field"><label for="tempo">Tempo (BPM)</label><input id="tempo" type="number" min="40" max="200" value="96" step="1" inputmode="numeric" aria-label="Tempo in beats per minute"></div>
 </div>
 <div class="controls" style="margin-top:12px"><span id="timer">0:00 / 0:20</span><div id="levelMeter" aria-label="Microphone level"><div id="meterFill"></div></div><span id="livePitch" aria-live="off">—</span></div>
 <div id="status" role="status" aria-live="polite">Ready. Try the sample melody or press Start recording and allow microphone access.</div>
-<p class="small muted" style="margin-top:12px">🔒 Microphone audio is analysed locally in your browser. No recording is uploaded. A quiet room and clear, steady humming give better results. Maximum recording: 20 seconds.</p>
+<p class="small muted" style="margin-top:12px">🔒 Microphone audio and chosen audio files are processed locally in this browser. Nothing is uploaded. If microphone recording fails, record a short hum using your phone’s Voice Recorder and choose its saved audio file. Maximum analysed length: 20 seconds.</p>
 </section>
 <section class="card" aria-label="Generated musical score">
 <div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2>My melody</h2><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="faithful" class="primary" type="button" disabled>▶ Play detected melody</button><button id="play" type="button" disabled>▶ Play written score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>↓ Save JSON</button><button id="open" type="button">↑ Open JSON</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
@@ -93,22 +95,58 @@ function checkpoint(){history.push(snapshot());if(history.length>100)history.shi
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!performance.some(n=>n.midi!==null)}
+function recordingControls(){$('audioUpload').disabled=recording||requesting;$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!performance.some(n=>n.midi!==null)}
 function closeMic(){if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
 function setOriginal(url){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';$('original').disabled=!url;$('compare').disabled=!url||!notes.length}
 function stopPlayback(){comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!performance.some(n=>n.midi!==null);$('stop').disabled=true;$('original').textContent='▶ Original hum'}
 function stopBoth(){stopPlayback();say('Playback stopped.')}
-async function start(){if(recording||requesting)return;if(!navigator.mediaDevices?.getUserMedia){say('A microphone requires an HTTPS page and a supported browser such as Chrome or Edge.',true);return}
- stopPlayback();closeMic();requesting=true;performance=[];recordingControls();setOriginal(null);samples=[];previousMidi=null;chunks=[];
+function microphoneAdvice(error,stage){
+ const name=error?.name||'UnknownError';
+ const fallback=' You can also record using your phone’s Voice Recorder and choose “Use audio file”.';
+ let reason='';
+ if(!window.isSecureContext)reason='This page needs a secure HTTPS connection.';
+ else if(['NotAllowedError','PermissionDeniedError','SecurityError'].includes(name))
+  reason='Microphone access is blocked. Open this link directly in Chrome or Samsung Internet, and allow microphone access in the browser and your phone’s settings.';
+ else if(name==='NotFoundError'||name==='DevicesNotFoundError')
+  reason='No usable microphone was found. Check that your device has an enabled microphone.';
+ else if(['NotReadableError','TrackStartError','AbortError'].includes(name))
+  reason='Your microphone could not start. Close other recording, video-call or voice apps and try again.';
+ else if(name==='OverconstrainedError')reason='Your microphone does not support the requested audio settings. Try another browser.';
+ else if(name==='InvalidStateError')reason='The browser page is not active. Return to this page and try again.';
+ else if(stage==='audio')reason='The microphone opened, but audio analysis could not start in this browser. Try Chrome or Samsung Internet.';
+ else reason='Your browser could not start microphone recording. Open the TEST link directly in Chrome or Samsung Internet.';
+ return 'Recording could not start ('+name+'). '+reason+fallback;
+}
+async function start(){
+ if(recording||requesting)return;
+ if(!navigator.mediaDevices?.getUserMedia){
+  say('This browser cannot access the microphone ('+(window.isSecureContext?'microphone API unavailable':'insecure page')+'). Open the TEST link in Chrome or Samsung Internet, or choose “Use audio file”.',true);return;
+ }
+ stopPlayback();closeMic();requesting=true;recordingControls();
+ let stage='permission';
  try{
-  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
-  analysisCtx=new(window.AudioContext||window.webkitAudioContext)();await analysisCtx.resume();
-  analyser=analysisCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;source=analysisCtx.createMediaStreamSource(stream);source.connect(analyser);
+  try{
+   stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  }catch(e){
+   // Some Android browsers reject optional processing constraints. Retry with basic
+   // settings ONLY for a constraint error; never override a permission denial.
+   if(e?.name!=='OverconstrainedError')throw e;
+   stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+  }
+  stage='audio';
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)throw new DOMException('Web Audio unavailable','NotSupportedError');
+  analysisCtx=new AudioContextClass();await analysisCtx.resume();
+  analyser=analysisCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
+  source=analysisCtx.createMediaStreamSource(stream);source.connect(analyser);
+  performance=[];samples=[];previousMidi=null;chunks=[];setOriginal(null);
   if(typeof MediaRecorder!=='undefined'){try{const rec=new MediaRecorder(stream);mediaRecorder=rec;rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};rec.onstop=()=>{if(chunks.length){const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});setOriginal(URL.createObjectURL(blob))}};rec.start()}catch(_){mediaRecorder=null}}
   recording=true;requesting=false;started=performance.now();lastFrame=0;recordingControls();say('Recording locally… hum clearly, with short pauses between repeated notes.');analyse();
- }catch(e){requesting=false;recording=false;closeMic();recordingControls();say('Microphone not available. '+(e?.name==='NotAllowedError'?'Please allow microphone access in browser settings.':'Use HTTPS and check microphone access.'),true)}
+ }catch(e){
+  requesting=false;recording=false;closeMic();recordingControls();say(microphoneAdvice(e,stage),true);
+ }
 }
 function analyse(){if(!recording||!analyser||!analysisCtx)return;const now=performance.now();
  if(now-lastFrame>=SAMPLE_MS){lastFrame=now;const buffer=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(buffer);
@@ -130,6 +168,56 @@ function finish(){if(!recording)return;recording=false;closeMic();recordingContr
  change(()=>{notes=result;selected=null;if(guessed.bpm)$('tempo').value=String(autoBpm)});
  recordingControls();
  say('Draft generated'+(guessed.bpm?' · estimated '+autoBpm+' BPM'+(guessed.ambiguous?' (pulse uncertain)':''):' · tempo needs checking')+'. Listen to Play detected melody first, then Play written score. Check any amber ? notes.')}
+async function useAudioFile(file){
+ if(!file||recording||requesting)return;
+ if(file.size>25*1024*1024){say('Audio file is too large (maximum 25 MB). Choose a short recording.',true);return;}
+ const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+ if(!AudioContextClass){say('This browser cannot decode audio. Try opening the TEST link in Chrome or Samsung Internet.',true);return;}
+ requesting=true;recordingControls();stopPlayback();
+ let decoder=null;
+ try{
+  decoder=new AudioContextClass();
+  // All decoding and pitch detection happen locally; never upload the file.
+  const bytes=await file.arrayBuffer();
+  const audio=await decoder.decodeAudioData(bytes);
+  if(!audio||!audio.length||audio.duration<.15)throw Error('The recording is too short or empty.');
+  const rate=audio.sampleRate, channels=Array.from({length:Math.min(2,audio.numberOfChannels)},(_,i)=>audio.getChannelData(i));
+  const count=Math.min(audio.length,Math.floor(20*rate)),hop=Math.max(1,Math.round(rate*.04));
+  let nextSamples=[],prior=null;const frameSize=4096,buffer=new Float32Array(frameSize);
+  for(let index=0;index<count;index+=hop){
+   buffer.fill(0);
+   for(let j=0;j<frameSize&&index+j<count;j++){
+    let v=0;for(const ch of channels)v+=ch[index+j];
+    buffer[j]=v/channels.length;
+   }
+   const detected=C.estimatePitch(buffer,rate,prior);
+   const pitch=detected.midi===null?null:Math.round(detected.midi);
+   if(pitch!==null&&detected.confidence>.84)prior=pitch;
+   const previous=nextSamples.at(-1);
+   const onset=!!(previous&&pitch!==null&&previous.pitch===pitch&&previous.rms>.008&&detected.rms>previous.rms*1.9);
+   nextSamples.push({t:index/rate,pitch,rawMidi:detected.midi,rms:detected.rms,confidence:detected.confidence,onset});
+   if(nextSamples.length%12===0){
+    say('Analysing the audio file locally… '+Math.round(100*index/count)+'%');
+    await new Promise(resolve=>setTimeout(resolve,0));
+   }
+  }
+  const decodedPerformance=C.performanceFromFrames(nextSamples);
+  const estimated=C.estimateNaturalTempo(decodedPerformance,meter());
+  const bpm=estimated.bpm||tempo();
+  const detectedNotes=C.transcribe(nextSamples,bpm,meter());
+  if(!detectedNotes.some(n=>n.midi!==null))throw Error('No clear melody found. Try humming closer to the microphone.');
+  // Change score only after decoding and transcription succeed.
+  samples=nextSamples;performance=decodedPerformance;previousMidi=prior;
+  change(()=>{notes=detectedNotes;selected=null;if(estimated.bpm)$('tempo').value=String(bpm)});
+  setOriginal(URL.createObjectURL(file));
+  say('Local audio file analysed. Compare Original hum, Play detected melody and Play written score.'+(audio.duration>20?' Only the first 20 seconds were transcribed.':''));
+ }catch(e){
+  say('Could not analyse this audio file: '+(e?.message||'unsupported or unreadable audio')+'. Try a short WAV, MP3 or M4A recording.',true);
+ }finally{
+  if(decoder)try{await decoder.close()}catch(_){}
+  requesting=false;recordingControls();render();
+ }
+}
 function sample(){if(recording||requesting)return;samples=[];performance=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
 function noteDiatonic(n){const s=n.spelling||C.spelling(n.midi);return (s.octave+1)*7+s.step}
 function clefOf(){const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);return !pitched.length||pitched[Math.floor(pitched.length/2)]>=60?'treble':'bass'}
@@ -300,7 +388,9 @@ function exportJSON(){if(!notes.length)return;const text=JSON.stringify({format:
 function importState(data){const clean=C.validateScore(data);performance=[];samples=[];setOriginal(null);change(()=>{notes=clean;selected=null;$('meter').value=data.meter;$('tempo').value=String(data.tempo)});say('Saved written score opened. The original recording and detected performance are not stored in score JSON.')}
 function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-compose-test-v2',JSON.stringify({format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),notes}));say('Score saved in this browser only. Use Save JSON for a portable copy.')}catch(_){say('Browser storage unavailable. Use Save JSON instead.',true)}}
 function localLoad(){try{const raw=localStorage.getItem('hum-to-compose-test-v2');if(!raw){say('No saved score here yet. Use Save here or Open JSON.',true);return}importState(JSON.parse(raw))}catch(_){say('Saved data could not be opened. Use a valid Hum to Compose JSON file.',true)}}
-$('record').addEventListener('click',start);$('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
+$('record').addEventListener('click',start);$('audioUpload').addEventListener('click',()=>$('audioFile').click());
+$('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await useAudioFile(file)});
+$('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
 $('play').addEventListener('click',playScore);$('faithful').addEventListener('click',playDetected);$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
 $('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
