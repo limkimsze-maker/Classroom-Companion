@@ -63,6 +63,22 @@ test('Merge-to-rest repair keeps two repeated C4 attacks',()=>{
  const score=C.transcribeAlignedEvents(performance,120,'4/4');
  assert.ok(score.some(x=>x.midi===null));
 });
+test('Suppress false same-pitch trailing note only when no new attack exists',()=>{
+ const pcm=waveform([{midi:60,start:.2,end:.9}]);
+ const result=adapter.toSingleMelody([note(60,.2,.81),note(60,.81,.9)],2,pcm,RATE);
+ assert.deepEqual(result.map(x=>x.midi),[60]);
+ assert.equal(result[0].qualityStatus,'review');
+});
+test('Keep repeated same-pitch notes when their source recording has a fresh attack',()=>{
+ const pcm=waveform([{midi:60,start:.2,end:.5},{midi:60,start:.5,end:.9}]);
+ const result=adapter.toSingleMelody([note(60,.2,.5),note(60,.5,.9)],2,pcm,RATE);
+ assert.deepEqual(result.map(x=>x.midi),[60,60]);
+});
+test('Keep a short same-pitch reattack even if the second note lasts 0.1 seconds',()=>{
+ const pcm=waveform([{midi:60,start:.2,end:.65},{midi:60,start:.65,end:.75}]);
+ const result=adapter.toSingleMelody([note(60,.2,.65),note(60,.65,.75)],2,pcm,RATE);
+ assert.deepEqual(result.map(x=>x.midi),[60,60]);
+});
 test('Find a missed C4-to-E4 change with stable independent pitch',()=>{
  const r=verify([note(60,.2,1.17)],[
   {midi:60,start:.2,end:.65},{midi:64,start:.65,end:1.17}
