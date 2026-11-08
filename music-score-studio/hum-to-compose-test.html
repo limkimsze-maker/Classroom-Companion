@@ -548,9 +548,98 @@ async function playScore(){
  });
  timers.push(setTimeout(()=>{stopPlayback();say('Playback finished. Compare with Original hum and correct uncertain notes.')},(at+.15)*1000));
  say('Playing the written score with '+$('instrument').selectedOptions[0].text.toLowerCase()+' at '+$('scoreVolume').value+'% volume. Notated pitches and rhythms are unchanged.')}
-function exportJSON(){if(!notes.length)return;const text=JSON.stringify({format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),notes},null,2),blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='hum-to-compose-test.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);say('Score JSON saved to your downloads. Recording audio is not included.')}
-function importState(data){const clean=C.validateScore(data);detectedEvents=[];samples=[];setOriginal(null);change(()=>{notes=clean;selected=null;$('meter').value=data.meter;$('tempo').value=String(data.tempo)});say('Saved written score opened. The original recording and detected performance are not stored in score JSON.')}
-function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-compose-test-v2',JSON.stringify({format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),notes}));say('Score saved in this browser only. Use Save JSON for a portable copy.')}catch(_){say('Browser storage unavailable. Use Save JSON instead.',true)}}
+async function playSelected(){
+ if(selected===null||notes[selected]?.midi===null||recording)return;
+ stopPlayback();
+ try{playerCtx=playerCtx||new(window.AudioContext||window.webkitAudioContext)();await playerCtx.resume()}
+ catch(_){say('Selected note playback is unavailable in this browser.',true);return}
+ const n=notes[selected],duration=Math.min(3,n.beats*C.beatSeconds(tempo(),meter()));
+ playing=true;$('play').disabled=true;$('faithful').disabled=true;$('stop').disabled=false;
+ scheduleInstrument(n.midi,playerCtx.currentTime+.08,duration);
+ const index=selected;
+ timers.push(setTimeout(()=>{stopPlayback();say('Selected note finished. Tap another note to compare.')},(duration+.13)*1000));
+ document.querySelectorAll('#score [data-origin="'+index+'"]').forEach(e=>e.classList.add('playing'));
+ say('Playing selected '+C.pitchName(n.midi)+' as '+$('instrument').selectedOptions[0].text+'.');
+}
+function markReviewed(){
+ if(selected===null||notes[selected]?.midi===null)return;
+ change(()=>{notes[selected].reviewed=true});
+ say('Note checked by the teacher. The written pitch was not changed.');
+}
+function downloadText(content,mime,filename){
+ const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=filename;a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+function scorePayload(){
+ return {format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),
+  clefMode:clefMode(),fifths:keyFifths(),notes};
+}
+function exportXML(){
+ if(!notes.length)return;
+ try{
+  const xml=C.scoreToMusicXML(notes,meter(),tempo(),{clef:clefOf(),fifths:keyFifths()});
+  downloadText(xml,'application/vnd.recordare.musicxml+xml','hum-to-compose.musicxml');
+  say('MusicXML score exported. This contains musical notation, not microphone audio.');
+ }catch(error){say('Cannot export MusicXML: '+error.message,true)}
+}
+function bytesToBase64(buffer){
+ const bytes=new Uint8Array(buffer);let binary='';
+ for(let i=0;i<bytes.length;i+=16384)
+  binary+=String.fromCharCode(...bytes.subarray(i,i+16384));
+ return btoa(binary);
+}
+function decodeSessionAudio(data){
+ if(typeof data.originalAudioBase64!=='string')return null;
+ const encoded=data.originalAudioBase64;
+ if(encoded.length>12e6||!/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)||encoded.length%4!==0)
+  throw Error('Unsupported or oversized session audio');
+ const binary=atob(encoded),buffer=new Uint8Array(binary.length);
+ if(buffer.length>8e6)throw Error('Session audio is too large');
+ for(let i=0;i<binary.length;i++)buffer[i]=binary.charCodeAt(i);
+ const mime=typeof data.originalAudioType==='string'&&/^audio\/[\w.+-]+$/.test(data.originalAudioType)?data.originalAudioType:'audio/wav';
+ return new Blob([buffer],{type:mime});
+}
+async function saveSession(){
+ if(!notes.length)return;
+ try{
+  const result={...scorePayload(),format:'music-score-studio-hum-session-v1',
+   detectedEvents:detectedEvents.slice(0,256)};
+  if(sourceAudioBlob){
+   if(sourceAudioBlob.size>8e6)throw Error('Audio exceeds the 8 MB session limit. Save score JSON instead.');
+   result.originalAudioBase64=bytesToBase64(await sourceAudioBlob.arrayBuffer());
+   result.originalAudioType=sourceAudioBlob.type||'audio/wav';
+  }
+  downloadText(JSON.stringify(result),'application/json','hum-to-compose-session.json');
+  say(sourceAudioBlob?'Session saved with the original recording and detected melody.':'Session saved without audio (no original recording was available).');
+ }catch(error){say('Could not save session: '+error.message,true)}
+}
+function exportJSON(){if(!notes.length)return;downloadText(JSON.stringify(scorePayload(),null,2),'application/json','hum-to-compose-test.json');say('Score JSON saved. Recording audio is not included; use Save session to include it.')}
+function importState(data){
+ const clean=C.validateScore(data),fifths=data.fifths===undefined?0:Number(data.fifths);
+ C.keyDefaults(fifths);
+ const mode=data.clefMode||'auto';
+ if(!['auto','treble','bass'].includes(mode))throw Error('Invalid saved clef');
+ const session=data.format==='music-score-studio-hum-session-v1';
+ const audio=session?decodeSessionAudio(data):null;
+ const restored=session&&Array.isArray(data.detectedEvents)&&data.detectedEvents.length<=256
+  ?data.detectedEvents.filter(e=>e&&Number.isFinite(e.start)&&Number.isFinite(e.end)&&
+    e.start>=0&&e.end<=20&&e.end>e.start&&
+    (e.midi===null||Number.isFinite(e.midi)&&e.midi>=36&&e.midi<=95))
+   .map(e=>({start:e.start,end:e.end,duration:e.end-e.start,midi:e.midi,
+    confidence:Number.isFinite(e.confidence)?Math.max(0,Math.min(1,e.confidence)):.75,
+    points:Array.isArray(e.points)?e.points.slice(0,256).filter(p=>Number.isFinite(p.t)&&
+     Number.isFinite(p.midi)&&p.t>=0&&p.t<=e.end-e.start):[]}))
+  :[];
+ samples=[];setOriginal(null);
+ change(()=>{notes=clean;selected=null;detectedEvents=restored;$('meter').value=data.meter;
+  $('tempo').value=String(data.tempo);$('clefMode').value=mode;$('keyFifths').value=String(fifths)});
+ if(audio)setOriginal(URL.createObjectURL(audio),audio,null);
+ render();
+ say(audio?'Session reopened with original audio, detected melody and editable score.':
+  session?'Session reopened without an embedded recording.':'Written score opened. Use Save session to preserve the original recording.');
+}
+function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-compose-test-v2',JSON.stringify(scorePayload()));say('Score saved in this browser only. Use Save session to preserve audio separately.')}catch(_){say('Browser storage unavailable. Use Save JSON instead.',true)}}
 function localLoad(){try{const raw=localStorage.getItem('hum-to-compose-test-v2');if(!raw){say('No saved score here yet. Use Save here or Open JSON.',true);return}importState(JSON.parse(raw))}catch(_){say('Saved data could not be opened. Use a valid Hum to Compose JSON file.',true)}}
 $('record').addEventListener('click',start);$('audioUpload').addEventListener('click',()=>$('audioFile').click());
 $('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await useAudioFile(file)});
@@ -562,8 +651,10 @@ $('compare').addEventListener('click',compare);$('allDown').addEventListener('cl
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
 $('add').addEventListener('click',()=>insert(false));$('rest').addEventListener('click',()=>insert(true));$('toggle').addEventListener('click',toggle);$('remove').addEventListener('click',remove);
 $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);$('clear').addEventListener('click',clear);
-$('save').addEventListener('click',exportJSON);$('saveLocal').addEventListener('click',localSave);$('loadLocal').addEventListener('click',localLoad);
-$('open').addEventListener('click',()=>$('file').click());$('file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>200000)throw Error('Too large');importState(JSON.parse(await file.text()))}catch(err){say('Could not open score JSON: '+err.message,true)}e.target.value=''});
+$('save').addEventListener('click',exportJSON);$('xml').addEventListener('click',exportXML);$('saveSession').addEventListener('click',saveSession);
+$('playSelected').addEventListener('click',playSelected);$('markReviewed').addEventListener('click',markReviewed);
+$('saveLocal').addEventListener('click',localSave);$('loadLocal').addEventListener('click',localLoad);
+$('open').addEventListener('click',()=>$('file').click());$('file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12000000)throw Error('File exceeds 12 MB');importState(JSON.parse(await file.text()))}catch(err){say('Could not open score JSON: '+err.message,true)}e.target.value=''});
 $('score').addEventListener('click',choose);$('score').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('g[data-origin]')){e.preventDefault();choose(e)}});
 ['tempo','meter'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='tempo')$('tempo').value=String(tempo());stopPlayback();render()}));
 ['clefMode','keyFifths'].forEach(id=>$(id).addEventListener('change',()=>{stopPlayback();render();
