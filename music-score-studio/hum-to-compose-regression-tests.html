@@ -29,6 +29,54 @@ async function run(){
   ]);
   check('Spotify adapter preserves repeated notes and pauses',
    adapterMelody.filter(x=>x.midi===60).length===2&&adapterMelody.some(x=>x.midi===null));
+  // Independent octave validation uses original (untrimmed) audio timestamps.
+  const toneRate=22050,toneLength=Math.round(toneRate*1.2);
+  function makeOctaveTone(hz,partials=[1]){
+   const pcm=new Float32Array(toneLength),scale=partials.reduce((sum,n)=>sum+n,0);
+   for(let i=0;i<pcm.length;i++){
+    const t=i/toneRate;
+    if(t<.2||t>1.05)continue;
+    const edge=Math.min(1,(t-.2)/.025,(1.05-t)/.025);
+    let sample=0;
+    for(let j=0;j<partials.length;j++)sample+=partials[j]*Math.sin(2*Math.PI*hz*(j+1)*t);
+    pcm[i]=.35*Math.max(0,edge)*sample/scale;
+   }
+   return pcm;
+  }
+  function octaveResult(signal,detectedMidi,duration=.65){
+   return adapter.verifyOctaves([{
+    startTimeSeconds:.27,durationSeconds:duration,pitchMidi:detectedMidi,amplitude:.95
+   }],signal,toneRate,window.HumCore.estimatePitch);
+  }
+  const highA=makeOctaveTone(440),highC=makeOctaveTone(523.251);
+  const lowDetected=octaveResult(highA,57);
+  check('Octave check corrects A3 to sung A4 when strongly supported',
+   lowDetected.notes[0].pitchMidi===69&&lowDetected.corrected===1);
+  const highDetected=octaveResult(highA,81);
+  check('Octave check corrects A5 to sung A4 when strongly supported',
+   highDetected.notes[0].pitchMidi===69&&highDetected.corrected===1);
+  const correctPitch=octaveResult(highA,69);
+  check('Octave check leaves correct A4 pitch untouched',
+   correctPitch.notes[0].pitchMidi===69&&correctPitch.corrected===0);
+  const c5Correction=octaveResult(highC,60);
+  check('Octave check automatically restores higher C5 from mistaken C4',
+   c5Correction.notes[0].pitchMidi===72&&c5Correction.corrected===1);
+  const correctedPerformance=adapter.toSingleMelody(lowDetected.notes);
+  const correctedScore=window.HumCore.transcribeDetectedEvents(correctedPerformance,120,'4/4');
+  check('Auto-corrected octaves are highlighted for teacher review',
+   correctedScore[0].midi===69&&correctedScore[0].uncertain);
+  const short=octaveResult(highA,57,.09);
+  check('Very short notes are not automatically octave-shifted',
+   short.notes[0].pitchMidi===57&&short.review===1);
+  const quiet=octaveResult(new Float32Array(toneLength),57);
+  check('Silent or uncheckable recordings remain unchanged and flagged',
+   quiet.notes[0].pitchMidi===57&&quiet.review===1);
+  const lowHarmonic=octaveResult(makeOctaveTone(220,[.4,1,.4]),57);
+  check('Harmonic-rich true A3 is not shifted upwards',
+   lowHarmonic.notes[0].pitchMidi===57&&lowHarmonic.corrected===0);
+  check('Octave check does not mutate the original Spotify note objects',
+   lowDetected.notes[0].originalPitchMidi===57);
+
   check('Spotify integration pins library version and official model commit',
    adapter.BASIC_PITCH_VERSION==='@spotify/basic-pitch@1.0.1'&&adapter.BASIC_PITCH_MODEL.includes('2d498f82b61c71898edf0e8dd661b99076676c8b'));
 
