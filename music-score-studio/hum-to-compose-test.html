@@ -369,7 +369,7 @@ async function tryBasicPitch(){
   const adapter=window.location?.search?.includes('regression=')&&window.__humTestAdapter ? window.__humTestAdapter : await import('./hum-to-compose-basic-pitch-adapter.js');
   const answer=await adapter.recognise(decoded,p=>{
    if(recordingBlob===sourceAudioBlob)$('basicPitchProgress').textContent=p;
-  });
+  },C.estimatePitch);
   if(recordingBlob!==sourceAudioBlob)throw Error('Recording changed during recognition.');
   if(JSON.stringify(notes)!==originalScore)throw Error('You edited the score while analysis was running; the edited version was kept.');
   const newPerformance=answer.events;
@@ -380,8 +380,12 @@ async function tryBasicPitch(){
   change(()=>{notes=newScore;selected=null;detectedEvents=newPerformance;
    if(guessed.bpm)$('tempo').value=String(bpm)});
   $('basicPitchProgress').textContent='Spotify Basic Pitch complete · main recognition engine';
+  const octaveInfo=answer.octaveCheck;
+  const octaveMessage=octaveInfo
+   ? ' Automatic octave check: '+octaveInfo.corrected+' corrected, '+octaveInfo.review+' to review.'
+   : ' Octave check result unavailable; review doubtful notes.';
   say('Spotify Basic Pitch created '+newScore.filter(n=>n.midi!==null).length+
-   ' draft note groups. Compare the original humming and check doubtful notes; Undo restores the earlier score.');
+   ' draft note groups.'+octaveMessage+' Compare with the original humming; Undo restores the earlier score.');
  }catch(error){
   $('basicPitchProgress').textContent='Spotify Basic Pitch unavailable';
   if(recordingBlob===sourceAudioBlob&&JSON.stringify(notes)===originalScore)
