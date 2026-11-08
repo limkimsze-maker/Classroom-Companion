@@ -12,7 +12,26 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function run(){
  if(running)return;running=true;$('run').disabled=true;output.length=0;result.textContent='Running tests…';
  try{
-  const core=window.runHumTests();core.forEach(t=>output.push((t.ok?'PASS ':'FAIL ')+t.name+(t.error?': '+t.error:'')));
+  const core=window.runHumTests();core.forEach(t=>output.push((t.ok?'PASS ':'FAIL ')+t.name+(t.error?': '+t.error:''))); 
+  // Run the adapter's deterministic processing without fetching Spotify ML assets.
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const inputRate=48000,halfSecond=inputRate/2,adapterPcm=new Float32Array(halfSecond);
+  for(let i=0;i<adapterPcm.length;i++)adapterPcm[i]=.3*Math.sin(2*Math.PI*440*i/inputRate);
+  const converted=adapter.resampleMono({
+   sampleRate:inputRate,length:adapterPcm.length,numberOfChannels:1,getChannelData:()=>adapterPcm
+  });
+  check('Spotify adapter converts common phone audio to 22050Hz mono',converted.length===11025,'samples='+converted.length);
+  check('Spotify adapter keeps test tone audible',Math.max(...converted.slice(0,1000))>.2);
+  const adapterMelody=adapter.toSingleMelody([
+   {startTimeSeconds:.10,durationSeconds:.25,pitchMidi:60,amplitude:.85},
+   {startTimeSeconds:.35,durationSeconds:.25,pitchMidi:60,amplitude:.87},
+   {startTimeSeconds:.85,durationSeconds:.25,pitchMidi:62,amplitude:.84}
+  ]);
+  check('Spotify adapter preserves repeated notes and pauses',
+   adapterMelody.filter(x=>x.midi===60).length===2&&adapterMelody.some(x=>x.midi===null));
+  check('Spotify integration pins library version and official model commit',
+   adapter.BASIC_PITCH_VERSION==='@spotify/basic-pitch@1.0.1'&&adapter.BASIC_PITCH_MODEL.includes('2d498f82b61c71898edf0e8dd661b99076676c8b'));
+
   const frame=$('app');frame.src='./hum-to-compose-test.html?regression='+Date.now();
   await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=()=>reject(Error('Test iframe did not load'))});
   const w=frame.contentWindow,d=w.document,id=s=>d.getElementById(s);
