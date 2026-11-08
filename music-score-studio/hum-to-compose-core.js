@@ -189,6 +189,31 @@ function performanceFromFrames(frames){
 /* Infer a basic musical pulse from short performed note durations, not
    from total length of an already-quantised score. Mark ambiguity rather
    than promising an objectively correct metre or tempo. */
+
+/* Quantise stabilised performed note/rest events, instead of re-splitting
+   noisy frame-by-frame pitch readings. Original event timing is unchanged
+   and remains available for detected-melody playback. */
+function transcribeDetectedEvents(events,bpm,meter='4/4'){
+ if(!Array.isArray(events)||!events.length)return [];
+ const beat=beatSeconds(bpm,meter),out=[];let used=0;
+ for(const event of events){
+  if(!Number.isFinite(event.duration)||event.duration<.025)continue;
+  const midi=event.midi===null?null:Math.round(event.midi);
+  if(midi!==null&&(midi<36||midi>95))continue;
+  const rawBeats=event.duration/beat;
+  const beats=Math.max(.25,roundGrid(rawBeats));
+  if(used+beats>64.001)break;
+  const pts=event.points||[];
+  const drifting=midi!==null&&pts.length>2&&
+    (Math.max(...pts.map(x=>x.midi))-Math.min(...pts.map(x=>x.midi))>1.2);
+  const confidence=Number.isFinite(event.confidence)?Math.min(1,Math.max(0,event.confidence)):.75;
+  out.push({midi,beats,confidence:+confidence.toFixed(2),
+   uncertain:midi!==null&&(confidence<.86||drifting||Math.abs(beats-rawBeats)>.20),
+   reviewed:false});
+  used+=beats;
+ }
+ return out.some(x=>x.midi!==null)?out:[];
+}
 function estimateNaturalTempo(events,meter='4/4'){
  if(!METERS[meter]||!Array.isArray(events))return {bpm:null,confidence:0};
  const voiced=events.filter(e=>e.midi!==null&&Number.isFinite(e.duration)&&e.duration>=.07);
@@ -222,5 +247,5 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,estimateNaturalTempo,validateScore};
 });
