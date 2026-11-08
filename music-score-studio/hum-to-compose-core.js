@@ -86,8 +86,11 @@ function lengthParts(beats){let remaining=Math.round(beats*8)/8;const parts=[];
 function measures(notes,meter='4/4'){
  const spec=METERS[meter];if(!spec)throw Error('Invalid metre');
  const bars=[[]];let used=0;
- notes.forEach((note,origin)=>{let remaining=Math.max(0,Math.round(note.beats*8)/8),first=true;
-  while(remaining>.0001&&bars.length<=32){
+ notes.forEach((note,origin)=>{
+  if(!Number.isFinite(note.beats)||note.beats<=0||note.beats>64)throw Error('Invalid or unsupported note duration');
+  let remaining=Math.max(0,Math.round(note.beats*8)/8),first=true;
+  // Every valid bar must be rendered and exported; do not silently truncate longer scores.
+  while(remaining>.0001){
    if(spec.beats-used<.0001){bars.push([]);used=0}
    const available=Math.min(remaining,spec.beats-used),parts=lengthParts(available);
    for(const part of parts){const bar=bars[bars.length-1],prior=bar[bar.length-1],event={...note,beats:part,origin,tiePrev:!first&&note.midi!==null,tieNext:false};
