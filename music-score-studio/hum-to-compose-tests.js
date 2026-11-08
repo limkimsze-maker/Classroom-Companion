@@ -329,6 +329,21 @@
    const xml=C.scoreToMusicXML([teacher],'4/4',96,{fifths:-2});
    assert(xml.includes('<step>A</step><alter>1</alter><octave>4</octave>'));
   });
+  test('40-bar teacher score is not silently truncated in staff or MusicXML',()=>{
+   const melody=Array.from({length:40},(_,i)=>({midi:60+i%7,beats:4}));
+   const bars=C.measures(melody,'4/4');
+   assert(bars.length===40,'Expected 40 bars, got '+bars.length);
+   assert(Math.abs(bars.flat().reduce((sum,n)=>sum+n.beats,0)-160)<.0001,'Bar durations lost');
+   const xml=C.scoreToMusicXML(melody,'4/4',96);
+   assert((xml.match(/<measure /g)||[]).length===40,'MusicXML must export all 40 bars');
+   assert(xml.includes('<measure implicit="no" number="40">'),'Final bar missing');
+  });
+  test('Long score notation rejects non-finite or excessive note lengths',()=>{
+   for(const beats of [Infinity,NaN,128]){
+    let rejected=false;try{C.measures([{midi:60,beats}],'4/4')}catch(_){rejected=true}
+    assert(rejected,'Invalid length must not create an infinite loop');
+   }
+  });
   test('Reject corrupt saved score',()=>{let bad=false;try{C.validateScore({meter:'9/9',tempo:96,notes:[]})}catch(_){bad=true}assert(bad)});
   test('Saved score retained pitch and review metadata',()=>{const n={midi:61,beats:.75,confidence:.55,uncertain:true,reviewed:false};const [c]=C.validateScore({meter:'6/8',tempo:96,notes:[n]});assert(c.midi===61&&c.beats===.75&&c.uncertain)});
   return results.slice();
