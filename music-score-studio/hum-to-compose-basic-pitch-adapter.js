@@ -313,7 +313,17 @@ export function verifyPerformance(noteEvents,pcm,rate,pitchEstimator){
 /* Basic Pitch can return simultaneous notes. This is an experimental
    single-stave monophonic adapter: keep the strongest active note per
    interval. Preserve separate attacks even when the repeated pitch matches. */
-export function toSingleMelody(noteEvents,maxDuration=20){
+/* Keep short same-pitch Spotify fragments together only when the source audio
+   shows no convincing new attack. Real repeated notes (including short ones)
+   must remain separate; when the evidence is missing we do NOT merge. */
+function hasIndependentReattack(pcm,rate,at){
+ if(!(pcm instanceof Float32Array)||!(rate>0)||at<.06||at+.055>=pcm.length/rate)return true;
+ const before=sectionRms(pcm,rate,at-.052,at-.022);
+ const valley=sectionRms(pcm,rate,at-.009,at+.009);
+ const after=sectionRms(pcm,rate,at+.020,at+.052);
+ return after>.012&&before>.012&&valley<before*.72&&valley<after*.72&&after>before*.55;
+}
+export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=22050){
  if(!Array.isArray(noteEvents))return [];
  const clean=noteEvents.map((n,index)=>{
   const start=Math.max(0,Number(n.startTimeSeconds));
@@ -345,10 +355,25 @@ export function toSingleMelody(noteEvents,maxDuration=20){
    timeline.push(last);
   }
  }
- const first=timeline.find(n=>n.midi!==null),lastPitch=[...timeline].reverse().find(n=>n.midi!==null);
+ // Spotify sometimes reports 60-100 ms same-pitch tails as new notes.
+ // Use the original recording to merge only those lacking a fresh attack.
+ const smoothed=[];
+ for(const piece of timeline){
+  const prev=smoothed.at(-1),shortPart=prev&&Math.min(prev.duration,piece.duration)<=.14;
+  if(prev&&prev.midi!==null&&piece.midi===prev.midi&&shortPart&&
+   Math.abs(piece.start-prev.end)<.008&&sourcePcm instanceof Float32Array&&
+   !hasIndependentReattack(sourcePcm,rate,piece.start)){
+    prev.end=piece.end;prev.duration=prev.end-prev.start;
+    prev.confidence=Math.min(prev.confidence,piece.confidence,.8);
+    prev.qualityStatus='review'; // Surface the uncertain merger for teacher review.
+    continue;
+  }
+  smoothed.push({...piece});
+ }
+ const first=smoothed.find(n=>n.midi!==null),lastPitch=[...smoothed].reverse().find(n=>n.midi!==null);
  if(!first||!lastPitch)return [];
  const start=first.start,end=lastPitch.end;
- return timeline.filter(n=>n.end>start&&n.start<end).map(n=>{
+ return smoothed.filter(n=>n.end>start&&n.start<end).map(n=>{
   const at=Math.max(0,n.start-start),until=Math.min(end-start,n.end-start),duration=until-at;
   const points=n.midi===null?[]:[{t:0,midi:n.midi,confidence:n.confidence}];
   if(n.midi!==null&&Array.isArray(n.bends)&&n.bends.length>=2&&Number.isFinite(n.bendStart)&&n.bendDuration>0){
@@ -385,7 +410,7 @@ export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=nul
  const raw=library.noteFramesToTime(noteFrames);
  onProgress('Verifying pitch, pauses and note boundaries against the recording…');
  const verified=verifyPerformance(raw,audio,22050,pitchEstimator);
- const melody=toSingleMelody(verified.notes,20);
+ const melody=toSingleMelody(verified.notes,20,audio,22050);
  if(!melody.some(n=>n.midi!==null))throw Error('Spotify Basic Pitch could not detect clear melody notes');
  return {events:melody,rawNoteCount:raw.length,engine:'Spotify Basic Pitch 1.0.1',octaveCheck:{checked:verified.summary.checked,corrected:verified.summary.octavesCorrected,review:verified.summary.review},verification:verified.summary};
 }
