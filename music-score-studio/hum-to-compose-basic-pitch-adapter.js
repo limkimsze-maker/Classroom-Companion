@@ -378,8 +378,10 @@ export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=nul
  await model.evaluateModel(audio,(f,o,c)=>{frames.push(...f);onsets.push(...o);contours.push(...c)},
   pct=>onProgress('Analysing Spotify Basic Pitch… '+Math.round(pct*100)+'%'));
  let noteFrames=library.outputToNotesPoly(frames,onsets,.25,.25,5);
- if(typeof library.addPitchBendsToNoteEvents==='function'&&contours.length)
-  noteFrames=library.addPitchBendsToNoteEvents(contours,noteFrames);
+ if(typeof library.addPitchBendsToNoteEvents==='function'&&contours.length){
+  try{noteFrames=library.addPitchBendsToNoteEvents(contours,noteFrames)}
+  catch(_){/* Pitch bends are optional; preserve the correctly detected notes. */}
+ }
  const raw=library.noteFramesToTime(noteFrames);
  onProgress('Verifying pitch, pauses and note boundaries against the recording…');
  const verified=verifyPerformance(raw,audio,22050,pitchEstimator);
