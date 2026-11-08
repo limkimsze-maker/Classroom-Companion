@@ -100,14 +100,21 @@ function measures(notes,meter='4/4'){
   }
  });
  if(bars.length>1&&bars[bars.length-1].length===0)bars.pop();
+ // A whole-measure rest uses the semibreve rest symbol in any metre.
+ // Keep the real crotchet-beat duration unchanged for playback.
+ for(const bar of bars)if(bar.length===1&&bar[0].midi===null&&
+   Math.abs(bar[0].beats-spec.beats)<.0001)bar[0].fullMeasureRest=true;
  return bars;
 }
 function displayAccidentals(bars){return bars.map(bar=>{const active=new Map();
  return bar.map(n=>{if(n.midi===null)return {...n,displayAccidental:null};
    const s=n.spelling||spelling(n.midi);
    const key=s.step+':'+s.octave,old=active.has(key)?active.get(key):0;
+   // A tied accidental carries across the barline only to the tied note.
+   // It must NOT affect the next untied note's accidental state.
+   if(n.tiePrev)return {...n,spelling:s,displayAccidental:null};
    const show=s.alter!==old?(s.alter===1?'♯':s.alter===-1?'♭':'♮'):null;
-   active.set(key,s.alter);return {...n,spelling:s,displayAccidental:n.tiePrev?null:show};
+   active.set(key,s.alter);return {...n,spelling:s,displayAccidental:show};
  })})}
 /* Fit total notated duration to the first-to-last voiced span.
    This estimates playback speed only; it cannot fix individual rhythm or pitch errors. */
