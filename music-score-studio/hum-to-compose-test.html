@@ -240,10 +240,10 @@ async function builtInFallback(reason){
 }
 function sample(){if(recording||requesting||basicPitchBusy||recognitionPending)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
 function writtenPitchName(n){if(n.midi===null)return 'Rest';
- const s=n.spelling||C.spelling(n.midi,keyFifths()<0);
+ const s=n.spelling||C.spellingForKey(n.midi,keyFifths());
  return ['C','D','E','F','G','A','B'][s.step]+(s.alter===-1?'♭':s.alter===1?'♯':'')+s.octave;
 }
-function noteDiatonic(n){const s=n.spelling||C.spelling(n.midi,keyFifths()<0);return (s.octave+1)*7+s.step}
+function noteDiatonic(n){const s=n.spelling||C.spellingForKey(n.midi,keyFifths());return (s.octave+1)*7+s.step}
 function clefOf(){const forced=clefMode();if(forced!=='auto')return forced;
  const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);
  return !pitched.length||pitched[Math.floor(pitched.length/2)]>=60?'treble':'bass'}
@@ -381,9 +381,9 @@ function render(){
  lastSetup={clefMode:clefMode(),fifths:keyFifths()};
 }
 function choose(e){const g=e.target.closest('g[data-origin]');if(!g)return;const index=Number(g.getAttribute('data-origin'));if(!Number.isInteger(index)||!notes[index])return;selected=index;render()}
-function editPitch(delta){if(selected===null||notes[selected]?.midi===null)return;change(()=>{const n=notes[selected],m=Math.min(95,Math.max(36,n.midi+delta));notes[selected]={...n,midi:m,spelling:C.spelling(m),uncertain:false,reviewed:true}})}
+function editPitch(delta){if(selected===null||notes[selected]?.midi===null)return;change(()=>{const n=notes[selected],m=Math.min(95,Math.max(36,n.midi+delta));notes[selected]={...n,midi:m,spelling:C.spellingForKey(m,keyFifths()),uncertain:false,reviewed:true}})}
 function duration(){if(selected===null||!notes[selected])return;change(()=>{notes[selected].beats=Number($('duration').value);notes[selected].reviewed=true})}
-function accidental(){if(selected===null||notes[selected]?.midi===null)return;const v=$('accidental').value;if(v==='keep')return;change(()=>{notes[selected]=C.changeAccidental(notes[selected],Number(v))})}
+function accidental(){if(selected===null||notes[selected]?.midi===null)return;const v=$('accidental').value;if(v==='keep')return;change(()=>{notes[selected]=C.changeAccidental({...notes[selected],spelling:notes[selected].spelling||C.spellingForKey(notes[selected].midi,keyFifths())},Number(v))})}
 function insert(isRest){change(()=>{const midi=isRest?null:((selected!==null&&notes[selected]?.midi!==null)?notes[selected].midi:60);const index=selected===null?notes.length:selected+1;
   notes.splice(index,0,{midi,beats:1,confidence:1,uncertain:false,reviewed:true});selected=index})}
 function toggle(){if(selected===null||!notes[selected])return;change(()=>{const n=notes[selected];n.midi=n.midi===null?60:null;delete n.spelling;n.uncertain=false;n.reviewed=true})}
