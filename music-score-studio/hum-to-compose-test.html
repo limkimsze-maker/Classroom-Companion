@@ -87,7 +87,7 @@ const say=(s,error=false)=>{$('status').textContent=s;$('status').setAttribute('
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const el=(tag,a={},inner='')=>'<'+tag+' '+Object.entries(a).map(([k,v])=>k+'="'+esc(v)+'"').join(' ')+'>'+inner+'</'+tag+'>';
 let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser=null,analysisCtx=null,playerCtx=null,mediaRecorder=null,chunks=[],originalUrl=null,originalAudio=new Audio(),recording=false,requesting=false,frame=null,lastFrame=0,started=0,samples=[],previousMidi=null;
-let playing=false,voices=[],timers=[],comparisonPending=false,performance=[];
+let playing=false,voices=[],timers=[],comparisonPending=false,detectedEvents=[];
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
 const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo()});
 function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;$('meter').value=s.meter;$('tempo').value=String(s.tempo);render()}
@@ -95,12 +95,12 @@ function checkpoint(){history.push(snapshot());if(history.length>100)history.shi
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('audioUpload').disabled=recording||requesting;$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!performance.some(n=>n.midi!==null)}
+function recordingControls(){$('audioUpload').disabled=recording||requesting;$('record').disabled=recording||requesting;$('finish').disabled=!recording;$('example').disabled=recording||requesting;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||!samples.length);$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
 function closeMic(){if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
 function setOriginal(url){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';$('original').disabled=!url;$('compare').disabled=!url||!notes.length}
-function stopPlayback(){comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!performance.some(n=>n.midi!==null);$('stop').disabled=true;$('original').textContent='▶ Original hum'}
+function stopPlayback(){comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null);$('stop').disabled=true;$('original').textContent='▶ Original hum'}
 function stopBoth(){stopPlayback();say('Playback stopped.')}
 function microphoneAdvice(error,stage){
  const name=error?.name||'UnknownError';
@@ -145,14 +145,14 @@ async function start(){
   stage='audio';
   analyser=analysisCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
   source=analysisCtx.createMediaStreamSource(stream);source.connect(analyser);
-  performance=[];samples=[];previousMidi=null;chunks=[];setOriginal(null);
+  detectedEvents=[];samples=[];previousMidi=null;chunks=[];setOriginal(null);
   if(typeof MediaRecorder!=='undefined'){try{const rec=new MediaRecorder(stream);mediaRecorder=rec;rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};rec.onstop=()=>{if(chunks.length){const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});setOriginal(URL.createObjectURL(blob))}};rec.start()}catch(_){mediaRecorder=null}}
-  recording=true;requesting=false;started=performance.now();lastFrame=0;recordingControls();say('Recording locally… hum clearly, with short pauses between repeated notes.');analyse();
+  recording=true;requesting=false;started=window.performance.now();lastFrame=0;recordingControls();say('Recording locally… hum clearly, with short pauses between repeated notes.');analyse();
  }catch(e){
   requesting=false;recording=false;closeMic();recordingControls();say(microphoneAdvice(e,stage),true);
  }
 }
-function analyse(){if(!recording||!analyser||!analysisCtx)return;const now=performance.now();
+function analyse(){if(!recording||!analyser||!analysisCtx)return;const now=window.performance.now();
  if(now-lastFrame>=SAMPLE_MS){lastFrame=now;const buffer=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(buffer);
   const p=C.estimatePitch(buffer,analysisCtx.sampleRate,previousMidi);const t=(now-started)/1000;
   // Keep raw pitch and confidence for review; do not silently force a doubtful pitch.
@@ -164,11 +164,11 @@ function analyse(){if(!recording||!analyser||!analysisCtx)return;const now=perfo
   if(t>=MAX_SECONDS){finish();return}
  }frame=requestAnimationFrame(analyse)}
 function finish(){if(!recording)return;recording=false;closeMic();recordingControls();$('meterFill').style.width='0';$('livePitch').textContent='—';
- performance=C.performanceFromFrames(samples);
- const guessed=C.estimateNaturalTempo(performance,meter());
+ detectedEvents=C.performanceFromFrames(samples);
+ const guessed=C.estimateNaturalTempo(detectedEvents,meter());
  const autoBpm=guessed.bpm||tempo();
  const result=C.transcribe(samples,autoBpm,meter());
- if(!result.some(n=>n.midi!==null)){performance=[];say('No reliable notes found. Try a quiet room, and hum with clear attacks and pauses.',true);return}
+ if(!result.some(n=>n.midi!==null)){detectedEvents=[];say('No reliable notes found. Try a quiet room, and hum with clear attacks and pauses.',true);return}
  change(()=>{notes=result;selected=null;if(guessed.bpm)$('tempo').value=String(autoBpm)});
  recordingControls();
  say('Draft generated'+(guessed.bpm?' · estimated '+autoBpm+' BPM'+(guessed.ambiguous?' (pulse uncertain)':''):' · tempo needs checking')+'. Listen to Play detected melody first, then Play written score. Check any amber ? notes.')}
@@ -211,7 +211,7 @@ async function useAudioFile(file){
   const detectedNotes=C.transcribe(nextSamples,bpm,meter());
   if(!detectedNotes.some(n=>n.midi!==null))throw Error('No clear melody found. Try humming closer to the microphone.');
   // Change score only after decoding and transcription succeed.
-  samples=nextSamples;performance=decodedPerformance;previousMidi=prior;
+  samples=nextSamples;detectedEvents=decodedPerformance;previousMidi=prior;
   change(()=>{notes=detectedNotes;selected=null;if(estimated.bpm)$('tempo').value=String(bpm)});
   setOriginal(URL.createObjectURL(file));
   say('Local audio file analysed. Compare Original hum, Play detected melody and Play written score.'+(audio.duration>20?' Only the first 20 seconds were transcribed.':''));
@@ -222,7 +222,7 @@ async function useAudioFile(file){
   requesting=false;recordingControls();render();
  }
 }
-function sample(){if(recording||requesting)return;samples=[];performance=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
+function sample(){if(recording||requesting)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
 function noteDiatonic(n){const s=n.spelling||C.spelling(n.midi);return (s.octave+1)*7+s.step}
 function clefOf(){const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);return !pitched.length||pitched[Math.floor(pitched.length/2)]>=60?'treble':'bass'}
 function restGlyph(n,x,base){const d=n.beats,root=[.375,.75,1.5,3].includes(d)?d/1.5:d,dot=[.375,.75,1.5,3].includes(d);
@@ -270,7 +270,7 @@ function beamGroups(points,pulse){
 }
 function render(){
  const has=notes.length>0,valid=selected!==null&&notes[selected],isNote=valid&&notes[selected].midi!==null;
- $('play').disabled=!has||playing;$('faithful').disabled=!performance.some(n=>n.midi!==null)||playing;$('save').disabled=!has;$('saveLocal').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
+ $('play').disabled=!has||playing;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null)||playing;$('save').disabled=!has;$('saveLocal').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
  $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild'].forEach(id=>$(id).disabled=!has||!samples.length||recording||requesting);
  ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental'].forEach(id=>$(id).disabled=!isNote);
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
@@ -314,7 +314,7 @@ function render(){
  if(!has)out+=el('text',{x:120,y:112,'font-size':18},'Record a melody or try the sample.');
  $('score').setAttribute('viewBox','0 0 900 '+height);$('score').innerHTML=out;
  const unsure=notes.filter(n=>n.uncertain&&!n.reviewed).length;
- $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+bars.length+' bars · '+meter()+' · '+tempo()+' BPM'+(performance.length?' (estimated)':'')+' · '+unsure+' uncertain':'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
+ $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+bars.length+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain':'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
 }
 function choose(e){const g=e.target.closest('g[data-origin]');if(!g)return;const index=Number(g.getAttribute('data-origin'));if(!Number.isInteger(index)||!notes[index])return;selected=index;render()}
 function editPitch(delta){if(selected===null||notes[selected]?.midi===null)return;change(()=>{const n=notes[selected],m=Math.min(95,Math.max(36,n.midi+delta));notes[selected]={...n,midi:m,spelling:C.spelling(m),uncertain:false,reviewed:true}})}
@@ -341,13 +341,13 @@ function rebuild(){if(!samples.length)return;const result=C.transcribe(samples,t
  change(()=>{notes=result;selected=null});say('Rhythm rebuilt at '+tempo()+' BPM from the local humming analysis. Previous edits can be restored with Undo.')}
 
 async function playDetected(){
- if(!performance.some(n=>n.midi!==null)||recording)return;
+ if(!detectedEvents.some(n=>n.midi!==null)||recording)return;
  stopPlayback();
  try{playerCtx=playerCtx||new(window.AudioContext||window.webkitAudioContext)();await playerCtx.resume()}
  catch(_){say('Detected melody playback is not supported in this browser.',true);return}
  playing=true;$('play').disabled=true;$('faithful').disabled=true;$('stop').disabled=false;
  const begin=playerCtx.currentTime+.12;
- for(const e of performance){
+ for(const e of detectedEvents){
   if(e.midi===null||e.duration<=0)continue;
   const when=begin+e.start,end=begin+e.end;
   const osc=playerCtx.createOscillator(),gain=playerCtx.createGain();
@@ -367,7 +367,7 @@ async function playDetected(){
   osc.connect(gain);gain.connect(playerCtx.destination);
   osc.start(when);osc.stop(end+.005);voices.push(osc);
  }
- const total=performance[performance.length-1].end;
+ const total=performance[detectedEvents.length-1].end;
  timers.push(setTimeout(()=>{stopPlayback();say('Detected melody finished. Play written score to hear how the notation differs.')},(total+.17)*1000));
  say('Playing detected melody with its measured note lengths, pauses and pitch movement. The instrument sound will differ from your voice.');
 }
@@ -389,7 +389,7 @@ async function playScore(){
  timers.push(setTimeout(()=>{stopPlayback();say('Playback finished. Compare with Original hum and correct uncertain notes.')},(at+.15)*1000));
  say('Playing the score. Each note or rest highlight ends at its actual duration.')}
 function exportJSON(){if(!notes.length)return;const text=JSON.stringify({format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),notes},null,2),blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='hum-to-compose-test.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);say('Score JSON saved to your downloads. Recording audio is not included.')}
-function importState(data){const clean=C.validateScore(data);performance=[];samples=[];setOriginal(null);change(()=>{notes=clean;selected=null;$('meter').value=data.meter;$('tempo').value=String(data.tempo)});say('Saved written score opened. The original recording and detected performance are not stored in score JSON.')}
+function importState(data){const clean=C.validateScore(data);detectedEvents=[];samples=[];setOriginal(null);change(()=>{notes=clean;selected=null;$('meter').value=data.meter;$('tempo').value=String(data.tempo)});say('Saved written score opened. The original recording and detected performance are not stored in score JSON.')}
 function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-compose-test-v2',JSON.stringify({format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),notes}));say('Score saved in this browser only. Use Save JSON for a portable copy.')}catch(_){say('Browser storage unavailable. Use Save JSON instead.',true)}}
 function localLoad(){try{const raw=localStorage.getItem('hum-to-compose-test-v2');if(!raw){say('No saved score here yet. Use Save here or Open JSON.',true);return}importState(JSON.parse(raw))}catch(_){say('Saved data could not be opened. Use a valid Hum to Compose JSON file.',true)}}
 $('record').addEventListener('click',start);$('audioUpload').addEventListener('click',()=>$('audioFile').click());
