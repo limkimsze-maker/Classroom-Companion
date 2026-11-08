@@ -11,6 +11,7 @@
   results.length=0;
   test('Synthetic pitches A4/C4/G3 and octave',()=>{near(C.estimatePitch(tone(440),44100).midi,69,.2);near(C.estimatePitch(tone(261.6256),44100).midi,60,.2);near(C.estimatePitch(tone(196),44100).midi,55,.3)});
   test('Second harmonics and octave confusion',()=>{near(C.estimatePitch(tone(220,.30,.50),44100).midi,57,.3);near(C.estimatePitch(tone(261.6256,.1,.65),44100).midi,60,.35)});
+  test('Natural five-hertz vibrato remains near the central pitch',()=>{let phase=0;const buf=new Float32Array(4096);for(let i=0;i<buf.length;i++){const freq=440+3*Math.sin(2*Math.PI*5*i/44100);phase+=2*Math.PI*freq/44100;buf[i]=.4*Math.sin(phase)}near(C.estimatePitch(buf,44100).midi,69,.5)});
   test('Normal amplitude variation',()=>{near(C.estimatePitch(tone(330,.06,.05),44100).midi,64,.4);near(C.estimatePitch(tone(330,.4,.18),44100).midi,64,.4)});
   test('Silence is not a note',()=>{assert(C.estimatePitch(new Float32Array(4096),44100).midi===null)});
   test('Uncorrelated noise is not a note',()=>{let seed=1234567;const buf=new Float32Array(4096);for(let i=0;i<buf.length;i++){seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;buf[i]=seed/2147483648*.18}assert(C.estimatePitch(buf,44100).midi===null)});
@@ -23,7 +24,7 @@
   test('Quavers, semiquavers and dotted durations',()=>{for(const n of [.25,.375,.5,.75,1,1.5,2,3,4])assert(C.lengthParts(n)[0]===n,'duration '+n)});
   test('4/4 tie over barline',()=>{const b=C.measures([{midi:60,beats:5}],'4/4');assert(b.length===2&&b[0].at(-1).tieNext&&b[1][0].tiePrev)});
   test('Barline ties do not add additional events',()=>{const n=[{midi:60,beats:9}];const b=C.measures(n,'4/4');assert(b.length===3&&n.length===1);const secs=n.reduce((t,x)=>t+x.beats*C.beatSeconds(96,'4/4'),0);near(secs,5.625,.001)});
-  test('Accidental carry, naturals and bar reset',()=>{const b=C.displayAccidentals(C.measures([{midi:61,beats:1},{midi:61,beats:1},{midi:60,beats:1},{midi:61,beats:2}],'4/4'));assert(b[0][0].displayAccidental==='♯');assert(b[0][1].displayAccidental===null);assert(b[0][2].displayAccidental==='♮');assert(b[0][3].displayAccidental==='♯');assert(b[1][0].displayAccidental===null||b[1][0].tiePrev)});
+  test('Accidental carry, naturals and bar reset',()=>{const b=C.displayAccidentals(C.measures([{midi:61,beats:1},{midi:61,beats:1},{midi:60,beats:1},{midi:61,beats:2}],'4/4'));assert(b[0][0].displayAccidental==='♯');assert(b[0][1].displayAccidental===null);assert(b[0][2].displayAccidental==='♮');assert(b[0][3].displayAccidental==='♯');assert(b[1][0].displayAccidental==='♯','barline must reset the sharp')});
   test('Flat enharmonic spelling',()=>{const n=C.changeAccidental({midi:62,beats:1,spelling:{step:1,alter:0,octave:4}},-1);assert(n.midi===61&&n.spelling.alter===-1);assert(C.validateScore({meter:'4/4',tempo:96,notes:[n]}).length===1)});
   test('All four selected time signatures',()=>{for(const [meter,spec] of Object.entries(C.METERS)){const b=C.measures([{midi:60,beats:10}],meter);near(b[0].reduce((s,n)=>s+n.beats,0),spec.beats,.001);assert(b.length>=3)}});
   test('6/8 dotted crotchet tempo',()=>{near(C.beatSeconds(60,'6/8'),2/3,.000001);near(C.beatSeconds(60,'4/4'),1,.000001)});
