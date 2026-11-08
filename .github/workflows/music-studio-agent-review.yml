@@ -1,0 +1,43 @@
+name: Music Studio - independent AI review
+
+# Human-triggered to control API costs. Never executes pull-request code.
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number (start with 64; review 65 later)"
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: music-studio-ai-review-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  independent-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      MUSIC_STUDIO_AI_MODEL: ${{ vars.MUSIC_STUDIO_AI_MODEL || 'gpt-6.1-terra' }}
+      REVIEW_PR_NUMBER: ${{ inputs.pr_number }}
+    steps:
+      - name: Checkout trusted workflow source only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate orchestration locally (no AI cost)
+        run: python -m unittest discover -s music-score-studio/agent-team -p 'test_*.py' -v
+      - name: Four independent reviews, correction planner and manager
+        run: python music-score-studio/agent-team/review.py --pr "$REVIEW_PR_NUMBER"
