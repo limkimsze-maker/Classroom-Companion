@@ -17,6 +17,7 @@ spotifyButton.addEventListener('click',async()=>{
  spotifyButton.disabled=true;
  const checks=[0,1,2,3].flatMap(i=>['pure','rich'].map(voice=>'pattern'+i+'-'+voice+'-correct'));
  let evaluated=0,matched=0,total=0,restHits=0,truePositive=0,falsePositive=0,falseNegative=0;
+ const detailRows=[];
  try{
   spotifyOutput.textContent='Loading pinned Spotify Basic Pitch model…';
   const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
@@ -40,6 +41,7 @@ spotifyButton.addEventListener('click',async()=>{
     })).filter(x=>x.overlap>.05).sort((a,b)=>b.overlap-a.overlap);
     if(overlapping.length&&overlapping[0].p.midi===note.midi)matched++;
    }
+   detailRows.push(fixture.name+' expected '+truth.map(n=>n.midi+'@'+n.start.toFixed(2)+'-'+n.end.toFixed(2)).join(' ')+' | predicted '+predicted.map(n=>n.midi+'@'+n.start.toFixed(2)+'-'+n.end.toFixed(2)).join(' '));
    const scored=window.HumBenchmark.scoreMelody(truth,predicted);
    truePositive+=scored.truePositive;falsePositive+=scored.falsePositive;falseNegative+=scored.falseNegative;
    if(found.events.some(e=>e.midi===null&&e.duration>.07))restHits++;
@@ -57,6 +59,9 @@ spotifyButton.addEventListener('click',async()=>{
    'One-to-one note F1: '+(f1*100).toFixed(1)+'%',
    'Correctly matched notes: '+truePositive+' | extra or wrong: '+falsePositive+' | missed or wrong: '+falseNegative,
    'Pauses recognised: '+restHits+'/'+evaluated,
+   '',
+   'Per-melody diagnostic (MIDI pitch @ start-end seconds):',
+   ...detailRows,
    '',
    'This tests synthetic melodies with the real model, NOT human voice reliability.',
    'Teacher-reviewed human recordings remain necessary before release.'
