@@ -214,6 +214,58 @@ function transcribeDetectedEvents(events,bpm,meter='4/4'){
  }
  return out.some(x=>x.midi!==null)?out:[];
 }
+/* Align note/rest boundaries to ONE shared musical grid.
+   Quantising each duration independently accumulates drift. Using absolute
+   onset/end positions preserves repeated notes and measured silent gaps,
+   while marking large rounding changes for teacher review. */
+function transcribeAlignedEvents(events,bpm,meter='4/4'){
+ if(!Array.isArray(events)||!events.length||!METERS[meter])return [];
+ const beat=beatSeconds(bpm,meter),grid=x=>Math.round(4*x)/4;
+ const sorted=events.filter(e=>Number.isFinite(e.start)&&Number.isFinite(e.end)&&
+   Number.isFinite(e.duration)&&e.end>e.start+.02)
+  .slice().sort((a,b)=>a.start-b.start);
+ const out=[];let used=0;
+ function insert(midi,length,event,drift){
+  if(length<.249||used>=64)return;
+  const beats=Math.min(length,64-used);
+  if(beats<.249)return;
+  const confidence=midi===null?1:Number.isFinite(event?.confidence)?Math.min(1,Math.max(0,event.confidence)):.7;
+  out.push({midi,beats:+beats.toFixed(2),confidence:+confidence.toFixed(2),
+   uncertain:midi!==null&&(confidence<.86||drift||event?.qualityStatus==='review'||
+   event?.qualityStatus==='corrected'||event?.octaveStatus==='review'||event?.octaveStatus==='corrected'),
+   reviewed:false});
+  used+=beats;
+ }
+ for(const event of sorted){
+  if(used>=64-.001)break;
+  const midi=event.midi===null?null:Math.round(event.midi);
+  if(midi!==null&&(midi<36||midi>95))continue;
+  const begin=Math.max(used,Math.max(0,grid(event.start/beat)));
+  if(begin>used+.125)insert(null,begin-used,null,false);
+  const quantEnd=Math.max(begin+.25,grid(event.end/beat));
+  const finished=Math.max(used+.25,quantEnd);
+  const actualLength=event.duration/beat,assigned=finished-used;
+  const onsetChanged=Math.abs(begin-event.start/beat)>.20;
+  const durationChanged=Math.abs(assigned-actualLength)>.22;
+  const pushed=begin>event.start/beat+.24;
+  insert(midi,assigned,event,onsetChanged||durationChanged||pushed);
+ }
+ return out.some(e=>e.midi!==null)?out:[];
+}
+/* Validate score duration and pitch against the chosen metre and the 64-beat
+   safety limit without altering any teacher edits. */
+function auditScore(score,meter){
+ if(!METERS[meter]||!Array.isArray(score))return {ok:false,reason:'Invalid notation input'};
+ let beats=0;for(const note of score){
+  if(!Number.isFinite(note.beats)||note.beats<.25||Math.round(note.beats*4)!==note.beats*4)
+   return {ok:false,reason:'Invalid note or rest duration'};
+  if(note.midi!==null&&(!Number.isInteger(note.midi)||note.midi<36||note.midi>95))
+   return {ok:false,reason:'Invalid note pitch'};
+  beats+=note.beats;
+  if(beats>64.001)return {ok:false,reason:'Score exceeds the 64-beat limit'};
+ }
+ return {ok:score.some(x=>x.midi!==null),beats,reason:score.length?'No pitched notes':'Empty score'};
+}
 /* Adapter for Spotify Basic Pitch NoteEventTime output.
    Keeps this app's monophonic score and playback constraints; concurrent
    pitches are reduced to the loudest active model event, never silently
@@ -281,5 +333,5 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,basicPitchToPerformance,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,basicPitchToPerformance,estimateNaturalTempo,validateScore};
 });
