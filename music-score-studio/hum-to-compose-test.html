@@ -96,8 +96,6 @@ const el=(tag,a={},inner='')=>'<'+tag+' '+Object.entries(a).map(([k,v])=>k+'="'+
 let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser=null,analysisCtx=null,playerCtx=null,mediaRecorder=null,chunks=[],originalUrl=null,originalAudio=new Audio(),recording=false,requesting=false,frame=null,lastFrame=0,started=0,samples=[],previousMidi=null;
 let playing=false,voices=[],timers=[],comparisonPending=false,detectedEvents=[];
 let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false;
-const BASIC_PITCH_MODULE='https://esm.sh/@spotify/basic-pitch@1.0.1?bundle';
-const BASIC_PITCH_MODEL='https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json';
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
 const scoreLevel=()=>Math.min(1.9,Math.max(1,Number($('scoreVolume').value)/100||1.6));
 const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),detectedEvents});
@@ -355,54 +353,38 @@ function rebuild(){if(!detectedEvents.length)return;const result=C.transcribeDet
 
 async function tryBasicPitch(){
  if(basicPitchBusy||recording||requesting||!sourceAudioBlob)return;
- const recordingBlob=sourceAudioBlob;
+ const recordingBlob=sourceAudioBlob,originalScore=JSON.stringify(notes);
  basicPitchBusy=true;recordingControls();
- $('basicPitchProgress').textContent='Loading open-source model…';
+ $('basicPitchProgress').textContent='Preparing independent recogniser…';
  let ctx=null;
  try{
-  // Pin the public Apache-2.0 npm release. No user audio is sent to the CDN;
-  // browser downloads only the reusable library and model files on request.
-  const bp=await import(BASIC_PITCH_MODULE);
-  if(typeof bp.BasicPitch!=='function'||typeof bp.outputToNotesPoly!=='function'||
-     typeof bp.addPitchBendsToNoteEvents!=='function'||typeof bp.noteFramesToTime!=='function')
-   throw Error('Basic Pitch library exports were not available.');
-  if(recordingBlob!==sourceAudioBlob)throw Error('Recording changed during model loading.');
   const AudioContextClass=window.AudioContext||window.webkitAudioContext;
   if(!AudioContextClass)throw Error('Web Audio is not available in this browser.');
   ctx=new AudioContextClass();
   const decoded=sourceAudioBuffer||await ctx.decodeAudioData(await recordingBlob.arrayBuffer());
-  const sampleCount=Math.min(decoded.length,Math.floor(20*decoded.sampleRate));
-  let audio=decoded;
-  if(sampleCount<decoded.length){
-   audio=ctx.createBuffer(decoded.numberOfChannels,sampleCount,decoded.sampleRate);
-   for(let c=0;c<decoded.numberOfChannels;c++)audio.getChannelData(c).set(decoded.getChannelData(c).subarray(0,sampleCount));
-  }
-  if(audio.duration<.15)throw Error('Recording is too short.');
-  $('basicPitchProgress').textContent='Analysing locally…';
-  const frames=[],onsets=[],contours=[];
-  const engine=new bp.BasicPitch(BASIC_PITCH_MODEL);
-  await engine.evaluateModel(audio,(f,o,c)=>{frames.push(...f);onsets.push(...o);contours.push(...c)},p=>{
-   $('basicPitchProgress').textContent='Analysing locally… '+Math.round(Math.min(1,Math.max(0,p))*100)+'%';
+  if(recordingBlob!==sourceAudioBlob)throw Error('Recording changed while reading audio.');
+  // Adapter performs required 22050 Hz mono resampling. The Spotify library
+  // rejects an ordinary 44100/48000 Hz stereo AudioBuffer passed directly.
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const answer=await adapter.recognise(decoded,p=>{
+   if(recordingBlob===sourceAudioBlob)$('basicPitchProgress').textContent=p;
   });
-  if(recordingBlob!==sourceAudioBlob)throw Error('Recording changed during analysis.');
-  if(!frames.length||!onsets.length)throw Error('The model returned no note frames.');
-  const eventFrames=bp.outputToNotesPoly(frames,onsets,.25,.25,5);
-  const events=bp.noteFramesToTime(bp.addPitchBendsToNoteEvents(contours,eventFrames));
-  const newPerformance=C.basicPitchToPerformance(events,20);
-  if(!newPerformance.some(e=>e.midi!==null))throw Error('No usable melody was detected.');
+  if(recordingBlob!==sourceAudioBlob)throw Error('Recording changed during recognition.');
+  if(JSON.stringify(notes)!==originalScore)throw Error('You edited the score while analysis was running; the edited version was kept.');
+  const newPerformance=answer.events;
   const guessed=C.estimateNaturalTempo(newPerformance,meter());
   const bpm=guessed.bpm||tempo();
   const newScore=C.transcribeDetectedEvents(newPerformance,bpm,meter());
-  if(!newScore.some(n=>n.midi!==null))throw Error('The detected notes could not form a usable score.');
+  if(!newScore.some(n=>n.midi!==null))throw Error('The model found no usable melody.');
   change(()=>{notes=newScore;selected=null;detectedEvents=newPerformance;
    if(guessed.bpm)$('tempo').value=String(bpm)});
-  $('basicPitchProgress').textContent='Analysis complete';
-  say('Spotify Basic Pitch produced '+newScore.filter(n=>n.midi!==null).length+
-   ' draft notes. All detected pitches need teacher review. Play the score and compare with your original; Undo restores the previous score.');
+  $('basicPitchProgress').textContent='Spotify Basic Pitch complete';
+  say('Spotify Basic Pitch created '+newScore.filter(n=>n.midi!==null).length+
+   ' draft note groups. Compare the original humming and check doubtful notes; Undo restores the earlier score.');
  }catch(error){
-  $('basicPitchProgress').textContent='Model unavailable or no usable notes';
-  say('Spotify Basic Pitch TEST could not complete: '+(error?.message||'unknown problem')+
-   '. Your previous score was kept. You can still use the built-in recogniser.',true);
+  $('basicPitchProgress').textContent='Spotify Basic Pitch unavailable or interrupted';
+  say('Spotify Basic Pitch TEST did not replace your score: '+(error?.message||'model unavailable')+
+   '. The previous score remains available with the built-in recogniser.',true);
  }finally{
   if(ctx)try{await ctx.close()}catch(_){}
   basicPitchBusy=false;recordingControls();render();
