@@ -303,7 +303,7 @@ function render(){
   :writtenPitchName(candidate)+' · '+(C.NAMES[String(candidate.beats)]||candidate.beats+' beats')+
    ' · Recognition confidence: '+Math.round((candidate.confidence??1)*100)+'%'+
    (candidate.reviewed?' · Teacher checked':candidate.uncertain?' · Please review':' · Ready to review');
- if(valid){$('duration').value=String(notes[selected].beats);$('accidental').value=isNote?String((notes[selected].spelling||C.spelling(notes[selected].midi)).alter):'keep'}
+ if(valid){$('duration').value=String(notes[selected].beats);$('accidental').value=isNote?String((notes[selected].spelling||C.spellingForKey(notes[selected].midi,keyFifths())).alter):'keep'}
  const bars=C.displayAccidentals(C.measures(notes,meter()),keyFifths()),rows=[],clef=clefOf();
  for(let b=0;b<bars.length;){if(b+1<bars.length&&bars[b].length+bars[b+1].length<=12){rows.push([b,b+1]);b+=2}else{rows.push([b]);b++}}
  if(!rows.length)rows.push([]);
@@ -396,7 +396,7 @@ function compare(){if(!originalUrl||!notes.length||recording)return;stopPlayback
  originalAudio.play().then(()=>{$('original').textContent='■ Playing original';$('stop').disabled=false;say('Comparing: original humming first, then the generated score.')}).catch(()=>{comparisonPending=false;say('The original recording could not be played.',true)})}
 function transposeAll(semitones){if(recording||!notes.some(n=>n.midi!==null))return;
  if(notes.some(n=>n.midi!==null&&(n.midi+semitones<36||n.midi+semitones>95))){say('That shift would put a note outside the supported pitch range.',true);return}
- change(()=>{notes=notes.map(n=>{if(n.midi===null)return n;const midi=n.midi+semitones;return {...n,midi,spelling:C.spelling(midi)}})});
+ change(()=>{notes=notes.map(n=>{if(n.midi===null)return n;const midi=n.midi+semitones;return {...n,midi,spelling:C.spellingForKey(midi,keyFifths())}})});
  say('Moved the whole melody '+Math.abs(semitones)+' semitone'+(Math.abs(semitones)===1?'':'s')+' '+(semitones>0?'up':'down')+'. Compare with the humming; review uncertain notes individually.')}
 function matchSpeed(){
  if(!detectedEvents.some(n=>n.midi!==null)||!notes.length)return;
