@@ -36,7 +36,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <main>
 <section class="card" aria-label="Record melody">
 <h2>Hum a tune. See the notes.</h2>
-<p class="muted">Hum naturally. Spotify Basic Pitch automatically creates your draft score from the recording. Check doubtful notes before teaching.</p>
+<p class="muted">Hum naturally. Spotify Basic Pitch creates the draft score and automatically checks for octave mistakes. Any doubtful notes are marked for review.</p>
 <div class="steps"><span class="step">1 · Hum</span><span class="step">2 · Review the score</span><span class="step">3 · Play</span><span class="step">4 · Save</span></div>
 <div class="controls">
 <button id="record" class="primary" type="button">🎤 Start recording</button>
@@ -68,7 +68,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="matchSpeed" type="button" disabled>Match recorded speed</button>
 <button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button></div>
 <p>The TEST app now estimates tempo automatically when you finish humming. Change BPM and rebuild only if the score rhythms are wrong. Natural-timing playback remains available for comparison. Rebuilding replaces edits; Undo can restore them.</p></div>
-<p class="small muted">Spotify Basic Pitch is the default recognition engine. On first use, it downloads its model (internet required), then analyses audio locally. If it cannot run, the app clearly identifies when the built-in fallback is used.</p>
+<p class="small muted">Spotify Basic Pitch is the default recognition engine. After transcription, the app checks the recorded fundamental pitch for octave errors. Confident corrections happen automatically; uncertain results are highlighted for review. The model requires internet on first use and processes the recording locally.</p>
 </details>
 <div class="editor" aria-label="Review and correct score">
 <span id="editing">Select a note or rest</span>
