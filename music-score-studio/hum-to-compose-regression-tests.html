@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hum to Compose — Automated TEST Checks</title>
+<style>body{background:#eef7fa;color:#15384b;font:15px/1.5 system-ui,sans-serif;margin:0;padding:20px}main{max-width:1000px;margin:auto}h1{font-size:25px}button{font:inherit;padding:10px 18px;border:1px solid #087b86;border-radius:9px;background:#087b86;color:white;cursor:pointer}iframe{display:block;margin-top:18px;width:100%;height:600px;border:2px solid #9cbeca;border-radius:12px;background:#fff}pre{font:13px/1.6 ui-monospace,monospace;white-space:pre-wrap;background:#fff;padding:15px;border-radius:12px}small{color:#526a78}</style>
+</head><body><main><h1>Hum to Compose — regression checks (TEST only)</h1><p>These are synthetic and in-browser checks, not evidence of real humming accuracy or live mobile-device testing. The microphone check is mocked and never requests microphone access.</p><button type="button" id="run">Run automated checks</button><pre id="results" role="status" aria-live="polite">Ready.</pre><small>Runs local signal tests and a simulated browser UI/playback/permissions check in the iframe. No production page or network API is changed.</small><iframe id="app" title="Isolated Hum to Compose test interface" src="./hum-to-compose-test.html"></iframe>
+<script src="./hum-to-compose-core.js"></script><script src="./hum-to-compose-tests.js"></script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),result=$('results');let running=false;
+const output=[],check=(name,condition,detail='')=>{output.push((condition?'PASS ':'FAIL ')+name+(detail?': '+detail:''));if(!condition)throw Error(name+(detail?': '+detail:''))};
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function run(){
+ if(running)return;running=true;$('run').disabled=true;output.length=0;result.textContent='Running tests…';
+ try{
+  const core=window.runHumTests();core.forEach(t=>output.push((t.ok?'PASS ':'FAIL ')+t.name+(t.error?': '+t.error:'')));
+  const frame=$('app');frame.src='./hum-to-compose-test.html?regression='+Date.now();
+  await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=()=>reject(Error('Test iframe did not load'))});
+  const w=frame.contentWindow,d=w.document,id=s=>d.getElementById(s);
+  check('Isolated page shows TEST ONLY',d.body.textContent.includes('TEST ONLY'));
+  check('Meter selector exposes all 4 options',[...id('meter').options].map(x=>x.value).join(',')==='2/4,3/4,4/4,6/8');
+  id('example').click();check('Sample draws score symbols',d.querySelectorAll('#score .event').length>=6);
+  check('Notation draws tie curves',d.querySelectorAll('#score .tie').length>0,'Tie must be represented in SVG');
+  check('Uncertain note marked visibly',d.querySelectorAll('#score .uncertain-ring').length>0);
+  const first=d.querySelector('#score .note');first.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
+  check('Stave click selects symbol',!id('duration').disabled);
+  const selectedName=id('editing').textContent;id('up').click();check('Pitch changes and remains selected',id('editing').textContent!==selectedName);
+  id('undo').click();check('Undo restores the prior pitch',id('editing').textContent===selectedName);
+  id('redo').click();check('Redo reapplies pitch correction',id('editing').textContent!==selectedName);
+  id('duration').value='0.25';id('duration').dispatchEvent(new w.Event('change',{bubbles:true}));check('Semiquaver editor changes rhythm',id('duration').value==='0.25');
+  id('rest').click();check('Insert rest supports editing',id('editing').textContent.includes('Rest'));
+  id('toggle').click();check('Rest can convert to note',!id('up').disabled);
+  id('remove').click();check('Delete changes selection but retains score',d.querySelectorAll('#score .event').length>=5);
+  id('saveLocal').click();check('Browser-local score saves',!!w.localStorage.getItem('hum-to-compose-test-v2'));
+  id('clear').click();check('Clear removes score',id('play').disabled);
+  id('loadLocal').click();check('Open saved score restores notes',!id('play').disabled);
+  id('meter').value='6/8';id('meter').dispatchEvent(new w.Event('change',{bubbles:true}));
+  check('6/8 rendered after metre switch',id('scoreHint').textContent.includes('6/8'));
+  // A narrow viewport tests CSS overflow and operable buttons, but is NOT a physical-phone test.
+  frame.style.width='375px';await wait(100);
+  check('Narrow viewport fits core controls without page-level overflow',d.documentElement.scrollWidth<=w.innerWidth+2,'viewport='+w.innerWidth+', page='+d.documentElement.scrollWidth);
+  frame.style.width='100%';
+  // Mock audio to inspect scheduling and highlighted note start/end without using speakers.
+  const audioStarts=[];class MockAudioContext{
+   constructor(){this.currentTime=0;this.destination={}}
+   async resume(){}
+   createOscillator(){return {type:'sine',frequency:{setValueAtTime(){}},connect(){},start(t){audioStarts.push(t)},stop(){}}}
+   createGain(){return {gain:{setValueAtTime(){},linearRampToValueAtTime(){}},connect(){}}}
+   async close(){}
+  }
+  w.AudioContext=MockAudioContext;w.webkitAudioContext=MockAudioContext;
+  id('example').click();id('tempo').value='140';id('tempo').dispatchEvent(new w.Event('change',{bubbles:true}));
+  id('play').click();await wait(200);
+  check('Playback schedules single attack per pitched note',audioStarts.length===6,'starts='+audioStarts.length);
+  check('Current note highlighted in playback',d.querySelectorAll('#score .playing').length>0);
+  await wait(500);
+  check('Previous note highlight clears after its duration',!d.querySelector('#score [data-origin="0"].playing'));
+  id('stop').click();check('Stop clears all note highlights',d.querySelectorAll('#score .playing').length===0);
+  // Mock denied mic permission, with no hardware access at all.
+  const rejectMic=async()=>{const e=new Error('denied');e.name='NotAllowedError';throw e};
+  Object.defineProperty(w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:rejectMic}});
+  id('record').click();await wait(80);
+  check('Denied permission handled with helpful error',id('status').textContent.toLowerCase().includes('microphone')&&!id('finish').disabled===false);
+ }catch(e){output.push('ERROR '+e.message)}
+ finally{result.textContent=output.join('\n')+'\n\n'+output.filter(x=>x.startsWith('PASS')).length+'/'+output.filter(x=>x.startsWith('PASS')||x.startsWith('FAIL')||x.startsWith('ERROR')).length+' checks passed';running=false;$('run').disabled=false}
+}
+$('run').addEventListener('click',run);
+})();
+</script>
+</main></body></html>
