@@ -118,10 +118,32 @@ function keyDefaults(fifths=0){
  for(let i=0;i<Math.abs(fifths);i++)map[steps[i]]=fifths>0?1:-1;
  return map;
 }
+/* Choose the nearest conventional written spelling for the selected key.
+   A key signature changes note spelling, never the sounding MIDI pitch.
+   Do not overwrite any teacher-supplied note.spelling. The automatic key
+   convention also handles C-flat, F-flat, B-sharp and E-sharp correctly. */
+function spellingForKey(midi,fifths=0){
+ if(!Number.isInteger(midi)||midi<0||midi>127)throw Error('Invalid MIDI pitch');
+ const defaults=keyDefaults(fifths);
+ if(fifths===0)return spelling(midi);
+ const oct=Math.floor(midi/12)-1,prefer=spelling(midi,fifths<0),candidates=[];
+ for(let o=oct-1;o<=oct+1;o++)for(let step=0;step<7;step++)
+  for(let alter=-1;alter<=1;alter++){
+   const candidate={step,alter,octave:o};
+   if(midiFromSpelling(candidate)!==midi)continue;
+   const distance=Math.abs(alter-defaults[step]);
+   const opposing=alter!==0&&Math.sign(alter)!==Math.sign(fifths);
+   const defaultMatch=candidate.step===prefer.step&&candidate.octave===prefer.octave;
+   const score=distance*10+(opposing?3:0)+(defaultMatch?0:.5);
+   candidates.push({candidate,score});
+  }
+ candidates.sort((a,b)=>a.score-b.score);
+ return candidates[0]?.candidate||prefer;
+}
 function displayAccidentals(bars,fifths=0){const defaults=keyDefaults(fifths);return bars.map(bar=>{const active=new Map();
 
  return bar.map(n=>{if(n.midi===null)return {...n,displayAccidental:null};
-   const s=n.spelling||spelling(n.midi,fifths<0);
+   const s=n.spelling||spellingForKey(n.midi,fifths);
    const key=s.step+':'+s.octave,old=active.has(key)?active.get(key):defaults[s.step];
    // A tied accidental carries across the barline only to the tied note.
    // It must NOT affect the next untied note's accidental state.
@@ -398,7 +420,7 @@ function scoreToMusicXML(notes,meter='4/4',bpm=96,options={}){
    output+='<note>';
    if(n.midi===null)output+=n.fullMeasureRest?'<rest measure="yes"/>':'<rest/>';
    else{
-    const spell=n.spelling||spelling(n.midi,fifths<0);
+    const spell=n.spelling||spellingForKey(n.midi,fifths);
     if(midiFromSpelling(spell)!==n.midi)throw Error('Score has inconsistent note spelling');
     output+='<pitch><step>'+letters[spell.step]+'</step>';
     if(spell.alter)output+='<alter>'+spell.alter+'</alter>';
@@ -429,5 +451,5 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,spellingForKey,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
 });
