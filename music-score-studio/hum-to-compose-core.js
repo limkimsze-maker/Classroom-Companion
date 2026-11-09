@@ -391,6 +391,64 @@ function estimateNaturalTempo(events,meter='4/4'){
  const separation=runner?Math.max(0,runner.error-winner.error):0;
  return {bpm:winner.bpm,confidence:Math.min(.95,Math.max(.22,separation*8)),ambiguous:separation<.018};
 }
+/* Quantisation can change a melody's total length after tempo estimation.
+   Compare the WHOLE notated timeline against the measured, unrounded note
+   onsets/offsets. A nearby tempo may fit the performance substantially better.
+   Do not correct pitches or silently choose a half/double-time tempo. */
+function calibrateScoreTiming(events,meter='4/4',initialBpm=96){
+ if(!METERS[meter]||!Number.isFinite(initialBpm)||initialBpm<40||initialBpm>200)
+  throw Error('Invalid tempo or metre for calibration');
+ const baseline=transcribeAlignedEvents(events,initialBpm,meter);
+ const source=events.filter(e=>e?.midi!==null&&Number.isFinite(e?.midi)&&
+  Number.isFinite(e.start)&&Number.isFinite(e.end)&&e.end>e.start+.02);
+ const unchanged={bpm:initialBpm,score:baseline,changed:false,errorBefore:null,errorAfter:null};
+ if(source.length<3||!baseline.some(n=>n.midi!==null))return unchanged;
+ function errorFor(score,bpm){
+  const pitched=score.filter(n=>n.midi!==null);
+  if(pitched.length!==source.length)return Infinity;
+  const secondsPerBeat=beatSeconds(bpm,meter);
+  let scoreTime=0,totalSquared=0,matched=0;
+  for(const n of score){
+   if(n.midi!==null){
+    const observed=source[matched++];
+    if(n.midi!==Math.round(observed.midi))return Infinity;
+    // The generated performance includes genuine rests. Compare note onsets
+    // and offsets, not just the overall duration of the song.
+    const onset=scoreTime-observed.start;
+    const end=scoreTime+n.beats*secondsPerBeat-observed.end;
+    totalSquared+=onset*onset+.55*end*end;
+   }
+   scoreTime+=n.beats*secondsPerBeat;
+  }
+  if(!matched)return Infinity;
+  const last=source[source.length-1].end;
+  return Math.sqrt(totalSquared/(matched*1.55))+.12*Math.abs(scoreTime-last);
+ }
+ const errorBefore=errorFor(baseline,initialBpm);
+ if(!Number.isFinite(errorBefore))return unchanged;
+ // Limit the search to +/- 22% so that the score never jumps into a
+ // different half-time or double-time interpretation without teacher input.
+ const low=Math.max(40,Math.ceil(initialBpm*.78));
+ const high=Math.min(200,Math.floor(initialBpm*1.22));
+ let winner={bpm:initialBpm,score:baseline,error:errorBefore,objective:errorBefore};
+ for(let bpm=low;bpm<=high;bpm++){
+  if(bpm===initialBpm)continue;
+  const candidate=transcribeAlignedEvents(events,bpm,meter);
+  const error=errorFor(candidate,bpm);
+  if(!Number.isFinite(error))continue;
+  // Small stability penalty avoids changing an already reasonable tempo.
+  const objective=error+.025*Math.abs(Math.log(bpm/initialBpm));
+  if(objective<winner.objective-1e-7)winner={bpm,score:candidate,error,objective};
+ }
+ // Only rewrite automatically when there is a measurable, substantial fit
+ // improvement; otherwise retain the recogniser's original estimated tempo.
+ const improved=errorBefore-winner.error;
+ const changed=winner.bpm!==initialBpm&&improved>=.018&&
+  improved>=errorBefore*.18;
+ return {bpm:changed?winner.bpm:initialBpm,score:changed?winner.score:baseline,
+  changed,errorBefore:+errorBefore.toFixed(3),
+  errorAfter:+(changed?winner.error:errorBefore).toFixed(3)};
+}
 /* Keep extremely high/low pitches legible without transposing the sound.
    The returned shift is in WRITTEN octaves relative to the sounding MIDI.
    Negative values mean 8va/15ma (written below sound), positive 8vb/15mb.
@@ -485,5 +543,5 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,spellingForKey,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,engravingOctaveShift,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,spellingForKey,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,engravingOctaveShift,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,calibrateScoreTiming,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
 });
