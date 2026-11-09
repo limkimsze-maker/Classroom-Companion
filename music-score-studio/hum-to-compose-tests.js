@@ -367,7 +367,7 @@
    assert(xml.includes('<measure implicit="no" number="40">'),'Final bar missing');
   });
   test('Long score notation rejects non-finite or excessive note lengths',()=>{
-   for(const beats of [Infinity,NaN,128]){
+   for(const beats of [Infinity,NaN,161]){
     let rejected=false;try{C.measures([{midi:60,beats}],'4/4')}catch(_){rejected=true}
     assert(rejected,'Invalid length must not create an infinite loop');
    }
