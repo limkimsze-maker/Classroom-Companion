@@ -390,6 +390,21 @@ function estimateNaturalTempo(events,meter='4/4'){
  const separation=runner?Math.max(0,runner.error-winner.error):0;
  return {bpm:winner.bpm,confidence:Math.min(.95,Math.max(.22,separation*8)),ambiguous:separation<.018};
 }
+/* Keep extremely high/low pitches legible without transposing the sound.
+   The returned shift is in WRITTEN octaves relative to the sounding MIDI.
+   Negative values mean 8va/15ma (written below sound), positive 8vb/15mb.
+   Three or fewer ledger lines retain ordinary conventional notation. */
+function engravingOctaveShift(note,clef='treble',fifths=0){
+ if(!note||note.midi===null)return 0;
+ const written=note.spelling||spellingForKey(note.midi,fifths);
+ const bottom=clef==='bass'?spelling(43):spelling(64);
+ const step=(written.octave-bottom.octave)*7+written.step-bottom.step;
+ if(step>=23)return -2;
+ if(step>=16)return -1;
+ if(step<=-15)return 2;
+ if(step<=-8)return 1;
+ return 0;
+}
 /* Portable single-stave MusicXML 4.0 export. Divisions count crotchets,
    including 6/8's dotted-crotchet tempo marking. This faithfully represents
    the verified written notation; it does not pretend to preserve raw audio. */
@@ -424,6 +439,12 @@ function scoreToMusicXML(notes,meter='4/4',bpm=96,options={}){
    output+='<direction placement="above"><direction-type><metronome parentheses="no">'+beatUnit+'<per-minute>'+bpm+'</per-minute></metronome></direction-type><sound tempo="'+(meter==='6/8'?Math.round(bpm*1.5):bpm)+'"/></direction>';
   }
   for(const n of bars[i]){
+   const octaveShift=engravingOctaveShift(n,clef,fifths);
+   if(octaveShift){
+    const direction=octaveShift<0?'down':'up';
+    const size=Math.abs(octaveShift)===2?15:8;
+    output+='<direction placement="'+(octaveShift<0?'above':'below')+'"><direction-type><octave-shift type="'+direction+'" number="1" size="'+size+'"/></direction-type></direction>';
+   }
    const {type,dotted}=durationType(n.fullMeasureRest?4:n.beats);
    const dur=Math.round(n.beats*480);
    output+='<note>';
@@ -449,6 +470,7 @@ function scoreToMusicXML(notes,meter='4/4',bpm=96,options={}){
     }
    }
    output+='</note>';
+   if(octaveShift)output+='<direction><direction-type><octave-shift type="stop" number="1" size="'+(Math.abs(octaveShift)===2?15:8)+'"/></direction-type></direction>';
   }
   output+='</measure>';
  }
@@ -462,5 +484,5 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,spellingForKey,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,spellingForKey,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,engravingOctaveShift,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
 });
