@@ -42,16 +42,17 @@ async function engine(){
 /* Resample speech/humming to the model's exact 22050 Hz mono input.
    The low-pitch voice band is far below 11.025 kHz; this is deliberately
    lightweight for short clips and avoids external audio processing services. */
-export function resampleMono(audio,limitSeconds=20){
+export function resampleMono(audio,limitSeconds=20,startSeconds=0){
  if(!audio||!Number.isFinite(audio.sampleRate)||audio.sampleRate<8000||audio.numberOfChannels<1)
   throw Error('Unsupported audio buffer');
  const rate=audio.sampleRate,targetRate=22050;
- const count=Math.min(audio.length,Math.round(Math.max(0,limitSeconds)*rate));
+ const begin=Math.min(audio.length,Math.max(0,Math.floor(startSeconds*rate)));
+ const count=Math.min(audio.length-begin,Math.round(Math.max(0,limitSeconds)*rate));
  const channels=Array.from({length:Math.min(2,audio.numberOfChannels)},(_,i)=>audio.getChannelData(i));
  if(count<Math.round(rate*.12))throw Error('Audio is too short');
  const mono=new Float32Array(count);
  for(let i=0;i<count;i++){
-  let sum=0;for(const channel of channels)sum+=channel[i]||0;
+  let sum=0;for(const channel of channels)sum+=channel[begin+i]||0;
   mono[i]=sum/channels.length;
  }
  if(rate===targetRate)return mono;
@@ -323,7 +324,7 @@ function hasIndependentReattack(pcm,rate,at){
  const after=sectionRms(pcm,rate,at+.020,at+.052);
  return after>.012&&before>.012&&valley<before*.72&&valley<after*.72&&after>before*.55;
 }
-export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=22050){
+export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=22050,preserveStart=false){
  if(!Array.isArray(noteEvents))return [];
  const clean=noteEvents.map((n,index)=>{
   const start=Math.max(0,Number(n.startTimeSeconds));
@@ -372,7 +373,7 @@ export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=220
  }
  const first=smoothed.find(n=>n.midi!==null),lastPitch=[...smoothed].reverse().find(n=>n.midi!==null);
  if(!first||!lastPitch)return [];
- const start=first.start,end=lastPitch.end;
+ const start=preserveStart?0:first.start,end=lastPitch.end;
  return smoothed.filter(n=>n.end>start&&n.start<end).map(n=>{
   const at=Math.max(0,n.start-start),until=Math.min(end-start,n.end-start),duration=until-at;
   const points=n.midi===null?[]:[{t:0,midi:n.midi,confidence:n.confidence}];
@@ -389,28 +390,90 @@ export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=220
   }
   return {start:at,end:until,duration,midi:n.midi,confidence:n.confidence,
    octaveStatus:n.octaveStatus,qualityStatus:n.qualityStatus,points};
- }).filter(n=>n.duration>=.025).slice(0,256);
+ }).filter(n=>n.duration>=.025);
+}
+
+// Independent 20-second inferences with one second overlap keep memory bounded.
+// Each window owns its middle interval; boundary fragments are marked for review.
+export function recordingWindows(duration,windowSeconds=20,overlapSeconds=1){
+ if(!Number.isFinite(duration)||duration<.12||duration>600.01)throw Error('Audio must be between 0.12 seconds and 10 minutes');
+ const stride=windowSeconds-overlapSeconds;
+ if(!(stride>0&&overlapSeconds>=0))throw Error('Invalid recording window');
+ const out=[];
+ for(let start=0;start<duration;start+=stride){
+  const seconds=Math.min(windowSeconds,duration-start);
+  out.push({start,seconds,keepStart:start===0?0:start+overlapSeconds/2,
+   keepEnd:Math.min(duration,start+stride+overlapSeconds/2)});
+  if(start+windowSeconds>=duration)break;
+ }
+ return out;
 }
 
 export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=null){
- if(!audioBuffer)throw Error('No recorded audio to analyse');
- onProgress('Preparing audio for Spotify Basic Pitch…');
- const audio=resampleMono(audioBuffer,20);
+ if(!audioBuffer||!Number.isFinite(audioBuffer.duration))throw Error('No recorded audio to analyse');
+ const seconds=audioBuffer.duration;
+ const windows=recordingWindows(seconds);
  onProgress('Loading Spotify Basic Pitch (first use needs a network connection)…');
  const {library,model}=await engine();
- const frames=[],onsets=[],contours=[];
- onProgress('Analysing melody with Spotify Basic Pitch…');
- await model.evaluateModel(audio,(f,o,c)=>{frames.push(...f);onsets.push(...o);contours.push(...c)},
-  pct=>onProgress('Analysing Spotify Basic Pitch… '+Math.round(pct*100)+'%'));
- let noteFrames=library.outputToNotesPoly(frames,onsets,.25,.25,5);
- if(typeof library.addPitchBendsToNoteEvents==='function'&&contours.length){
-  try{noteFrames=library.addPitchBendsToNoteEvents(contours,noteFrames)}
-  catch(_){/* Pitch bends are optional; preserve the correctly detected notes. */}
+ const allEvents=[],summary={checked:0,octavesCorrected:0,pitchCorrected:0,noteSplits:0,
+  pausesRestored:0,boundariesTrimmed:0,noiseRejected:0,review:0};
+ let rawNoteCount=0;
+ for(let index=0;index<windows.length;index++){
+  const window=windows[index];
+  onProgress('Preparing section '+(index+1)+' of '+windows.length+'…');
+  const pcm=resampleMono(audioBuffer,window.seconds,window.start);
+  const frames=[],onsets=[],contours=[];
+  await model.evaluateModel(pcm,(f,o,c)=>{frames.push(...f);onsets.push(...o);contours.push(...c)},
+   progress=>onProgress('Analysing section '+(index+1)+'/'+windows.length+' · '+Math.round(progress*100)+'%'));
+  let noteFrames=library.outputToNotesPoly(frames,onsets,.25,.25,5);
+  if(typeof library.addPitchBendsToNoteEvents==='function'&&contours.length){
+   try{noteFrames=library.addPitchBendsToNoteEvents(contours,noteFrames)}
+   catch(_){/* Contours are optional; preserve recognised discrete notes. */}
+  }
+  const raw=library.noteFramesToTime(noteFrames);rawNoteCount+=raw.length;
+  const verified=verifyPerformance(raw,pcm,22050,pitchEstimator);
+  for(const [key,value] of Object.entries(verified.summary))summary[key]=(summary[key]||0)+value;
+  const section=toSingleMelody(verified.notes,window.seconds,pcm,22050,true);
+  for(const event of section){
+   const absoluteStart=event.start+window.start,absoluteEnd=event.end+window.start;
+   const start=Math.max(absoluteStart,window.keepStart),end=Math.min(absoluteEnd,window.keepEnd);
+   if(end-start<.025)continue;
+   const clipped=start>absoluteStart+.001||end<absoluteEnd-.001;
+   const points=event.midi===null?[]:[{t:0,midi:event.midi,confidence:event.confidence},
+    ...(event.points||[]).map(p=>({...p,t:p.t+absoluteStart-start}))
+     .filter(p=>p.t>0&&p.t<end-start)];
+   allEvents.push({...event,start,end,duration:end-start,points,sectionIndex:index,
+    qualityStatus:clipped&&event.midi!==null?'review':event.qualityStatus});
+  }
+  // Let the UI update between sections; the entire decoded recording is retained.
+  await new Promise(resolve=>setTimeout(resolve,0));
  }
- const raw=library.noteFramesToTime(noteFrames);
- onProgress('Verifying pitch, pauses and note boundaries against the recording…');
- const verified=verifyPerformance(raw,audio,22050,pitchEstimator);
- const melody=toSingleMelody(verified.notes,20,audio,22050);
- if(!melody.some(n=>n.midi!==null))throw Error('Spotify Basic Pitch could not detect clear melody notes');
- return {events:melody,rawNoteCount:raw.length,engine:'Spotify Basic Pitch 1.0.1',octaveCheck:{checked:verified.summary.checked,corrected:verified.summary.octavesCorrected,review:verified.summary.review},verification:verified.summary};
+ const ordered=allEvents.sort((a,b)=>a.start-b.start||a.sectionIndex-b.sectionIndex);
+ const combined=[];
+ for(const event of ordered){
+  const prev=combined.at(-1);
+  if(prev&&prev.midi!==null&&event.midi===prev.midi&&
+   prev.sectionIndex!==event.sectionIndex&&Math.abs(prev.end-event.start)<.055){
+   const previousEnd=prev.end;
+   prev.end=Math.max(prev.end,event.end);prev.duration=prev.end-prev.start;
+   prev.confidence=Math.min(prev.confidence,event.confidence);
+   prev.qualityStatus='review'; // Independent reattack near a seam needs teacher review.
+   for(const p of event.points||[]){
+    const t=p.t+event.start-prev.start;
+    if(t>0&&t<prev.duration)prev.points.push({...p,t});
+   }
+  }else if(event.end>event.start+.024){
+   combined.push({...event});
+  }
+ }
+ const first=combined.find(e=>e.midi!==null),last=[...combined].reverse().find(e=>e.midi!==null);
+ if(!first||!last)throw Error('Spotify Basic Pitch could not detect clear melody notes');
+ const events=combined.filter(e=>e.end>first.start&&e.start<last.end)
+  .map(({sectionIndex,...e})=>{
+   const start=Math.max(0,e.start-first.start),end=Math.min(last.end-first.start,e.end-first.start);
+   return {...e,start,end,duration:end-start};
+  }).filter(e=>e.duration>=.025);
+ return {events,rawNoteCount,engine:'Spotify Basic Pitch 1.0.1',
+  octaveCheck:{checked:summary.checked,corrected:summary.octavesCorrected,review:summary.review},
+  verification:summary};
 }
