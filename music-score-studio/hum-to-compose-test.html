@@ -454,7 +454,8 @@ function render(){
  if(!has)out+=el('text',{x:120,y:112,'font-size':18},'Record a melody or try the sample.');
  $('score').setAttribute('viewBox','0 0 900 '+height);$('score').innerHTML=out;
  const unsure=notes.filter(n=>n.uncertain&&!n.reviewed).length;
- $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+totalBars+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain':'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
+ const displaced=notes.filter(n=>n.midi!==null&&C.engravingOctaveShift(n,clef,keyFifths())!==0).length;
+ $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+totalBars+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain'+(displaced?' · '+displaced+' unusually high/low pitches: octave marks shown; check against the recording':''):'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
  lastSetup={clefMode:clefMode(),fifths:keyFifths()};
 }
 function choose(e){const g=e.target.closest('g[data-origin]');if(!g)return;const index=Number(g.getAttribute('data-origin'));if(!Number.isInteger(index)||!notes[index])return;selected=index;render()}
