@@ -70,6 +70,13 @@ async function main(){
   await saving.locator('#openSaved').click();
   assert.equal(await saving.locator('#scoreName').inputValue(),'Morning Music');
   assert.equal(await saving.locator('#scoreTitle').innerText(),'Morning Music');
+  assert.equal(await saving.locator('#undo').isDisabled(),true,
+   'Loading a saved score must clear Undo history from the previous document');
+  await saving.locator('#clear').click();
+  await saving.locator('#undo').click();
+  await saving.locator('#save').click();
+  assert.equal(await saving.locator('#savedCount').innerText(),'2',
+   'Undo + Save must update Morning Music, not create a duplicate');
   assert.match(await saving.locator('#scoreHint').innerText(),/note groups/);
   await saving.locator('#exportOptions summary').click();
   const pending=saving.waitForEvent('download');
@@ -90,6 +97,7 @@ async function main(){
   await saving.locator('#savedScoreChoice').selectOption({label:'Evening Music'});
   await saving.locator('#openSaved').click();
   assert.equal(await saving.locator('#scoreName').inputValue(),'Evening Music');
+  assert.equal(await saving.locator('#undo').isDisabled(),true,'Opening Evening Music cannot undo into Imported Music');
   // Recreate the reported high bass-note screenshot in actual Chromium.
   const outlier={meter:'4/4',tempo:96,name:'High bass review',clefMode:'bass',
    notes:[{midi:55,beats:1},{midi:71,beats:1,uncertain:true},{midi:57,beats:2}]};
