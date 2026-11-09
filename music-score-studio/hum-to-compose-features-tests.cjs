@@ -264,6 +264,28 @@ async function downloadedText(){
   elem('download').click();
   assert.equal((await downloadedText()).name,'Unstored score.music-score.json');
  });
+ await test('Long 10-minute score opens, paginates, saves and exports all 1,000 bars',async()=>{
+  const events=Array.from({length:3000},(_,i)=>({midi:60+i%8,beats:1}));
+  await importJSON({format:'music-score-studio-hum-test-v2',name:'Ten-minute melody',
+   meter:'6/8',tempo:200,notes:events});
+  assert.match(elem('scoreHint').textContent,/1,000 bars|1000 bars/);
+  assert.match(elem('pageStatus').textContent,/Bars 1–12 of 1000/);
+  assert.equal(elem('nextPage').disabled,false);
+  elem('nextPage').click();
+  assert.match(elem('pageStatus').textContent,/Bars 13–24 of 1000/);
+  elem('prevPage').click();
+  elem('save').click();
+  const saved=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  const record=saved.find(x=>x.name==='Ten-minute melody');
+  assert.ok(record);
+  assert.equal(record.score.notes.length,3000);
+  elem('clear').click();elem('loadLocal').click();
+  elem('savedScoreChoice').value=record.id;elem('openSaved').click();
+  assert.equal(elem('scoreName').value,'Ten-minute melody');
+  assert.match(elem('scoreHint').textContent,/1000 bars/);
+  elem('xml').click();
+  assert.equal(((await downloadedText()).content.match(/<measure /g)||[]).length,1000);
+ });
  await test('No global keyboard shortcut captures Tab or button activation',async()=>{
   assert.ok(!/window\.addEventListener\(['"]keydown/.test(script));
   assert.ok(script.includes("e.key==='Enter'||e.key===' '"));
