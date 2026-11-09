@@ -262,11 +262,13 @@ async function builtInFallback(reason){
  }
  if(!raw.length){say('Spotify Basic Pitch is unavailable: '+reason+' No usable audio was found for the built-in fallback.',true);return false}
  const events=C.performanceFromFrames(raw),estimated=C.estimateNaturalTempo(events,meter());
- const bpm=estimated.bpm||tempo(),draft=C.transcribeAlignedEvents(events,bpm,meter());
+ const bpm=estimated.bpm||tempo(),calibration=C.calibrateScoreTiming(events,meter(),bpm);
+ const draft=calibration.score;
  if(!C.auditScore(draft,meter()).ok){say('Spotify Basic Pitch could not run ('+reason+'). Built-in recognition also found no clear notes.',true);return false}
  change(()=>{activeSavedId=null;scorePage=0;samples=raw;detectedEvents=events;notes=draft;selected=null;
-   if(estimated.bpm)$('tempo').value=String(bpm)});
- say('Spotify Basic Pitch could not run ('+reason+'). Used the built-in fallback recogniser; review all notes.',true);
+   if(estimated.bpm||calibration.changed)$('tempo').value=String(calibration.bpm)});
+ say('Spotify Basic Pitch could not run ('+reason+'). Used the built-in fallback recogniser.'+
+  (calibration.changed?' Adjusted timing to '+calibration.bpm+' BPM.':'')+' Review all notes against your actual humming.',true);
  return true;
 }
 function sample(){if(recording||requesting||basicPitchBusy||recognitionPending)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{activeSavedId=null;scorePage=0;notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
@@ -671,11 +673,12 @@ async function tryBasicPitch(){
   const newPerformance=answer.events;
   const guessed=C.estimateNaturalTempo(newPerformance,meter());
   const bpm=guessed.bpm||tempo();
-  const newScore=C.transcribeAlignedEvents(newPerformance,bpm,meter());
+  const calibration=C.calibrateScoreTiming(newPerformance,meter(),bpm);
+   const newScore=calibration.score;
   const quality=C.auditScore(newScore,meter());
   if(!quality.ok)throw Error('The generated notation needs review: '+quality.reason);
   change(()=>{activeSavedId=null;scorePage=0;notes=newScore;selected=null;detectedEvents=newPerformance;
-   if(guessed.bpm)$('tempo').value=String(bpm)});
+   if(guessed.bpm||calibration.changed)$('tempo').value=String(calibration.bpm)});
   $('basicPitchProgress').textContent='Spotify Basic Pitch complete · main recognition engine';
   const v=answer.verification,octaveInfo=answer.octaveCheck;
   const corrections=v
@@ -684,7 +687,11 @@ async function tryBasicPitch(){
    : octaveInfo ? ' Automatic octave check: '+octaveInfo.corrected+' corrected, '+octaveInfo.review+' to review.'
    : ' Automatic verification was unavailable; review doubtful notes.';
   say('Spotify Basic Pitch created '+newScore.filter(n=>n.midi!==null).length+
-   ' draft note groups.'+corrections+(guessed.ambiguous?' Tempo is uncertain; adjust BPM if needed.':'')+' Compare with your original humming; Undo restores the earlier score.');
+   ' draft note groups.'+corrections+
+    (calibration.changed?' Calibrated score timing from '+bpm+' to '+calibration.bpm+
+     ' BPM (average timing error '+calibration.errorBefore+'s → '+calibration.errorAfter+'s).':'')+
+    (guessed.ambiguous?' Tempo interpretation is uncertain; review BPM and rhythm.':'')+
+    ' Compare Original hum, Detected melody and Written score. Undo restores your earlier score.');
  }catch(error){
   $('basicPitchProgress').textContent='Spotify Basic Pitch unavailable';
   if(recordingBlob===sourceAudioBlob&&JSON.stringify(notes)===originalScore)
