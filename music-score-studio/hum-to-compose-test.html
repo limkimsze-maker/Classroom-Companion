@@ -298,7 +298,8 @@ function glyph(p,base,clef,beamInfo=null){
   inner+=el('ellipse',{class:'head',cx:x,cy:y,rx:9,ry:6,transform:'rotate(-21 '+x+' '+y+')',fill:hollow?'white':'#233f53',stroke:'#233f53','stroke-width':1.8});
   if(root<4){const up=beamed?beamInfo.stemUp:step<4,xStem=up?x+8:x-8,stemEnd=beamed?beamInfo.beamY:(up?y-35:y+35);
    inner+=el('line',{x1:xStem,x2:xStem,y1:y,y2:stemEnd,stroke:'#233f53','stroke-width':2});
-   if(root<=.5&&!beamed){const flags=root<=.125?3:root<=.25?2:1;for(let k=0;k<flags;k++)inner+=el('path',{d:up?'M '+xStem+' '+(stemEnd+k*9)+' q 20 7 5 22':'M '+xStem+' '+(stemEnd-k*9)+' q -20 -7 -5 -22',fill:'none',stroke:'#233f53','stroke-width':2.5})}
+   if(root<=.5&&!beamed){const flags=root<=.125?3:root<=.25?2:1;for(let k=0;k<flags;k++)// A free flag curves to the RIGHT even when its stem points down.
+     inner+=el('path',{class:'flag',d:up?'M '+xStem+' '+(stemEnd+k*9)+' q 20 7 5 22':'M '+xStem+' '+(stemEnd-k*9)+' q 20 -7 5 -22',fill:'none',stroke:'#233f53','stroke-width':2.5})}
   }
   // Augmentation dots belong in a space, never directly on a stave line.
    if(dot)inner+=el('circle',{class:'augmentation-dot',cx:x+18,cy:y-(step%2===0?5:0),r:2.5,fill:'#233f53'});
