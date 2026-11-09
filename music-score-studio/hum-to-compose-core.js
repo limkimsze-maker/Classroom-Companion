@@ -424,20 +424,32 @@ function calibrateScoreTiming(events,meter='4/4',initialBpm=96){
   const last=source[source.length-1].end;
   return Math.sqrt(totalSquared/(matched*1.55))+.12*Math.abs(scoreTime-last);
  }
+ // Competing tempos can sound equally accurate but engrave very different
+ // rhythms. Favour ordinary British note values over unnecessary tied
+ // combinations such as 1.25 crotchet beats when both fit the audio.
+ function notationPenalty(score){
+  let pitched=0,complex=0;
+  for(const note of score){
+   if(note.midi===null)continue;
+   pitched++;
+   if(note.beats<=4&&!LENGTHS.includes(note.beats))complex+=.065;
+  }
+  return pitched?complex/pitched:0;
+ }
  const errorBefore=errorFor(baseline,initialBpm);
  if(!Number.isFinite(errorBefore))return unchanged;
  // Limit the search to +/- 22% so that the score never jumps into a
  // different half-time or double-time interpretation without teacher input.
  const low=Math.max(40,Math.ceil(initialBpm*.78));
  const high=Math.min(200,Math.floor(initialBpm*1.22));
- let winner={bpm:initialBpm,score:baseline,error:errorBefore,objective:errorBefore};
+ let winner={bpm:initialBpm,score:baseline,error:errorBefore,objective:errorBefore+notationPenalty(baseline)};
  for(let bpm=low;bpm<=high;bpm++){
   if(bpm===initialBpm)continue;
   const candidate=transcribeAlignedEvents(events,bpm,meter);
   const error=errorFor(candidate,bpm);
   if(!Number.isFinite(error))continue;
   // Small stability penalty avoids changing an already reasonable tempo.
-  const objective=error+.025*Math.abs(Math.log(bpm/initialBpm));
+  const objective=error+notationPenalty(candidate)+.025*Math.abs(Math.log(bpm/initialBpm));
   if(objective<winner.objective-1e-7)winner={bpm,score:candidate,error,objective};
  }
  // Only rewrite automatically when there is a measurable, substantial fit
