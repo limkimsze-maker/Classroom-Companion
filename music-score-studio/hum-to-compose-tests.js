@@ -96,10 +96,10 @@
    const out=C.transcribeDetectedEvents([{midi:60.37,duration:.38,confidence:.58,points:[{midi:60.32},{midi:60.48}]}],120,'4/4');
    assert(out.length===1&&out[0].uncertain&&out[0].confidence===.58);
   });
-  test('Stable score respects metre-aware 40-bar cap',()=>{
+  test('Stable score supports more than 40 bars',()=>{
    for(const m of ['2/4','3/4','4/4','6/8']){
     const score=C.transcribeDetectedEvents(Array(100).fill(null).map(()=>({midi:60,duration:.5,confidence:1,points:[]})),120,m);
-    assert(score.reduce((s,n)=>s+n.beats,0)<=40*C.METERS[m].beats+.001,'cap '+m);
+    assert(score.length===100,'truncated score '+m);
     assert(C.measures(score,m)[0].reduce((s,n)=>s+n.beats,0)<=C.METERS[m].beats,'bar '+m);
    }
   });
@@ -171,14 +171,14 @@
    const n=C.transcribeAlignedEvents(e,120,'4/4');
    assert(n.length===1&&n[0].midi===64&&n[0].uncertain,'teacher review missing');
   });
-  test('Aligned transcription supports 40 bars in every metre',()=>{
+  test('Aligned transcription supports more than 40 bars in every metre',()=>{
    for(const metre of ['2/4','3/4','4/4','6/8']){
     const beat=C.beatSeconds(120,metre),events=Array.from({length:100},(_,i)=>({
      start:i*beat,end:(i+1)*beat,duration:beat,midi:60,confidence:.95
     }));
     const s=C.transcribeAlignedEvents(events,120,metre),sum=s.reduce((n,x)=>n+x.beats,0);
-    const expected=Math.min(100,40*C.METERS[metre].beats);
-     assert(Math.abs(sum-expected)<.001,'wrong 40-bar cap '+metre+' '+sum+' expected '+expected);
+    const expected=100;
+     assert(Math.abs(sum-expected)<.001,'unexpected score duration '+metre+' '+sum+' expected '+expected);
     assert(C.auditScore(s,metre).ok,'audit failed '+metre);
     for(const bar of C.measures(s,metre))
      assert(bar.reduce((n,x)=>n+x.beats,0)<=C.METERS[metre].beats+.001,'overfilled bar '+metre);
@@ -203,12 +203,12 @@
     const xml=C.scoreToMusicXML(score,'6/8',200);
     assert((xml.match(/<measure /g)||[]).length===34,'MusicXML lost part of the held note');
    });
-   test('40-bar limits reject overflow but permit complete final bar',()=>{
+   test('Auditing permits additional bars without an arbitrary cutoff',()=>{
     for(const [metre,spec] of Object.entries(C.METERS)){
      const full=Array.from({length:40},()=>({midi:60,beats:spec.beats}));
      assert(C.auditScore(full,metre).ok,'Full 40 bars rejected '+metre);
-     assert(!C.auditScore([...full,{midi:62,beats:.25}],metre).ok,'41st bar accepted '+metre);
-     assert(C.auditScore([...full,{midi:62,beats:.25}],metre,Infinity).ok,'Explicit teacher override rejected');
+     assert(C.auditScore([...full,{midi:62,beats:.25}],metre).ok,'41st bar rejected '+metre);
+     assert(C.measures([...full,{midi:62,beats:.25}],metre).length===41,'Expected 41st bar');
     }
    });
    test('Score audit permits dotted semiquavers and rejects illegal values',()=>{
@@ -357,17 +357,22 @@
    const xml=C.scoreToMusicXML([teacher],'4/4',96,{fifths:-2});
    assert(xml.includes('<step>A</step><alter>1</alter><octave>4</octave>'));
   });
-  test('40-bar teacher score is not silently truncated in staff or MusicXML',()=>{
-   const melody=Array.from({length:40},(_,i)=>({midi:60+i%7,beats:4}));
-   const bars=C.measures(melody,'4/4');
-   assert(bars.length===40,'Expected 40 bars, got '+bars.length);
-   assert(Math.abs(bars.flat().reduce((sum,n)=>sum+n.beats,0)-160)<.0001,'Bar durations lost');
-   const xml=C.scoreToMusicXML(melody,'4/4',96);
-   assert((xml.match(/<measure /g)||[]).length===40,'MusicXML must export all 40 bars');
-   assert(xml.includes('<measure implicit="no" number="40">'),'Final bar missing');
+  test('Ten-minute 6/8 transcription at 200 BPM keeps 1,000 bars',()=>{
+   const metre='6/8',bpm=200,beat=C.beatSeconds(bpm,metre);
+   const events=Array.from({length:3000},(_,i)=>({
+    start:i*beat,end:(i+1)*beat,duration:beat,midi:60+i%8,confidence:.96
+   }));
+   const score=C.transcribeAlignedEvents(events,bpm,metre);
+   assert(score.length===3000,'Truncated long 10-minute transcription');
+   const bars=C.measures(score,metre);
+   assert(bars.length===1000,'Expected 1,000 bars, got '+bars.length);
+   assert(C.validateScore({meter:metre,tempo:bpm,notes:score}).length===3000);
+   const xml=C.scoreToMusicXML(score,metre,bpm);
+   assert((xml.match(/<measure /g)||[]).length===1000,'MusicXML dropped later bars');
+   assert(xml.includes('<measure implicit="no" number="1000">'),'Final bar missing');
   });
   test('Long score notation rejects non-finite or excessive note lengths',()=>{
-   for(const beats of [Infinity,NaN,161]){
+   for(const beats of [Infinity,NaN,12001]){
     let rejected=false;try{C.measures([{midi:60,beats}],'4/4')}catch(_){rejected=true}
     assert(rejected,'Invalid length must not create an infinite loop');
    }
