@@ -125,8 +125,8 @@ const scoreLevel=()=>Math.min(1.9,Math.max(1,Number($('scoreVolume').value)/100|
 // losing the user's score name (including names in other languages).
 const scoreName=()=>String($('scoreName').value||'').trim().replace(/\s+/g,' ').slice(0,80)||'My melody';
 const scoreFilename=()=>scoreName().replace(/[\\/:*?"<>|\x00-\x1F]/g,'-').replace(/[. ]+$/g,'').trim()||'My melody';
-const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),clefMode:clefMode(),fifths:keyFifths(),detectedEvents,scoreName:scoreName()});
-function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;detectedEvents=s.detectedEvents||[];$('meter').value=s.meter;$('tempo').value=String(s.tempo);$('clefMode').value=s.clefMode||'auto';$('keyFifths').value=String(s.fifths??0);$('scoreName').value=s.scoreName||'My melody';render();recordingControls()}
+const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),clefMode:clefMode(),fifths:keyFifths(),detectedEvents,scoreName:scoreName(),savedId:activeSavedId});
+function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;detectedEvents=s.detectedEvents||[];$('meter').value=s.meter;$('tempo').value=String(s.tempo);$('clefMode').value=s.clefMode||'auto';$('keyFifths').value=String(s.fifths??0);$('scoreName').value=s.scoreName||'My melody';activeSavedId=s.savedId||null;render();recordingControls()}
 function checkpoint(){history.push(snapshot());if(history.length>100)history.shift();future=[]}
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
@@ -966,7 +966,9 @@ function importState(data){
  change(()=>{activeSavedId=null;scorePage=0;notes=clean;selected=null;detectedEvents=restored;$('meter').value=data.meter;
   $('tempo').value=String(data.tempo);$('clefMode').value=mode;$('keyFifths').value=String(fifths);$('scoreName').value=restoredName});
  if(audio)setOriginal(URL.createObjectURL(audio),audio,null);
- render();
+ // Opening another document must not allow Undo to restore a different
+ // saved score that would be overwritten by a subsequent Save.
+ history=[];future=[];render();
  say(audio?'Session reopened with original audio, detected melody and editable score.':
   session?'Session reopened without an embedded recording.':'Written score opened. Use Save session to preserve the original recording.');
 }
