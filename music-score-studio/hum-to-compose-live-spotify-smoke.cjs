@@ -211,6 +211,27 @@ async function main(){
  assert.ok(f1,'Missing measured real-model F1');
  assert.ok(Number.isFinite(Number(f1[1])),'Non-numeric real-model F1');
  console.log('PASS: actual Spotify neural inference completed for 8/8 synthetic clips; F1='+f1[1]+'%.');
+ // One uninterrupted hum must be ONE attack, even when the neural model
+ // emits multiple same-pitch fragments due to vibrato/timbre fluctuations.
+ const heldHum=await page.evaluate(async()=>{
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const rate=22050,duration=3.2,pcm=new Float32Array(Math.floor(duration*rate));
+  let phase=0;
+  for(let i=0;i<pcm.length;i++){
+   const t=i/rate,freq=220*Math.pow(2,(.14*Math.sin(2*Math.PI*4.1*t))/12);
+   phase+=2*Math.PI*freq/rate;
+   const envelope=Math.max(0,Math.min(1,t/.12,(duration-t)/.13));
+   const richness=Math.sin(phase)+.34*Math.sin(2*phase)+.14*Math.sin(3*phase);
+   pcm[i]=.22*envelope*(1+.13*Math.sin(2*Math.PI*2.3*t))*richness;
+  }
+  const audio={sampleRate:rate,length:pcm.length,duration,numberOfChannels:1,getChannelData:()=>pcm};
+  const out=await adapter.recognise(audio,()=>{},window.HumCore.estimatePitch);
+  return out.events.map(e=>({start:e.start,end:e.end,midi:e.midi}));
+ });
+ const heldNotes=heldHum.filter(e=>e.midi!==null);
+ assert.equal(heldNotes.length,1,
+  'One sustained, vibrato-rich hum produced repeated notes: '+JSON.stringify(heldHum));
+ console.log('PASS: real Spotify model returned ONE note for uninterrupted humming with vibrato.');
  // Exercise the REAL model beyond the previous 20-second audio limit.
  // Synthetic audio only. This is not a human humming or device performance test.
  const longModel=await page.evaluate(async()=>{
