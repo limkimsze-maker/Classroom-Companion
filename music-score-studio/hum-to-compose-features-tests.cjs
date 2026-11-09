@@ -350,6 +350,40 @@ async function downloadedText(){
   assert.ok(Math.abs(C.beatSeconds(Number(elem('tempo').value),elem('meter').value)-start)<.0001);
   assert.match(elem('status').textContent,/outside the supported 40–200 BPM range/);
  });
+ await test('Recording-led detailed rhythm supports undo, save and portable MusicXML',async()=>{
+  const beat=C.beatSeconds(120,'4/4'),dur=.125*beat;
+  const detected=[60,62,64,65].map((midi,i)=>({
+   start:i*dur,end:(i+1)*dur,duration:dur,midi,confidence:.97,points:[]
+  }));
+  await importJSON({format:'music-score-studio-hum-session-v1',
+   name:'Fast hummed motif',meter:'4/4',tempo:120,
+   notes:[{midi:60,beats:.5,confidence:.85}],detectedEvents:detected});
+  assert.equal(elem('rebuildDetailed').disabled,false);
+  assert.equal(elem('rhythmFit').hidden,false);
+  assert.match(elem('rhythmFit').textContent,/detected notes differ/);
+  elem('rebuildDetailed').click();
+  assert.match(elem('status').textContent,/shorter note values/);
+  elem('download').click();
+  let saved=JSON.parse((await downloadedText()).content);
+  assert.equal(saved.notes.filter(n=>n.midi!==null).length,4);
+  assert.deepEqual(saved.notes.filter(n=>n.midi!==null).map(n=>n.beats),[.125,.125,.125,.125]);
+  assert.ok(saved.notes.every(n=>n.midi!==null));
+  assert.match(elem('rhythmFit').textContent,/close to the written score/);
+  elem('xml').click();
+  const xml=(await downloadedText()).content;
+  assert.equal((xml.match(/<type>32nd<\/type>/g)||[]).length,4);
+  elem('undo').click();
+  elem('download').click();
+  saved=JSON.parse((await downloadedText()).content);
+  assert.equal(saved.notes.length,1);
+  elem('redo').click();
+  elem('download').click();
+  saved=JSON.parse((await downloadedText()).content);
+  assert.equal(saved.notes.length,4);
+  await importJSON(saved);
+  assert.equal(elem('duration').disabled,true,'Imported score must remain editable through note selection');
+  assert.equal(elem('rhythmFit').hidden,true,'Score-only import cannot claim matching source audio');
+ });
  await test('Recording controls retain ten-minute timer and time-based stop',async()=>{
   assert.ok(html.includes('MAX_SECONDS=600'));
   assert.ok(html.includes('0:00 / 10:00'));
