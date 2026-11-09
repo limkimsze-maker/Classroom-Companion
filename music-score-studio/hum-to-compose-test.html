@@ -48,16 +48,16 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="example" type="button">♫ Try sample melody</button>
 <div class="field"><label for="meter">Time</label><select id="meter"><option value="2/4">2/4</option><option value="3/4">3/4</option><option value="4/4" selected>4/4</option><option value="6/8">6/8</option></select></div><div class="field"><label for="tempo">Tempo (BPM)</label><input id="tempo" type="number" min="40" max="200" value="96" step="1" inputmode="numeric" aria-label="Tempo in beats per minute"></div>
 </div>
-<div class="controls" style="margin-top:12px"><span id="timer">0:00 / 0:20</span><div id="levelMeter" aria-label="Microphone level"><div id="meterFill"></div></div><span id="livePitch" aria-live="off">—</span></div>
+<div class="controls" style="margin-top:12px"><span id="timer">0:00 / 10:00</span><div id="levelMeter" aria-label="Microphone level"><div id="meterFill"></div></div><span id="livePitch" aria-live="off">—</span></div>
 <div id="status" role="status" aria-live="polite">Ready. Record or choose an audio file. Spotify Basic Pitch will transcribe it automatically.</div><p id="basicPitchProgress" class="small muted" aria-live="polite" style="margin-top:8px"></p>
-<p class="small muted" style="margin-top:12px">🔒 Microphone audio and chosen audio files are processed locally in this browser. Nothing is uploaded. If microphone recording fails, record a short hum using your phone’s Voice Recorder and choose its saved audio file. Maximum analysed length: 20 seconds. <a href="./hum-to-compose-benchmark.html">Check accuracy without singing</a>.</p>
+<p class="small muted" style="margin-top:12px">🔒 Microphone audio and chosen audio files are processed locally in this browser. Nothing is uploaded. If microphone recording fails, record a short hum using your phone’s Voice Recorder and choose its saved audio file. Maximum recording length: 10 minutes. Recognition works in short sections; long recordings take longer to process and need sufficient device memory. <a href="./hum-to-compose-benchmark.html">Check accuracy without singing</a>.</p>
 </section>
 <section class="card" aria-label="Generated musical score">
 <div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2 id="scoreTitle">My melody</h2><div class="field score-name"><label for="scoreName">Score name</label><input id="scoreName" type="text" maxlength="80" value="My melody" autocomplete="off"></div><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="faithful" class="primary" type="button" disabled>▶ Play detected melody</button><button id="play" type="button" disabled>▶ Play written score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>💾 Save score</button><button id="loadLocal" type="button">📁 My saved scores</button><button id="open" type="button">↑ Open file</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
 <details id="scoreLibrary" class="calibration score-library"><summary>My saved scores · <span id="savedCount">0</span></summary><div class="controls"><label for="savedScoreChoice">Saved in this browser</label><select id="savedScoreChoice" aria-label="Choose saved score"></select><button id="openSaved" type="button">Open selected</button><button id="deleteSaved" type="button">Delete selected</button></div><p>Scores are kept on this browser and device only. Download a score file for a portable backup. The original recording is not included in browser saves.</p></details>
 <div class="controls score-loudness"><label for="instrument">Instrument</label><select id="instrument" aria-label="Playback instrument"><option value="piano" selected>Warm piano</option><option value="guitar">Acoustic guitar</option><option value="flute">Flute</option><option value="violin">Violin</option><option value="xylophone">Xylophone</option></select><label for="scoreVolume">Instrument volume <output id="scoreVolumeValue" for="scoreVolume">160%</output></label><input id="scoreVolume" type="range" min="100" max="190" step="10" value="160" aria-label="Instrument playback volume"></div>
 <details id="scoreSetup" class="calibration"><summary>Score setup · clef and key signature</summary><div class="controls"><label for="clefMode">Clef</label><select id="clefMode" aria-label="Score clef"><option value="auto" selected>Automatic</option><option value="treble">Treble clef</option><option value="bass">Bass clef</option></select><label for="keyFifths">Key signature</label><select id="keyFifths" aria-label="Written key signature"><option value="-7">C♭ major</option><option value="-6">G♭ major</option><option value="-5">D♭ major</option><option value="-4">A♭ major</option><option value="-3">E♭ major</option><option value="-2">B♭ major</option><option value="-1">F major</option><option value="0" selected>No sharps/flats (C major / A minor)</option><option value="1">G major</option><option value="2">D major</option><option value="3">A major</option><option value="4">E major</option><option value="5">B major</option><option value="6">F♯ major</option><option value="7">C♯ major</option></select></div><p>Choose the clef and key signature yourself. They change the notation, not the sound. The time signature is also teacher-selected; the app cannot reliably infer metre from a short melody.</p></details>
-<div class="scoreArea"><svg xmlns="http://www.w3.org/2000/svg" id="score" viewBox="0 0 850 190" role="img" aria-label="Generated single-stave music score"><text x="24" y="58" font-size="20">Your musical score will appear here.</text></svg></div>
+<div class="controls" style="justify-content:flex-end;margin:8px 0"><button id="prevPage" type="button" disabled>← Previous bars</button><span id="pageStatus" aria-live="polite">Bars 1–1 of 1</span><button id="nextPage" type="button" disabled>Next bars →</button></div><div class="scoreArea"><svg xmlns="http://www.w3.org/2000/svg" id="score" viewBox="0 0 850 190" role="img" aria-label="Generated single-stave music score"><text x="24" y="58" font-size="20">Your musical score will appear here.</text></svg></div>
 <details id="calibration" class="calibration">
 <summary>🎚 Match the score to my humming</summary>
 <p>Original hum plays your actual recording. Play detected melody follows measured pitches and timing using an instrument sound; Play written score follows rounded musical notation. Corrections are reversible with Undo.</p>
@@ -90,14 +90,14 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <script src="./hum-to-compose-core.js"></script>
 <script>
 (()=>{'use strict';
-const C=window.HumCore,$=id=>document.getElementById(id),MAX_SECONDS=20,SAMPLE_MS=30;
+const C=window.HumCore,$=id=>document.getElementById(id),MAX_SECONDS=600,SAMPLE_MS=30, BARS_PER_PAGE=12;
 const say=(s,error=false)=>{$('status').textContent=s;$('status').setAttribute('role',error?'alert':'status')};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const el=(tag,a={},inner='')=>'<'+tag+' '+Object.entries(a).map(([k,v])=>k+'="'+esc(v)+'"').join(' ')+'>'+inner+'</'+tag+'>';
 let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser=null,analysisCtx=null,playerCtx=null,mediaRecorder=null,chunks=[],originalUrl=null,originalAudio=new Audio(),recording=false,requesting=false,frame=null,lastFrame=0,started=0,samples=[],previousMidi=null;
 let playing=false,voices=[],timers=[],comparisonPending=false,detectedEvents=[];
 let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false,recognitionPending=false;
-let activeSavedId=null;const LIBRARY_KEY='hum-to-compose-scores-v1',LEGACY_KEY='hum-to-compose-test-v2',LIBRARY_LIMIT=40;
+let scorePage=0;let activeSavedId=null;const LIBRARY_KEY='hum-to-compose-scores-v1',LEGACY_KEY='hum-to-compose-test-v2',LIBRARY_LIMIT=40;
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
 const keyFifths=()=>{const v=Number($('keyFifths').value);return Number.isInteger(v)&&v>=-7&&v<=7?v:0};
 const clefMode=()=>['treble','bass'].includes($('clefMode').value)?$('clefMode').value:'auto';
@@ -181,7 +181,7 @@ function analyse(){if(!recording||!analyser||!analysisCtx)return;const now=windo
   const pitch=p.midi===null?null:Math.round(p.midi);if(pitch!==null&&p.confidence>.84)previousMidi=pitch;
   const previous=samples.at(-1),onset=!!(previous&&pitch!==null&&previous.pitch===pitch&&previous.rms>.008&&p.rms>previous.rms*1.9);
   samples.push({t,pitch,rawMidi:p.midi,rms:p.rms,confidence:p.confidence,onset});
-  $('meterFill').style.width=Math.min(100,p.rms*600)+'%';$('timer').textContent='0:'+String(Math.min(20,Math.floor(t))).padStart(2,'0')+' / 0:20';
+  $('meterFill').style.width=Math.min(100,p.rms*600)+'%';$('timer').textContent=Math.floor(Math.min(MAX_SECONDS,t)/60)+':'+String(Math.floor(Math.min(MAX_SECONDS,t)%60)).padStart(2,'0')+' / 10:00';
   $('livePitch').textContent=pitch===null?'Listening…':C.pitchName(pitch)+(p.uncertain?' ?':'');
   if(t>=MAX_SECONDS){finish();return}
  }frame=requestAnimationFrame(analyse)}
@@ -196,7 +196,7 @@ function finish(){
 }
 async function useAudioFile(file){
  if(!file||recording||requesting||basicPitchBusy||recognitionPending)return;
- if(file.size>25*1024*1024){say('Audio file is too large (maximum 25 MB). Choose a short recording.',true);return}
+ if(file.size>120*1024*1024){say('Audio file exceeds 120 MB. Use a compressed 10-minute audio recording instead.',true);return}
  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
  if(!AudioContextClass){say('Web Audio decoding is unavailable in this browser.',true);return}
  requesting=true;recordingControls();stopPlayback();let decoder=null;
@@ -204,6 +204,7 @@ async function useAudioFile(file){
   decoder=new AudioContextClass();
   const audio=await decoder.decodeAudioData(await file.arrayBuffer());
   if(!audio?.length||audio.duration<.15)throw Error('The recording is too short or empty.');
+   if(audio.duration>MAX_SECONDS+.05)throw Error('The recording exceeds 10 minutes. Please trim it before importing.');
   samples=[];detectedEvents=[];previousMidi=null;
   setOriginal(URL.createObjectURL(file),file,audio);
   requesting=false;recordingControls();
@@ -241,12 +242,12 @@ async function builtInFallback(reason){
  const events=C.performanceFromFrames(raw),estimated=C.estimateNaturalTempo(events,meter());
  const bpm=estimated.bpm||tempo(),draft=C.transcribeAlignedEvents(events,bpm,meter());
  if(!C.auditScore(draft,meter()).ok){say('Spotify Basic Pitch could not run ('+reason+'). Built-in recognition also found no clear notes.',true);return false}
- change(()=>{activeSavedId=null;samples=raw;detectedEvents=events;notes=draft;selected=null;
+ change(()=>{activeSavedId=null;scorePage=0;samples=raw;detectedEvents=events;notes=draft;selected=null;
    if(estimated.bpm)$('tempo').value=String(bpm)});
  say('Spotify Basic Pitch could not run ('+reason+'). Used the built-in fallback recogniser; review all notes.',true);
  return true;
 }
-function sample(){if(recording||requesting||basicPitchBusy||recognitionPending)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{activeSavedId=null;notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
+function sample(){if(recording||requesting||basicPitchBusy||recognitionPending)return;samples=[];detectedEvents=[];setOriginal(null);change(()=>{activeSavedId=null;scorePage=0;notes=[{midi:60,beats:1,confidence:1},{midi:60,beats:.5,confidence:.75,uncertain:true},{midi:62,beats:.5,confidence:1},{midi:null,beats:.5,confidence:1},{midi:61,beats:.5,confidence:.82,uncertain:true},{midi:60,beats:5,confidence:1}];selected=null});say('Sample loaded. Includes repeated notes, a rest, an uncertain pitch and a tie across a barline.')}
 function writtenPitchName(n){if(n.midi===null)return 'Rest';
  const s=n.spelling||C.spellingForKey(n.midi,keyFifths());
  return ['C','D','E','F','G','A','B'][s.step]+(s.alter===-1?'♭':s.alter===1?'♯':'')+s.octave;
@@ -313,7 +314,12 @@ function render(){
    ' · Recognition confidence: '+Math.round((candidate.confidence??1)*100)+'%'+
    (candidate.reviewed?' · Teacher checked':candidate.uncertain?' · Please review':' · Ready to review');
  if(valid){$('duration').value=String(notes[selected].beats);$('accidental').value=isNote?String((notes[selected].spelling||C.spellingForKey(notes[selected].midi,keyFifths())).alter):'keep'}
- const bars=C.displayAccidentals(C.measures(notes,meter()),keyFifths()),rows=[],clef=clefOf();
+ const allBars=C.displayAccidentals(C.measures(notes,meter()),keyFifths()),rows=[],clef=clefOf();
+ const totalBars=allBars.length,pages=Math.max(1,Math.ceil(totalBars/BARS_PER_PAGE));
+ scorePage=Math.max(0,Math.min(scorePage,pages-1));
+ const pageStart=scorePage*BARS_PER_PAGE,bars=allBars.slice(pageStart,pageStart+BARS_PER_PAGE);
+ $('prevPage').disabled=scorePage===0;$('nextPage').disabled=scorePage>=pages-1;
+ $('pageStatus').textContent='Bars '+(pageStart+1)+'–'+(pageStart+bars.length)+' of '+totalBars+' · Page '+(scorePage+1)+'/'+pages;
  for(let b=0;b<bars.length;){if(b+1<bars.length&&bars[b].length+bars[b+1].length<=12){rows.push([b,b+1]);b+=2}else{rows.push([b]);b++}}
  if(!rows.length)rows.push([]);
  const height=rows.length*174+38;let out=el('title',{},esc(scoreName()+' — editable music score'));
@@ -333,7 +339,7 @@ function render(){
    const y=base+40-(((spelled.octave+1)*7+spelled.step)-((lower.octave+1)*7+lower.step))*5;
    out+=el('text',{class:'key-signature',x:67+i*12,y:y+7,'font-size':25},fifths>0?'♯':'♭');
   }
-  if(r===0){const [top,bottom]=meter().split('/');
+  if(r===0&&scorePage===0){const [top,bottom]=meter().split('/');
    out+=el('text',{x:68+extra,y:base+19,'font-size':22,'font-weight':'bold'},top)+
     el('text',{x:68+extra,y:base+41,'font-size':22,'font-weight':'bold'},bottom)}
   const left=100+extra,width=(776-extra)/(row.length===2?2:1);
@@ -386,7 +392,7 @@ function render(){
  if(!has)out+=el('text',{x:120,y:112,'font-size':18},'Record a melody or try the sample.');
  $('score').setAttribute('viewBox','0 0 900 '+height);$('score').innerHTML=out;
  const unsure=notes.filter(n=>n.uncertain&&!n.reviewed).length;
- $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+bars.length+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain':'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
+ $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+totalBars+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain':'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
  lastSetup={clefMode:clefMode(),fifths:keyFifths()};
 }
 function choose(e){const g=e.target.closest('g[data-origin]');if(!g)return;const index=Number(g.getAttribute('data-origin'));if(!Number.isInteger(index)||!notes[index])return;selected=index;render()}
@@ -397,7 +403,7 @@ function insert(isRest){change(()=>{const midi=isRest?null:((selected!==null&&no
   notes.splice(index,0,{midi,beats:1,confidence:1,uncertain:false,reviewed:true});selected=index})}
 function toggle(){if(selected===null||!notes[selected])return;change(()=>{const n=notes[selected];n.midi=n.midi===null?60:null;delete n.spelling;n.uncertain=false;n.reviewed=true})}
 function remove(){if(selected===null)return;change(()=>{notes.splice(selected,1);selected=notes.length?Math.min(selected,notes.length-1):null})}
-function clear(){if(!notes.length)return;change(()=>{notes=[];selected=null;activeSavedId=null})}
+function clear(){if(!notes.length)return;change(()=>{notes=[];selected=null;activeSavedId=null;scorePage=0})}
 function stopOriginal(){comparisonPending=false;originalAudio.pause();originalAudio.currentTime=0;$('original').textContent='▶ Original hum';$('stop').disabled=!playing}
 function playOriginal(){if(!originalUrl)return;if(!originalAudio.paused){stopOriginal();return}stopPlayback();originalAudio.currentTime=0;originalAudio.play().then(()=>{$('original').textContent='■ Stop original';$('stop').disabled=false;say('Playing your actual recorded humming (not a synthesised score).')}).catch(()=>say('Original audio could not be played.',true))}
 originalAudio.addEventListener('ended',()=>{const playNext=comparisonPending;stopOriginal();if(playNext)playScore()});
@@ -443,7 +449,7 @@ async function tryBasicPitch(){
   const newScore=C.transcribeAlignedEvents(newPerformance,bpm,meter());
   const quality=C.auditScore(newScore,meter());
   if(!quality.ok)throw Error('The generated notation needs review: '+quality.reason);
-  change(()=>{activeSavedId=null;notes=newScore;selected=null;detectedEvents=newPerformance;
+  change(()=>{activeSavedId=null;scorePage=0;notes=newScore;selected=null;detectedEvents=newPerformance;
    if(guessed.bpm)$('tempo').value=String(bpm)});
   $('basicPitchProgress').textContent='Spotify Basic Pitch complete · main recognition engine';
   const v=answer.verification,octaveInfo=answer.octaveCheck;
@@ -607,10 +613,10 @@ function bytesToBase64(buffer){
 function decodeSessionAudio(data){
  if(typeof data.originalAudioBase64!=='string')return null;
  const encoded=data.originalAudioBase64;
- if(encoded.length>12e6||!/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)||encoded.length%4!==0)
+ if(encoded.length>45e6||!/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)||encoded.length%4!==0)
   throw Error('Unsupported or oversized session audio');
  const binary=atob(encoded),buffer=new Uint8Array(binary.length);
- if(buffer.length>8e6)throw Error('Session audio is too large');
+ if(buffer.length>32*1024*1024)throw Error('Session audio is too large');
  for(let i=0;i<binary.length;i++)buffer[i]=binary.charCodeAt(i);
  const mime=typeof data.originalAudioType==='string'&&/^audio\/[\w.+-]+$/.test(data.originalAudioType)?data.originalAudioType:'audio/wav';
  return new Blob([buffer],{type:mime});
@@ -619,9 +625,9 @@ async function saveSession(){
  if(!notes.length)return;
  try{
   const result={...scorePayload(),format:'music-score-studio-hum-session-v1',
-   detectedEvents:detectedEvents.slice(0,256)};
+   detectedEvents:detectedEvents.slice(0,20000)};
   if(sourceAudioBlob){
-   if(sourceAudioBlob.size>8e6)throw Error('Audio exceeds the 8 MB session limit. Save score JSON instead.');
+   if(sourceAudioBlob.size>32*1024*1024)throw Error('Audio exceeds the 32 MB session limit. Download score file instead, and keep the recording separately.');
    result.originalAudioBase64=bytesToBase64(await sourceAudioBlob.arrayBuffer());
    result.originalAudioType=sourceAudioBlob.type||'audio/wav';
   }
@@ -629,7 +635,7 @@ async function saveSession(){
   say(sourceAudioBlob?'Session saved with the original recording and detected melody.':'Session saved without audio (no original recording was available).');
  }catch(error){say('Could not save session: '+error.message,true)}
 }
-function exportJSON(){if(!notes.length)return;downloadText(JSON.stringify(scorePayload(),null,2),'application/json',scoreFilename()+'.music-score.json');say('Saved “'+scoreName()+'” as a score file. Use Open score file to reopen it. Original recording is not included; use Save session for audio.')}
+function exportJSON(){if(!notes.length)return;downloadText(JSON.stringify(scorePayload(),null,2),'application/json',scoreFilename()+'.music-score.json');say('Downloaded “'+scoreName()+'” as a score file. Open file reopens it; Save score stores it in this browser. Original recording is not included.')}
 function importState(data){
  const clean=C.validateScore(data),fifths=data.fifths===undefined?0:Number(data.fifths);
  if(data.name!==undefined&&(typeof data.name!=='string'||data.name.length>80||/[\x00-\x1F]/.test(data.name)))throw Error('Invalid score name');
@@ -639,9 +645,9 @@ function importState(data){
  if(!['auto','treble','bass'].includes(mode))throw Error('Invalid saved clef');
  const session=data.format==='music-score-studio-hum-session-v1';
  const audio=session?decodeSessionAudio(data):null;
- const restored=session&&Array.isArray(data.detectedEvents)&&data.detectedEvents.length<=256
+ const restored=session&&Array.isArray(data.detectedEvents)&&data.detectedEvents.length<=20000
   ?data.detectedEvents.filter(e=>e&&Number.isFinite(e.start)&&Number.isFinite(e.end)&&
-    e.start>=0&&e.end<=20&&e.end>e.start&&
+    e.start>=0&&e.end<=MAX_SECONDS+.05&&e.end>e.start&&
     (e.midi===null||Number.isFinite(e.midi)&&e.midi>=36&&e.midi<=95))
    .map(e=>({start:e.start,end:e.end,duration:e.end-e.start,midi:e.midi,
     confidence:Number.isFinite(e.confidence)?Math.max(0,Math.min(1,e.confidence)):.75,
@@ -649,7 +655,7 @@ function importState(data){
      Number.isFinite(p.midi)&&p.t>=0&&p.t<=e.end-e.start):[]}))
   :[];
  samples=[];setOriginal(null);
- change(()=>{activeSavedId=null;notes=clean;selected=null;detectedEvents=restored;$('meter').value=data.meter;
+ change(()=>{activeSavedId=null;scorePage=0;notes=clean;selected=null;detectedEvents=restored;$('meter').value=data.meter;
   $('tempo').value=String(data.tempo);$('clefMode').value=mode;$('keyFifths').value=String(fifths);$('scoreName').value=restoredName});
  if(audio)setOriginal(URL.createObjectURL(audio),audio,null);
  render();
@@ -738,7 +744,9 @@ $('save').addEventListener('click',localSave);$('download').addEventListener('cl
 $('playSelected').addEventListener('click',playSelected);$('markReviewed').addEventListener('click',markReviewed);
 $('loadLocal').addEventListener('click',openLibrary);$('openSaved').addEventListener('click',localLoad);$('deleteSaved').addEventListener('click',deleteLocal);
 $('scoreName').addEventListener('input',()=>{$('scoreTitle').textContent=scoreName()});
-$('open').addEventListener('click',()=>$('file').click());$('file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12000000)throw Error('File exceeds 12 MB');importState(JSON.parse(await file.text()))}catch(err){say('Could not open score JSON: '+err.message,true)}e.target.value=''});
+ $('prevPage').addEventListener('click',()=>{if(scorePage>0){scorePage--;render()}});
+ $('nextPage').addEventListener('click',()=>{scorePage++;render()});
+$('open').addEventListener('click',()=>$('file').click());$('file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>64*1024*1024)throw Error('File exceeds 64 MB');importState(JSON.parse(await file.text()))}catch(err){say('Could not open score JSON: '+err.message,true)}e.target.value=''});
 $('score').addEventListener('click',choose);$('score').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('g[data-origin]')){e.preventDefault();choose(e)}});
 ['tempo','meter'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='tempo')$('tempo').value=String(tempo());stopPlayback();render()}));
 ['clefMode','keyFifths'].forEach(id=>$(id).addEventListener('change',()=>{
