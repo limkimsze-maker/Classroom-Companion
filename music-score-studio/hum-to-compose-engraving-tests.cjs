@@ -43,6 +43,22 @@ function notePosition(svg){
    stemX:Number(stem?.[1]),stemY1:Number(stem?.[3]),stemY2:Number(stem?.[4])};
  });
 }
+async function assertUnbeamedFlagsRight(midi,beats,expectedCount,up){
+ const svg=await engraved('4/4',[{midi,beats},{midi:null,beats:4-beats}]);
+ const note=events(svg,'note')[0];
+ assert.ok(note,'Single note was not engraved');
+ const flags=[...note.matchAll(/<path class="flag" d="M (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) q (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)"/g)];
+ assert.equal(flags.length,expectedCount,'Incorrect number of independent flags');
+ const pos=notePosition(svg)[0];
+ assert.ok(up?pos.stemX>pos.headX&&pos.stemY2<pos.stemY1:
+  pos.stemX<pos.headX&&pos.stemY2>pos.stemY1,'Incorrect stem direction');
+ for(const flag of flags){
+  const [startX,,controlX,,endX]=flag.slice(1).map(Number);
+  assert.equal(startX,pos.stemX,'Flag starts on wrong stem');
+  assert.ok(controlX>0&&endX>0,'Every flag must curve to the right of its stem');
+ }
+ assert.doesNotMatch(note,/class="beam"/,'Independent note must not be beamed');
+}
 let passed=0;async function check(name,fn){
  try{await fn();console.log('PASS '+name);passed++}
  catch(err){console.error('FAIL '+name+': '+err.message);process.exitCode=1}
@@ -60,6 +76,24 @@ let passed=0;async function check(name,fn){
   const pos=notePosition(svg).slice(0,2);
   assert.equal(pos.length,2);
   assert.ok(pos.every(n=>n.stemX>n.headX&&n.stemY2<n.stemY1));
+ });
+ await check('Single up-stem quaver flag faces right',async()=>{
+  await assertUnbeamedFlagsRight(60,.5,1,true);
+ });
+ await check('Single down-stem quaver flag faces right',async()=>{
+  await assertUnbeamedFlagsRight(76,.5,1,false);
+ });
+ await check('Single up-stem semiquaver flags face right',async()=>{
+  await assertUnbeamedFlagsRight(60,.25,2,true);
+ });
+ await check('Single down-stem semiquaver flags face right',async()=>{
+  await assertUnbeamedFlagsRight(76,.25,2,false);
+ });
+ await check('Dotted quavers and dotted semiquavers retain right-facing flags',async()=>{
+  for(const midi of [60,76]){
+   await assertUnbeamedFlagsRight(midi,.75,1,midi===60);
+   await assertUnbeamedFlagsRight(midi,.375,2,midi===60);
+  }
  });
  await check('Cross-bar ties on high notes curve upwards',async()=>{
   const svg=await engraved('4/4',[{midi:76,beats:4.5},{midi:76,beats:1}]);
