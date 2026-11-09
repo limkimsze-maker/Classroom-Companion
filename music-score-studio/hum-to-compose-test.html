@@ -350,9 +350,29 @@ function render(){
  $('pageStatus').textContent='Bars '+(pageStart+1)+'–'+(pageStart+bars.length)+' of '+totalBars+' · Page '+(scorePage+1)+'/'+pages;
  for(let b=0;b<bars.length;){if(b+1<bars.length&&bars[b].length+bars[b+1].length<=12){rows.push([b,b+1]);b+=2}else{rows.push([b]);b++}}
  if(!rows.length)rows.push([]);
- const height=rows.length*174+38;let out=el('title',{},esc(scoreName()+' — editable music score'));
+ // Reserve extra vertical space for ledger lines, stems and octave marks.
+ // Every system keeps its own stave position so even an isolated high note
+ // cannot collide with the preceding system or disappear outside the SVG.
+ const rowBases=[];let pageHeight=0;
+ const lower=clef==='treble'?C.spelling(64):C.spelling(43);
+ const lowest=(lower.octave+1)*7+lower.step;
+ for(const row of rows){
+  let top=39,bottom=67;
+  for(const index of row)for(const n of bars[index]){
+   if(n.midi===null)continue;
+   const step=writtenDiatonic(n,clef)-lowest,y=40-step*5;
+   const shift=C.engravingOctaveShift(n,clef,keyFifths());
+   const high=y-(shift<0?38:n.uncertain&&!n.reviewed?18:13);
+   const low=y+(shift>0?38:n.uncertain&&!n.reviewed?18:13);
+   top=Math.max(top,20-high);
+   bottom=Math.max(bottom,low-40+22);
+  }
+  rowBases.push(pageHeight+top);
+  pageHeight+=Math.max(174,top+40+bottom);
+ }
+ const height=pageHeight+38;let out=el('title',{},esc(scoreName()+' — editable music score'));
  const all=[];
- rows.forEach((row,r)=>{const base=39+r*174;
+ rows.forEach((row,r)=>{const base=rowBases[r];
   for(let k=0;k<5;k++)out+=el('line',{class:'staff',x1:20,x2:880,y1:base+k*10,y2:base+k*10});
   out+=el('text',{x:26,y:base+40,'font-size':60},clef==='treble'?'𝄞':'𝄢');
   const fifths=keyFifths(),count=Math.abs(fifths),extra=count*12;
