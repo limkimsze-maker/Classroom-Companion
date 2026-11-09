@@ -384,6 +384,38 @@ async function downloadedText(){
   assert.equal(elem('duration').disabled,true,'Imported score must remain editable through note selection');
   assert.equal(elem('rhythmFit').hidden,true,'Score-only import cannot claim matching source audio');
  });
+ await test('Edited score pitches can follow the original recorded rhythm without re-quantising',async()=>{
+  await importJSON({format:'music-score-studio-hum-session-v1',
+   meter:'4/4',tempo:96,notes:[{midi:64,beats:1},{midi:67,beats:.5}],
+   detectedEvents:[
+    {start:0,end:.45,duration:.45,midi:60,confidence:.95,points:[{t:0,midi:60,confidence:.95}]},
+    {start:.71,end:1.04,duration:.33,midi:62,confidence:.94,points:[{t:0,midi:62,confidence:.94}]}
+   ]});
+  assert.equal(elem('editedTiming').disabled,false,'Matched source/score can be previewed');
+  const before=scheduled.length;
+  await elem('editedTiming').click();
+  const sounding=scheduled.slice(before);
+  const E4=440*Math.pow(2,(64-69)/12),G4=440*Math.pow(2,(67-69)/12);
+  assert.ok(sounding.some(f=>Math.abs(f-E4)<.01),'Did not play corrected E4');
+  assert.ok(sounding.some(f=>Math.abs(f-G4)<.01),'Did not play corrected G4');
+  assert.ok(!sounding.some(f=>Math.abs(f-261.625565)<.01),
+   'Original C4 was wrongly played despite corrected E4');
+  assert.match(elem('status').textContent,/original recorded timing/);
+  elem('stop').click();
+  elem('download').click();
+  const saved=JSON.parse((await downloadedText()).content);
+  assert.equal(saved.notes[0].midi,64,'Preview must not alter saved pitches');
+  assert.equal(saved.notes[1].midi,67);
+ });
+ await test('Recorded timing preview refuses an unsupported one-to-many pitch mapping',async()=>{
+  await importJSON({format:'music-score-studio-hum-session-v1',
+   meter:'4/4',tempo:96,notes:[{midi:64,beats:1}],
+   detectedEvents:[
+    {start:0,end:.4,duration:.4,midi:60,confidence:.96,points:[]},
+    {start:.5,end:.9,duration:.4,midi:62,confidence:.96,points:[]}
+   ]});
+  assert.equal(elem('editedTiming').disabled,true,'Pitch-count mismatch must be visible');
+ });
  await test('Recording controls retain ten-minute timer and time-based stop',async()=>{
   assert.ok(html.includes('MAX_SECONDS=600'));
   assert.ok(html.includes('0:00 / 10:00'));
