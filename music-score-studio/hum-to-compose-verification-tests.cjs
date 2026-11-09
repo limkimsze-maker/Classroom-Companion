@@ -69,6 +69,38 @@ test('Suppress false same-pitch trailing note only when no new attack exists',()
  assert.deepEqual(result.map(x=>x.midi),[60]);
  assert.equal(result[0].qualityStatus,'review');
 });
+test('Sustained hum fragmented into four model notes sounds as ONE note',()=>{
+ const fragments=[
+  note(60,.20,.56),note(60,.56,.92),
+  note(60,.92,1.30),note(60,1.30,1.72)
+ ];
+ const pcm=waveform([{midi:60,start:.20,end:1.72,harmonics:[1,.35,.12]}]);
+ const melody=adapter.toSingleMelody(fragments,2,pcm,RATE);
+ assert.deepEqual(melody.map(x=>x.midi),[60],'False repeated note attacks remained');
+ assert.ok(Math.abs(melody[0].duration-1.52)<.001);
+ const score=C.transcribeAlignedEvents(melody,120,'4/4');
+ assert.equal(score.filter(n=>n.midi!==null).length,1,'One hum became four written notes');
+ assert.equal(score[0].uncertain,true,'Automatically grouped note must remain reviewable');
+});
+test('Short false rest inside continuous humming does not cause a replay',()=>{
+ const pcm=waveform([{midi:64,start:.20,end:1.60}]);
+ const fragments=[note(64,.20,.67),note(64,.72,1.11),note(64,1.11,1.60)];
+ const melody=adapter.toSingleMelody(fragments,2,pcm,RATE);
+ assert.deepEqual(melody.map(x=>x.midi),[64]);
+ assert.ok(Math.abs(melody[0].duration-1.4)<.001);
+});
+test('Real silence between repeated same-pitch hums remains TWO notes',()=>{
+ const pcm=waveform([{midi:60,start:.20,end:.65},{midi:60,start:.75,end:1.15}]);
+ const fragments=[note(60,.20,.65),note(60,.75,1.15)];
+ const melody=adapter.toSingleMelody(fragments,2,pcm,RATE);
+ assert.deepEqual(melody.map(x=>x.midi),[60,null,60]);
+ assert.ok(melody[1].duration>=.09,'Actual silence was hidden');
+});
+test('No source audio does not invent a merge of repeated pitches',()=>{
+ const fragments=[note(60,.20,.55),note(60,.55,.90),note(60,.90,1.25)];
+ const melody=adapter.toSingleMelody(fragments,2,null,RATE);
+ assert.deepEqual(melody.map(x=>x.midi),[60,60,60]);
+});
 test('Keep repeated same-pitch notes when their source recording has a fresh attack',()=>{
  const pcm=waveform([{midi:60,start:.2,end:.5},{midi:60,start:.5,end:.9}]);
  const result=adapter.toSingleMelody([note(60,.2,.5),note(60,.5,.9)],2,pcm,RATE);
