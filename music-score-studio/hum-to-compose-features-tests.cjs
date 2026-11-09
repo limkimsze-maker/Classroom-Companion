@@ -307,6 +307,20 @@ async function downloadedText(){
   assert.equal(saved.detectedEvents[0].end,562);
   assert.equal(saved.name,'Late melody');
  });
+ await test('Recording-first UI does not require choosing metre or tempo before singing',async()=>{
+  const recordingSection=html.slice(html.indexOf('<section class="card" aria-label="Record melody">'),
+   html.indexOf('</section>',html.indexOf('<section class="card" aria-label="Record melody">')));
+  assert.ok(recordingSection.includes('Hum, sing or play one melody at your own speed.'));
+  assert.ok(!recordingSection.includes('id="meter"'),'Meter belongs in advanced score setup');
+  assert.ok(!recordingSection.includes('id="tempo"'),'Tempo belongs in advanced score setup');
+  const settings=html.slice(html.indexOf('<details id="scoreSetup"'),html.indexOf('</details>',html.indexOf('<details id="scoreSetup"')));
+  assert.ok(settings.includes('id="meter"')&&settings.includes('id="tempo"'),
+   'Teachers must still be able to change time and tempo after recording');
+  assert.equal((html.match(/id="meter"/g)||[]).length,1);
+  assert.equal((html.match(/id="tempo"/g)||[]).length,1);
+  assert.equal(elem('meter').value,'4/4');
+  assert.equal(elem('tempo').value,'96');
+ });
  await test('Recording controls retain ten-minute timer and time-based stop',async()=>{
   assert.ok(html.includes('MAX_SECONDS=600'));
   assert.ok(html.includes('0:00 / 10:00'));
