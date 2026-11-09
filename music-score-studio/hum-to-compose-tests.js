@@ -264,7 +264,8 @@
    });
    test('Score audit permits dotted semiquavers and rejects illegal values',()=>{
    assert(C.auditScore([{midi:60,beats:.375}], '4/4').ok,'dotted semiquaver rejected');
-   assert(!C.auditScore([{midi:60,beats:.125}], '4/4').ok,'too-short note accepted');
+   assert(C.auditScore([{midi:60,beats:.125}], '4/4').ok,'Demisemiquaver rejected');
+    assert(!C.auditScore([{midi:60,beats:.0625}], '4/4').ok,'Unsupported 64th-note value accepted');
    assert(!C.auditScore([{midi:60,beats:1.1}], '4/4').ok,'invalid beat accepted');
    assert(!C.auditScore([{midi:97,beats:1}], '4/4').ok,'invalid MIDI accepted');
    assert(!C.auditScore([{midi:null,beats:1}], '4/4').ok,'rest-only score accepted');
