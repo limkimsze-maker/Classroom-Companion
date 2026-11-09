@@ -78,8 +78,8 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <summary>🎚 Match the score to my humming</summary>
 <p>Original hum plays your actual recording. Play detected melody follows measured pitches and timing using an instrument sound; Play written score follows rounded musical notation. Corrections are reversible with Undo.</p>
 <div class="calibration-group"><strong>1. Compare</strong><div class="controls">
-<button id="compare" type="button" disabled>▶ Hum, then score</button></div>
-<p>Listen for notes that are too high or low, missing pauses, or timing that is too fast or slow.</p></div>
+<button id="compare" type="button" disabled>▶ Hum, then score</button><button id="editedTiming" type="button" disabled>▶ Corrected pitches, original rhythm</button></div>
+<p>“Corrected pitches, original rhythm” plays your edited note pitches on the recording’s measured note starts, lengths and pauses. It is available when the written and detected melodies have the same number of notes. “Play written score” always follows the printed note lengths.</p></div>
 <div class="calibration-group"><strong>2. Adjust the whole melody's pitch</strong><div class="controls">
 <button id="allDown" type="button" disabled>♭ All down 1</button><button id="allUp" type="button" disabled>♯ All up 1</button>
 <button id="octaveDown" type="button" disabled>All down 1 octave</button><button id="octaveUp" type="button" disabled>All up 1 octave</button>
@@ -131,13 +131,18 @@ function checkpoint(){history.push(snapshot());if(history.length>100)history.shi
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null));$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
+function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null));$('compare').disabled=recording||requesting||!originalUrl||!notes.length;
+ $('editedTiming').disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null)||
+  notes.filter(n=>n.midi!==null).length!==detectedEvents.filter(n=>n.midi!==null).length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
 function closeMic(){if(recordingDeadline!==null)clearTimeout(recordingDeadline);recordingDeadline=null;if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
 function setOriginal(url,blob=null,audioBuffer=null){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';
  sourceAudioBlob=blob;sourceAudioBuffer=audioBuffer;$('original').disabled=!url;$('compare').disabled=!url||!notes.length;recordingControls()}
-function stopPlayback(){playbackEpoch++;engravedPlayingIndex=-1;showProfessionalPlaying(-1);comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null);$('stop').disabled=true;$('original').textContent='▶ Original hum'}
+function stopPlayback(){playbackEpoch++;engravedPlayingIndex=-1;showProfessionalPlaying(-1);comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null);
+ $('editedTiming').disabled=!detectedEvents.some(n=>n.midi!==null)||
+  notes.filter(n=>n.midi!==null).length!==detectedEvents.filter(n=>n.midi!==null).length;
+ $('stop').disabled=true;$('original').textContent='▶ Original hum'}
 function stopBoth(){stopPlayback();say('Playback stopped.')}
 function microphoneAdvice(error,stage){
  const name=error?.name||'UnknownError';
@@ -358,7 +363,10 @@ function render(){
  $('scoreTitle').textContent=scoreName();
  const has=notes.length>0,valid=selected!==null&&notes[selected],isNote=valid&&notes[selected].midi!==null;
  $('play').disabled=!has||playing;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null)||playing;$('save').disabled=!has;$('download').disabled=!has;$('xml').disabled=!has;$('saveSession').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
- $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
+ $('compare').disabled=!has||!originalUrl||recording||requesting;
+ $('editedTiming').disabled=!has||playing||recording||requesting||basicPitchBusy||
+  notes.filter(n=>n.midi!==null).length!==detectedEvents.filter(n=>n.midi!==null).length||
+  !detectedEvents.some(n=>n.midi!==null);['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
  ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental','playSelected','markReviewed'].forEach(id=>$(id).disabled=!isNote);
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  $('editing').textContent=!valid?'Select a note or rest':(isNote?writtenPitchName(notes[selected]):'Rest')+' · '+(notes[selected].uncertain&&!notes[selected].reviewed?'Check pitch':'Selected');
@@ -795,14 +803,26 @@ function scheduleInstrument(midi,start,duration,pitchPoints=[]){
  }
 }
 // Use a rolling five-second audio schedule so long music stays playable.
-async function playDetected(){
+async function playDetected(useEditedPitches=false){
  if(!detectedEvents.some(n=>n.midi!==null)||recording)return;
+ const detected=detectedEvents.filter(e=>e.midi!==null);
+ const written=notes.filter(n=>n.midi!==null);
+ if(useEditedPitches&&detected.length!==written.length){
+  say('Recorded-timing playback needs the same number of pitched notes in your score as in the detected melody. Review missing or extra attacks first.',true);
+  return;
+ }
+ // Preserve the actual recorded event timeline, including genuine rests and
+ // relative timing. Substitute only the teacher-edited MIDI pitches.
+ let matched=0;
+ const events=useEditedPitches?detectedEvents.map(e=>e.midi===null?e:{
+  ...e,midi:written[matched++].midi,points:[] // Original pitch bends must not overwrite corrected pitch.
+ }):detectedEvents;
  stopPlayback();
  try{playerCtx=playerCtx||new(window.AudioContext||window.webkitAudioContext)();await playerCtx.resume()}
  catch(_){say('Detected melody playback is not supported in this browser.',true);return}
- playing=true;$('play').disabled=true;$('faithful').disabled=true;$('stop').disabled=false;
+ playing=true;$('play').disabled=true;$('faithful').disabled=true;$('editedTiming').disabled=true;$('stop').disabled=false;
  const token=++playbackEpoch,begin=playerCtx.currentTime+.12;
- const events=detectedEvents,total=events.at(-1).end;let next=0;
+ const total=events.at(-1).end;let next=0;
  function tick(){
   if(!playing||token!==playbackEpoch)return;
   const elapsed=playerCtx.currentTime-begin;
@@ -810,12 +830,13 @@ async function playDetected(){
    const e=events[next++];
    if(e.midi!==null&&e.duration>0)scheduleInstrument(e.midi,begin+e.start,e.duration,e.points||[]);
   }
-  if(elapsed>=total+.05){stopPlayback();say('Detected melody finished. Play written score to hear how notation differs.');return}
+  if(elapsed>=total+.05){stopPlayback();say(useEditedPitches?'Corrected pitches finished, using the recorded rhythm.':'Detected melody finished. Play written score to hear how notation differs.');return}
   timers.length=0;timers.push(setTimeout(tick,110));
  }
  tick();
- say('Playing detected melody with '+$('instrument').selectedOptions[0].text.toLowerCase()+
-  '. Note timing and pitch movement are preserved; your original recording is unchanged.');
+ say((useEditedPitches?'Playing edited score pitches in the original recorded timing':
+  'Playing the detected melody')+' with '+$('instrument').selectedOptions[0].text.toLowerCase()+
+  '. The recording’s note starts, durations and pauses are preserved; this is not the quantised written-score playback.');
 }
 async function playScore(){
  if(!notes.length||recording)return;
@@ -1022,7 +1043,7 @@ $('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0
 $('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
 $('scoreVolume').addEventListener('input',()=>{$('scoreVolumeValue').textContent=$('scoreVolume').value+'%'});
 $('instrument').addEventListener('change',()=>{stopPlayback();say('Instrument: '+$('instrument').selectedOptions[0].text+'. Press Play to hear the new sound.');});
-$('play').addEventListener('click',playScore);$('faithful').addEventListener('click',playDetected);$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
+$('play').addEventListener('click',playScore);$('faithful').addEventListener('click',()=>playDetected(false));$('editedTiming').addEventListener('click',()=>playDetected(true));$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
 $('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);$('rebuildDetailed').addEventListener('click',rebuildDetailed);
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
 $('add').addEventListener('click',()=>insert(false));$('rest').addEventListener('click',()=>insert(true));$('toggle').addEventListener('click',toggle);$('remove').addEventListener('click',remove);
