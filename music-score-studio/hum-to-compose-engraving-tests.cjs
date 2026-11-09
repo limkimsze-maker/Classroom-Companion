@@ -130,6 +130,15 @@ let passed=0;async function check(name,fn){
   elem('prevPage').click();
   assert.equal(elem('pageStatus').textContent,'Bars 25–36 of 40 · Page 3/4');
  });
+ await check('A held note crossing page boundary retains continuation ties',async()=>{
+  const svg=await engraved('4/4',[{midi:60,beats:49}]);
+  assert.equal(elem('pageStatus').textContent,'Bars 1–12 of 13 · Page 1/2');
+  assert.ok((svg.match(/class="tie"/g)||[]).length>=12,'Page-end tie missing');
+  elem('nextPage').click();
+  const later=elem('score').innerHTML;
+  assert.equal(elem('pageStatus').textContent,'Bars 13–13 of 13 · Page 2/2');
+  assert.ok((later.match(/class="tie"/g)||[]).length>=1,'Page-start continuation tie missing');
+ });
  console.log(passed+' SVG music engraving checks passed.');
  if(process.exitCode)process.exit(1);
 })().catch(err=>{console.error(err);process.exit(1)});
