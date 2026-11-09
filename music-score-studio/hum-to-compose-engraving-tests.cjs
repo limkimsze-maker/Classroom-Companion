@@ -27,8 +27,8 @@ const URL={createObjectURL:()=> 'blob:test',revokeObjectURL(){}};
 const memory={getItem(){return null},setItem(){}};
 new Function('document','window','Audio','URL','localStorage','setTimeout','clearTimeout',script)(
  document,window,FakeAudio,URL,memory,()=>0,()=>{});
-async function engraved(signature,notes){
- const raw=JSON.stringify({meter:signature,tempo:96,notes});
+async function engraved(signature,notes,options={}){
+ const raw=JSON.stringify({meter:signature,tempo:96,notes,...options});
  await elem('file').handlers.change({target:{files:[{
   size:raw.length,text:async()=>raw}],value:''}});
  assert.ok(elem('status').textContent.includes('opened'),elem('status').textContent);
@@ -138,6 +138,47 @@ let passed=0;async function check(name,fn){
   const later=elem('score').innerHTML;
   assert.equal(elem('pageStatus').textContent,'Bars 13–13 of 13 · Page 2/2');
   assert.ok((later.match(/class="tie"/g)||[]).length>=1,'Page-start continuation tie missing');
+ });
+ await check('Extreme high bass pitch uses 8va without a tower of ledger lines',async()=>{
+  const svg=await engraved('4/4',[
+   {midi:55,beats:1},{midi:71,beats:1,uncertain:true},{midi:57,beats:2}
+  ],{clefMode:'bass'});
+  const notes=events(svg,'note');
+  assert.equal(notes.length,3);
+  const unusual=notes[1];
+  assert.match(unusual,/class="octave-mark"[^>]*>8va<\/text>/);
+  assert.ok((unusual.match(/class="ledger"/g)||[]).length<=2,'Excessive ledger lines remained');
+  assert.match(unusual,/class="uncertain-ring"/);
+  assert.doesNotMatch(unusual,/>\?<\/text>/,'Question marks must not be printed on each note');
+  assert.equal(elem('clefMode').value,'bass','Manual bass clef was overridden');
+  assert.match(elem('scoreHint').textContent,/1 uncertain/,'Review marker lost');
+ });
+ await check('Automatic clef minimises awkward ledger-line pitches',async()=>{
+  const svg=await engraved('4/4',[
+   {midi:59,beats:1},{midi:71,beats:1},{midi:71,beats:1},{midi:74,beats:1}
+  ],{clefMode:'auto'});
+  assert.match(svg,/𝄞/,'Expected treble for pitches mostly above bass stave');
+  assert.doesNotMatch(svg,/class="octave-mark"[^>]*>8va<\/text>/,'Unnecessary 8va in treble clef');
+ });
+ await check('Low note uses 8vb without losing its sounding pitch',async()=>{
+  const svg=await engraved('4/4',[{midi:43,beats:1},{midi:64,beats:3}],{clefMode:'treble'});
+  assert.match(svg,/class="octave-mark"[^>]*>8vb<\/text>/);
+  assert.equal(notePosition(svg).length,2);
+  assert.equal(elem('clefMode').value,'treble');
+ });
+ await check('System spacing accommodates very high and low notes without clipping',async()=>{
+  const svg=await engraved('4/4',[
+   {midi:95,beats:4,uncertain:true},{midi:36,beats:4,uncertain:true}
+  ],{clefMode:'bass'});
+  const view=elem('score').viewBox.split(' ').map(Number),height=view[3];
+  const staffYs=[...svg.matchAll(/<line class="staff"[^>]*y1="([^"]+)"/g)].map(x=>Number(x[1]));
+  const positions=notePosition(svg);
+  assert.equal(positions.length,2);
+  assert.equal(staffYs.length,10,'Expected two systems');
+  const y1=Math.min(...staffYs.slice(0,5)),y2=Math.min(...staffYs.slice(5,10));
+  assert.ok(y1>25,'First system is too close to top edge');
+  assert.ok(y2-y1>=140,'Extreme notes cause systems to overlap');
+  assert.ok(positions.every(p=>p.headY>15&&p.headY<height-20),'Notehead clipped');
  });
  console.log(passed+' SVG music engraving checks passed.');
  if(process.exitCode)process.exit(1);
