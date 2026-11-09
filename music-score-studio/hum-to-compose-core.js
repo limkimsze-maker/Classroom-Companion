@@ -92,7 +92,7 @@ function measures(notes,meter='4/4'){
  const spec=METERS[meter];if(!spec)throw Error('Invalid metre');
  const bars=[[]];let used=0;
  notes.forEach((note,origin)=>{
-  if(!Number.isFinite(note.beats)||note.beats<=0||note.beats>64)throw Error('Invalid or unsupported note duration');
+  if(!Number.isFinite(note.beats)||note.beats<=0||note.beats>maxTranscriptionBeats(meter))throw Error('Invalid or unsupported note duration');
   let remaining=Math.max(0,Math.round(note.beats*8)/8),first=true;
   // Every valid bar must be rendered and exported; do not silently truncate longer scores.
   while(remaining>.0001){
@@ -456,7 +456,7 @@ function scoreToMusicXML(notes,meter='4/4',bpm=96,options={}){
 }
 function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&data.tempo<=240)||!Array.isArray(data.notes)||data.notes.length>256)throw Error('Unsupported score file');
  return data.notes.map(n=>{if(n.midi!==null&&(!Number.isInteger(n.midi)||n.midi<36||n.midi>95))throw Error('Invalid pitch');
- if(!Number.isFinite(n.beats)||n.beats<.25||n.beats>64||Math.abs(n.beats*8-Math.round(n.beats*8))>.001)throw Error('Invalid length');
+ if(!Number.isFinite(n.beats)||n.beats<.25||n.beats>maxTranscriptionBeats(data.meter)||Math.abs(n.beats*8-Math.round(n.beats*8))>.001)throw Error('Invalid length');
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
