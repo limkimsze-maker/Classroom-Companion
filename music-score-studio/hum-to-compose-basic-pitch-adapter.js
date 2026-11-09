@@ -324,6 +324,15 @@ function hasIndependentReattack(pcm,rate,at){
  const after=sectionRms(pcm,rate,at+.020,at+.052);
  return after>.012&&before>.012&&valley<before*.72&&valley<after*.72&&after>before*.55;
 }
+function continuousPhonationAcross(pcm,rate,from,to){
+ if(!(pcm instanceof Float32Array)||!(rate>0)||from<.04||to>pcm.length/rate-.04||to<from)return false;
+ if(to-from>.095)return false;
+ const prior=sectionRms(pcm,rate,from-.045,from-.015);
+ const following=sectionRms(pcm,rate,to+.015,to+.045);
+ const bridge=sectionRms(pcm,rate,Math.max(0,from-.007),Math.min(pcm.length/rate,to+.007));
+ const floor=Math.min(prior,following);
+ return floor>.012&&bridge>Math.max(.009,floor*.56);
+}
 export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=22050,preserveStart=false){
  if(!Array.isArray(noteEvents))return [];
  const clean=noteEvents.map((n,index)=>{
@@ -356,18 +365,30 @@ export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=220
    timeline.push(last);
   }
  }
- // Spotify sometimes reports 60-100 ms same-pitch tails as new notes.
- // Use the original recording to merge only those lacking a fresh attack.
+ // A sustained vowel may be split into several 0.2-0.5s model notes.
+ // Use source audio to identify independent attacks, never an arbitrary 140ms
+ // fragment limit. Preserve true rearticulation and silent gaps.
  const smoothed=[];
- for(const piece of timeline){
-  const prev=smoothed.at(-1),shortPart=prev&&Math.min(prev.duration,piece.duration)<=.14;
-  if(prev&&prev.midi!==null&&piece.midi===prev.midi&&shortPart&&
+ function absorb(prev,next){
+  prev.end=next.end;prev.duration=prev.end-prev.start;
+  prev.confidence=Math.min(prev.confidence,next.confidence,.8);
+  prev.qualityStatus='review';
+ }
+ for(let i=0;i<timeline.length;i++){
+  const piece=timeline[i],prev=smoothed.at(-1);
+  if(piece.midi!==null&&prev&&prev.midi===piece.midi&&
    Math.abs(piece.start-prev.end)<.008&&sourcePcm instanceof Float32Array&&
    !hasIndependentReattack(sourcePcm,rate,piece.start)){
-    prev.end=piece.end;prev.duration=prev.end-prev.start;
-    prev.confidence=Math.min(prev.confidence,piece.confidence,.8);
-    prev.qualityStatus='review'; // Surface the uncertain merger for teacher review.
-    continue;
+   absorb(prev,piece);continue;
+  }
+  const next=timeline[i+1];
+  // Bridge a *spurious* short detector rest only if audible phonation
+  // continues across the gap. A genuine breath/rest must remain intact.
+  if(piece.midi===null&&prev&&prev.midi!==null&&next&&next.midi===prev.midi&&
+   piece.duration<=.095&&Math.abs(next.start-piece.end)<.008&&
+   continuousPhonationAcross(sourcePcm,rate,piece.start,piece.end)&&
+   !hasIndependentReattack(sourcePcm,rate,next.start)){
+   absorb(prev,next);i++;continue;
   }
   smoothed.push({...piece});
  }
