@@ -95,7 +95,7 @@ const say=(s,error=false)=>{$('status').textContent=s;$('status').setAttribute('
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const el=(tag,a={},inner='')=>'<'+tag+' '+Object.entries(a).map(([k,v])=>k+'="'+esc(v)+'"').join(' ')+'>'+inner+'</'+tag+'>';
 let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser=null,analysisCtx=null,playerCtx=null,mediaRecorder=null,chunks=[],originalUrl=null,originalAudio=new Audio(),recording=false,requesting=false,frame=null,lastFrame=0,started=0,samples=[],previousMidi=null;
-let playing=false,voices=[],timers=[],playbackEpoch=0,comparisonPending=false,detectedEvents=[];
+let playing=false,voices=[],timers=[],playbackEpoch=0,recordingDeadline=null,comparisonPending=false,detectedEvents=[];
 let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false,recognitionPending=false;
 let scorePage=0;let activeSavedId=null;const LIBRARY_KEY='hum-to-compose-scores-v1',LEGACY_KEY='hum-to-compose-test-v2',LIBRARY_LIMIT=40;
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
@@ -114,7 +114,7 @@ function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
 function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null));$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
-function closeMic(){if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
+function closeMic(){if(recordingDeadline!==null)clearTimeout(recordingDeadline);recordingDeadline=null;if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
 function setOriginal(url,blob=null,audioBuffer=null){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';
@@ -169,7 +169,7 @@ async function start(){
     const shouldRecognise=recognitionPending;recognitionPending=false;
     if(shouldRecognise){if(sourceAudioBlob)void tryBasicPitch();else void builtInFallback('The browser did not save usable audio.');}
     recordingControls();};rec.start()}catch(_){mediaRecorder=null}}
-  recording=true;requesting=false;started=window.performance.now();lastFrame=0;recordingControls();say('Recording locally… hum clearly, with short pauses between repeated notes.');analyse();
+  recording=true;requesting=false;started=window.performance.now();lastFrame=0;recordingDeadline=setTimeout(finish,MAX_SECONDS*1000);recordingControls();say('Recording locally… hum clearly, with short pauses between repeated notes.');analyse();
  }catch(e){
   requesting=false;recording=false;closeMic();recordingControls();say(microphoneAdvice(e,stage),true);
  }
