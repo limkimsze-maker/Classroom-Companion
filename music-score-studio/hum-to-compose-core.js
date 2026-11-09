@@ -2,10 +2,10 @@
    Experimental: return uncertainty instead of claiming infallible transcription. */
 (function(root,factory){'use strict';const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.HumCore=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){'use strict';
 const METERS={'2/4':{beats:2,upper:2,lower:4,pulse:1},'3/4':{beats:3,upper:3,lower:4,pulse:1},'4/4':{beats:4,upper:4,lower:4,pulse:1},'6/8':{beats:3,upper:6,lower:8,pulse:1.5}};
-// The isolated recogniser supports up to 40 notated bars, not a fixed 64 beats.
-// In particular, a 20-second 6/8 recording at a fast tempo can exceed 64 beats.
-const MAX_TRANSCRIPTION_BARS=40;
-function maxTranscriptionBeats(meter){return METERS[meter].beats*MAX_TRANSCRIPTION_BARS}
+// No fixed bar count: 10 minutes at 200 BPM in 6/8 needs up to 1,000 bars.
+// Retain high safety ceilings for malformed files (far beyond 10-minute input).
+const MAX_SAFE_SCORE_BEATS=12000,MAX_SAFE_SCORE_EVENTS=20000;
+function maxTranscriptionBeats(meter){if(!METERS[meter])throw Error('Invalid metre');return MAX_SAFE_SCORE_BEATS}
 const LENGTHS=[4,3,2,1.5,1,.75,.5,.375,.25,.125];
 const NAMES={'0.125':'Demisemiquaver','0.25':'Semiquaver','0.375':'Dotted semiquaver','0.5':'Quaver','0.75':'Dotted quaver','1':'Crotchet','1.5':'Dotted crotchet','2':'Minim','3':'Dotted minim','4':'Semibreve'};
 const NATURAL=[0,2,4,5,7,9,11],SHARP=[[0,0],[0,1],[1,0],[1,1],[2,0],[3,0],[3,1],[4,0],[4,1],[5,0],[5,1],[6,0]],FLAT=[[0,0],[1,-1],[1,0],[2,-1],[2,0],[3,0],[4,-1],[4,0],[5,-1],[5,0],[6,-1],[6,0]];
@@ -314,10 +314,10 @@ function transcribeAlignedEvents(events,bpm,meter='4/4'){
  }
  return out.some(e=>e.midi!==null)?out:[];
 }
-/* Validate generated score duration and pitch against the 40-bar metre-aware
-   transcription limit. Explicit Infinity continues to permit longer teacher scores. */
+/* Validate notation without any fixed bar limit. A high memory-safety ceiling
+   prevents corrupt score files exhausting the browser; Infinity remains opt-in. */
 function auditScore(score,meter,maxBeats=null){
- if(!METERS[meter]||!Array.isArray(score))return {ok:false,reason:'Invalid notation input'};
+ if(!METERS[meter]||!Array.isArray(score)||score.length>MAX_SAFE_SCORE_EVENTS)return {ok:false,reason:'Invalid or overly large notation input'};
  const limit=maxBeats===null?maxTranscriptionBeats(meter):maxBeats;
  let beats=0;for(const note of score){
   if(!Number.isFinite(note.beats)||note.beats<.25||Math.round(note.beats*8)!==note.beats*8)
@@ -333,7 +333,7 @@ function auditScore(score,meter,maxBeats=null){
    Keeps this app's monophonic score and playback constraints; concurrent
    pitches are reduced to the loudest active model event, never silently
    treated as a multi-stave score. No Spotify code is copied here. */
-function basicPitchToPerformance(noteEvents,maxSeconds=20){
+function basicPitchToPerformance(noteEvents,maxSeconds=600){
  if(!Array.isArray(noteEvents)||!(maxSeconds>0))return [];
  const candidates=noteEvents.map((e,id)=>({
   id,start:Math.max(0,Number(e.startTimeSeconds)),end:Math.min(maxSeconds,Number(e.startTimeSeconds)+Number(e.durationSeconds)),
@@ -454,7 +454,9 @@ function scoreToMusicXML(notes,meter='4/4',bpm=96,options={}){
  }
  return output+'</part></score-partwise>';
 }
-function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&data.tempo<=240)||!Array.isArray(data.notes)||data.notes.length>256)throw Error('Unsupported score file');
+function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&data.tempo<=240)||!Array.isArray(data.notes)||data.notes.length>MAX_SAFE_SCORE_EVENTS)throw Error('Unsupported score file');
+  const duration=data.notes.reduce((sum,n)=>sum+Number(n?.beats||0),0);
+  if(!Number.isFinite(duration)||duration>MAX_SAFE_SCORE_BEATS)throw Error('Score is too large for this browser');
  return data.notes.map(n=>{if(n.midi!==null&&(!Number.isInteger(n.midi)||n.midi<36||n.midi>95))throw Error('Invalid pitch');
  if(!Number.isFinite(n.beats)||n.beats<.25||n.beats>maxTranscriptionBeats(data.meter)||Math.abs(n.beats*8-Math.round(n.beats*8))>.001)throw Error('Invalid length');
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
