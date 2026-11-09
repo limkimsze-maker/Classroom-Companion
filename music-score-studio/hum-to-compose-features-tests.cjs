@@ -321,6 +321,35 @@ async function downloadedText(){
   assert.equal(elem('meter').value,'4/4');
   assert.equal(elem('tempo').value,'96');
  });
+ await test('Changing time signature after recording preserves real playback seconds',async()=>{
+  await importJSON({format:'music-score-studio-hum-test-v2',meter:'4/4',tempo:120,
+   notes:[{midi:60,beats:1},{midi:62,beats:.5},{midi:null,beats:.5}]});
+  const baseline=JSON.stringify([{midi:60,beats:1},{midi:62,beats:.5},{midi:null,beats:.5}]);
+  const before=C.beatSeconds(120,'4/4')*2;
+  elem('meter').value='6/8';elem('meter').handlers.change();
+  assert.equal(elem('meter').value,'6/8');
+  assert.equal(elem('tempo').value,'80','6/8 uses dotted crotchet BPM');
+  assert.ok(Math.abs(C.beatSeconds(80,'6/8')*2-before)<.001);
+  assert.match(elem('status').textContent,/playback timing are preserved/);
+  elem('download').click();
+  let saved=JSON.parse((await downloadedText()).content);
+  assert.equal(JSON.stringify(saved.notes.map(n=>({midi:n.midi,beats:n.beats}))),baseline);
+  elem('undo').click();assert.equal(elem('meter').value,'4/4');assert.equal(elem('tempo').value,'120');
+  elem('redo').click();assert.equal(elem('meter').value,'6/8');assert.equal(elem('tempo').value,'80');
+  elem('meter').value='3/4';elem('meter').handlers.change();
+  assert.equal(elem('tempo').value,'120','Switching back from 6/8 should preserve seconds per beat');
+  assert.ok(Math.abs(C.beatSeconds(120,'3/4')*2-before)<.001);
+ });
+ await test('Unsupported time-signature tempo change cannot silently alter playback',async()=>{
+  await importJSON({format:'music-score-studio-hum-test-v2',meter:'6/8',tempo:180,
+   notes:[{midi:60,beats:1}]});
+  const start=C.beatSeconds(180,'6/8');
+  elem('meter').value='4/4';elem('meter').handlers.change();
+  assert.equal(elem('meter').value,'6/8');
+  assert.equal(elem('tempo').value,'180');
+  assert.ok(Math.abs(C.beatSeconds(Number(elem('tempo').value),elem('meter').value)-start)<.0001);
+  assert.match(elem('status').textContent,/outside the supported 40–200 BPM range/);
+ });
  await test('Recording controls retain ten-minute timer and time-based stop',async()=>{
   assert.ok(html.includes('MAX_SECONDS=600'));
   assert.ok(html.includes('0:00 / 10:00'));
