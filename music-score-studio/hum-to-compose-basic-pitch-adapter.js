@@ -50,8 +50,25 @@ export function resampleMono(audio,limitSeconds=20,startSeconds=0){
  const count=Math.min(audio.length-begin,Math.round(Math.max(0,limitSeconds)*rate));
  const channels=Array.from({length:Math.min(2,audio.numberOfChannels)},(_,i)=>audio.getChannelData(i));
  if(count<Math.round(rate*.12))throw Error('Audio is too short');
+ // Stereo recordings can have partially inverted channels. A straight
+ // average can then erase the melody. Only when downmix cancellation is
+ // demonstrably severe do we use the louder channel instead.
+ let strongest=null;
+ if(channels.length===2){
+  let leftPower=0,rightPower=0,mixPower=0;
+  const step=Math.max(1,Math.floor(count/8192));
+  for(let i=0;i<count;i+=step){
+   const left=channels[0][begin+i]||0,right=channels[1][begin+i]||0;
+   leftPower+=left*left;rightPower+=right*right;
+   const sum=(left+right)/2;mixPower+=sum*sum;
+  }
+  if(Math.max(leftPower,rightPower)>1e-5&&
+   mixPower<Math.max(leftPower,rightPower)*.12)
+   strongest=channels[leftPower>=rightPower?0:1];
+ }
  const mono=new Float32Array(count);
  for(let i=0;i<count;i++){
+  if(strongest){mono[i]=strongest[begin+i]||0;continue}
   let sum=0;for(const channel of channels)sum+=channel[begin+i]||0;
   mono[i]=sum/channels.length;
  }
