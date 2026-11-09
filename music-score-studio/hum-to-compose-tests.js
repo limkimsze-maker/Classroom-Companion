@@ -152,6 +152,54 @@
    const score=C.transcribeDetectedEvents(p,120,'4/4');
    assert(score.length===1&&score[0].midi===60&&score[0].uncertain,'new model notes must be reviewable');
   });
+  test('Fast, clear recorded demisemiquavers survive as separate written notes',()=>{
+   const bpm=120,beat=C.beatSeconds(bpm,'4/4'),steps=[.125,.125,.125,.125,.5];
+   let time=0;const events=steps.map((beats,i)=>{const start=time;time+=beats*beat;
+    return {start,end:time,duration:beats*beat,midi:60+i,confidence:.98}});
+   assert(C.rhythmGridFromPerformance(events,bpm,'4/4')===.125,'Fast pitches need a finer grid');
+   const score=C.transcribeAlignedEvents(events,bpm,'4/4');
+   assert(score.length===5,'No recorded attacks may be discarded');
+   assert(score.slice(0,4).every(n=>n.beats===.125),'Demisemiquavers were rounded to semiquavers');
+   assert(score.every(n=>!n.uncertain),'Perfectly aligned short notes should not be marked erroneous');
+   const xml=C.scoreToMusicXML(score,'4/4',bpm);
+   assert((xml.match(/<type>32nd<\/type>/g)||[]).length===4,'MusicXML lost short values');
+   assert(C.validateScore({meter:'4/4',tempo:bpm,notes:score}).length===5);
+  });
+  test('Slow expressive timing does not invent demisemiquaver notes',()=>{
+   const bpm=96,secs=C.beatSeconds(bpm,'4/4');
+   const timings=[0,1.04,2.13,3.18].map(x=>x*secs);
+   const events=timings.map((start,i)=>({start,
+    end:start+secs*.93,duration:secs*.93,midi:60+i,confidence:.97}));
+   assert(C.rhythmGridFromPerformance(events,bpm,'4/4')===.25);
+   const notes=C.transcribeAlignedEvents(events,bpm,'4/4');
+   assert(notes.filter(n=>n.midi!==null).length===4);
+   assert(notes.every(n=>n.beats>=.25));
+  });
+  test('Performance fit reports uncertainty instead of claiming a time signature',()=>{
+   const bpm=120,secs=C.beatSeconds(bpm,'4/4');
+   const events=[0,1,2,3].map((beat,i)=>({start:beat*secs,end:(beat+1)*secs,
+    duration:secs,midi:60+i,confidence:.97}));
+   const exact=C.analyseRhythmFit(events,C.transcribeAlignedEvents(events,bpm,'4/4'),bpm,'4/4');
+   assert(exact.available&&exact.quality==='close'&&exact.ms===0);
+   const free=events.map((e,i)=>({...e,start:e.start+i*.13,end:e.end+i*.13}));
+   const rough=C.analyseRhythmFit(free,C.transcribeAlignedEvents(events,bpm,'4/4'),bpm,'4/4');
+   assert(rough.available&&rough.quality==='review-rhythm'&&rough.ms>150);
+   const fewer=C.analyseRhythmFit(events,[{midi:60,beats:1}],bpm,'4/4');
+   assert(fewer.quality==='review-notes'&&fewer.missing===3);
+   assert(!Object.prototype.hasOwnProperty.call(exact,'suggestedMeter'),
+    'No evidence of meter may be invented from note timing alone');
+  });
+  test('Teachers can request detailed or standard transcription without changing pitch',()=>{
+   const bpm=120,beat=C.beatSeconds(bpm,'4/4');
+   const events=[0,.125,.25].map((b,i)=>({
+    start:b*beat,end:(b+.125)*beat,duration:.125*beat,midi:60+i,confidence:.98
+   }));
+   const fine=C.transcribeAlignedEvents(events,bpm,'4/4',{grid:.125});
+   const standard=C.transcribeAlignedEvents(events,bpm,'4/4',{grid:.25});
+   assert(fine.length===3&&fine.every(n=>n.beats===.125));
+   assert(standard.length===3&&standard.every(n=>n.beats>=.25));
+   assert(JSON.stringify(fine.map(x=>x.midi))===JSON.stringify(standard.map(x=>x.midi)));
+  });
   test('Aligned transcription avoids cumulative duration-rounding drift',()=>{
    const e=Array.from({length:8},(_,i)=>({start:i*.47,end:(i+1)*.47,duration:.47,midi:60+i%4,confidence:.97}));
    const n=C.transcribeAlignedEvents(e,120,'4/4'),total=n.reduce((a,x)=>a+x.beats,0);
