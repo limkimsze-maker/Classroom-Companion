@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const C=require('./hum-to-compose-core.js');
 const adapterSource=fs.readFileSync(path.join(__dirname,'hum-to-compose-basic-pitch-adapter.js'),'utf8');
 const adapter=new Function(adapterSource.replace(/\bexport (const|function|async function)\b/g,'$1')+
- '\nreturn {verifyPerformance,verifyOctaves,toSingleMelody,resampleMono,recordingWindows};')();
+ '\nreturn {verifyPerformance,verifyOctaves,toSingleMelody,resampleMono,recordingWindows,canJoinWindowNotes};')();
 const RATE=22050,SAMPLES=RATE*2;
 let passed=0;
 function test(name,fn){try{fn();console.log('PASS '+name);passed++}catch(e){console.error('FAIL '+name+': '+e.message);process.exitCode=1}}
@@ -110,6 +110,36 @@ test('Keep a short same-pitch reattack even if the second note lasts 0.1 seconds
  const pcm=waveform([{midi:60,start:.2,end:.65},{midi:60,start:.65,end:.75}]);
  const result=adapter.toSingleMelody([note(60,.2,.65),note(60,.65,.75)],2,pcm,RATE);
  assert.deepEqual(result.map(x=>x.midi),[60,60]);
+});
+test('Section seam preserves continuous humming as one note',()=>{
+ const pcm=waveform([{midi:60,start:.5,end:1.6}]);
+ const audio={sampleRate:RATE,length:pcm.length,duration:2,numberOfChannels:1,
+  getChannelData:()=>pcm};
+ const previous={midi:60,start:.6,end:1,sectionIndex:0};
+ const next={midi:60,start:1,end:1.4,sectionIndex:1};
+ assert.equal(adapter.canJoinWindowNotes(previous,next,audio),true,
+  'One continuous held note was broken at an analysis seam');
+});
+test('Section seam preserves a real same-pitch reattack',()=>{
+ const pcm=waveform([{midi:60,start:.5,end:1},{midi:60,start:1,end:1.6}]);
+ const audio={sampleRate:RATE,length:pcm.length,duration:2,numberOfChannels:1,
+  getChannelData:()=>pcm};
+ const previous={midi:60,start:.6,end:1,sectionIndex:0};
+ const next={midi:60,start:1,end:1.4,sectionIndex:1};
+ assert.equal(adapter.canJoinWindowNotes(previous,next,audio),false,
+  'A real repeated note was swallowed at an analysis seam');
+});
+test('Section seam refuses silent gap, different pitch or unavailable source',()=>{
+ const pcm=waveform([{midi:60,start:.5,end:.97},{midi:60,start:1.05,end:1.6}]);
+ const audio={sampleRate:RATE,length:pcm.length,duration:2,numberOfChannels:1,
+  getChannelData:()=>pcm};
+ const previous={midi:60,start:.6,end:1,sectionIndex:0};
+ const next={midi:60,start:1,end:1.4,sectionIndex:1};
+ assert.equal(adapter.canJoinWindowNotes(previous,next,audio),false,
+  'A real silence gap should not be erased');
+ assert.equal(adapter.canJoinWindowNotes(previous,{...next,midi:62},audio),false);
+ assert.equal(adapter.canJoinWindowNotes(previous,next,null),false);
+ assert.equal(adapter.canJoinWindowNotes(previous,{...next,sectionIndex:3},audio),false);
 });
 test('Find a missed C4-to-E4 change with stable independent pitch',()=>{
  const r=verify([note(60,.2,1.17)],[
