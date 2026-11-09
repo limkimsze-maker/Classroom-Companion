@@ -148,11 +148,12 @@ function spellingForKey(midi,fifths=0){
  candidates.sort((a,b)=>a.score-b.score);
  return candidates[0]?.candidate||prefer;
 }
-function displayAccidentals(bars,fifths=0){const defaults=keyDefaults(fifths);return bars.map(bar=>{const active=new Map();
+function displayAccidentals(bars,fifths=0,clef=null){const defaults=keyDefaults(fifths);return bars.map(bar=>{const active=new Map();
 
  return bar.map(n=>{if(n.midi===null)return {...n,displayAccidental:null};
    const s=n.spelling||spellingForKey(n.midi,fifths);
-   const key=s.step+':'+s.octave,old=active.has(key)?active.get(key):defaults[s.step];
+   const shiftedOctave=s.octave+(clef?engravingOctaveShift(n,clef,fifths):0);
+    const key=s.step+':'+shiftedOctave,old=active.has(key)?active.get(key):defaults[s.step];
    // A tied accidental carries across the barline only to the tied note.
    // It must NOT affect the next untied note's accidental state.
    if(n.tiePrev)return {...n,spelling:s,displayAccidental:null};
@@ -423,7 +424,7 @@ function scoreToMusicXML(notes,meter='4/4',bpm=96,options={}){
   if(!type)throw Error('Unrepresentable note value: '+value);
   return {type,dotted};
  };
- const bars=displayAccidentals(measures(notes,meter),fifths),letters=['C','D','E','F','G','A','B'];
+ const bars=displayAccidentals(measures(notes,meter),fifths,clef),letters=['C','D','E','F','G','A','B'];
  let output='<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE score-partwise  PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n';
  output+='<score-partwise version="4.0"><work><work-title>'+title+'</work-title></work><movement-title>'+title+'</movement-title>';
  output+='<identification><creator type="software">Music Score Studio Hum to Compose TEST</creator></identification>';
