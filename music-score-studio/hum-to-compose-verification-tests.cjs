@@ -110,13 +110,13 @@ test('Resampling 48kHz audio retains A4 frequency',()=>{
  const pitch=C.estimatePitch(resampled.subarray(1000,5096),22050,null);
  assert.ok(Math.abs(pitch.midi-69)<.2);
 });
-test('All supported metres respect the notated limit',()=>{
+test('All supported metres preserve longer scores without a bar cap',()=>{
  for(const metre of Object.keys(C.METERS)){
   const beat=C.beatSeconds(120,metre);
   const events=Array.from({length:90},(_,i)=>({start:i*beat,end:(i+1)*beat,duration:beat,midi:60,confidence:.95}));
   const score=C.transcribeAlignedEvents(events,120,metre);
   assert.ok(C.auditScore(score,metre).ok);
-  assert.ok(score.reduce((s,n)=>s+n.beats,0)<=40*C.METERS[metre].beats);
+  assert.ok(score.length===90,'Detected performance was truncated for '+metre);
  }
 });
 
