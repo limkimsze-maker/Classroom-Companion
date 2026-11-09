@@ -410,8 +410,8 @@ export function recordingWindows(duration,windowSeconds=20,overlapSeconds=1){
 }
 
 export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=null){
- if(!audioBuffer||!Number.isFinite(audioBuffer.duration))throw Error('No recorded audio to analyse');
- const seconds=audioBuffer.duration;
+ const seconds=Number.isFinite(audioBuffer?.duration)?audioBuffer.duration:audioBuffer?.length/audioBuffer?.sampleRate;
+ if(!audioBuffer||!Number.isFinite(seconds))throw Error('No recorded audio to analyse');
  const windows=recordingWindows(seconds);
  onProgress('Loading Spotify Basic Pitch (first use needs a network connection)…');
  const {library,model}=await engine();
