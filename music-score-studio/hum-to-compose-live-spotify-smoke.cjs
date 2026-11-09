@@ -115,6 +115,22 @@ async function main(){
   assert.match(xml,/<octave-shift type="down" number="1" size="8"\/>/);
   assert.match(xml,/<step>B<\/step><octave>4<\/octave>/);
   console.log('PASS: Chromium '+width+'px high bass pitch uses 8va, preserves review ring and MusicXML pitch');
+  // Only the active 12-bar slice should be engraved, even if the score spans
+  // many bars; page changes must re-engrave instead of showing stale notation.
+  const fourteen={meter:'4/4',tempo:96,name:'Fourteen-bar test',clefMode:'treble',
+   notes:Array.from({length:14},(_,i)=>({midi:60+i%7,beats:4}))};
+  await saving.locator('#file').setInputFiles({
+   name:'fourteen.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(fourteen))
+  });
+  await saving.waitForFunction(()=>document.getElementById('engravingStatus').textContent.includes('Page 1/2'),null,{timeout:60000});
+  assert.match(await saving.locator('#pageStatus').innerText(),/Bars 1–12 of 14/);
+  await saving.locator('#nextPage').click();
+  await saving.waitForFunction(()=>document.getElementById('engravingStatus').textContent.includes('Page 2/2'),null,{timeout:60000});
+  assert.match(await saving.locator('#pageStatus').innerText(),/Bars 13–14 of 14/);
+  assert.ok(await saving.locator('#professionalScoreHost svg').count()>0,'OSMD failed on continuation page');
+  await saving.locator('#prevPage').click();
+  await saving.waitForFunction(()=>document.getElementById('engravingStatus').textContent.includes('Page 1/2'),null,{timeout:60000});
+  console.log('PASS: Chromium '+width+'px professionally engraved notation navigates all pages');
   assert.deepEqual(pageErrors,[],'Save/Open browser errors at '+width+'px');
   console.log('PASS: Chromium '+width+'px named save, reopen, download and import');
   await ctx.close();
