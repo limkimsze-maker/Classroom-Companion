@@ -656,8 +656,74 @@ function importState(data){
  say(audio?'Session reopened with original audio, detected melody and editable score.':
   session?'Session reopened without an embedded recording.':'Written score opened. Use Save session to preserve the original recording.');
 }
-function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-compose-test-v2',JSON.stringify(scorePayload()));say('“'+scoreName()+'” saved in this browser only (one local slot). Use Save score for a portable named file.')}catch(_){say('Browser storage unavailable. Use Save score to download a file instead.',true)}}
-function localLoad(){try{const raw=localStorage.getItem('hum-to-compose-test-v2');if(!raw){say('No score saved in this browser. Use Save in browser or Open score file.',true);return}importState(JSON.parse(raw))}catch(_){say('Saved data could not be opened. Use Open score file with a valid Hum to Compose JSON file.',true)}}
+// Local named scores: keep the previous one-slot save without deleting it.
+function libraryEntries(){
+ const raw=localStorage.getItem(LIBRARY_KEY);
+ if(raw!==null){
+  const items=JSON.parse(raw);
+  if(!Array.isArray(items)||items.length>LIBRARY_LIMIT||items.some(e=>!e||typeof e.id!=='string'||typeof e.name!=='string'||!e.score))
+   throw Error('Saved score library is damaged');
+  return items;
+ }
+ const legacy=localStorage.getItem(LEGACY_KEY);
+ if(!legacy)return [];
+ const score=JSON.parse(legacy);C.validateScore(score);
+ return [{id:'legacy-v2',name:typeof score.name==='string'&&score.name.trim()?score.name:'My melody',savedAt:0,score}];
+}
+function refreshLibrary(preferredId=null){
+ const list=libraryEntries(),chosen=preferredId||$('savedScoreChoice').value;
+ $('savedScoreChoice').innerHTML=list.length
+  ?list.map(e=>'<option value="'+esc(e.id)+'">'+esc(e.name)+'</option>').join('')
+  :'<option value="">No saved scores</option>';
+ $('savedScoreChoice').value=list.some(e=>e.id===chosen)?chosen:list[0]?.id||'';
+ $('savedCount').textContent=String(list.length);
+ $('openSaved').disabled=!list.length;$('deleteSaved').disabled=!list.length;
+}
+function localSave(){
+ if(!notes.length)return;
+ const oldId=activeSavedId;
+ try{
+  const list=libraryEntries(),payload=scorePayload(),now=Date.now();
+  const index=list.findIndex(e=>e.id===oldId);
+  const id=index<0?'score-'+now+'-'+Math.random().toString(36).slice(2,9):oldId;
+  if(index>=0)list[index]={...list[index],name:payload.name,score:payload,savedAt:now};
+  else{
+   if(list.length>=LIBRARY_LIMIT)throw Error('Library is full. Download or delete a saved score before adding another.');
+   list.unshift({id,name:payload.name,score:payload,savedAt:now});
+  }
+  localStorage.setItem(LIBRARY_KEY,JSON.stringify(list));activeSavedId=id;
+  refreshLibrary(activeSavedId);
+  say('Saved “'+payload.name+'” in My saved scores ('+list.length+' total). Download score file for a portable backup.');
+ }catch(error){
+  activeSavedId=oldId;
+  say('Could not save in this browser: '+(error?.message||'storage unavailable')+'. Use Download score file instead.',true);
+ }
+}
+function openLibrary(){
+ try{
+  refreshLibrary(activeSavedId);$('scoreLibrary').open=true;
+  if($('savedCount').textContent==='0')say('No saved scores here yet. Choose Save score or Open file.');
+  else $('savedScoreChoice').focus();
+ }catch(error){say('Cannot read saved scores: '+error.message+'. Download the current score as a backup.',true)}
+}
+function localLoad(){
+ try{
+  const chosen=$('savedScoreChoice').value,entry=libraryEntries().find(e=>e.id===chosen);
+  if(!entry){say('Choose a saved score first.',true);return}
+  importState(entry.score);activeSavedId=entry.id;refreshLibrary(activeSavedId);
+  say('Opened “'+entry.name+'” from My saved scores. Choose Save score after editing. Original audio is not in browser saves.');
+ }catch(error){say('Could not open saved score: '+error.message,true)}
+}
+function deleteLocal(){
+ try{
+  const chosen=$('savedScoreChoice').value,all=libraryEntries(),entry=all.find(e=>e.id===chosen);
+  if(!entry)return;
+  if(!window.confirm('Delete “'+entry.name+'” from this browser? This cannot be undone.'))return;
+  localStorage.setItem(LIBRARY_KEY,JSON.stringify(all.filter(e=>e.id!==chosen)));
+  if(activeSavedId===chosen)activeSavedId=null;
+  refreshLibrary();say('Deleted “'+entry.name+'” from browser storage. The displayed score stays open.');
+ }catch(error){say('Could not delete saved score: '+error.message,true)}
+}
 $('record').addEventListener('click',start);$('audioUpload').addEventListener('click',()=>$('audioFile').click());
 $('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await useAudioFile(file)});
 $('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
@@ -668,9 +734,10 @@ $('compare').addEventListener('click',compare);$('allDown').addEventListener('cl
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
 $('add').addEventListener('click',()=>insert(false));$('rest').addEventListener('click',()=>insert(true));$('toggle').addEventListener('click',toggle);$('remove').addEventListener('click',remove);
 $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);$('clear').addEventListener('click',clear);
-$('save').addEventListener('click',exportJSON);$('xml').addEventListener('click',exportXML);$('saveSession').addEventListener('click',saveSession);
+$('save').addEventListener('click',localSave);$('download').addEventListener('click',exportJSON);$('xml').addEventListener('click',exportXML);$('saveSession').addEventListener('click',saveSession);
 $('playSelected').addEventListener('click',playSelected);$('markReviewed').addEventListener('click',markReviewed);
-$('saveLocal').addEventListener('click',localSave);$('loadLocal').addEventListener('click',localLoad);
+$('loadLocal').addEventListener('click',openLibrary);$('openSaved').addEventListener('click',localLoad);$('deleteSaved').addEventListener('click',deleteLocal);
+$('scoreName').addEventListener('input',()=>{$('scoreTitle').textContent=scoreName()});
 $('open').addEventListener('click',()=>$('file').click());$('file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>12000000)throw Error('File exceeds 12 MB');importState(JSON.parse(await file.text()))}catch(err){say('Could not open score JSON: '+err.message,true)}e.target.value=''});
 $('score').addEventListener('click',choose);$('score').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('g[data-origin]')){e.preventDefault();choose(e)}});
 ['tempo','meter'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='tempo')$('tempo').value=String(tempo());stopPlayback();render()}));
@@ -682,7 +749,7 @@ $('score').addEventListener('click',choose);$('score').addEventListener('keydown
   '. Sounding pitches are unchanged. Use Undo to restore the previous notation.');
 }));
 window.addEventListener('pagehide',()=>{recording=false;closeMic();stopPlayback();setOriginal(null);if(playerCtx)playerCtx.close().catch(()=>{})});
-render();recordingControls();
+render();recordingControls();try{refreshLibrary()}catch(_){$('savedCount').textContent='?'}
 })();
 </script>
 </body>
