@@ -40,6 +40,8 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 .professionalScore[hidden],#editableScoreArea[hidden]{display:none!important}
 #professionalScoreHost{min-width:680px;min-height:100px}
 #professionalScoreHost svg{width:100%;height:auto;max-width:100%;display:block}
+#professionalScoreHost .engravedPlayingNotehead,
+#professionalScoreHost .engravedPlayingNotehead *{fill:#f07720!important;stroke:#9b420a!important;filter:drop-shadow(0 0 2px #ffda73)}
 #engravingStatus{font-size:13px;color:#526e7b;margin:4px 0 9px}
 @media(max-width:580px){.scoreViewSwitch .muted{min-width:100%}.professionalScore{padding:10px 7px}}
 </style>
@@ -112,6 +114,7 @@ let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser
 let playing=false,voices=[],timers=[],playbackEpoch=0,recordingDeadline=null,comparisonPending=false,detectedEvents=[];
 let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false,recognitionPending=false;
 let scorePage=0,notationView='engraved',engravedSerial=0,engravedRevision='',engraverLoadPromise=null;
+let engravedNoteheads=new Map(),engravedPlayingIndex=-1;
 let activeSavedId=null;const LIBRARY_KEY='hum-to-compose-scores-v1',LEGACY_KEY='hum-to-compose-test-v2',LIBRARY_LIMIT=40;
 const meter=()=> $('meter').value,tempo=()=>{const bpm=Number($('tempo').value);return bpm>=40&&bpm<=200?bpm:96};
 const keyFifths=()=>{const v=Number($('keyFifths').value);return Number.isInteger(v)&&v>=-7&&v<=7?v:0};
@@ -134,7 +137,7 @@ function closeMic(){if(recordingDeadline!==null)clearTimeout(recordingDeadline);
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
 function setOriginal(url,blob=null,audioBuffer=null){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';
  sourceAudioBlob=blob;sourceAudioBuffer=audioBuffer;$('original').disabled=!url;$('compare').disabled=!url||!notes.length;recordingControls()}
-function stopPlayback(){playbackEpoch++;comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null);$('stop').disabled=true;$('original').textContent='▶ Original hum'}
+function stopPlayback(){playbackEpoch++;engravedPlayingIndex=-1;showProfessionalPlaying(-1);comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null);$('stop').disabled=true;$('original').textContent='▶ Original hum'}
 function stopBoth(){stopPlayback();say('Playback stopped.')}
 function microphoneAdvice(error,stage){
  const name=error?.name||'UnknownError';
@@ -516,6 +519,59 @@ function professionalPageXML(){
  const footer=original.slice(last.index+last[0].length);
  return header+selectedMeasures.join('')+footer;
 }
+// Use the same OSMD graphical-note mapping strategy as the published
+// Music Score Studio. The mapping is by sounding pitch + musical tick so
+// highlights remain accurate even when stems or note spellings change.
+function indexProfessionalNoteheads(osmd){
+ engravedNoteheads=new Map();
+ const cursor=osmd.cursor||osmd.cursors?.[0];
+ if(!cursor)return;
+ const bars=C.measures(notes,meter()),pageStart=scorePage*BARS_PER_PAGE;
+ const buckets=new Map(),beatsPerBar=C.METERS[meter()].beats;
+ for(let bar=pageStart;bar<Math.min(pageStart+BARS_PER_PAGE,bars.length);bar++){
+  let localBeat=(bar-pageStart)*beatsPerBar;
+  for(const n of bars[bar]){
+   if(n.midi!==null){
+    const key=Math.round(localBeat*960)+':'+n.midi;
+    if(!buckets.has(key))buckets.set(key,[]);
+    buckets.get(key).push(n.origin);
+   }
+   localBeat+=n.beats;
+  }
+ }
+ function cursorTick(){
+  const stamp=cursor.iterator?.currentTimeStamp||cursor.iterator?.CurrentTimeStamp;
+  const val=typeof stamp?.RealValue==='number'?stamp.RealValue:
+   typeof stamp?.realValue==='number'?stamp.realValue:
+   typeof stamp?.Numerator==='number'&&typeof stamp?.Denominator==='number'?stamp.Numerator/stamp.Denominator:NaN;
+  return Number.isFinite(val)?Math.round(val*4*960):NaN;
+ }
+ try{
+  cursor.reset();
+  let steps=0;
+  while(cursor.iterator&&!cursor.iterator.endReached&&steps++<5000){
+   const tick=cursorTick();
+   if(Number.isFinite(tick))for(const g of cursor.GNotesUnderCursor?.()||[]){
+    const n=g?.sourceNote;
+    if(!n||n.isRest?.()||!Number.isFinite(n.halfTone))continue;
+    const indices=buckets.get(tick+':'+(n.halfTone+12));
+    if(!indices?.length)continue;
+    const nodes=Array.from(g.getNoteheadSVGs?.()||[]).filter(x=>x?.classList);
+    if(nodes.length){
+     const original=indices.shift();
+     if(!engravedNoteheads.has(original))engravedNoteheads.set(original,[]);
+     engravedNoteheads.get(original).push(...nodes);
+    }
+   }
+   cursor.next();
+  }
+ }catch(_){/* OSMD versions without notehead access keep basic playback. */}
+ finally{try{cursor.reset();cursor.hide()}catch(_){}}
+}
+function showProfessionalPlaying(index){
+ for(const [id,nodes] of engravedNoteheads)
+  for(const node of nodes)node.classList.toggle('engravedPlayingNotehead',id===index);
+}
 async function renderProfessionalScore(key,serial){
  const area=$('professionalScore'),host=$('professionalScoreHost'),status=$('engravingStatus');
  status.textContent='Preparing professional sheet music…';
@@ -528,13 +584,16 @@ async function renderProfessionalScore(key,serial){
   if(serial!==engravedSerial)return;
   host.replaceChildren();
   const osmd=new window.opensheetmusicdisplay.OpenSheetMusicDisplay(host,{
-   autoResize:false,backend:'svg',drawTitle:false,drawComposer:false
+   autoResize:false,backend:'svg',drawTitle:false,drawComposer:false,
+   cursorsOptions:[{type:1,color:'#db7418',alpha:.9,follow:false}]
   });
   await osmd.load(xml);
   if(serial!==engravedSerial||notationView!=='engraved')return;
   osmd.render();
   const svg=host.querySelector('svg');
   if(!svg||!svg.querySelector('path, line, use'))throw Error('The engraved score was blank.');
+  indexProfessionalNoteheads(osmd);
+  showProfessionalPlaying(engravedPlayingIndex);
   status.textContent='Professional notation · '+$('pageStatus').textContent+
    (notes.some(n=>n.uncertain&&!n.reviewed)?' · Check amber-ringed notes in Edit notes':'');
  }catch(error){
@@ -755,7 +814,7 @@ async function playScore(){
   let current=displayed;
   while(current+1<notes.length&&offsets[current+1]<=elapsed+.001)current++;
   if(current!==displayed){
-   displayed=current;highlights();
+   displayed=current;highlights();engravedPlayingIndex=current;showProfessionalPlaying(current);
    if(current>=0){
     if(originPage[current]!==undefined&&scorePage!==originPage[current]){
      scorePage=originPage[current];render();
