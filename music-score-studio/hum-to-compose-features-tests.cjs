@@ -8,21 +8,23 @@ const html=fs.readFileSync(path.join(__dirname,'hum-to-compose-test.html'),'utf8
 const script=html.match(/<script>\s*([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'Cannot find inline app JavaScript');
 const elements=new Map(),blobs=new Map(),downloads=[],storage=new Map(),scheduled=[];
+let denyStorageWrite=false,confirmDelete=true;
 let sequence=0;
 function elem(id){
  if(!elements.has(id))elements.set(id,{
   id,value:id==='meter'?'4/4':id==='tempo'?'96':id==='scoreVolume'?'160':
    id==='instrument'?'piano':id==='clefMode'?'auto':id==='keyFifths'?'0':'',
   textContent:'',innerHTML:'',style:{},disabled:false,handlers:{},
+   focus(){this.focused=true},
   setAttribute(k,v){this[k]=v},getAttribute(k){return this[k]},
   addEventListener(k,fn){this.handlers[k]=fn},click(){return this.handlers.click?.()},
   get selectedOptions(){return [{text:'Warm piano'}]}
  });
  return elements.get(id);
 }
-const document={getElementById:elem,querySelectorAll:()=>[],
+const document={body:{appendChild(a){return a}},getElementById:elem,querySelectorAll:()=>[],
  querySelector:()=>null,createElement:tag=>({
-  click(){if(tag==='a')downloads.push({href:this.href,name:this.download})}
+  click(){if(tag==='a')downloads.push({href:this.href,name:this.download})},remove(){}
  })};
 class FakeAudio{
  constructor(){this.paused=true;this.currentTime=0;this.src=''}
@@ -37,10 +39,10 @@ class FakeAudioContext{
  async close(){}
 }
 const window={HumCore:C,AudioContext:FakeAudioContext,isSecureContext:true,
- location:{search:''},performance:{now:()=>0},addEventListener(){}};
+ location:{search:''},performance:{now:()=>0},confirm:()=>confirmDelete,addEventListener(){}};
 const URL={createObjectURL(blob){const key='blob:test-'+ ++sequence;blobs.set(key,blob);return key},
  revokeObjectURL(){}};
-const localStorage={getItem(key){return storage.get(key)||null},setItem(key,value){storage.set(key,value)}};
+const localStorage={getItem(key){return storage.get(key)||null},setItem(key,value){if(denyStorageWrite)throw Error('Storage blocked');storage.set(key,value)}};
 new Function('window','document','Audio','URL','localStorage','setTimeout','clearTimeout',script)(
  window,document,FakeAudio,URL,localStorage,()=>0,()=>{});
 let passed=0;
@@ -73,7 +75,7 @@ async function downloadedText(){
  await test('User-locked bass clef changes notation without shifting pitch',async()=>{
   elem('clefMode').value='bass';elem('clefMode').handlers.change();
   assert.ok(elem('score').innerHTML.includes('𝄢'));
-  elem('save').click();
+  elem('download').click();
   const saved=JSON.parse((await downloadedText()).content);
   assert.equal(saved.notes[0].midi,70);
   assert.equal(saved.clefMode,'bass');
@@ -82,7 +84,7 @@ async function downloadedText(){
  await test('Undo and Redo reverse a teacher-chosen clef without moving notes',async()=>{
   elem('undo').click();assert.equal(elem('clefMode').value,'treble');
   elem('redo').click();assert.equal(elem('clefMode').value,'bass');
-  elem('save').click();
+  elem('download').click();
   const saved=JSON.parse((await downloadedText()).content);
   assert.equal(saved.notes[0].midi,70);
  });
@@ -111,7 +113,7 @@ async function downloadedText(){
   elem('markReviewed').click();
   const now=elem('score').innerHTML.match(/class="uncertain-ring"/g)?.length||0;
   assert.ok(now<old);
-  elem('save').click();
+  elem('download').click();
   const saved=JSON.parse((await downloadedText()).content);
   assert.equal(saved.notes[0].midi,70);
   assert.equal(saved.notes[0].reviewed,true);
@@ -142,10 +144,11 @@ async function downloadedText(){
   elem('keyFifths').value='1';elem('keyFifths').handlers.change();
   elem('clefMode').value='bass';elem('clefMode').handlers.change();
   elem('scoreName').value='Saved in browser';
-  elem('saveLocal').click();
+  elem('save').click();
   elem('clear').click();
   elem('scoreName').value='Unsaved name';
   elem('loadLocal').click();
+  elem('openSaved').click();
   assert.equal(elem('scoreName').value,'Saved in browser');
   assert.equal(elem('keyFifths').value,'1');
   assert.equal(elem('clefMode').value,'bass');
@@ -159,7 +162,7 @@ async function downloadedText(){
  });
  await test('Save Score downloads a portable file with the chosen name',async()=>{
   const title='Moonlight & Morning';
-  elem('scoreName').value=title;elem('save').click();
+  elem('scoreName').value=title;elem('download').click();
   const downloaded=await downloadedText(),saved=JSON.parse(downloaded.content);
   assert.equal(downloaded.name,title+'.music-score.json');
   assert.equal(saved.name,title);
@@ -175,13 +178,13 @@ async function downloadedText(){
  });
  await test('Names including non-English characters save safely',async()=>{
   elem('scoreName').value='中文旋律: My / Song?';
-  elem('save').click();
+  elem('download').click();
   const file=await downloadedText(),saved=JSON.parse(file.content);
   assert.equal(saved.name,'中文旋律: My / Song?');
   assert.equal(file.name,'中文旋律- My - Song-.music-score.json');
   await importJSON(saved);
   assert.equal(elem('scoreName').value,'中文旋律: My / Song?');
-  elem('scoreName').value='   ';elem('save').click();
+  elem('scoreName').value='   ';elem('download').click();
   assert.equal(JSON.parse((await downloadedText()).content).name,'My melody');
   assert.equal((await downloadedText()).name,'My melody.music-score.json');
  });
@@ -206,6 +209,60 @@ async function downloadedText(){
   assert.match(elem('status').textContent,/Could not open score/);
   assert.equal(elem('score').innerHTML,before);
   assert.equal(elem('scoreName').value,'The New Score');
+ });
+ await test('Saving separate named melodies keeps both accessible and editable',async()=>{
+  await importJSON({meter:'4/4',tempo:96,notes:[{midi:60,beats:1}],name:'First Song'});
+  elem('save').click();
+  let all=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  const a=all.find(e=>e.name==='First Song');assert.ok(a);
+  elem('clear').click();elem('example').click();
+  elem('scoreName').value='Second Song';elem('save').click();
+  all=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  assert.equal(all.filter(e=>e.name==='First Song'||e.name==='Second Song').length,2);
+  const b=all.find(e=>e.name==='Second Song');assert.ok(b);
+  assert.equal(b.score.notes.length,6);
+  elem('savedScoreChoice').value=a.id;elem('openSaved').click();
+  assert.equal(elem('scoreName').value,'First Song');
+  elem('scoreName').value='First Song updated';
+  elem('save').click();
+  all=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  assert.equal(all.find(e=>e.id===a.id).name,'First Song updated','Save should update same document');
+  assert.equal(all.find(e=>e.id===b.id).name,'Second Song','Saving one score must not overwrite another');
+  elem('savedScoreChoice').value=b.id;elem('openSaved').click();
+  assert.equal(elem('scoreName').value,'Second Song');
+  assert.match(elem('scoreHint').textContent,/note groups/);
+ });
+ await test('Delete requires confirmation and leaves displayed music unchanged',async()=>{
+  const all=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  const toDelete=all.find(e=>e.name==='First Song updated');
+  const before=elem('score').innerHTML;assert.ok(toDelete);
+  elem('savedScoreChoice').value=toDelete.id;confirmDelete=false;elem('deleteSaved').click();
+  assert.equal(JSON.parse(storage.get('hum-to-compose-scores-v1')).length,all.length);
+  confirmDelete=true;elem('deleteSaved').click();
+  assert.equal(JSON.parse(storage.get('hum-to-compose-scores-v1')).length,all.length-1);
+  assert.equal(elem('score').innerHTML,before);
+ });
+ await test('Previous single-slot score can still be opened and migrated safely',async()=>{
+  const existing=storage.get('hum-to-compose-scores-v1');
+  storage.delete('hum-to-compose-scores-v1');
+  const legacy={meter:'3/4',tempo:100,name:'My earlier tune',notes:[{midi:67,beats:1}]};
+  storage.set('hum-to-compose-test-v2',JSON.stringify(legacy));
+  elem('loadLocal').click();assert.equal(elem('savedCount').textContent,'1');
+  elem('savedScoreChoice').value='legacy-v2';elem('openSaved').click();
+  assert.equal(elem('scoreName').value,'My earlier tune');
+  assert.equal(elem('meter').value,'3/4');
+  elem('save').click();assert.ok(storage.get('hum-to-compose-test-v2'),'Old save must remain intact');
+  assert.equal(JSON.parse(storage.get('hum-to-compose-scores-v1')).length,1);
+  storage.set('hum-to-compose-scores-v1',existing);
+ });
+ await test('Unavailable browser storage reports an error without false save success',async()=>{
+  await importJSON({meter:'4/4',tempo:96,name:'Unstored score',notes:[{midi:60,beats:1}]});
+  denyStorageWrite=true;elem('save').click();denyStorageWrite=false;
+  assert.match(elem('status').textContent,/Could not save in this browser/);
+  const all=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  assert.ok(!all.some(e=>e.name==='Unstored score'));
+  elem('download').click();
+  assert.equal((await downloadedText()).name,'Unstored score.music-score.json');
  });
  await test('No global keyboard shortcut captures Tab or button activation',async()=>{
   assert.ok(!/window\.addEventListener\(['"]keydown/.test(script));
