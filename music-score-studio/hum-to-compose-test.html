@@ -221,6 +221,10 @@ async function builtInFallback(reason){
  // where the external model is unavailable or when the microphone cannot save audio.
  let raw=samples;
  const audio=sourceAudioBuffer;
+ if(!raw.length&&audio?.duration>20.05){
+  say('Spotify Basic Pitch could not analyse this long recording ('+reason+'). No music has been discarded or replaced. Retry, or import a shorter clip; the built-in fallback does not support a full ten-minute file.',true);
+  return false;
+ }
  if(!raw.length&&audio){
   const rate=audio.sampleRate,count=Math.min(audio.length,Math.floor(20*rate));
   const channels=Array.from({length:Math.min(2,audio.numberOfChannels)},(_,i)=>audio.getChannelData(i));
