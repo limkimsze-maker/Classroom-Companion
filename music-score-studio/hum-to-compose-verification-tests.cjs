@@ -172,6 +172,31 @@ test('Resampling 48kHz audio retains A4 frequency',()=>{
  const pitch=C.estimatePitch(resampled.subarray(1000,5096),22050,null);
  assert.ok(Math.abs(pitch.midi-69)<.2);
 });
+test('Phase-inverted stereo recording keeps its melody rather than cancelling',()=>{
+ const rate=48000,length=rate,left=new Float32Array(length),right=new Float32Array(length);
+ for(let i=0;i<length;i++){
+  const v=.30*Math.sin(2*Math.PI*440*i/rate);
+  left[i]=v;right[i]=-v;
+ }
+ const audio={sampleRate:rate,length,duration:1,numberOfChannels:2,
+  getChannelData:i=>i===0?left:right};
+ const pcm=adapter.resampleMono(audio,1,0);
+ assert.equal(pcm.length,22050);
+ assert.ok(C.rmsOf(pcm)>.15,'Stereo phase cancellation destroyed most of the melody');
+ const pitch=C.estimatePitch(pcm.subarray(900,4996),22050,null);
+ assert.ok(Math.abs(pitch.midi-69)<.25,'A4 pitch lost in phase-opposed stereo');
+});
+test('Ordinary stereo content is still averaged, not arbitrarily amplified',()=>{
+ const rate=22050,length=rate,one=new Float32Array(length),both=new Float32Array(length);
+ for(let i=0;i<length;i++){
+  const wave=.3*Math.sin(2*Math.PI*330*i/rate);one[i]=wave;both[i]=wave;
+ }
+ const audio={sampleRate:rate,length,duration:1,numberOfChannels:2,
+  getChannelData:i=>i===0?one:both};
+ const pcm=adapter.resampleMono(audio,1);
+ assert.ok(Math.abs(C.rmsOf(pcm)-C.rmsOf(one))<.0001,
+  'Centre-panned stereo was unexpectedly boosted or weakened');
+});
 test('All supported metres preserve longer scores without a bar cap',()=>{
  for(const metre of Object.keys(C.METERS)){
   const beat=C.beatSeconds(120,metre);
