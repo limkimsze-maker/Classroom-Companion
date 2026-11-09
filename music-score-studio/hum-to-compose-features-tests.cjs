@@ -264,6 +264,16 @@ async function downloadedText(){
   elem('download').click();
   assert.equal((await downloadedText()).name,'Unstored score.music-score.json');
  });
+ await test('One sustained written note schedules exactly one piano attack',async()=>{
+  await importJSON({format:'music-score-studio-hum-test-v2',name:'One sustained hum',
+   meter:'4/4',tempo:96,notes:[{midi:60,beats:3,confidence:1}]});
+  const prior=scheduled.length;
+  await elem('play').click();
+  // One warm piano strike consists of three simultaneous sine partials;
+  // three oscillators are not three sequential notes.
+  assert.equal(scheduled.length-prior,3,'One written note was replayed or retriggered');
+  elem('stop').click();
+ });
  await test('Long 10-minute score opens, paginates, saves and exports all 1,000 bars',async()=>{
   const events=Array.from({length:3000},(_,i)=>({midi:60+i%8,beats:1}));
   await importJSON({format:'music-score-studio-hum-test-v2',name:'Ten-minute melody',
