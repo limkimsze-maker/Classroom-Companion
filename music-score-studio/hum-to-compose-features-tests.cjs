@@ -286,6 +286,23 @@ async function downloadedText(){
   elem('xml').click();
   assert.equal(((await downloadedText()).content.match(/<measure /g)||[]).length,1000);
  });
+ await test('Ten-minute session restores detected notes near the end',async()=>{
+  await importJSON({format:'music-score-studio-hum-session-v1',name:'Late melody',
+   meter:'4/4',tempo:96,notes:[{midi:62,beats:1}],
+   detectedEvents:[{start:560,end:562,duration:2,midi:62,confidence:.94,points:[]}]});
+  assert.equal(elem('faithful').disabled,false);
+  await elem('saveSession').click();
+  const saved=JSON.parse((await downloadedText()).content);
+  assert.equal(saved.detectedEvents[0].start,560);
+  assert.equal(saved.detectedEvents[0].end,562);
+  assert.equal(saved.name,'Late melody');
+ });
+ await test('Recording controls retain ten-minute timer and time-based stop',async()=>{
+  assert.ok(html.includes('MAX_SECONDS=600'));
+  assert.ok(html.includes('0:00 / 10:00'));
+  assert.ok(html.includes('recordingDeadline=setTimeout(finish,MAX_SECONDS*1000)'));
+  assert.ok(html.includes('clearTimeout(recordingDeadline)'));
+ });
  await test('No global keyboard shortcut captures Tab or button activation',async()=>{
   assert.ok(!/window\.addEventListener\(['"]keydown/.test(script));
   assert.ok(script.includes("e.key==='Enter'||e.key===' '"));
