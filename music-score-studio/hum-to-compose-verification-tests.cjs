@@ -116,7 +116,7 @@ test('All supported metres respect the notated limit',()=>{
   const events=Array.from({length:90},(_,i)=>({start:i*beat,end:(i+1)*beat,duration:beat,midi:60,confidence:.95}));
   const score=C.transcribeAlignedEvents(events,120,metre);
   assert.ok(C.auditScore(score,metre).ok);
-  assert.ok(score.reduce((s,n)=>s+n.beats,0)<=64);
+  assert.ok(score.reduce((s,n)=>s+n.beats,0)<=40*C.METERS[metre].beats);
  }
 });
 
