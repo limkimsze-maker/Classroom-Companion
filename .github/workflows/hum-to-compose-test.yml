@@ -36,6 +36,8 @@ jobs:
         run: node music-score-studio/hum-to-compose-benchmark-tests.cjs
       - name: Teacher controls and save/reopen round trips
         run: node music-score-studio/hum-to-compose-features-tests.cjs
+      - name: Real-human reference comparison (offline metric tests)
+        run: node music-score-studio/hum-to-compose-human-check-tests.cjs
       - name: Parse exported MusicXML in all clefs and key signatures
         run: node music-score-studio/hum-to-compose-musicxml-structure-tests.cjs
 
