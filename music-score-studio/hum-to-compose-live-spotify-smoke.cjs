@@ -33,6 +33,25 @@ async function main(){
   saving.on('pageerror',error=>pageErrors.push(error.message));
   await saving.goto('http://127.0.0.1:'+port+'/music-score-studio/hum-to-compose-test.html');
   await saving.locator('#example').click();
+  // The default visible score uses the exact OSMD 2.1.3 backend used by
+  // the published Music Score Studio, not the approximation SVG.
+  await saving.waitForFunction(()=>{
+   const view=document.getElementById('professionalScore');
+   const host=document.getElementById('professionalScoreHost');
+   return !view.hidden&&host.querySelector('svg path,svg line,svg use')&&
+    document.getElementById('engravingStatus').textContent.startsWith('Professional notation');
+  },null,{timeout:60000});
+  assert.equal(await saving.locator('#editableScoreArea').isVisible(),false);
+  assert.ok(await saving.locator('#professionalScoreHost svg').count()>0,'OSMD did not engrave a readable score');
+  await saving.locator('#showEditable').click();
+  assert.equal(await saving.locator('#editableScoreArea').isVisible(),true);
+  assert.ok(await saving.locator('#score g.event.note').count()>0,'Editable notes disappeared');
+  await saving.locator('#showEngraved').click();
+  await saving.waitForFunction(()=>{
+   return !document.getElementById('professionalScore').hidden&&
+    document.getElementById('engravingStatus').textContent.startsWith('Professional notation');
+  },null,{timeout:60000});
+  console.log('PASS: published-Studio OSMD printed engraving and reversible edit view at '+width+'px');
   await saving.locator('#scoreName').fill('Morning Music');
   await saving.locator('#save').click();
   assert.match(await saving.locator('#status').innerText(),/Saved “Morning Music”/);
