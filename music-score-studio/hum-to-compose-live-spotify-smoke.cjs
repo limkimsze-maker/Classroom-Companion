@@ -259,6 +259,43 @@ async function main(){
   'Real Basic Pitch 25-second recording lost notes after 20 seconds: '+JSON.stringify(longModel));
  console.log('PASS: actual Spotify model recognised notes after 20 seconds using sequential overlapping sections.');
 
+ // End-to-end reference-score comparison: input files are generated locally.
+ // Real human audio is deliberately NOT claimed by this synthetic smoke test.
+ const humanPitches=[60,62,64,65],humanBeat=.5,rate=22050;
+ const samples=Math.round(humanPitches.length*humanBeat*rate),wav=Buffer.alloc(44+samples*2);
+ wav.write('RIFF',0);wav.writeUInt32LE(36+samples*2,4);
+ wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);
+ wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);
+ wav.writeUInt32LE(rate,24);wav.writeUInt32LE(rate*2,28);
+ wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);
+ wav.write('data',36);wav.writeUInt32LE(samples*2,40);
+ for(let i=0;i<samples;i++){
+  const t=i/rate,slot=Math.min(humanPitches.length-1,Math.floor(t/humanBeat));
+  const within=t-slot*humanBeat,hz=440*Math.pow(2,(humanPitches[slot]-69)/12);
+  const envelope=Math.min(1,within/.025,(humanBeat-within)/.035);
+  wav.writeInt16LE(Math.round(.3*Math.max(0,envelope)*Math.sin(2*Math.PI*hz*t)*32767),44+i*2);
+ }
+ await page.locator('#runHuman').click();
+ assert.match(await page.locator('#humanResult').innerText(),/Choose both/);
+ await page.locator('#humanAudio').setInputFiles({name:'test-synthetic.wav',mimeType:'audio/wav',buffer:wav});
+ await page.locator('#humanScore').setInputFiles({
+  name:'known-score.music-score.json',mimeType:'application/json',
+  buffer:Buffer.from(JSON.stringify({name:'Known melody',meter:'4/4',tempo:120,
+   notes:humanPitches.map(midi=>({midi,beats:1}))}))
+ });
+ await page.locator('#runHuman').click();
+ await page.waitForFunction(()=>{
+  const result=document.querySelector('#humanResult')?.textContent||'';
+  return result.startsWith('Real-recording comparison complete')||
+   result.startsWith('Real humming check could not finish');
+ },null,{timeout:60000});
+ const humanResult=await page.locator('#humanResult').innerText();
+ assert.ok(humanResult.startsWith('Real-recording comparison complete'),
+  'Reference-score benchmark failed: '+humanResult+'; page errors '+errors.join(' | '));
+ assert.match(humanResult,/Reference melody: 4 notes/);
+ assert.match(humanResult,/Timing-sensitive one-to-one F1:/);
+ assert.deepEqual(errors,[],'Console error in real-recording comparison UI');
+ console.log('PASS: real Spotify model completed browser file-upload vs reference-score comparison with generated waveform.');
  console.log('This does NOT prove human humming or Samsung microphone reliability.');
 }
 main().catch(e=>{console.error('LIVE SPOTIFY BROWSER TEST FAILED:',e);process.exitCode=1})
