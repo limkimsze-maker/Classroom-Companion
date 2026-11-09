@@ -232,6 +232,43 @@ async function downloadedText(){
   assert.equal(elem('scoreName').value,'Second Song');
   assert.match(elem('scoreHint').textContent,/note groups/);
  });
+ await test('Undo after clearing a saved score updates its original record, never duplicates it',async()=>{
+  await importJSON({meter:'4/4',tempo:96,name:'Undo identity test',notes:[{midi:60,beats:1}]});
+  elem('save').click();
+  let list=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  const saved=list.find(e=>e.name==='Undo identity test');
+  assert.ok(saved);
+  const before=list.length;
+  elem('clear').click();
+  assert.equal(elem('undo').disabled,false);
+  elem('undo').click();
+  assert.equal(elem('scoreName').value,'Undo identity test');
+  elem('save').click();
+  list=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  assert.equal(list.length,before,'Undo + Save unexpectedly created a duplicate score');
+  assert.equal(list.filter(e=>e.id===saved.id).length,1,'Undo lost the saved score identity');
+  assert.equal(list.find(e=>e.id===saved.id).score.notes[0].midi,60);
+ });
+ await test('Opening a different score clears previous Undo history and cannot overwrite it',async()=>{
+  const a={meter:'4/4',tempo:96,name:'Separate score A',notes:[{midi:62,beats:1}]};
+  const b={meter:'3/4',tempo:120,name:'Separate score B',notes:[{midi:67,beats:2}]};
+  await importJSON(a);elem('save').click();
+  await importJSON(b);elem('save').click();
+  let list=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  const aId=list.find(e=>e.name===a.name).id;
+  const bId=list.find(e=>e.name===b.name).id;
+  elem('savedScoreChoice').value=aId;elem('openSaved').click();
+  assert.equal(elem('undo').disabled,true,'Opening a score must not retain Undo from another score');
+  elem('savedScoreChoice').value=bId;elem('openSaved').click();
+  assert.equal(elem('undo').disabled,true,'Undo could switch back to the previous saved document');
+  elem('undo').click();
+  assert.equal(elem('scoreName').value,b.name);
+  elem('save').click();
+  list=JSON.parse(storage.get('hum-to-compose-scores-v1'));
+  assert.equal(list.find(e=>e.id===aId).score.notes[0].midi,62);
+  assert.equal(list.find(e=>e.id===bId).score.notes[0].midi,67);
+  assert.equal(list.filter(e=>e.name===a.name||e.name===b.name).length,2);
+ });
  await test('Delete requires confirmation and leaves displayed music unchanged',async()=>{
   const all=JSON.parse(storage.get('hum-to-compose-scores-v1'));
   const toDelete=all.find(e=>e.name==='First Song updated');
