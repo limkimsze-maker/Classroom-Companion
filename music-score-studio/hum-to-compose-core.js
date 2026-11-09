@@ -277,23 +277,70 @@ function matchPerformanceTempo(notes,events,meter='4/4'){
  const candidate=Math.round((meter==='6/8'?40:60)*beats/duration);
  return candidate>=40&&candidate<=200?candidate:null;
 }
-/* Align note/rest boundaries to ONE shared musical grid.
-   Quantising each duration independently accumulates drift. Using absolute
-   onset/end positions preserves repeated notes and measured silent gaps,
-   while marking large rounding changes for teacher review. */
-function transcribeAlignedEvents(events,bpm,meter='4/4'){
+/* Use the recording's reliable short attacks, NOT a forced metre, to choose
+   the rhythmic subdivision. Only use 32nd-note resolution when two or more
+   confidently detected attacks are genuinely shorter than a semiquaver. */
+function rhythmGridFromPerformance(events,bpm,meter='4/4'){
+ if(!METERS[meter]||!Array.isArray(events)||!(bpm>0))return .25;
+ const secondsPerBeat=beatSeconds(bpm,meter);
+ let fast=0;
+ for(const e of events){
+  if(e?.midi===null||!Number.isFinite(e?.midi)||!Number.isFinite(e?.duration))continue;
+  if((e.confidence??.7)<.85)continue;
+  const length=e.duration/secondsPerBeat;
+  if(e.duration>=.055&&length>=.115&&length<.30)fast++;
+  if(fast>=2)return .125;
+ }
+ return .25;
+}
+/* Describe audible differences between the recorded timing and written
+   notation, without claiming an unsupported time-signature inference. */
+function analyseRhythmFit(events,score,bpm,meter='4/4'){
+ const empty={available:false,quality:'unavailable',ms:null,missing:0,noteCount:0,scoreCount:0};
+ if(!METERS[meter]||!Number.isFinite(bpm)||bpm<=0||
+    !Array.isArray(events)||!Array.isArray(score))return empty;
+ const performed=events.filter(e=>e?.midi!==null&&Number.isFinite(e?.midi)&&
+  Number.isFinite(e?.start)&&Number.isFinite(e?.end)&&e.end>e.start+.02);
+ if(!performed.length)return empty;
+ const notated=score.filter(n=>n?.midi!==null);
+ const missingCount=Math.abs(performed.length-notated.length);
+ let seconds=0,i=0,squares=0,compared=0,pitchMismatch=0;
+ const secondsPerBeat=beatSeconds(bpm,meter);
+ for(const n of score){
+  if(n.midi!==null&&i<performed.length){
+   const recorded=performed[i++];
+   if(n.midi!==Math.round(recorded.midi))pitchMismatch++;
+   const onset=seconds-recorded.start;
+   const duration=n.beats*secondsPerBeat-(recorded.end-recorded.start);
+   squares+=onset*onset+.55*duration*duration;compared++;
+  }
+  seconds+=n.beats*secondsPerBeat;
+ }
+ const ms=compared?Math.round(1000*Math.sqrt(squares/(compared*1.55))):null;
+ const missing=Math.max(missingCount,pitchMismatch);
+ const quality=missing>0?'review-notes':ms===null?'unavailable':
+  ms<=70?'close':ms<=150?'approximate':'review-rhythm';
+ return {available:ms!==null,quality,ms,missing,noteCount:performed.length,
+  scoreCount:notated.length,grid:rhythmGridFromPerformance(events,bpm,meter)};
+}
+/* Align note/rest boundaries to a shared recorded-rhythm grid. Quarter-beat
+   resolution is standard. Very fast, credible attacks permit an eighth-beat
+   grid (demisemiquavers) without losing notes or inventing repeated strikes. */
+function transcribeAlignedEvents(events,bpm,meter='4/4',options={}){
  if(!Array.isArray(events)||!events.length||!METERS[meter])return [];
- const beat=beatSeconds(bpm,meter),grid=x=>Math.round(4*x)/4,limit=maxTranscriptionBeats(meter);
+ const requested=options.grid;
+ const unit=requested===.125||requested===.25?requested:rhythmGridFromPerformance(events,bpm,meter);
+ const beat=beatSeconds(bpm,meter),grid=x=>Math.round(x/unit)*unit,limit=maxTranscriptionBeats(meter);
  const sorted=events.filter(e=>Number.isFinite(e.start)&&Number.isFinite(e.end)&&
    Number.isFinite(e.duration)&&e.end>e.start+.02)
   .slice().sort((a,b)=>a.start-b.start);
  const out=[];let used=0;
  function insert(midi,length,event,drift){
-  if(length<.249||used>=limit)return;
+  if(length<unit-.001||used>=limit)return;
   const beats=Math.min(length,limit-used);
-  if(beats<.249)return;
+  if(beats<unit-.001)return;
   const confidence=midi===null?1:Number.isFinite(event?.confidence)?Math.min(1,Math.max(0,event.confidence)):.7;
-  out.push({midi,beats:+beats.toFixed(2),confidence:+confidence.toFixed(2),
+  out.push({midi,beats:+beats.toFixed(3),confidence:+confidence.toFixed(2),
    uncertain:midi!==null&&(confidence<.86||drift||event?.qualityStatus==='review'||
    event?.qualityStatus==='corrected'||event?.octaveStatus==='review'||event?.octaveStatus==='corrected'),
    reviewed:false});
@@ -304,13 +351,13 @@ function transcribeAlignedEvents(events,bpm,meter='4/4'){
   const midi=event.midi===null?null:Math.round(event.midi);
   if(midi!==null&&(midi<36||midi>95))continue;
   const begin=Math.max(used,Math.max(0,grid(event.start/beat)));
-  if(begin>used+.125)insert(null,begin-used,null,false);
-  const quantEnd=Math.max(begin+.25,grid(event.end/beat));
-  const finished=Math.max(used+.25,quantEnd);
+  if(begin>used+unit/2)insert(null,begin-used,null,false);
+  const quantEnd=Math.max(begin+unit,grid(event.end/beat));
+  const finished=Math.max(used+unit,quantEnd);
   const actualLength=event.duration/beat,assigned=finished-used;
-  const onsetChanged=Math.abs(begin-event.start/beat)>.20;
-  const durationChanged=Math.abs(assigned-actualLength)>.22;
-  const pushed=begin>event.start/beat+.24;
+  const onsetChanged=Math.abs(begin-event.start/beat)>(unit===.125?.12:.20);
+  const durationChanged=Math.abs(assigned-actualLength)>(unit===.125?.15:.22);
+  const pushed=begin>event.start/beat+(unit===.125?.13:.24);
   insert(midi,assigned,event,onsetChanged||durationChanged||pushed);
  }
  return out.some(e=>e.midi!==null)?out:[];
@@ -395,13 +442,15 @@ function estimateNaturalTempo(events,meter='4/4'){
    Compare the WHOLE notated timeline against the measured, unrounded note
    onsets/offsets. A nearby tempo may fit the performance substantially better.
    Do not correct pitches or silently choose a half/double-time tempo. */
-function calibrateScoreTiming(events,meter='4/4',initialBpm=96){
+function calibrateScoreTiming(events,meter='4/4',initialBpm=96,options={}){
  if(!METERS[meter]||!Number.isFinite(initialBpm)||initialBpm<40||initialBpm>200)
   throw Error('Invalid tempo or metre for calibration');
- const baseline=transcribeAlignedEvents(events,initialBpm,meter);
+ const grid=options.grid===.125||options.grid===.25?options.grid:
+  rhythmGridFromPerformance(events,initialBpm,meter);
+ const baseline=transcribeAlignedEvents(events,initialBpm,meter,{grid});
  const source=events.filter(e=>e?.midi!==null&&Number.isFinite(e?.midi)&&
   Number.isFinite(e.start)&&Number.isFinite(e.end)&&e.end>e.start+.02);
- const unchanged={bpm:initialBpm,score:baseline,changed:false,errorBefore:null,errorAfter:null};
+ const unchanged={bpm:initialBpm,score:baseline,grid,changed:false,errorBefore:null,errorAfter:null};
  if(source.length<3||!baseline.some(n=>n.midi!==null))return unchanged;
  function errorFor(score,bpm){
   const pitched=score.filter(n=>n.midi!==null);
@@ -445,7 +494,7 @@ function calibrateScoreTiming(events,meter='4/4',initialBpm=96){
  let winner={bpm:initialBpm,score:baseline,error:errorBefore,objective:errorBefore+notationPenalty(baseline)};
  for(let bpm=low;bpm<=high;bpm++){
   if(bpm===initialBpm)continue;
-  const candidate=transcribeAlignedEvents(events,bpm,meter);
+  const candidate=transcribeAlignedEvents(events,bpm,meter,{grid});
   const error=errorFor(candidate,bpm);
   if(!Number.isFinite(error))continue;
   // Small stability penalty avoids changing an already reasonable tempo.
@@ -458,7 +507,7 @@ function calibrateScoreTiming(events,meter='4/4',initialBpm=96){
  const changed=winner.bpm!==initialBpm&&improved>=.018&&
   improved>=errorBefore*.18;
  return {bpm:changed?winner.bpm:initialBpm,score:changed?winner.score:baseline,
-  changed,errorBefore:+errorBefore.toFixed(3),
+  grid,changed,errorBefore:+errorBefore.toFixed(3),
   errorAfter:+(changed?winner.error:errorBefore).toFixed(3)};
 }
 /* Keep extremely high/low pitches legible without transposing the sound.
@@ -555,5 +604,5 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
-return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,spellingForKey,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,engravingOctaveShift,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,calibrateScoreTiming,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
+return {METERS,LENGTHS,NAMES,KEY_NAMES,keyDefaults,spellingForKey,beatSeconds,rmsOf,estimatePitch,pitchName,spelling,midiFromSpelling,changeAccidental,transcribe,lengthParts,measures,displayAccidentals,engravingOctaveShift,scoreToMusicXML,matchRecordedTempo,performanceFromFrames,transcribeDetectedEvents,transcribeAlignedEvents,rhythmGridFromPerformance,analyseRhythmFit,calibrateScoreTiming,auditScore,matchPerformanceTempo,basicPitchToPerformance,estimateNaturalTempo,validateScore};
 });
