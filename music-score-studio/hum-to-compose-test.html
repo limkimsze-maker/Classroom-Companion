@@ -502,14 +502,14 @@ function professionalPageXML(){
  const original=C.scoreToMusicXML(notes,meter(),tempo(),{
   clef:clefOf(),fifths:keyFifths(),title:scoreName()
  });
- const measures=[...original.matchAll(/<measure\\b[^>]*>[\\s\\S]*?<\\/measure>/g)];
+ const measures=[...original.matchAll(/<measure\b[^>]*>[\s\S]*?<\/measure>/g)];
  if(!measures.length)throw Error('No notated bars available');
  const start=Math.min(scorePage*BARS_PER_PAGE,measures.length-1);
  const selectedMeasures=measures.slice(start,start+BARS_PER_PAGE).map(m=>m[0]);
  // Standalone pages need clef, key and metre for correct OSMD layout.
  if(start>0){
-  const attrs=measures[0][0].match(/<attributes>[\\s\\S]*?<\\/attributes>/)?.[0];
-  if(attrs)selectedMeasures[0]=selectedMeasures[0].replace(/(<measure\\b[^>]*>)/,'$1'+attrs);
+  const attrs=measures[0][0].match(/<attributes>[\s\S]*?<\/attributes>/)?.[0];
+  if(attrs)selectedMeasures[0]=selectedMeasures[0].replace(/(<measure\b[^>]*>)/,'$1'+attrs);
  }
  const header=original.slice(0,measures[0].index);
  const last=measures[measures.length-1];
