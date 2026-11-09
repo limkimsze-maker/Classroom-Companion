@@ -364,13 +364,29 @@ export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=220
  }).filter(n=>Number.isFinite(n.start)&&Number.isFinite(n.end)&&n.end-n.start>=.06&&n.pitch>=36&&n.pitch<=95);
  if(!clean.length)return [];
  const boundaries=[...new Set(clean.flatMap(n=>[n.start,n.end]))].sort((a,b)=>a-b);
+ // A rolling set of overlapping notes avoids O(events × boundaries) scans
+ // for long (up to 10-minute) recordings. Preserve the previous amplitude,
+ // later-onset, original-index priority exactly.
+ const byStart=clean.slice().sort((a,b)=>a.start-b.start);
+ const byEnd=clean.slice().sort((a,b)=>a.end-b.end);
+ const active=new Set();let nextStart=0,nextEnd=0;
  let last=null;const timeline=[];
  for(let i=0;i<boundaries.length-1;i++){
   const start=boundaries[i],end=boundaries[i+1];
   if(end-start<.0001)continue;
-  const active=clean.filter(n=>n.start<=start+.00001&&n.end>=end-.00001)
-   .sort((a,b)=>b.amplitude-a.amplitude||b.start-a.start||a.index-b.index);
-  const best=active[0]||null,id=best?best.index:null,pitch=best?best.pitch:null;
+  while(nextStart<byStart.length&&byStart[nextStart].start<=start+.00001)
+   active.add(byStart[nextStart++]);
+  while(nextEnd<byEnd.length&&byEnd[nextEnd].end<end-.00001)
+   active.delete(byEnd[nextEnd++]);
+  let best=null;
+  for(const candidate of active){
+   if(candidate.end<end-.00001)continue;
+   if(!best||candidate.amplitude>best.amplitude||
+    candidate.amplitude===best.amplitude&&(candidate.start>best.start||
+    candidate.start===best.start&&candidate.index<best.index))
+    best=candidate;
+  }
+  const id=best?best.index:null,pitch=best?best.pitch:null;
   if(last&&last.index===id&&Math.abs(last.end-start)<.0001){last.end=end;last.duration=end-last.start}
   else{
    last={index:id,start,end,duration:end-start,midi:pitch,
