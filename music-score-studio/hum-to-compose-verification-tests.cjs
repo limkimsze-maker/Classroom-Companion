@@ -185,7 +185,7 @@ test('Independent continuous melody output can exceed 256 note events',()=>{
    mocked Web Audio and no audio downloads. */
 const instrumentPage=fs.readFileSync(path.join(__dirname,'hum-to-compose-test.html'),'utf8');
 const instrumentStart=instrumentPage.indexOf('function scheduleWarmPiano(');
-const instrumentEnd=instrumentPage.indexOf('async function playDetected(){',instrumentStart);
+const instrumentEnd=instrumentPage.indexOf('async function playDetected(',instrumentStart);
 assert.ok(instrumentStart>0&&instrumentEnd>instrumentStart,'Instrument scheduler missing');
 const instrumentCode=instrumentPage.slice(instrumentStart,instrumentEnd);
 function testInstrument(name,volume=1.9,duration=.8){
