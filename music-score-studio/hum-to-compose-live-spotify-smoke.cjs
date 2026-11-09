@@ -84,6 +84,7 @@ async function main(){
     ys:[...svg.querySelectorAll('ellipse.head')].map(n=>Number(n.getAttribute('cy')))};
   });
   assert.ok(pageBounds.ys.every(y=>y>=20&&y<pageBounds.height-20),'Notehead clipped');
+  await saving.locator('#exportOptions summary').click();
   const xmlReady=saving.waitForEvent('download');
   await saving.locator('#xml').click();
   const xmlFile=await xmlReady,xml=await fs.promises.readFile(await xmlFile.path(),'utf8');
