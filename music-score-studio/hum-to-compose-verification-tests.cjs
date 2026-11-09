@@ -207,6 +207,33 @@ test('All supported metres preserve longer scores without a bar cap',()=>{
  }
 });
 
+test('Overlapping voices still follow strongest amplitude and later-onset priority',()=>{
+ const melody=adapter.toSingleMelody([
+  note(60,.2,1,.7),note(64,.4,.8,.9),note(67,.8,1.2,.9)
+ ],2);
+ assert.deepEqual(melody.filter(e=>e.midi!==null).map(e=>e.midi),[60,64,67]);
+ const voice=melody.filter(e=>e.midi!==null);
+ assert.ok(Math.abs(voice[0].duration-.2)<1e-6);
+ assert.ok(Math.abs(voice[1].duration-.4)<1e-6);
+ assert.ok(Math.abs(voice[2].duration-.4)<1e-6);
+});
+test('Simultaneous pitches with identical strength retain original tie priority',()=>{
+ const notes=[note(60,.2,.9,.85),note(64,.2,.9,.85)];
+ const melody=adapter.toSingleMelody(notes,2);
+ assert.deepEqual(melody.map(e=>e.midi),[60]);
+});
+test('Four thousand recorded attacks over ten minutes remain complete',()=>{
+ const notes=Array.from({length:4000},(_,i)=>note(60+i%7,i*.15,i*.15+.12,.9));
+ const started=Date.now();
+ const melody=adapter.toSingleMelody(notes,600);
+ const pitched=melody.filter(e=>e.midi!==null);
+ assert.equal(pitched.length,4000,'Long performance was truncated');
+ assert.ok(pitched[0].start===0&&pitched.at(-1).end>599,
+  'End of ten-minute recording was lost');
+ // Generous limit across CI hardware; the old all-pairs algorithm could
+ // stall phones with large music files.
+ assert.ok(Date.now()-started<8000,'Monophonic selection stalled on long recording');
+});
 test('Ten-minute recording divides into overlapping windows with complete coverage',()=>{
  const windows=adapter.recordingWindows(600);
  assert.ok(windows.length>20);
