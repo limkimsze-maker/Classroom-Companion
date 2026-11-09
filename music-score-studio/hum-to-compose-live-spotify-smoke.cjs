@@ -43,6 +43,11 @@ async function main(){
   },null,{timeout:60000});
   assert.equal(await saving.locator('#editableScoreArea').isVisible(),false);
   assert.ok(await saving.locator('#professionalScoreHost svg').count()>0,'OSMD did not engrave a readable score');
+  await saving.locator('#play').click();
+  await saving.waitForFunction(()=>document.querySelectorAll('#professionalScoreHost .engravedPlayingNotehead').length>0,null,{timeout:10000});
+  await saving.locator('#stop').click();
+  assert.equal(await saving.locator('#professionalScoreHost .engravedPlayingNotehead').count(),0,
+   'Engraved highlights should clear when playback stops');
   await saving.locator('#showEditable').click();
   assert.equal(await saving.locator('#editableScoreArea').isVisible(),true);
   assert.ok(await saving.locator('#score g.event.note').count()>0,'Editable notes disappeared');
