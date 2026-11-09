@@ -91,6 +91,25 @@ async function main(){
  assert.ok(f1,'Missing measured real-model F1');
  assert.ok(Number.isFinite(Number(f1[1])),'Non-numeric real-model F1');
  console.log('PASS: actual Spotify neural inference completed for 8/8 synthetic clips; F1='+f1[1]+'%.');
+ // Exercise the REAL model beyond the previous 20-second audio limit.
+ // Synthetic audio only. This is not a human humming or device performance test.
+ const longModel=await page.evaluate(async()=>{
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const rate=22050,duration=25,data=new Float32Array(rate*duration);
+  for(let i=0;i<data.length;i++){
+   const t=i/rate;
+   const midi=t<7?69:t<13?67:72;
+   const active=t<6.8||t>7.2&&t<12.8||t>13.2&&t<24.8;
+   if(active)data[i]=.35*Math.sin(2*Math.PI*440*Math.pow(2,(midi-69)/12)*t);
+  }
+  const audio={sampleRate:rate,length:data.length,duration,numberOfChannels:1,getChannelData:()=>data};
+  const out=await adapter.recognise(audio,()=>{},window.HumCore.estimatePitch);
+  return out.events.map(e=>({start:e.start,end:e.end,midi:e.midi}));
+ });
+ assert.ok(longModel.some(e=>e.midi!==null&&e.end>20),
+  'Real Basic Pitch 25-second recording lost notes after 20 seconds: '+JSON.stringify(longModel));
+ console.log('PASS: actual Spotify model recognised notes after 20 seconds using sequential overlapping sections.');
+
  console.log('This does NOT prove human humming or Samsung microphone reliability.');
 }
 main().catch(e=>{console.error('LIVE SPOTIFY BROWSER TEST FAILED:',e);process.exitCode=1})
