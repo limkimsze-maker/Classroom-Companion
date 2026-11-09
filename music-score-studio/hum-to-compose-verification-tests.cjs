@@ -148,6 +148,45 @@ test('Find a missed C4-to-E4 change with stable independent pitch',()=>{
  assert.equal(r.summary.noteSplits,1);
  assert.deepEqual(r.notes.map(x=>x.pitchMidi),[60,64]);
 });
+test('Recover THREE sung pitches when model merges them into one note',()=>{
+ const r=verify([note(60,.2,1.4)],[
+  {midi:60,start:.2,end:.58},{midi:64,start:.58,end:.99},
+  {midi:67,start:.99,end:1.4}
+ ]);
+ assert.deepEqual(r.notes.map(n=>n.pitchMidi),[60,64,67],
+  'Stable C4 E4 G4 were not recovered: '+JSON.stringify(r.notes));
+ assert.equal(r.summary.noteSplits,2);
+ assert.ok(r.notes.every(n=>n.qualityStatus==='review'),'Teacher review flag lost');
+ assert.ok(r.notes.every(n=>n.durationSeconds>=.20),'Invented a spurious tiny note');
+});
+test('Recover FOUR distinct notes from a merged long vocal event',()=>{
+ const r=verify([note(60,.2,1.66)],[
+  {midi:60,start:.2,end:.57},{midi:64,start:.57,end:.94},
+  {midi:67,start:.94,end:1.30},{midi:72,start:1.30,end:1.66}
+ ]);
+ assert.deepEqual(r.notes.map(n=>n.pitchMidi),[60,64,67,72],
+  'Multi-note phrase was truncated: '+JSON.stringify(r.notes));
+ assert.equal(r.summary.noteSplits,3);
+});
+test('A brief pitch decoration cannot create an unsupported note split',()=>{
+ const r=verify([note(60,.2,1.55)],[
+  {midi:60,start:.2,end:.88},{midi:64,start:.88,end:.96},
+  {midi:60,start:.96,end:1.55}
+ ]);
+ assert.deepEqual(r.notes.map(n=>n.pitchMidi),[60],
+  'Brief passing pitch was mistaken for a stable separate sung note');
+ assert.equal(r.summary.noteSplits,0);
+});
+test('Unverified many-step pitch changes stay as one teacher-review event',()=>{
+ const r=verify([note(60,.2,1.87)],[
+  {midi:60,start:.2,end:.52},{midi:64,start:.52,end:.85},
+  {midi:67,start:.85,end:1.20},{midi:72,start:1.20,end:1.54},
+  {midi:76,start:1.54,end:1.87}
+ ]);
+ assert.equal(r.summary.noteSplits,0);
+ assert.equal(r.notes.length,1);
+ assert.equal(r.notes[0].qualityStatus,'review');
+});
 test('Reject model-only noise but do not invent pitches',()=>{
  const r=verify([note(60,.2,.9,.2)],[]);
  assert.equal(r.summary.noiseRejected,1);
