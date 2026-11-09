@@ -357,6 +357,31 @@
    const xml=C.scoreToMusicXML([teacher],'4/4',96,{fifths:-2});
    assert(xml.includes('<step>A</step><alter>1</alter><octave>4</octave>'));
   });
+  test('Extreme staff pitches use standard octave displacement without changing MIDI',()=>{
+   const high={midi:71,beats:1},veryHigh={midi:95,beats:1},low={midi:43,beats:1};
+   assert(C.engravingOctaveShift(high,'bass')===-1,'B4 in bass should use 8va');
+   assert(C.engravingOctaveShift(high,'treble')===0,'B4 in treble should remain ordinary');
+   assert(C.engravingOctaveShift(veryHigh,'bass')===-2,'B6 should use 15ma');
+   assert(C.engravingOctaveShift(low,'treble')===1,'G2 in treble should use 8vb');
+   assert(C.engravingOctaveShift(low,'bass')===0,'G2 in bass needs no shift');
+   assert(C.validateScore({meter:'4/4',tempo:96,notes:[high,low]})[0].midi===71);
+  });
+  test('MusicXML octave shifts preserve exact sounding pitches',()=>{
+   const b4=C.scoreToMusicXML([{midi:71,beats:1},{midi:60,beats:1}],'4/4',96,{clef:'bass'});
+   assert(b4.includes('<octave-shift type="down" number="1" size="8"/>'));
+   assert(b4.includes('<octave-shift type="stop" number="1" size="8"/>'));
+   assert(b4.includes('<step>B</step><octave>4</octave>'),'B4 sounding pitch changed');
+   const g2=C.scoreToMusicXML([{midi:43,beats:1}],'4/4',96,{clef:'treble'});
+   assert(g2.includes('<octave-shift type="up" number="1" size="8"/>'));
+   assert(g2.includes('<step>G</step><octave>2</octave>'),'G2 sounding pitch changed');
+  });
+  test('Accidentals track written octave when 8va is active',()=>{
+   const input=[{midi:73,beats:1},{midi:61,beats:1},{midi:73,beats:1}];
+   const staff=C.displayAccidentals(C.measures(input,'4/4'),0,'bass')[0];
+   assert(staff[0].displayAccidental==='♯','C-sharp requires written accidental');
+   assert(staff[1].displayAccidental===null,'Repeated written C-sharp 4 must not repeat sharp');
+   assert(staff[2].displayAccidental===null,'8va note should share the displayed accidental');
+  });
   test('Ten-minute 6/8 transcription at 200 BPM keeps 1,000 bars',()=>{
    const metre='6/8',bpm=200,beat=C.beatSeconds(bpm,metre);
    const events=Array.from({length:3000},(_,i)=>({
