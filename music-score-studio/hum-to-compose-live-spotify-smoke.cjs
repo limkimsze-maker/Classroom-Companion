@@ -26,6 +26,49 @@ async function main(){
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)});
  const port=server.address().port;
  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ // Exercise real Chromium Save/Open flows, not a mocked DOM or a phone microphone.
+ for(const width of [390,1280]){
+  const ctx=await browser.newContext({viewport:{width,height:844},acceptDownloads:true});
+  const saving=await ctx.newPage(),pageErrors=[];
+  saving.on('pageerror',error=>pageErrors.push(error.message));
+  await saving.goto('http://127.0.0.1:'+port+'/music-score-studio/hum-to-compose-test.html');
+  await saving.locator('#example').click();
+  await saving.locator('#scoreName').fill('Morning Music');
+  await saving.locator('#save').click();
+  assert.match(await saving.locator('#status').innerText(),/Saved “Morning Music”/);
+  await saving.locator('#clear').click();
+  await saving.locator('#example').click();
+  await saving.locator('#scoreName').fill('Evening Music');
+  await saving.locator('#save').click();
+  await saving.reload();await saving.locator('#loadLocal').click();
+  assert.equal(await saving.locator('#savedCount').innerText(),'2');
+  await saving.locator('#savedScoreChoice').selectOption({label:'Morning Music'});
+  await saving.locator('#openSaved').click();
+  assert.equal(await saving.locator('#scoreName').inputValue(),'Morning Music');
+  assert.equal(await saving.locator('#scoreTitle').innerText(),'Morning Music');
+  assert.match(await saving.locator('#scoreHint').innerText(),/note groups/);
+  await saving.locator('#exportOptions summary').click();
+  const pending=saving.waitForEvent('download');
+  await saving.locator('#download').click();
+  const file=await pending;
+  assert.equal(file.suggestedFilename(),'Morning Music.music-score.json');
+  const exported=JSON.parse(await fs.promises.readFile(await file.path(),'utf8'));
+  assert.equal(exported.name,'Morning Music');assert.equal(exported.notes.length,6);
+  await saving.locator('#file').setInputFiles({
+   name:'Reopened.music-score.json',mimeType:'application/json',
+   buffer:Buffer.from(JSON.stringify({...exported,name:'Imported Music'}))
+  });
+  assert.equal(await saving.locator('#scoreName').inputValue(),'Imported Music');
+  await saving.locator('#save').click();
+  await saving.reload();await saving.locator('#loadLocal').click();
+  assert.equal(await saving.locator('#savedCount').innerText(),'3');
+  await saving.locator('#savedScoreChoice').selectOption({label:'Evening Music'});
+  await saving.locator('#openSaved').click();
+  assert.equal(await saving.locator('#scoreName').inputValue(),'Evening Music');
+  assert.deepEqual(pageErrors,[],'Save/Open browser errors at '+width+'px');
+  console.log('PASS: Chromium '+width+'px named save, reopen, download and import');
+  await ctx.close();
+ }
  const page=await browser.newPage();
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
