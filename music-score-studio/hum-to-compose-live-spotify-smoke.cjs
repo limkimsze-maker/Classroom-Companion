@@ -135,6 +135,61 @@ async function main(){
   console.log('PASS: Chromium '+width+'px named save, reopen, download and import');
   await ctx.close();
  }
+ // Real-browser WAV-to-score timing calibration, with test-only model output.
+ // The separate benchmark below still exercises the unmodified Spotify model.
+ {
+  const ctx=await browser.newContext({viewport:{width:390,height:844},acceptDownloads:true});
+  const calibrationPage=await ctx.newPage(),errors=[];
+  calibrationPage.on('pageerror',e=>errors.push(e.message));
+  await calibrationPage.goto('http://127.0.0.1:'+port+'/music-score-studio/hum-to-compose-test.html?regression=tempo');
+  const pitches=[60,62,64,65,67,69],rate=22050,bpm=112,beat=60/bpm;
+  const count=Math.ceil(pitches.length*beat*rate),wav=Buffer.alloc(44+count*2);
+  wav.write('RIFF',0);wav.writeUInt32LE(36+count*2,4);
+  wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);
+  wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);
+  wav.writeUInt32LE(rate,24);wav.writeUInt32LE(rate*2,28);
+  wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);
+  wav.write('data',36);wav.writeUInt32LE(count*2,40);
+  for(let i=0;i<count;i++){
+   const t=i/rate,slot=Math.min(pitches.length-1,Math.floor(t/beat));
+   const hz=440*Math.pow(2,(pitches[slot]-69)/12);
+   wav.writeInt16LE(Math.round(.28*Math.sin(2*Math.PI*hz*t)*32767),44+i*2);
+  }
+  await calibrationPage.evaluate(()=>{
+   window.HumCore.estimateNaturalTempo=()=>({bpm:120,confidence:.4,ambiguous:true});
+   const beat=60/112,pitches=[60,62,64,65,67,69];
+   window.__humTestAdapter={recognise:async()=>({
+    events:pitches.map((midi,i)=>({
+     start:i*beat,end:(i+1)*beat,duration:beat,midi,confidence:.98,
+     qualityStatus:'matched',points:[{t:0,midi,confidence:.98}]
+    })),
+    verification:{octavesCorrected:0,pitchCorrected:0,noteSplits:0,pausesRestored:0,review:0}
+   })};
+  });
+  await calibrationPage.locator('#audioFile').setInputFiles({
+   name:'six-notes.wav',mimeType:'audio/wav',buffer:wav
+  });
+  await calibrationPage.waitForFunction(()=>
+   document.getElementById('status').textContent.includes('Calibrated score timing'),
+   null,{timeout:30000});
+  const calibratedBpm=Number(await calibrationPage.locator('#tempo').inputValue());
+  assert.ok(Math.abs(calibratedBpm-bpm)<=2,'End-to-end BPM wrong: '+calibratedBpm);
+  await calibrationPage.locator('#exportOptions summary').click();
+  const pending=calibrationPage.waitForEvent('download');
+  await calibrationPage.locator('#download').click();
+  const exported=await pending;
+  const saved=JSON.parse(await fs.promises.readFile(await exported.path(),'utf8'));
+  assert.deepEqual(saved.notes.filter(n=>n.midi!==null).map(n=>n.midi),pitches,
+   'Calibration changed original pitches or octaves');
+  const seconds=saved.notes.reduce((sum,n)=>
+   sum+n.beats*(60/saved.tempo*(saved.meter==='6/8'?2/3:1)),0);
+  assert.ok(Math.abs(seconds-pitches.length*beat)<.06,
+   'Calibrated score duration disagrees with original recording');
+  assert.deepEqual(errors,[],'Unexpected browser errors during calibrated transcription');
+  console.log('PASS: Chromium WAV import corrected 120→'+calibratedBpm+
+   ' BPM, preserved every pitch, and matched score duration to original');
+  await ctx.close();
+ }
  const page=await browser.newPage();
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
