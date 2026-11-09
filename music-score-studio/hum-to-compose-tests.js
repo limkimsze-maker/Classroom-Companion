@@ -224,6 +224,58 @@
    const notes=C.transcribeAlignedEvents(e,120,'4/4');
    assert(notes.some(x=>x.uncertain),'contradictory duration/onset must be reviewable');
   });
+  test('Automatic score timing calibration corrects a recogniser tempo mismatch',()=>{
+   const actualBpm=112,wrongBpm=120,beat=C.beatSeconds(actualBpm,'4/4');
+   const pitches=[60,62,64,65,67,69];
+   const events=pitches.map((midi,i)=>({
+    midi,start:i*beat,end:(i+1)*beat,duration:beat,confidence:.98
+   }));
+   const before=C.transcribeAlignedEvents(events,wrongBpm,'4/4');
+   const cal=C.calibrateScoreTiming(events,'4/4',wrongBpm);
+   assert(cal.changed,'A substantial timing mismatch should be corrected');
+   assert(Math.abs(cal.bpm-actualBpm)<=2,'Tempo was not calibrated near the recorded rhythm: '+cal.bpm);
+   assert(cal.errorAfter<cal.errorBefore*.45,'Playback onset timing remains mismatched');
+   assert.deepEqual(cal.score.filter(n=>n.midi!==null).map(n=>n.midi),pitches,
+    'Calibration must never transpose or invent pitches');
+   assert(before.length>=cal.score.length-1,'Calibration unexpectedly expanded the melody');
+  });
+  test('6/8 tempo calibration respects dotted-crotchet BPM and keeps exact MIDI',()=>{
+   const meter='6/8',actualBpm=80,wrongBpm=92,beat=C.beatSeconds(actualBpm,meter);
+   const pitches=[60,60,62,64,65,67,65,64];
+   const events=pitches.map((midi,i)=>({
+    midi,start:i*beat,end:(i+1)*beat,duration:beat,confidence:.97
+   }));
+   const cal=C.calibrateScoreTiming(events,meter,wrongBpm);
+   assert(cal.changed&&Math.abs(cal.bpm-actualBpm)<=2,'Wrong 6/8 beat-unit calibration '+cal.bpm);
+   assert(cal.errorAfter<cal.errorBefore*.5,'6/8 timing error remains');
+   assert.deepEqual(cal.score.filter(n=>n.midi!==null).map(n=>n.midi),pitches);
+  });
+  test('Calibration is conservative for short or already-correct performances',()=>{
+   const beat=C.beatSeconds(112,'4/4');
+   const good=Array.from({length:6},(_,i)=>({
+    midi:60+i,start:i*beat,end:(i+1)*beat,duration:beat,confidence:.95
+   }));
+   const stable=C.calibrateScoreTiming(good,'4/4',112);
+   assert.equal(stable.changed,false,'Correct performance must not be retimed');
+   assert.equal(stable.bpm,112);
+   const short=C.calibrateScoreTiming(good.slice(0,2),'4/4',120);
+   assert.equal(short.changed,false,'Two notes cannot prove tempo');
+   assert.equal(short.bpm,120);
+   assert.throws(()=>C.calibrateScoreTiming(good,'9/8',120));
+  });
+  test('Tempo calibration preserves real rests and repeated attacks',()=>{
+   const beat=C.beatSeconds(105,'4/4'),events=[
+    {midi:60,start:0,end:beat,duration:beat,confidence:.95},
+    {midi:null,start:beat,end:2*beat,duration:beat,confidence:1},
+    {midi:60,start:2*beat,end:3*beat,duration:beat,confidence:.95},
+    {midi:62,start:3*beat,end:4*beat,duration:beat,confidence:.95},
+    {midi:64,start:4*beat,end:5*beat,duration:beat,confidence:.95}
+   ];
+   const cal=C.calibrateScoreTiming(events,'4/4',120);
+   assert.deepEqual(cal.score.map(n=>n.midi),[60,null,60,62,64]);
+   assert(cal.score.some(n=>n.midi===null),'Silence lost during calibration');
+   assert(cal.bpm>=94&&cal.bpm<=120,'Surprising half/double time tempo');
+  });
   test('Detected-performance tempo fitting works after importing audio',()=>{
    const score=[{midi:60,beats:1},{midi:62,beats:1}];
    const events=[{start:0,end:.5,duration:.5,midi:60},{start:.5,end:1,duration:.5,midi:62}];
