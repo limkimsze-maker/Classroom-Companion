@@ -2,6 +2,10 @@
    Experimental: return uncertainty instead of claiming infallible transcription. */
 (function(root,factory){'use strict';const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.HumCore=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){'use strict';
 const METERS={'2/4':{beats:2,upper:2,lower:4,pulse:1},'3/4':{beats:3,upper:3,lower:4,pulse:1},'4/4':{beats:4,upper:4,lower:4,pulse:1},'6/8':{beats:3,upper:6,lower:8,pulse:1.5}};
+// The isolated recogniser supports up to 40 notated bars, not a fixed 64 beats.
+// In particular, a 20-second 6/8 recording at a fast tempo can exceed 64 beats.
+const MAX_TRANSCRIPTION_BARS=40;
+function maxTranscriptionBeats(meter){return METERS[meter].beats*MAX_TRANSCRIPTION_BARS}
 const LENGTHS=[4,3,2,1.5,1,.75,.5,.375,.25,.125];
 const NAMES={'0.125':'Demisemiquaver','0.25':'Semiquaver','0.375':'Dotted semiquaver','0.5':'Quaver','0.75':'Dotted quaver','1':'Crotchet','1.5':'Dotted crotchet','2':'Minim','3':'Dotted minim','4':'Semibreve'};
 const NATURAL=[0,2,4,5,7,9,11],SHARP=[[0,0],[0,1],[1,0],[1,1],[2,0],[3,0],[3,1],[4,0],[4,1],[5,0],[5,1],[6,0]],FLAT=[[0,0],[1,-1],[1,0],[2,-1],[2,0],[3,0],[4,-1],[4,0],[5,-1],[5,0],[6,-1],[6,0]];
@@ -77,7 +81,8 @@ function transcribe(input,bpm,meter='4/4'){
   cursor=Math.max(cursor,last);
  }
  // Explicitly never merge equal adjacent notes: a separate attack matters.
- let total=0;return result.filter(n=>{total+=n.beats;return n.beats>0&&total<=64.001}).map(n=>({...n,reviewed:false}));
+ const limit=maxTranscriptionBeats(meter);let total=0;
+ return result.filter(n=>{total+=n.beats;return n.beats>0&&total<=limit+.001}).map(n=>({...n,reviewed:false}));
 }
 function lengthParts(beats){let remaining=Math.round(beats*8)/8;const parts=[];
  while(remaining>.0001&&parts.length<100){const v=LENGTHS.find(x=>x<=remaining+.0001);if(v){parts.push(v);remaining-=v}else{parts.push(.125);remaining-=.125}}
@@ -240,14 +245,14 @@ function performanceFromFrames(frames){
    and remains available for detected-melody playback. */
 function transcribeDetectedEvents(events,bpm,meter='4/4'){
  if(!Array.isArray(events)||!events.length)return [];
- const beat=beatSeconds(bpm,meter),out=[];let used=0;
+ const beat=beatSeconds(bpm,meter),out=[],limit=maxTranscriptionBeats(meter);let used=0;
  for(const event of events){
   if(!Number.isFinite(event.duration)||event.duration<.025)continue;
   const midi=event.midi===null?null:Math.round(event.midi);
   if(midi!==null&&(midi<36||midi>95))continue;
   const rawBeats=event.duration/beat;
   const beats=Math.max(.25,roundGrid(rawBeats));
-  if(used+beats>64.001)break;
+  if(used+beats>limit+.001)break;
   const pts=event.points||[];
   const drifting=midi!==null&&pts.length>2&&
     (Math.max(...pts.map(x=>x.midi))-Math.min(...pts.map(x=>x.midi))>1.2);
@@ -277,14 +282,14 @@ function matchPerformanceTempo(notes,events,meter='4/4'){
    while marking large rounding changes for teacher review. */
 function transcribeAlignedEvents(events,bpm,meter='4/4'){
  if(!Array.isArray(events)||!events.length||!METERS[meter])return [];
- const beat=beatSeconds(bpm,meter),grid=x=>Math.round(4*x)/4;
+ const beat=beatSeconds(bpm,meter),grid=x=>Math.round(4*x)/4,limit=maxTranscriptionBeats(meter);
  const sorted=events.filter(e=>Number.isFinite(e.start)&&Number.isFinite(e.end)&&
    Number.isFinite(e.duration)&&e.end>e.start+.02)
   .slice().sort((a,b)=>a.start-b.start);
  const out=[];let used=0;
  function insert(midi,length,event,drift){
-  if(length<.249||used>=64)return;
-  const beats=Math.min(length,64-used);
+  if(length<.249||used>=limit)return;
+  const beats=Math.min(length,limit-used);
   if(beats<.249)return;
   const confidence=midi===null?1:Number.isFinite(event?.confidence)?Math.min(1,Math.max(0,event.confidence)):.7;
   out.push({midi,beats:+beats.toFixed(2),confidence:+confidence.toFixed(2),
@@ -294,7 +299,7 @@ function transcribeAlignedEvents(events,bpm,meter='4/4'){
   used+=beats;
  }
  for(const event of sorted){
-  if(used>=64-.001)break;
+  if(used>=limit-.001)break;
   const midi=event.midi===null?null:Math.round(event.midi);
   if(midi!==null&&(midi<36||midi>95))continue;
   const begin=Math.max(used,Math.max(0,grid(event.start/beat)));
@@ -309,17 +314,18 @@ function transcribeAlignedEvents(events,bpm,meter='4/4'){
  }
  return out.some(e=>e.midi!==null)?out:[];
 }
-/* Validate score duration and pitch against the chosen metre and the 64-beat
-   safety limit without altering any teacher edits. */
-function auditScore(score,meter,maxBeats=64){
+/* Validate generated score duration and pitch against the 40-bar metre-aware
+   transcription limit. Explicit Infinity continues to permit longer teacher scores. */
+function auditScore(score,meter,maxBeats=null){
  if(!METERS[meter]||!Array.isArray(score))return {ok:false,reason:'Invalid notation input'};
+ const limit=maxBeats===null?maxTranscriptionBeats(meter):maxBeats;
  let beats=0;for(const note of score){
   if(!Number.isFinite(note.beats)||note.beats<.25||Math.round(note.beats*8)!==note.beats*8)
    return {ok:false,reason:'Invalid note or rest duration'};
   if(note.midi!==null&&(!Number.isInteger(note.midi)||note.midi<36||note.midi>95))
    return {ok:false,reason:'Invalid note pitch'};
   beats+=note.beats;
-  if(beats>maxBeats+.001)return {ok:false,reason:'Score exceeds the '+maxBeats+'-beat limit'};
+  if(beats>limit+.001)return {ok:false,reason:'Score exceeds the '+limit+'-beat limit'};
  }
  return {ok:score.some(x=>x.midi!==null),beats,reason:!score.length?'Empty score':score.every(x=>x.midi===null)?'No pitched notes':'OK'};
 }
