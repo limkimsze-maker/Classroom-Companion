@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const C=require('./hum-to-compose-core.js');
 const adapterSource=fs.readFileSync(path.join(__dirname,'hum-to-compose-basic-pitch-adapter.js'),'utf8');
 const adapter=new Function(adapterSource.replace(/\bexport (const|function|async function)\b/g,'$1')+
- '\nreturn {verifyPerformance,verifyOctaves,toSingleMelody,resampleMono};')();
+ '\nreturn {verifyPerformance,verifyOctaves,toSingleMelody,resampleMono,recordingWindows};')();
 const RATE=22050,SAMPLES=RATE*2;
 let passed=0;
 function test(name,fn){try{fn();console.log('PASS '+name);passed++}catch(e){console.error('FAIL '+name+': '+e.message);process.exitCode=1}}
@@ -120,6 +120,35 @@ test('All supported metres preserve longer scores without a bar cap',()=>{
  }
 });
 
+test('Ten-minute recording divides into overlapping windows with complete coverage',()=>{
+ const windows=adapter.recordingWindows(600);
+ assert.ok(windows.length>20);
+ assert.equal(windows[0].start,0);
+ assert.equal(windows[0].keepStart,0);
+ assert.equal(windows.at(-1).keepEnd,600);
+ for(let i=0;i<windows.length;i++){
+  const w=windows[i];
+  assert.ok(w.seconds>0&&w.seconds<=20);
+  assert.ok(w.keepStart>=w.start&&w.keepEnd<=w.start+w.seconds+.001);
+  if(i)assert.equal(w.keepStart,windows[i-1].keepEnd,'Lost audio at section boundary');
+ }
+ assert.throws(()=>adapter.recordingWindows(601),/10 minutes/);
+});
+test('Resample a selected recording interval, rather than the first 20 seconds',()=>{
+ const rate=22050,pcm=new Float32Array(rate*2);
+ for(let i=rate;i<pcm.length;i++)pcm[i]=.3*Math.sin(2*Math.PI*440*i/rate);
+ const buffer={sampleRate:rate,length:pcm.length,numberOfChannels:1,getChannelData:()=>pcm};
+ const segment=adapter.resampleMono(buffer,.5,1.2);
+ assert.equal(segment.length,Math.floor(rate*.5));
+ assert.ok(Math.abs(C.estimatePitch(segment.subarray(0,4096),rate).midi-69)<.25);
+});
+test('Independent continuous melody output can exceed 256 note events',()=>{
+ const events=Array.from({length:300},(_,i)=>({
+  startTimeSeconds:i*.065,durationSeconds:.061,pitchMidi:60+i%3,amplitude:.95
+ }));
+ const out=adapter.toSingleMelody(events,20);
+ assert.equal(out.filter(n=>n.midi!==null).length,300,'Long melody lost later notes');
+});
 /* Instrument playback smoke tests, using actual TEST-page synthesiser code,
    mocked Web Audio and no audio downloads. */
 const instrumentPage=fs.readFileSync(path.join(__dirname,'hum-to-compose-test.html'),'utf8');
