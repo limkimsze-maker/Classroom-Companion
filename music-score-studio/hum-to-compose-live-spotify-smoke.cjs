@@ -66,6 +66,30 @@ async function main(){
   await saving.locator('#savedScoreChoice').selectOption({label:'Evening Music'});
   await saving.locator('#openSaved').click();
   assert.equal(await saving.locator('#scoreName').inputValue(),'Evening Music');
+  // Recreate the reported high bass-note screenshot in actual Chromium.
+  const outlier={meter:'4/4',tempo:96,name:'High bass review',clefMode:'bass',
+   notes:[{midi:55,beats:1},{midi:71,beats:1,uncertain:true},{midi:57,beats:2}]};
+  await saving.locator('#file').setInputFiles({
+   name:'outlier.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(outlier))
+  });
+  await saving.waitForFunction(()=>document.getElementById('scoreName').value==='High bass review',null,{timeout:10000});
+  const highNote=saving.locator('#score g.event.note').nth(1);
+  assert.equal(await highNote.locator('.octave-mark').innerText(),'8va');
+  assert.ok(await highNote.locator('.ledger').count()<=2,'High bass note still has excessive ledger lines');
+  assert.equal(await highNote.locator('.uncertain-ring').count(),1,'Teacher-review indicator lost');
+  assert.equal(await saving.locator('#score text').filter({hasText:/^\?$/}).count(),0,'Unnecessary question marks remain');
+  const pageBounds=await saving.evaluate(()=>{
+   const svg=document.querySelector('#score');
+   return {height:svg.viewBox.baseVal.height,
+    ys:[...svg.querySelectorAll('ellipse.head')].map(n=>Number(n.getAttribute('cy')))};
+  });
+  assert.ok(pageBounds.ys.every(y=>y>=20&&y<pageBounds.height-20),'Notehead clipped');
+  const xmlReady=saving.waitForEvent('download');
+  await saving.locator('#xml').click();
+  const xmlFile=await xmlReady,xml=await fs.promises.readFile(await xmlFile.path(),'utf8');
+  assert.match(xml,/<octave-shift type="down" number="1" size="8"\/>/);
+  assert.match(xml,/<step>B<\/step><octave>4<\/octave>/);
+  console.log('PASS: Chromium '+width+'px high bass pitch uses 8va, preserves review ring and MusicXML pitch');
   assert.deepEqual(pageErrors,[],'Save/Open browser errors at '+width+'px');
   console.log('PASS: Chromium '+width+'px named save, reopen, download and import');
   await ctx.close();
