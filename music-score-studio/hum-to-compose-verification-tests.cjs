@@ -199,7 +199,8 @@ test('Xylophone strikes decay before a long note ends',()=>{
  assert.ok(testInstrument('flute').stops.every(at=>at>.95));
 });
 test('Both score players share instrument while Original hum remains separate',()=>{
- assert.ok(instrumentPage.includes('scheduleInstrument(n.midi,start,duration)'));
+ assert.ok(instrumentPage.includes('scheduleInstrument(n.midi,begin+at,n.beats*sec)'));
+ assert.ok(instrumentPage.includes('const token=++playbackEpoch'),'Long playback must have a cancelable scheduler');
  assert.ok(instrumentPage.includes('scheduleInstrument(e.midi,begin+e.start,e.duration,e.points||[])'));
  assert.ok(instrumentPage.includes('originalAudio.play()'));
 });
