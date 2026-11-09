@@ -58,6 +58,7 @@ async function main(){
    name:'Reopened.music-score.json',mimeType:'application/json',
    buffer:Buffer.from(JSON.stringify({...exported,name:'Imported Music'}))
   });
+  await saving.waitForFunction(()=>document.getElementById('scoreName').value==='Imported Music',null,{timeout:10000});
   assert.equal(await saving.locator('#scoreName').inputValue(),'Imported Music');
   await saving.locator('#save').click();
   await saving.reload();await saving.locator('#loadLocal').click();
