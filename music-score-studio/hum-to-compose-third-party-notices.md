@@ -1,7 +1,7 @@
 # Hum to Compose TEST — third-party software notices
 
-This notice applies **to the Spotify Basic Pitch default recognition engine** in
-`music-score-studio/hum-to-compose-test.html`. The existing Music Score Studio
+This notice covers the default **Spotify Basic Pitch recognition engine** and the optional **OpenSheetMusicDisplay engraved score renderer** in
+`music-score-studio/hum-to-compose-test.html`. The published Music Score Studio
 application and its own licensing/attribution remain unchanged.
 
 ## Basic Pitch — Spotify AB
@@ -34,6 +34,52 @@ loaded from the same model host. Both paths are pinned to the same source revisi
 the browser obtains them from those public distributions when the user starts
 a microphone recording or imports audio for automatic transcription. The adaptation/glue code is our own, and Spotify's
 software is not modified. Spotify has not endorsed or sponsored this project.
+
+## Professional score engraving — OpenSheetMusicDisplay
+
+- Software: **OpenSheetMusicDisplay version 2.1.3** (BSD-3-Clause).
+- Copyright © 2019 PhonicScore.
+- Source: https://github.com/opensheetmusicdisplay/opensheetmusicdisplay
+- Upstream licence: https://github.com/opensheetmusicdisplay/opensheetmusicdisplay/blob/develop/LICENSE
+- The prototype loads the same version-pinned browser distribution as the
+  published Music Score Studio from:
+  https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@2.1.3/build/opensheetmusicdisplay.min.js
+- The original score remains editable in the built-in SVG review view. Engraved
+  notation is generated locally from the current MusicXML; audio is not sent to
+  OpenSheetMusicDisplay or its CDN.
+
+### OpenSheetMusicDisplay BSD-3-Clause copyright notice
+
+The upstream project's licence text is reproduced below for attribution:
+
+```text
+Copyright 2019 PhonicScore
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may
+be used to endorse or promote products derived from this software without
+specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
 
 ## Upstream runtime dependencies
 
