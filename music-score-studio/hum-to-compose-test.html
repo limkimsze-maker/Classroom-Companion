@@ -66,7 +66,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <p class="small muted" style="margin-top:12px">🔒 Microphone audio and chosen audio files are processed locally in this browser. Nothing is uploaded. If microphone recording fails, record a short hum using your phone’s Voice Recorder and choose its saved audio file. Maximum recording length: 10 minutes. Recognition works in short sections; long recordings take longer to process and need sufficient device memory. <a href="./hum-to-compose-benchmark.html">Check accuracy without singing</a>.</p>
 </section>
 <section class="card" aria-label="Generated musical score">
-<div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2 id="scoreTitle">My melody</h2><div class="field score-name"><label for="scoreName">Score name</label><input id="scoreName" type="text" maxlength="80" value="My melody" autocomplete="off"></div><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="faithful" class="primary" type="button" disabled>▶ Play detected melody</button><button id="play" type="button" disabled>▶ Play written score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>💾 Save score</button><button id="loadLocal" type="button">📁 My saved scores</button><button id="open" type="button">↑ Open file</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
+<div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2 id="scoreTitle">My melody</h2><div class="field score-name"><label for="scoreName">Score name</label><input id="scoreName" type="text" maxlength="80" value="My melody" autocomplete="off"></div><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p><p class="small muted" id="rhythmFit" aria-live="polite" hidden></p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="faithful" class="primary" type="button" disabled>▶ Play detected melody</button><button id="play" type="button" disabled>▶ Play written score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>💾 Save score</button><button id="loadLocal" type="button">📁 My saved scores</button><button id="open" type="button">↑ Open file</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
 <details id="scoreLibrary" class="calibration score-library"><summary>My saved scores · <span id="savedCount">0</span></summary><div class="controls"><label for="savedScoreChoice">Saved in this browser</label><select id="savedScoreChoice" aria-label="Choose saved score"></select><button id="openSaved" type="button">Open selected</button><button id="deleteSaved" type="button">Delete selected</button></div><p>Scores are kept on this browser and device only. Download a score file for a portable backup. The original recording is not included in browser saves.</p></details>
 <div class="controls score-loudness"><label for="instrument">Instrument</label><select id="instrument" aria-label="Playback instrument"><option value="piano" selected>Warm piano</option><option value="guitar">Acoustic guitar</option><option value="flute">Flute</option><option value="violin">Violin</option><option value="xylophone">Xylophone</option></select><label for="scoreVolume">Instrument volume <output id="scoreVolumeValue" for="scoreVolume">160%</output></label><input id="scoreVolume" type="range" min="100" max="190" step="10" value="160" aria-label="Instrument playback volume"></div>
 <details id="scoreSetup" class="calibration"><summary>Score setup · time, tempo, clef and key</summary><div class="controls"><div class="field"><label for="meter">Time signature</label><select id="meter"><option value="2/4">2/4</option><option value="3/4">3/4</option><option value="4/4" selected>4/4</option><option value="6/8">6/8</option></select></div><div class="field"><label for="tempo">Tempo (BPM)</label><input id="tempo" type="number" min="40" max="200" value="96" step="1" inputmode="numeric" aria-label="Tempo in beats per minute"></div><label for="clefMode">Clef</label><select id="clefMode" aria-label="Score clef"><option value="auto" selected>Automatic</option><option value="treble">Treble clef</option><option value="bass">Bass clef</option></select><label for="keyFifths">Key signature</label><select id="keyFifths" aria-label="Written key signature"><option value="-7">C♭ major</option><option value="-6">G♭ major</option><option value="-5">D♭ major</option><option value="-4">A♭ major</option><option value="-3">E♭ major</option><option value="-2">B♭ major</option><option value="-1">F major</option><option value="0" selected>No sharps/flats (C major / A minor)</option><option value="1">G major</option><option value="2">D major</option><option value="3">A major</option><option value="4">E major</option><option value="5">B major</option><option value="6">F♯ major</option><option value="7">C♯ major</option></select></div><p>Record first, then review the score. The app estimates tempo from the performance. It initially displays 4/4 because a short melody rarely reveals its time signature reliably; choose 2/4, 3/4, 4/4 or 6/8 if needed. Clef and key affect how notes are written, not their pitch. The recogniser handles one pitched melody at a time, not chords or a full band.</p></details>
@@ -86,8 +86,8 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 </div><p>If every note is too high or low, adjust the whole melody. For just one wrong note, select it on the stave.</p></div>
 <div class="calibration-group"><strong>3. Correct the speed and rhythm</strong><div class="controls">
 <button id="matchSpeed" type="button" disabled>Match recorded speed</button>
-<button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button></div>
-<p>The TEST app now estimates tempo automatically when you finish humming. Change BPM and rebuild only if the score rhythms are wrong. Natural-timing playback remains available for comparison. Rebuilding replaces edits; Undo can restore them.</p></div>
+<button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button><button id="rebuildDetailed" type="button" disabled>Keep shorter notes</button></div>
+<p>The app now adapts rhythmic detail to clear, short recorded notes. Use “Keep shorter notes” for finer demisemiquaver-level notation if the ordinary score loses fast notes. Original detected timing stays available for comparison; standard notation still rounds freely performed timing. Rebuilding replaces edits; Undo restores them.</p></div>
 <p class="small muted">Spotify Basic Pitch is the main recogniser. The TEST app compares the result with your recorded voice, correcting clear pitch mistakes, missed changes and rests, and aligning the score rhythm. Doubtful notes are highlighted for review. The model needs internet on first use; audio stays in your browser.</p>
 </details>
 <div class="editor" aria-label="Review and correct score">
@@ -131,7 +131,7 @@ function checkpoint(){history.push(snapshot());if(history.length>100)history.shi
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild'].forEach(id=>$(id).disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null));$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
+function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null));$('compare').disabled=recording||requesting||!originalUrl||!notes.length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
 function closeMic(){if(recordingDeadline!==null)clearTimeout(recordingDeadline);recordingDeadline=null;if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
@@ -358,7 +358,7 @@ function render(){
  $('scoreTitle').textContent=scoreName();
  const has=notes.length>0,valid=selected!==null&&notes[selected],isNote=valid&&notes[selected].midi!==null;
  $('play').disabled=!has||playing;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null)||playing;$('save').disabled=!has;$('download').disabled=!has;$('xml').disabled=!has;$('saveSession').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
- $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
+ $('compare').disabled=!has||!originalUrl||recording||requesting;['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
  ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental','playSelected','markReviewed'].forEach(id=>$(id).disabled=!isNote);
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  $('editing').textContent=!valid?'Select a note or rest':(isNote?writtenPitchName(notes[selected]):'Rest')+' · '+(notes[selected].uncertain&&!notes[selected].reviewed?'Check pitch':'Selected');
@@ -482,6 +482,20 @@ function render(){
  const unsure=notes.filter(n=>n.uncertain&&!n.reviewed).length;
  const displaced=notes.filter(n=>n.midi!==null&&C.engravingOctaveShift(n,clef,keyFifths())!==0).length;
  $('scoreHint').textContent=has?notes.filter(n=>n.midi!==null).length+' note groups · '+totalBars+' bars · '+meter()+' · '+tempo()+' BPM'+(detectedEvents.length?' (estimated)':'')+' · '+unsure+' uncertain'+(displaced?' · '+displaced+' unusually high/low pitches: octave marks shown; check against the recording':''):'Record a melody or choose Try sample melody. Review recognised notes before teaching.';
+ const timing=C.analyseRhythmFit(detectedEvents,notes,tempo(),meter());
+ $('rhythmFit').hidden=!timing.available||!has;
+ if(timing.available&&has){
+  const ms=timing.ms;
+  const lead=timing.quality==='close'?'Recorded rhythm: close to the written score':
+   timing.quality==='approximate'?'Recorded rhythm: some expressive timing differs':
+   timing.quality==='review-notes'?'Recorded rhythm: some detected notes differ from the score':
+   'Recorded rhythm: significant differences need review';
+  $('rhythmFit').textContent=lead+
+   (timing.quality==='review-notes'?' · check note attacks and pitches':
+    ' · about '+ms+' ms average timing difference')+
+   '. Compare Play detected melody with Play written score.'+
+   (timing.grid===.125?' Fast notes used finer demisemiquaver resolution.':'');
+ }
  lastSetup={clefMode:clefMode(),fifths:keyFifths()};lastRenderedMeter=meter();
  updateNotationView();
 }
@@ -649,6 +663,13 @@ function matchSpeed(){
 }
 function rebuild(){if(!detectedEvents.length)return;const result=C.transcribeAlignedEvents(detectedEvents,tempo(),meter());if(!C.auditScore(result,meter()).ok){say('Not enough clear notes in the recording to rebuild.',true);return}
  change(()=>{notes=result;selected=null});say('Rhythm rebuilt at '+tempo()+' BPM from the local humming analysis. Previous edits can be restored with Undo.')}
+function rebuildDetailed(){
+ if(!detectedEvents.some(e=>e.midi!==null))return;
+ const result=C.transcribeAlignedEvents(detectedEvents,tempo(),meter(),{grid:.125});
+ if(!C.auditScore(result,meter()).ok){say('Not enough reliable note events to add rhythmic detail.',true);return}
+ change(()=>{notes=result;selected=null});
+ say('Rebuilt with shorter note values where performed attacks justify them. Compare the original recording with the written score. Extra detail is not an automatic time signature or proof of exact rhythm; Undo restores your previous version.');
+}
 
 async function tryBasicPitch(){
  if(basicPitchBusy||recording||requesting||recognitionPending||!sourceAudioBlob)return;
@@ -1002,7 +1023,7 @@ $('finish').addEventListener('click',finish);$('example').addEventListener('clic
 $('scoreVolume').addEventListener('input',()=>{$('scoreVolumeValue').textContent=$('scoreVolume').value+'%'});
 $('instrument').addEventListener('change',()=>{stopPlayback();say('Instrument: '+$('instrument').selectedOptions[0].text+'. Press Play to hear the new sound.');});
 $('play').addEventListener('click',playScore);$('faithful').addEventListener('click',playDetected);$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
-$('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);
+$('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);$('rebuildDetailed').addEventListener('click',rebuildDetailed);
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
 $('add').addEventListener('click',()=>insert(false));$('rest').addEventListener('click',()=>insert(true));$('toggle').addEventListener('click',toggle);$('remove').addEventListener('click',remove);
 $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);$('clear').addEventListener('click',clear);
