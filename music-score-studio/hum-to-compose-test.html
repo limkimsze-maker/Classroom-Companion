@@ -12,7 +12,7 @@ header{background:#123d52;color:white;padding:20px max(18px,calc((100% - 1140px)
 .sandbox{display:inline-block;padding:4px 9px;background:#ffefc6;color:#6c460c;border-radius:20px;font-size:12px;font-weight:850;vertical-align:middle;margin-left:8px}
 .card{min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:clamp(15px,3vw,24px);box-shadow:0 4px 15px #123f5110}
 h2{font-size:21px;margin:0 0 8px}p{margin:0 0 12px}.muted{color:var(--muted)}.steps{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 20px}.step{background:#e6f7f7;border:1px solid #b8dfe0;border-radius:10px;padding:8px 11px;font-size:14px;font-weight:700}
-.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px}button,select{font:inherit}button{border:1px solid #9dbeca;border-radius:11px;padding:12px 17px;min-height:46px;cursor:pointer;font-weight:730;background:#fff;color:#19485b}button.primary{background:#087b86;border-color:#087b86;color:#fff}button.danger{background:#bf4348;color:#fff;border-color:#bf4348}button:disabled{opacity:.43;cursor:not-allowed}button:hover:not(:disabled){filter:brightness(.95)}button:focus-visible,select:focus-visible{outline:3px solid #e1a73f;outline-offset:3px}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px}button,select{font:inherit}button{border:1px solid #9dbeca;border-radius:11px;padding:12px 17px;min-height:46px;cursor:pointer;font-weight:730;background:#fff;color:#19485b}button.primary{background:#087b86;border-color:#087b86;color:#fff}button.danger{background:#bf4348;color:#fff;border-color:#bf4348}button:disabled{opacity:.43;cursor:not-allowed}button:hover:not(:disabled){filter:brightness(.95)}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #e1a73f;outline-offset:3px}
 label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-items:center;gap:8px}select{padding:11px;border-radius:9px;border:1px solid #a7c6d1;background:white;min-height:46px}
 #status{border:1px solid #c5dfe4;border-radius:12px;background:#f4fbfe;padding:12px 14px;margin-top:14px;min-height:50px}#status[role="alert"]{border-color:#dca16f;background:#fff6ec}#livePitch{font-weight:800;color:#0b7683}#timer{font-variant-numeric:tabular-nums;color:#607380;font-weight:750}
 #levelMeter{width:170px;height:10px;background:#dfedf1;border-radius:10px;overflow:hidden}#meterFill{width:0;height:100%;background:#0d8793;transition:width .08s}
@@ -21,6 +21,8 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 .scoreArea{overflow:auto}#score{min-width:740px}#score .event{cursor:pointer}#score .event.selected .head{stroke:#c77210;stroke-width:3;fill:#fbb94b}#score .event.playing .head{stroke:#bd4a12;stroke-width:3;fill:#f8a93b}#score .uncertain-ring{fill:none;stroke:#c77b04;stroke-width:2;stroke-dasharray:3 2}#score .event.selected .rest-symbol{stroke:#c77210;stroke-width:3}#score .event.playing .rest-symbol{stroke:#bd4a12;stroke-width:3}#score .event:focus-visible{outline:none}#score .event:focus-visible .head{stroke:#d38b06;stroke-width:3}.editor select{min-width:110px}.footer a{color:#126b89}#score .accidental{font-size:21px}#score .tie{fill:none;stroke:#32495b;stroke-width:2}#score .beam{fill:#2b4051}.editor{justify-content:flex-start}#status{overflow-wrap:anywhere}
 @media(max-width:580px){.editor label{width:auto}.editor select{flex:1}.editor button{flex:1 1 78px}.controls #original{flex:1}.controls #open{flex:1}}
 .field input[type="number"]{font:inherit;padding:10px;border:1px solid #a7c6d1;border-radius:9px;background:white;width:86px;min-height:46px}
+.score-name{margin:0 0 10px;max-width:440px}.score-name input{font:inherit;min-height:44px;min-width:0;width:min(100%,280px);padding:8px 11px;border:1px solid #a7c6d1;border-radius:9px;background:#fff;color:var(--ink)}
+@media(max-width:580px){.score-name{width:100%}.score-name input{flex:1}}
 .calibration{border:1px solid #c9dfe6;border-radius:12px;background:#f6fbfe;padding:10px 13px;margin-top:12px}
 .calibration summary{cursor:pointer;font-weight:800;color:#185669;padding:4px 0;list-style:revert}
 .calibration .controls{margin:9px 0 10px}.calibration button{min-height:40px;padding:8px 11px}
@@ -51,7 +53,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <p class="small muted" style="margin-top:12px">🔒 Microphone audio and chosen audio files are processed locally in this browser. Nothing is uploaded. If microphone recording fails, record a short hum using your phone’s Voice Recorder and choose its saved audio file. Maximum analysed length: 20 seconds. <a href="./hum-to-compose-benchmark.html">Check accuracy without singing</a>.</p>
 </section>
 <section class="card" aria-label="Generated musical score">
-<div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2>My melody</h2><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="faithful" class="primary" type="button" disabled>▶ Play detected melody</button><button id="play" type="button" disabled>▶ Play written score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>↓ Save JSON</button><button id="open" type="button">↑ Open JSON / session</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
+<div class="controls" style="justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2>My melody</h2><div class="field score-name"><label for="scoreName">Score name</label><input id="scoreName" type="text" maxlength="80" value="My melody" autocomplete="off"></div><p class="muted small" id="scoreHint">A sample or recorded melody will appear here. Notation is approximate; review before teaching.</p></div><div class="controls"><button id="original" type="button" disabled>▶ Original hum</button><button id="faithful" class="primary" type="button" disabled>▶ Play detected melody</button><button id="play" type="button" disabled>▶ Play written score</button><button id="stop" type="button" disabled>■ Stop</button><button id="save" type="button" disabled>↓ Save score</button><button id="open" type="button">↑ Open score file</button><input id="file" type="file" accept=".json,application/json" hidden></div></div>
 <div class="controls score-loudness"><label for="instrument">Instrument</label><select id="instrument" aria-label="Playback instrument"><option value="piano" selected>Warm piano</option><option value="guitar">Acoustic guitar</option><option value="flute">Flute</option><option value="violin">Violin</option><option value="xylophone">Xylophone</option></select><label for="scoreVolume">Instrument volume <output id="scoreVolumeValue" for="scoreVolume">160%</output></label><input id="scoreVolume" type="range" min="100" max="190" step="10" value="160" aria-label="Instrument playback volume"></div>
 <details id="scoreSetup" class="calibration"><summary>Score setup · clef and key signature</summary><div class="controls"><label for="clefMode">Clef</label><select id="clefMode" aria-label="Score clef"><option value="auto" selected>Automatic</option><option value="treble">Treble clef</option><option value="bass">Bass clef</option></select><label for="keyFifths">Key signature</label><select id="keyFifths" aria-label="Written key signature"><option value="-7">C♭ major</option><option value="-6">G♭ major</option><option value="-5">D♭ major</option><option value="-4">A♭ major</option><option value="-3">E♭ major</option><option value="-2">B♭ major</option><option value="-1">F major</option><option value="0" selected>No sharps/flats (C major / A minor)</option><option value="1">G major</option><option value="2">D major</option><option value="3">A major</option><option value="4">E major</option><option value="5">B major</option><option value="6">F♯ major</option><option value="7">C♯ major</option></select></div><p>Choose the clef and key signature yourself. They change the notation, not the sound. The time signature is also teacher-selected; the app cannot reliably infer metre from a short melody.</p></details>
 <div class="scoreArea"><svg xmlns="http://www.w3.org/2000/svg" id="score" viewBox="0 0 850 190" role="img" aria-label="Generated single-stave music score"><text x="24" y="58" font-size="20">Your musical score will appear here.</text></svg></div>
@@ -79,7 +81,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <label for="accidental">Accidental</label><select id="accidental" disabled><option value="keep">As recognised</option><option value="-1">♭ Flat</option><option value="0">♮ Natural</option><option value="1">♯ Sharp</option></select>
 <button id="add" type="button">+ Note</button><button id="rest" type="button">+ Rest</button><button id="toggle" type="button" disabled>Note ↔ Rest</button><button id="remove" type="button" disabled>Delete</button>
 <button id="undo" type="button" disabled>↶ Undo</button><button id="redo" type="button" disabled>↷ Redo</button>
-<button id="saveLocal" type="button" disabled>Save here</button><button id="loadLocal" type="button">Open saved</button><button id="clear" type="button" disabled>Clear</button>
+<button id="saveLocal" type="button" disabled>Save in browser</button><button id="loadLocal" type="button">Open browser save</button><button id="clear" type="button" disabled>Clear</button>
 </div><details id="exportOptions" class="calibration"><summary>More saving options · MusicXML and full session</summary><div class="controls"><button id="xml" type="button" disabled>↓ MusicXML</button><button id="saveSession" type="button" disabled>↓ Save session with recording</button></div><p>MusicXML opens in other notation software. A session file can include the original recording and recognised melody; treat it as a private file.</p></details><p class="small muted" id="reviewInfo" aria-live="polite">Tap a note to see its pitch, duration and confidence.</p><p class="small muted" style="margin-top:9px">Amber ? = uncertain transcription. Select a symbol to correct it. Pitch arrows move by one semitone. 6/8 tempo counts dotted crotchets. Your recording stays on this device.</p>
 </section>
 <p class="footer">Experimental demonstration only · One melody at a time · Rhythm detection remains approximate · Teachers must review before classroom use<br>Music Score Studio developed by Lim Kim Sze · Master Javis Lim contributed helpful user feedback.<br>Special thanks to Mdm Hsu Yuh Fui for her valuable advice and guidance on music notation. Any errors or inaccuracies in Music Score Studio are solely my responsibility.<br>Prototype code is provided under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a>.<br>Default humming recognition uses Spotify Basic Pitch © 2022 Spotify AB, <a href="https://github.com/spotify/basic-pitch-ts" target="_blank" rel="noopener noreferrer">source</a>, <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache 2.0 licence</a>; <a href="./hum-to-compose-third-party-notices.md" target="_blank" rel="noopener noreferrer">third-party attribution and licences</a>. Not affiliated with Spotify.</p>
@@ -99,8 +101,12 @@ const keyFifths=()=>{const v=Number($('keyFifths').value);return Number.isIntege
 const clefMode=()=>['treble','bass'].includes($('clefMode').value)?$('clefMode').value:'auto';
 let lastSetup={clefMode:'auto',fifths:0};
 const scoreLevel=()=>Math.min(1.9,Math.max(1,Number($('scoreVolume').value)/100||1.6));
-const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),clefMode:clefMode(),fifths:keyFifths(),detectedEvents});
-function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;detectedEvents=s.detectedEvents||[];$('meter').value=s.meter;$('tempo').value=String(s.tempo);$('clefMode').value=s.clefMode||'auto';$('keyFifths').value=String(s.fifths??0);render();recordingControls()}
+// Keep titles as ordinary saved data. Remove forbidden filename characters without
+// losing the user's score name (including names in other languages).
+const scoreName=()=>String($('scoreName').value||'').trim().replace(/\s+/g,' ').slice(0,80)||'My melody';
+const scoreFilename=()=>scoreName().replace(/[\\/:*?"<>|\x00-\x1F]/g,'-').replace(/[. ]+$/g,'').trim()||'My melody';
+const snapshot=()=>({notes:JSON.parse(JSON.stringify(notes)),selected,meter:meter(),tempo:tempo(),clefMode:clefMode(),fifths:keyFifths(),detectedEvents,scoreName:scoreName()});
+function applySnapshot(s){stopPlayback();notes=JSON.parse(JSON.stringify(s.notes));selected=s.selected;detectedEvents=s.detectedEvents||[];$('meter').value=s.meter;$('tempo').value=String(s.tempo);$('clefMode').value=s.clefMode||'auto';$('keyFifths').value=String(s.fifths??0);$('scoreName').value=s.scoreName||'My melody';render();recordingControls()}
 function checkpoint(){history.push(snapshot());if(history.length>100)history.shift();future=[]}
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
@@ -578,14 +584,14 @@ function downloadText(content,mime,filename){
  setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
 function scorePayload(){
- return {format:'music-score-studio-hum-test-v2',meter:meter(),tempo:tempo(),
+ return {format:'music-score-studio-hum-test-v2',name:scoreName(),meter:meter(),tempo:tempo(),
   clefMode:clefMode(),fifths:keyFifths(),notes};
 }
 function exportXML(){
  if(!notes.length)return;
  try{
-  const xml=C.scoreToMusicXML(notes,meter(),tempo(),{clef:clefOf(),fifths:keyFifths()});
-  downloadText(xml,'application/vnd.recordare.musicxml+xml','hum-to-compose.musicxml');
+  const xml=C.scoreToMusicXML(notes,meter(),tempo(),{clef:clefOf(),fifths:keyFifths(),title:scoreName()});
+  downloadText(xml,'application/vnd.recordare.musicxml+xml',scoreFilename()+'.musicxml');
   say('MusicXML score exported. This contains musical notation, not microphone audio.');
  }catch(error){say('Cannot export MusicXML: '+error.message,true)}
 }
@@ -616,13 +622,15 @@ async function saveSession(){
    result.originalAudioBase64=bytesToBase64(await sourceAudioBlob.arrayBuffer());
    result.originalAudioType=sourceAudioBlob.type||'audio/wav';
   }
-  downloadText(JSON.stringify(result),'application/json','hum-to-compose-session.json');
+  downloadText(JSON.stringify(result),'application/json',scoreFilename()+'-session.json');
   say(sourceAudioBlob?'Session saved with the original recording and detected melody.':'Session saved without audio (no original recording was available).');
  }catch(error){say('Could not save session: '+error.message,true)}
 }
-function exportJSON(){if(!notes.length)return;downloadText(JSON.stringify(scorePayload(),null,2),'application/json','hum-to-compose-test.json');say('Score JSON saved. Recording audio is not included; use Save session to include it.')}
+function exportJSON(){if(!notes.length)return;downloadText(JSON.stringify(scorePayload(),null,2),'application/json',scoreFilename()+'.music-score.json');say('Saved “'+scoreName()+'” as a score file. Use Open score file to reopen it. Original recording is not included; use Save session for audio.')}
 function importState(data){
  const clean=C.validateScore(data),fifths=data.fifths===undefined?0:Number(data.fifths);
+ if(data.name!==undefined&&(typeof data.name!=='string'||data.name.length>80||/[\x00-\x1F]/.test(data.name)))throw Error('Invalid score name');
+ const restoredName=typeof data.name==='string'&&data.name.trim()?data.name.trim():'My melody';
  C.keyDefaults(fifths);
  const mode=data.clefMode||'auto';
  if(!['auto','treble','bass'].includes(mode))throw Error('Invalid saved clef');
@@ -639,14 +647,14 @@ function importState(data){
   :[];
  samples=[];setOriginal(null);
  change(()=>{notes=clean;selected=null;detectedEvents=restored;$('meter').value=data.meter;
-  $('tempo').value=String(data.tempo);$('clefMode').value=mode;$('keyFifths').value=String(fifths)});
+  $('tempo').value=String(data.tempo);$('clefMode').value=mode;$('keyFifths').value=String(fifths);$('scoreName').value=restoredName});
  if(audio)setOriginal(URL.createObjectURL(audio),audio,null);
  render();
  say(audio?'Session reopened with original audio, detected melody and editable score.':
   session?'Session reopened without an embedded recording.':'Written score opened. Use Save session to preserve the original recording.');
 }
-function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-compose-test-v2',JSON.stringify(scorePayload()));say('Score saved in this browser only. Use Save session to preserve audio separately.')}catch(_){say('Browser storage unavailable. Use Save JSON instead.',true)}}
-function localLoad(){try{const raw=localStorage.getItem('hum-to-compose-test-v2');if(!raw){say('No saved score here yet. Use Save here or Open JSON.',true);return}importState(JSON.parse(raw))}catch(_){say('Saved data could not be opened. Use a valid Hum to Compose JSON file.',true)}}
+function localSave(){if(!notes.length)return;try{localStorage.setItem('hum-to-compose-test-v2',JSON.stringify(scorePayload()));say('“'+scoreName()+'” saved in this browser only (one local slot). Use Save score for a portable named file.')}catch(_){say('Browser storage unavailable. Use Save score to download a file instead.',true)}}
+function localLoad(){try{const raw=localStorage.getItem('hum-to-compose-test-v2');if(!raw){say('No score saved in this browser. Use Save in browser or Open score file.',true);return}importState(JSON.parse(raw))}catch(_){say('Saved data could not be opened. Use Open score file with a valid Hum to Compose JSON file.',true)}}
 $('record').addEventListener('click',start);$('audioUpload').addEventListener('click',()=>$('audioFile').click());
 $('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await useAudioFile(file)});
 $('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
