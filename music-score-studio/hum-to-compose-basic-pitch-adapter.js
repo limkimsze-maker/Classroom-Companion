@@ -276,17 +276,19 @@ export function verifyPerformance(noteEvents,pcm,rate,pitchEstimator){
    markReview(fragment);processed.push(fragment);
   }
  }
- // Look for one missing note transition within a very long Spotify event.
- // Two stable YIN plateaus and agreement with one Spotify pitch are required.
- // Limit analysis windows so short audio stays usable on mid-range phones.
+ // Spotify sometimes merges several clearly articulated pitches into one
+ // long event. Recover up to three internal transitions, but only when
+ // independent YIN readings show stable, distinct plateaus. A glissando,
+ // vibrato or uncertain boundary must remain ONE reviewable event.
+ // The bounded sampling budget protects phones on long recordings.
  const withTransitions=[];let remainingSamples=90;
  for(const n of processed){
   const length=Number(n.durationSeconds),start=Number(n.startTimeSeconds);
   if(!Number.isFinite(n.pitchMidi)||length<.62||!Number.isFinite(start)
-   ||typeof pitchEstimator!=='function'||remainingSamples<4){
+   ||typeof pitchEstimator!=='function'||remainingSamples<6){
    withTransitions.push(n);continue;
   }
-  const frames=Math.min(12,Math.floor(length/.095),remainingSamples);
+  const frames=Math.min(18,Math.floor(length/.075),remainingSamples);
   remainingSamples-=frames;
   const reads=[];
   for(let i=0;i<frames;i++){
@@ -295,34 +297,43 @@ export function verifyPerformance(noteEvents,pcm,rate,pitchEstimator){
    const found=window&&pitchEstimator(window,rate,null);
    const reliable=found&&found.confidence>.94&&Number.isFinite(found.midi)&&
     Math.abs(found.midi-Math.round(found.midi))<.32;
-   reads.push({t:start+relative*length,pitch:reliable?Math.round(found.midi):null});
+   reads.push({t:start+relative*length,pitch:reliable?Math.round(found.midi):null,index:i});
   }
   const reliable=reads.filter(x=>x.pitch!==null);
   if(reliable.length<5){withTransitions.push(n);continue}
   const variants=[...new Set(reliable.map(x=>x.pitch))];
-  if(variants.length!==2){withTransitions.push(n);continue}
-  const [m1,m2]=variants;const same=r=>r.pitch===m1?1:r.pitch===m2?2:0;
-  const ordered=reads.map(same),switchAt=ordered.findIndex(x=>x===2);
-  const before=ordered.slice(0,switchAt),after=ordered.slice(switchAt);
-  // Mixed transition windows often lack reliable pitch. Permit up to two
-  // uncertain readings, but never an alternating reliable A-B-A pattern.
-  const clean=before.filter(x=>x===1).length>=2&&after.filter(x=>x===2).length>=2
-   &&before.every(x=>x===0||x===1)&&after.every(x=>x===0||x===2)
-   &&ordered.filter(x=>x===0).length<=2;
-  const previous=ordered.lastIndexOf(1);
-  const edge=clean?(reads[previous].t+reads[switchAt].t)/2:null;
-  if(!clean||!(Math.abs(m1-m2)>=2&&Math.abs(m1-m2)<12)
-   ||Math.min(Math.abs(m1-n.pitchMidi),Math.abs(m2-n.pitchMidi))>.7
-   ||!(edge-start>.20&&start+length-edge>.20)){
-   // There may be a missed note, but not enough evidence to invent a split.
-   if(variants.length>1){const candidate={...n};markReview(candidate);withTransitions.push(candidate)}
-   else withTransitions.push(n);
+  if(variants.length<2){withTransitions.push(n);continue}
+  const groups=[];
+  for(const current of reliable){
+   const prev=groups.at(-1);
+   if(prev&&prev.pitch===current.pitch){prev.last=current;prev.count++}
+   else groups.push({pitch:current.pitch,first:current,last:current,count:1});
+  }
+  const boundaries=groups.slice(1).map((group,i)=>
+   (groups[i].last.t+group.first.t)/2);
+  const positions=[start,...boundaries,start+length];
+  const gaps=groups.slice(1).map((group,i)=>
+   group.first.index-groups[i].last.index-1);
+  const stable=groups.length>=2&&groups.length<=4&&
+   groups.every(g=>g.count>=2)&&
+   gaps.every(g=>g<=2)&&
+   positions.every((time,i)=>i===0||time-positions[i-1]>=.20)&&
+   groups.every((g,i)=>i===0||
+    Math.abs(g.pitch-groups[i-1].pitch)>=2&&
+    Math.abs(g.pitch-groups[i-1].pitch)<12)&&
+   groups.some(g=>Math.abs(g.pitch-n.pitchMidi)<.7);
+  if(!stable){
+   // Pitch inconsistency may be a real ornament or model error. Keep the
+   // Spotify note unchanged rather than inventing a multi-note phrase.
+   const candidate={...n};markReview(candidate);withTransitions.push(candidate);
    continue;
   }
-  const first={...n,startTimeSeconds:start,durationSeconds:edge-start,pitchMidi:m1};
-  const second={...n,startTimeSeconds:edge,durationSeconds:start+length-edge,pitchMidi:m2};
-  markReview(first);markReview(second);
-  withTransitions.push(first,second);summary.noteSplits++;
+  for(let i=0;i<groups.length;i++){
+   const fragment={...n,startTimeSeconds:positions[i],
+    durationSeconds:positions[i+1]-positions[i],pitchMidi:groups[i].pitch};
+   markReview(fragment);withTransitions.push(fragment);
+  }
+  summary.noteSplits+=groups.length-1;
  }
  summary.review=withTransitions.filter(n=>n.octaveStatus==='review'||n.qualityStatus==='review'||n.octaveStatus==='corrected'||n.qualityStatus==='corrected').length;
  return {notes:withTransitions,summary};
