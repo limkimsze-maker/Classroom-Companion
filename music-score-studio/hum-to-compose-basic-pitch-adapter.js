@@ -414,6 +414,30 @@ export function toSingleMelody(noteEvents,maxDuration=20,sourcePcm=null,rate=220
  }).filter(n=>n.duration>=.025);
 }
 
+/* A window boundary is not itself a musical note attack.
+   Merge same-pitch fragments only if the actual waveform stays voiced and
+   there is no independent attack around the seam. Genuine repeated notes
+   remain separate and retain the model's original pitches/timestamps. */
+export function canJoinWindowNotes(previous,current,audioBuffer){
+ if(!previous||!current||previous.midi===null||
+  previous.midi!==current.midi||
+  !Number.isInteger(previous.sectionIndex)||!Number.isInteger(current.sectionIndex)||
+  current.sectionIndex!==previous.sectionIndex+1||
+  Math.abs(previous.end-current.start)>=.055||
+  !audioBuffer||!Number.isFinite(audioBuffer.sampleRate))return false;
+ const start=Math.max(0,Math.min(previous.end,current.start)-.15);
+ const until=Math.max(previous.end,current.start)+.15;
+ const full=Number.isFinite(audioBuffer.duration)?audioBuffer.duration:
+  audioBuffer.length/audioBuffer.sampleRate;
+ if(!(until<=full))return false;
+ let pcm;
+ try{pcm=resampleMono(audioBuffer,until-start,start)}
+ catch(_){return false}
+ const prevEnd=previous.end-start,nextStart=current.start-start;
+ return continuousPhonationAcross(pcm,22050,Math.min(prevEnd,nextStart),Math.max(prevEnd,nextStart))&&
+  !hasIndependentReattack(pcm,22050,nextStart);
+}
+
 // Independent 20-second inferences with one second overlap keep memory bounded.
 // Each window owns its middle interval; boundary fragments are marked for review.
 export function recordingWindows(duration,windowSeconds=20,overlapSeconds=1){
@@ -473,9 +497,7 @@ export async function recognise(audioBuffer,onProgress=()=>{},pitchEstimator=nul
  const combined=[];
  for(const event of ordered){
   const prev=combined.at(-1);
-  if(prev&&prev.midi!==null&&event.midi===prev.midi&&
-   prev.sectionIndex!==event.sectionIndex&&Math.abs(prev.end-event.start)<.055){
-   const previousEnd=prev.end;
+  if(canJoinWindowNotes(prev,event,audioBuffer)){
    prev.end=Math.max(prev.end,event.end);prev.duration=prev.end-prev.start;
    prev.confidence=Math.min(prev.confidence,event.confidence);
    prev.qualityStatus='review'; // Independent reattack near a seam needs teacher review.
