@@ -89,7 +89,8 @@ async function downloadedText(){
  await test('MusicXML export preserves B-flat and chosen bass clef',async()=>{
   elem('xml').click();
   const saved=await downloadedText();
-  assert.equal(saved.name,'hum-to-compose.musicxml');
+  assert.equal(saved.name,'My melody.musicxml');
+  assert.match(saved.content,/<work-title>My melody<\/work-title>/);
   assert.match(saved.content,/<fifths>-2<\/fifths>/);
   assert.match(saved.content,/<step>B<\/step><alter>-1<\/alter>/);
   assert.match(saved.content,/<clef><sign>F<\/sign><line>4<\/line><\/clef>/);
@@ -134,14 +135,18 @@ async function downloadedText(){
   await elem('saveSession').click();
   const saved=JSON.parse((await downloadedText()).content);
   assert.equal(saved.originalAudioBase64,'AQIDBA==');
+  assert.equal(saved.name,'My melody');
   assert.equal(saved.detectedEvents[0].midi,60);
  });
  await test('Local save/reopen keeps chosen key, clef and notes',async()=>{
   elem('keyFifths').value='1';elem('keyFifths').handlers.change();
   elem('clefMode').value='bass';elem('clefMode').handlers.change();
+  elem('scoreName').value='Saved in browser';
   elem('saveLocal').click();
   elem('clear').click();
+  elem('scoreName').value='Unsaved name';
   elem('loadLocal').click();
+  assert.equal(elem('scoreName').value,'Saved in browser');
   assert.equal(elem('keyFifths').value,'1');
   assert.equal(elem('clefMode').value,'bass');
   assert.match(elem('scoreHint').textContent,/note groups/);
@@ -151,6 +156,56 @@ async function downloadedText(){
   await importJSON({meter:'4/4',tempo:96,fifths:8,notes:[{midi:64,beats:1}]});
   assert.match(elem('status').textContent,/Could not open score/);
   assert.equal(elem('score').innerHTML,before);
+ });
+ await test('Save Score downloads a portable file with the chosen name',async()=>{
+  const title='Moonlight & Morning';
+  elem('scoreName').value=title;elem('save').click();
+  const downloaded=await downloadedText(),saved=JSON.parse(downloaded.content);
+  assert.equal(downloaded.name,title+'.music-score.json');
+  assert.equal(saved.name,title);
+  assert.equal(saved.notes[0].midi,60);
+  assert.equal(saved.clefMode,'bass');
+  assert.equal(saved.fifths,1);
+  elem('scoreName').value='Draft name';elem('clear').click();
+  await importJSON(saved);
+  assert.equal(elem('scoreName').value,title);
+  assert.equal(elem('clefMode').value,'bass');
+  assert.equal(elem('keyFifths').value,'1');
+  assert.ok(elem('score').innerHTML.includes('class="head"'));
+ });
+ await test('Names including non-English characters save safely',async()=>{
+  elem('scoreName').value='中文旋律: My / Song?';
+  elem('save').click();
+  const file=await downloadedText(),saved=JSON.parse(file.content);
+  assert.equal(saved.name,'中文旋律: My / Song?');
+  assert.equal(file.name,'中文旋律- My - Song-.music-score.json');
+  await importJSON(saved);
+  assert.equal(elem('scoreName').value,'中文旋律: My / Song?');
+  elem('scoreName').value='   ';elem('save').click();
+  assert.equal(JSON.parse((await downloadedText()).content).name,'My melody');
+  assert.equal((await downloadedText()).name,'My melody.music-score.json');
+ });
+ await test('Open legacy untitled score; MusicXML and sessions use current name',async()=>{
+  await importJSON({format:'music-score-studio-hum-test-v2',meter:'4/4',tempo:96,
+   clefMode:'treble',fifths:0,notes:[{midi:60,beats:1}]});
+  assert.equal(elem('scoreName').value,'My melody');
+  elem('scoreName').value='The New Score';
+  elem('xml').click();
+  const xml=await downloadedText();
+  assert.equal(xml.name,'The New Score.musicxml');
+  assert.match(xml.content,/<work-title>The New Score<\/work-title>/);
+  await elem('saveSession').click();
+  const session=await downloadedText();
+  assert.equal(session.name,'The New Score-session.json');
+  assert.equal(JSON.parse(session.content).name,'The New Score');
+ });
+ await test('Invalid file title cannot overwrite the current score',async()=>{
+  const before=elem('score').innerHTML;
+  await importJSON({name:'a'.repeat(81),format:'music-score-studio-hum-test-v2',
+   meter:'4/4',tempo:96,notes:[{midi:72,beats:1}]});
+  assert.match(elem('status').textContent,/Could not open score/);
+  assert.equal(elem('score').innerHTML,before);
+  assert.equal(elem('scoreName').value,'The New Score');
  });
  await test('No global keyboard shortcut captures Tab or button activation',async()=>{
   assert.ok(!/window\.addEventListener\(['"]keydown/.test(script));
