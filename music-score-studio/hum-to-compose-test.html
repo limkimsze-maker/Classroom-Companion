@@ -83,7 +83,7 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <button id="add" type="button">+ Note</button><button id="rest" type="button">+ Rest</button><button id="toggle" type="button" disabled>Note ↔ Rest</button><button id="remove" type="button" disabled>Delete</button>
 <button id="undo" type="button" disabled>↶ Undo</button><button id="redo" type="button" disabled>↷ Redo</button>
 <button id="clear" type="button" disabled>Clear score</button>
-</div><details id="exportOptions" class="calibration"><summary>More saving options · Download and MusicXML</summary><div class="controls"><button id="download" type="button" disabled>↓ Download score file</button><button id="xml" type="button" disabled>↓ MusicXML</button><button id="saveSession" type="button" disabled>↓ Save session with recording</button></div><p>MusicXML opens in other notation software. A session file can include the original recording and recognised melody; treat it as a private file.</p></details><p class="small muted" id="reviewInfo" aria-live="polite">Tap a note to see its pitch, duration and confidence.</p><p class="small muted" style="margin-top:9px">Amber ? = uncertain transcription. Select a symbol to correct it. Pitch arrows move by one semitone. 6/8 tempo counts dotted crotchets. Your recording stays on this device.</p>
+</div><details id="exportOptions" class="calibration"><summary>More saving options · Download and MusicXML</summary><div class="controls"><button id="download" type="button" disabled>↓ Download score file</button><button id="xml" type="button" disabled>↓ MusicXML</button><button id="saveSession" type="button" disabled>↓ Save session with recording</button></div><p>MusicXML opens in other notation software. A session file can include the original recording and recognised melody; treat it as a private file.</p></details><p class="small muted" id="reviewInfo" aria-live="polite">Tap a note to see its pitch, duration and confidence.</p><p class="small muted" style="margin-top:9px">Amber ring = uncertain transcription (tap to review). Select a symbol to correct it. Pitch arrows move by one semitone. 6/8 tempo counts dotted crotchets. Your recording stays on this device.</p>
 </section>
 <p class="footer">Experimental demonstration only · One melody at a time · Rhythm detection remains approximate · Teachers must review before classroom use<br>Music Score Studio developed by Lim Kim Sze · Master Javis Lim contributed helpful user feedback.<br>Any errors or inaccuracies in Music Score Studio are solely my responsibility.<br>Prototype code is provided under <a href="https://github.com/limkimsze-maker/Classroom-Companion/blob/main/music-score-studio/LICENSE" target="_blank" rel="noopener noreferrer">GNU AGPL-3.0</a>.<br>Default humming recognition uses Spotify Basic Pitch © 2022 Spotify AB, <a href="https://github.com/spotify/basic-pitch-ts" target="_blank" rel="noopener noreferrer">source</a>, <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache 2.0 licence</a>; <a href="./hum-to-compose-third-party-notices.md" target="_blank" rel="noopener noreferrer">third-party attribution and licences</a>. Not affiliated with Spotify.</p>
 </main>
@@ -257,9 +257,25 @@ function writtenPitchName(n){if(n.midi===null)return 'Rest';
  return ['C','D','E','F','G','A','B'][s.step]+(s.alter===-1?'♭':s.alter===1?'♯':'')+s.octave;
 }
 function noteDiatonic(n){const s=n.spelling||C.spellingForKey(n.midi,keyFifths());return (s.octave+1)*7+s.step}
-function clefOf(){const forced=clefMode();if(forced!=='auto')return forced;
- const pitched=notes.filter(n=>n.midi!==null).map(n=>n.midi).sort((a,b)=>a-b);
- return !pitched.length||pitched[Math.floor(pitched.length/2)]>=60?'treble':'bass'}
+function clefOf(){
+ const forced=clefMode();if(forced!=='auto')return forced;
+ // Choose the clef requiring less extreme ledger-line notation, rather than
+ // basing the whole score on a single median MIDI pitch.
+ const pitched=notes.filter(n=>n.midi!==null);
+ if(!pitched.length)return 'treble';
+ const cost=clef=>{
+  const lower=clef==='treble'?C.spelling(64):C.spelling(43);
+  const bottom=(lower.octave+1)*7+lower.step;
+  return pitched.reduce((sum,n)=>{
+   const step=noteDiatonic(n)-bottom,excess=Math.max(0,-step,step-8);
+   return sum+excess*excess;
+  },0);
+ };
+ return cost('treble')<=cost('bass')?'treble':'bass';
+}
+function writtenDiatonic(n,clef){
+ return noteDiatonic(n)+7*C.engravingOctaveShift(n,clef,keyFifths());
+}
 function restGlyph(n,x,base){const d=n.beats,root=n.fullMeasureRest?4:([.375,.75,1.5,3].includes(d)?d/1.5:d),dot=!n.fullMeasureRest&&[.375,.75,1.5,3].includes(d);
  let art='',y=base+25;
  if(root>=4)art=el('rect',{class:'rest-symbol',x:x-8,y:base+10,width:16,height:7,fill:'#29495d'});
@@ -273,7 +289,8 @@ function glyph(p,base,clef,beamInfo=null){
  const n=p.n,x=p.x,isRest=n.midi===null,beamed=!!beamInfo;let inner='',y=base+20;
  if(isRest)inner=restGlyph(n,x,base);
  else{
-  const lower=clef==='treble'?C.spelling(64):C.spelling(43),step=noteDiatonic(n)-((lower.octave+1)*7+lower.step);y=base+40-step*5;
+  const lower=clef==='treble'?C.spelling(64):C.spelling(43),shift=C.engravingOctaveShift(n,clef,keyFifths());
+   const step=writtenDiatonic(n,clef)-((lower.octave+1)*7+lower.step);y=base+40-step*5;
   for(let line=-2;line>=step;line-=2)inner+=el('line',{class:'ledger',x1:x-15,x2:x+15,y1:base+40-line*5,y2:base+40-line*5});
   for(let line=10;line<=step;line+=2)inner+=el('line',{class:'ledger',x1:x-15,x2:x+15,y1:base+40-line*5,y2:base+40-line*5});
   if(n.displayAccidental)inner+=el('text',{class:'accidental',x:x-27,y:y+6},esc(n.displayAccidental));
@@ -285,7 +302,14 @@ function glyph(p,base,clef,beamInfo=null){
   }
   // Augmentation dots belong in a space, never directly on a stave line.
    if(dot)inner+=el('circle',{class:'augmentation-dot',cx:x+18,cy:y-(step%2===0?5:0),r:2.5,fill:'#233f53'});
-  if(n.uncertain&&!n.reviewed)inner+=el('circle',{class:'uncertain-ring',cx:x,cy:y,r:16})+el('text',{x:x+11,y:y-14,'font-size':16,fill:'#bb7500','font-weight':'bold'},'?');
+  if(shift){
+    const above=shift<0,label=(Math.abs(shift)===2?'15m':'8v')+(above?'a':'b');
+    const markY=above?y-27:y+30,bracketY=above?y-21:y+22;
+    inner+=el('text',{class:'octave-mark',x:x-22,y:markY,'font-size':13,'font-weight':'bold'},label);
+    inner+=el('path',{class:'octave-bracket',d:'M '+(x+12)+' '+bracketY+' h 18 v '+(above?6:-6),fill:'none',stroke:'#446477','stroke-width':1.4,'stroke-dasharray':'3 3'});
+   }
+   // Amber halos signal teacher review, not a printed question mark on each note.
+   if(n.uncertain&&!n.reviewed)inner+=el('circle',{class:'uncertain-ring',cx:x,cy:y,r:15});
  }
  const isSelected=selected===n.origin,cls='event'+(isRest?' rest':' note')+(isSelected?' selected':'');
  return el('g',{class:cls,'data-origin':n.origin,tabindex:0,role:'button','aria-label':(n.fullMeasureRest?'Select full-bar rest in '+meter():'Select '+(isRest?'rest':writtenPitchName(n))+' '+(C.NAMES[String(n.beats)]||n.beats+' beats'))+(n.uncertain&&!n.reviewed?' uncertain':''),'aria-pressed':isSelected},inner);
@@ -318,7 +342,7 @@ function render(){
    ' · Recognition confidence: '+Math.round((candidate.confidence??1)*100)+'%'+
    (candidate.reviewed?' · Teacher checked':candidate.uncertain?' · Please review':' · Ready to review');
  if(valid){$('duration').value=String(notes[selected].beats);$('accidental').value=isNote?String((notes[selected].spelling||C.spellingForKey(notes[selected].midi,keyFifths())).alter):'keep'}
- const allBars=C.displayAccidentals(C.measures(notes,meter()),keyFifths()),rows=[],clef=clefOf();
+ const clef=clefOf(),allBars=C.displayAccidentals(C.measures(notes,meter()),keyFifths(),clef),rows=[];
  const totalBars=allBars.length,pages=Math.max(1,Math.ceil(totalBars/BARS_PER_PAGE));
  scorePage=Math.max(0,Math.min(scorePage,pages-1));
  const pageStart=scorePage*BARS_PER_PAGE,bars=allBars.slice(pageStart,pageStart+BARS_PER_PAGE);
@@ -353,7 +377,7 @@ function render(){
    // middle stave line generally stem down, below generally stem up.
    beam.groups.forEach(g=>{
     const lower=clef==='treble'?C.spelling(64):C.spelling(43),centre=(lower.octave+1)*7+lower.step;
-    const steps=g.group.map(pt=>noteDiatonic(pt.n)-centre);
+    const steps=g.group.map(pt=>writtenDiatonic(pt.n,clef)-centre);
     const higher=steps.filter(step=>step>=4).length,lowerCount=steps.length-higher;
     const above=Math.max(...steps.map(step=>step-4)),below=Math.max(...steps.map(step=>4-step));
     g.stemUp=higher===lowerCount?below>above:lowerCount>higher;
@@ -383,10 +407,10 @@ function render(){
  });
  for(let i=0;i<all.length-1;i++){const a=all[i],b=all[i+1];if(!a.n.tieNext||a.n.midi===null||a.n.origin!==b.n.origin)continue;
   const lower=clef==='treble'?C.spelling(64):C.spelling(43),centre=(lower.octave+1)*7+lower.step+4;
-  const tieAbove=a.beamUp===false||(a.beamUp===undefined&&noteDiatonic(a.n)>=centre);
+  const tieAbove=a.beamUp===false||(a.beamUp===undefined&&writtenDiatonic(a.n,clef)>=centre);
   const offset=tieAbove?-10:10,curve=tieAbove?-19:19;
   const tieStart=[.375,.75,1.5,3].includes(a.n.beats)?23:9;
-  const ypos=p=>p.base+40-(noteDiatonic(p.n)-((lower.octave+1)*7+lower.step))*5+offset;
+  const ypos=p=>p.base+40-(writtenDiatonic(p.n,clef)-((lower.octave+1)*7+lower.step))*5+offset;
   if(a.row===b.row){const x1=a.x+tieStart,x2=b.x-9,y=ypos(a);
    out+=el('path',{class:'tie',d:'M '+x1+' '+y+' Q '+((x1+x2)/2)+' '+(y+curve)+' '+x2+' '+y})}
   else{const x1=a.x+tieStart,y1=ypos(a),x2=b.x-9,y2=ypos(b);
@@ -398,10 +422,10 @@ function render(){
   if(!p||p.n.midi===null)return;
   const lower=clef==='treble'?C.spelling(64):C.spelling(43);
   const centre=(lower.octave+1)*7+lower.step+4;
-  const above=p.beamUp===false||(p.beamUp===undefined&&noteDiatonic(p.n)>=centre);
+  const above=p.beamUp===false||(p.beamUp===undefined&&writtenDiatonic(p.n,clef)>=centre);
   const offset=above?-10:10,curve=above?-19:19;
   const startOffset=[.375,.75,1.5,3].includes(p.n.beats)?23:9;
-  const y=p.base+40-(noteDiatonic(p.n)-((lower.octave+1)*7+lower.step))*5+offset;
+  const y=p.base+40-(writtenDiatonic(p.n,clef)-((lower.octave+1)*7+lower.step))*5+offset;
   const x1=comingFromPrevious?100:p.x+startOffset,x2=comingFromPrevious?p.x-9:878;
   out+=el('path',{class:'tie',d:'M '+x1+' '+y+' Q '+((x1+x2)/2)+' '+(y+curve)+' '+x2+' '+y});
  }
