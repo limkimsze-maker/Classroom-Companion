@@ -368,7 +368,7 @@ function auditScore(score,meter,maxBeats=null){
  if(!METERS[meter]||!Array.isArray(score)||score.length>MAX_SAFE_SCORE_EVENTS)return {ok:false,reason:'Invalid or overly large notation input'};
  const limit=maxBeats===null?maxTranscriptionBeats(meter):maxBeats;
  let beats=0;for(const note of score){
-  if(!Number.isFinite(note.beats)||note.beats<.25||Math.round(note.beats*8)!==note.beats*8)
+  if(!Number.isFinite(note.beats)||note.beats<.125||Math.round(note.beats*8)!==note.beats*8)
    return {ok:false,reason:'Invalid note or rest duration'};
   if(note.midi!==null&&(!Number.isInteger(note.midi)||note.midi<36||note.midi>95))
    return {ok:false,reason:'Invalid note pitch'};
@@ -600,7 +600,7 @@ function validateScore(data){if(!data||!METERS[data.meter]||!(data.tempo>=30&&da
   const duration=data.notes.reduce((sum,n)=>sum+Number(n?.beats||0),0);
   if(!Number.isFinite(duration)||duration>MAX_SAFE_SCORE_BEATS)throw Error('Score is too large for this browser');
  return data.notes.map(n=>{if(n.midi!==null&&(!Number.isInteger(n.midi)||n.midi<36||n.midi>95))throw Error('Invalid pitch');
- if(!Number.isFinite(n.beats)||n.beats<.25||n.beats>maxTranscriptionBeats(data.meter)||Math.abs(n.beats*8-Math.round(n.beats*8))>.001)throw Error('Invalid length');
+ if(!Number.isFinite(n.beats)||n.beats<.125||n.beats>maxTranscriptionBeats(data.meter)||Math.abs(n.beats*8-Math.round(n.beats*8))>.001)throw Error('Invalid length');
  const s=n.spelling;if(s&&(s.step<0||s.step>6||s.alter<-1||s.alter>1||midiFromSpelling(s)!==n.midi))throw Error('Invalid accidental');
  return {midi:n.midi,beats:n.beats,confidence:typeof n.confidence==='number'?Math.min(1,Math.max(0,n.confidence)):1,uncertain:!!n.uncertain,reviewed:!!n.reviewed,...(s?{spelling:{...s}}:{})};
  })}
