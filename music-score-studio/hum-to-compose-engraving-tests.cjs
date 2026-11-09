@@ -168,12 +168,13 @@ let passed=0;async function check(name,fn){
  });
  await check('System spacing accommodates very high and low notes without clipping',async()=>{
   const svg=await engraved('4/4',[
-   {midi:95,beats:4,uncertain:true},{midi:36,beats:4,uncertain:true}
+   {midi:95,beats:4,uncertain:true},{midi:36,beats:4,uncertain:true},
+   {midi:57,beats:4}
   ],{clefMode:'bass'});
   const view=elem('score').viewBox.split(' ').map(Number),height=view[3];
   const staffYs=[...svg.matchAll(/<line class="staff"[^>]*y1="([^"]+)"/g)].map(x=>Number(x[1]));
   const positions=notePosition(svg);
-  assert.equal(positions.length,2);
+  assert.equal(positions.length,3);
   assert.equal(staffYs.length,10,'Expected two systems');
   const y1=Math.min(...staffYs.slice(0,5)),y2=Math.min(...staffYs.slice(5,10));
   assert.ok(y1>25,'First system is too close to top edge');
