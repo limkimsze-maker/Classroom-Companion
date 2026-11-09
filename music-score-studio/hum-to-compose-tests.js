@@ -3,6 +3,9 @@
 (function(root){'use strict';
  const C=typeof module==='object'&&module.exports?require('./hum-to-compose-core.js'):root.HumCore;
  const results=[];const assert=(cond,msg)=>{if(!cond)throw Error(msg||'assertion failed')};
+ assert.equal=(actual,expected,message)=>assert(actual===expected,message||'Expected '+expected+', got '+actual);
+ assert.deepEqual=(actual,expected,message)=>assert(JSON.stringify(actual)===JSON.stringify(expected),message||'Objects differ');
+ assert.throws=(fn)=>{let rejected=false;try{fn()}catch(_){rejected=true}assert(rejected,'Expected an error')};
  const near=(a,b,tol=.3)=>assert(a!=null&&Math.abs(a-b)<=tol,'Expected '+b+', got '+a);
  function test(name,fn){try{fn();results.push({name,ok:true})}catch(e){results.push({name,ok:false,error:e.message})}}
  const tone=(hz,amp=.4,harmonic=0,rate=44100)=>{const b=new Float32Array(4096);for(let i=0;i<b.length;i++){const t=i/rate;b[i]=amp*Math.sin(2*Math.PI*hz*t)+harmonic*Math.sin(4*Math.PI*hz*t)}return b};
