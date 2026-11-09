@@ -74,7 +74,7 @@ async function main(){
   });
   await saving.waitForFunction(()=>document.getElementById('scoreName').value==='High bass review',null,{timeout:10000});
   const highNote=saving.locator('#score g.event.note').nth(1);
-  assert.equal(await highNote.locator('.octave-mark').innerText(),'8va');
+  assert.equal(await highNote.locator('.octave-mark').textContent(),'8va');
   assert.ok(await highNote.locator('.ledger').count()<=2,'High bass note still has excessive ledger lines');
   assert.equal(await highNote.locator('.uncertain-ring').count(),1,'Teacher-review indicator lost');
   assert.equal(await saving.locator('#score text').filter({hasText:/^\?$/}).count(),0,'Unnecessary question marks remain');
