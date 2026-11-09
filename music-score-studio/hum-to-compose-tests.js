@@ -96,10 +96,10 @@
    const out=C.transcribeDetectedEvents([{midi:60.37,duration:.38,confidence:.58,points:[{midi:60.32},{midi:60.48}]}],120,'4/4');
    assert(out.length===1&&out[0].uncertain&&out[0].confidence===.58);
   });
-  test('Stable score respects metre and 64-beat cap',()=>{
+  test('Stable score respects metre-aware 40-bar cap',()=>{
    for(const m of ['2/4','3/4','4/4','6/8']){
     const score=C.transcribeDetectedEvents(Array(100).fill(null).map(()=>({midi:60,duration:.5,confidence:1,points:[]})),120,m);
-    assert(score.reduce((s,n)=>s+n.beats,0)<=64.001,'cap '+m);
+    assert(score.reduce((s,n)=>s+n.beats,0)<=40*C.METERS[m].beats+.001,'cap '+m);
     assert(C.measures(score,m)[0].reduce((s,n)=>s+n.beats,0)<=C.METERS[m].beats,'bar '+m);
    }
   });
@@ -171,19 +171,47 @@
    const n=C.transcribeAlignedEvents(e,120,'4/4');
    assert(n.length===1&&n[0].midi===64&&n[0].uncertain,'teacher review missing');
   });
-  test('Aligned transcription handles 6/8 and a 64-beat cap',()=>{
+  test('Aligned transcription supports 40 bars in every metre',()=>{
    for(const metre of ['2/4','3/4','4/4','6/8']){
     const beat=C.beatSeconds(120,metre),events=Array.from({length:100},(_,i)=>({
      start:i*beat,end:(i+1)*beat,duration:beat,midi:60,confidence:.95
     }));
     const s=C.transcribeAlignedEvents(events,120,metre),sum=s.reduce((n,x)=>n+x.beats,0);
-    assert(sum<=64.001&&sum>=63.75,'wrong cap '+metre+' '+sum);
+    const expected=Math.min(100,40*C.METERS[metre].beats);
+     assert(Math.abs(sum-expected)<.001,'wrong 40-bar cap '+metre+' '+sum+' expected '+expected);
     assert(C.auditScore(s,metre).ok,'audit failed '+metre);
     for(const bar of C.measures(s,metre))
      assert(bar.reduce((n,x)=>n+x.beats,0)<=C.METERS[metre].beats+.001,'overfilled bar '+metre);
    }
   });
-  test('Score audit permits dotted semiquavers and rejects illegal values',()=>{
+  test('Full 20-second fast 6/8 performance retains its last note',()=>{
+    const metre='6/8',bpm=200,beat=C.beatSeconds(bpm,metre);
+    const events=Array.from({length:100},(_,i)=>({
+     start:i*beat,end:(i+1)*beat,duration:beat,midi:60+i%7,confidence:.98
+    }));
+    const score=C.transcribeAlignedEvents(events,bpm,metre);
+    assert(score.filter(n=>n.midi!==null).length===100,'Fast 20-second melody lost notes');
+    near(score.reduce((s,n)=>s+n.beats,0),100,.001);
+    assert(C.auditScore(score,metre).ok,'40-bar audit rejected complete melody');
+    assert(C.measures(score,metre).length===34,'Expected 34 6/8 bars');
+   });
+   test('20-second held note survives engraving, MusicXML and save/reopen',()=>{
+    const score=C.transcribe(frames([[60,20]],.025),200,'6/8');
+    assert(score.length===1&&score[0].beats===100,'Held pitch was clipped');
+    assert(C.measures(score,'6/8').length===34,'Held pitch was clipped in bar splitting');
+    assert(C.validateScore({meter:'6/8',tempo:200,notes:score})[0].beats===100,'Saved held pitch cannot reopen');
+    const xml=C.scoreToMusicXML(score,'6/8',200);
+    assert((xml.match(/<measure /g)||[]).length===34,'MusicXML lost part of the held note');
+   });
+   test('40-bar limits reject overflow but permit complete final bar',()=>{
+    for(const [metre,spec] of Object.entries(C.METERS)){
+     const full=Array.from({length:40},()=>({midi:60,beats:spec.beats}));
+     assert(C.auditScore(full,metre).ok,'Full 40 bars rejected '+metre);
+     assert(!C.auditScore([...full,{midi:62,beats:.25}],metre).ok,'41st bar accepted '+metre);
+     assert(C.auditScore([...full,{midi:62,beats:.25}],metre,Infinity).ok,'Explicit teacher override rejected');
+    }
+   });
+   test('Score audit permits dotted semiquavers and rejects illegal values',()=>{
    assert(C.auditScore([{midi:60,beats:.375}], '4/4').ok,'dotted semiquaver rejected');
    assert(!C.auditScore([{midi:60,beats:.125}], '4/4').ok,'too-short note accepted');
    assert(!C.auditScore([{midi:60,beats:1.1}], '4/4').ok,'invalid beat accepted');
