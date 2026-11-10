@@ -32,6 +32,11 @@ async function main(){
   const saving=await ctx.newPage(),pageErrors=[];
   saving.on('pageerror',error=>pageErrors.push(error.message));
   await saving.goto('http://127.0.0.1:'+port+'/music-score-studio/hum-to-compose-test.html');
+  assert.equal(await saving.locator('#record').innerText(),'🎤 Record');
+  assert.equal(await saving.locator('#finish').count(),0,'Duplicate Finish button returned');
+  assert.equal(await saving.locator('#loadLocal').count(),0,'Duplicate library launcher returned');
+  assert.equal(await saving.locator('#play').innerText(),'▶ Play my music score');
+  await saving.locator('#examples summary').click();
   await saving.locator('#example').click();
   // The default visible score uses the exact OSMD 2.1.3 backend used by
   // the published Music Score Studio, not the approximation SVG.
@@ -41,6 +46,19 @@ async function main(){
    return !view.hidden&&host.querySelector('svg path,svg line,svg use')&&
     document.getElementById('engravingStatus').textContent.startsWith('Professional notation');
   },null,{timeout:60000});
+  assert.equal(await saving.locator('#comparePlayback').evaluate(e=>e.open),false);
+  await saving.locator('#comparePlayback summary').click();
+  assert.equal(await saving.locator('#original').isVisible(),true);
+  assert.equal(await saving.locator('#faithful').innerText(),'▶ Hear what AI detected');
+  await saving.locator('#comparePlayback summary').click();
+  await saving.locator('#calibration > summary').click();
+  await saving.locator('#advancedRhythm summary').click();
+  assert.equal(await saving.locator('#rebuild').isVisible(),true);
+  await saving.locator('#advancedRhythm summary').click();
+  await saving.locator('#transposeSteps').selectOption('1');
+  await saving.locator('#transpose').click();
+  await saving.locator('#undo').click();
+  await saving.locator('#calibration > summary').click();
   assert.equal(await saving.locator('#editableScoreArea').isVisible(),false);
   assert.ok(await saving.locator('#professionalScoreHost svg').count()>0,'OSMD did not engrave a readable score');
   await saving.locator('#play').click();
@@ -64,7 +82,7 @@ async function main(){
   await saving.locator('#example').click();
   await saving.locator('#scoreName').fill('Evening Music');
   await saving.locator('#save').click();
-  await saving.reload();await saving.locator('#loadLocal').click();
+  await saving.reload();await saving.locator('#scoreLibrary summary').click();
   assert.equal(await saving.locator('#savedCount').innerText(),'2');
   await saving.locator('#savedScoreChoice').selectOption({label:'Morning Music'});
   await saving.locator('#openSaved').click();
@@ -92,7 +110,7 @@ async function main(){
   await saving.waitForFunction(()=>document.getElementById('scoreName').value==='Imported Music',null,{timeout:10000});
   assert.equal(await saving.locator('#scoreName').inputValue(),'Imported Music');
   await saving.locator('#save').click();
-  await saving.reload();await saving.locator('#loadLocal').click();
+  await saving.reload();await saving.locator('#scoreLibrary summary').click();
   assert.equal(await saving.locator('#savedCount').innerText(),'3');
   await saving.locator('#savedScoreChoice').selectOption({label:'Evening Music'});
   await saving.locator('#openSaved').click();
