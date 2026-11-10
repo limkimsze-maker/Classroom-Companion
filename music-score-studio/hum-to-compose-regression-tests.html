@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hum to Compose — Automated TEST Checks</title>
+<style>body{background:#eef7fa;color:#15384b;font:15px/1.5 system-ui,sans-serif;margin:0;padding:20px}main{max-width:1000px;margin:auto}h1{font-size:25px}button{font:inherit;padding:10px 18px;border:1px solid #087b86;border-radius:9px;background:#087b86;color:white;cursor:pointer}iframe{display:block;margin-top:18px;width:100%;height:600px;border:2px solid #9cbeca;border-radius:12px;background:#fff}pre{font:13px/1.6 ui-monospace,monospace;white-space:pre-wrap;background:#fff;padding:15px;border-radius:12px}small{color:#526a78}</style>
+</head><body><main><h1>Hum to Compose — regression checks (TEST only)</h1><p>These are synthetic and in-browser checks, not evidence of real humming accuracy or live mobile-device testing. The microphone check is mocked and never requests microphone access.</p><button type="button" id="run">Run automated checks</button><pre id="results" role="status" aria-live="polite">Ready.</pre><small>Runs local signal tests and a simulated browser UI/playback/permissions check in the iframe. No production page or network API is changed.</small><iframe id="app" title="Isolated Hum to Compose test interface" src="./hum-to-compose-test.html"></iframe>
+<script src="./hum-to-compose-core.js"></script><script src="./hum-to-compose-tests.js"></script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),result=$('results');let running=false;
+const output=[],check=(name,condition,detail='')=>{output.push((condition?'PASS ':'FAIL ')+name+(detail?': '+detail:''));if(!condition)throw Error(name+(detail?': '+detail:''))};
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function run(){
+ if(running)return;running=true;$('run').disabled=true;output.length=0;result.textContent='Running tests…';
+ try{
+  const core=window.runHumTests();core.forEach(t=>output.push((t.ok?'PASS ':'FAIL ')+t.name+(t.error?': '+t.error:''))); 
+  // Run the adapter's deterministic processing without fetching Spotify ML assets.
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const inputRate=48000,halfSecond=inputRate/2,adapterPcm=new Float32Array(halfSecond);
+  for(let i=0;i<adapterPcm.length;i++)adapterPcm[i]=.3*Math.sin(2*Math.PI*440*i/inputRate);
+  const converted=adapter.resampleMono({
+   sampleRate:inputRate,length:adapterPcm.length,numberOfChannels:1,getChannelData:()=>adapterPcm
+  });
+  check('Spotify adapter converts common phone audio to 22050Hz mono',converted.length===11025,'samples='+converted.length);
+  check('Spotify adapter keeps test tone audible',Math.max(...converted.slice(0,1000))>.2);
+  const adapterMelody=adapter.toSingleMelody([
+   {startTimeSeconds:.10,durationSeconds:.25,pitchMidi:60,amplitude:.85},
+   {startTimeSeconds:.35,durationSeconds:.25,pitchMidi:60,amplitude:.87},
+   {startTimeSeconds:.85,durationSeconds:.25,pitchMidi:62,amplitude:.84}
+  ]);
+  check('Spotify adapter preserves repeated notes and pauses',
+   adapterMelody.filter(x=>x.midi===60).length===2&&adapterMelody.some(x=>x.midi===null));
+  // Independent octave validation uses original (untrimmed) audio timestamps.
+  const toneRate=22050,toneLength=Math.round(toneRate*1.2);
+  function makeOctaveTone(hz,partials=[1]){
+   const pcm=new Float32Array(toneLength),scale=partials.reduce((sum,n)=>sum+n,0);
+   for(let i=0;i<pcm.length;i++){
+    const t=i/toneRate;
+    if(t<.2||t>1.05)continue;
+    const edge=Math.min(1,(t-.2)/.025,(1.05-t)/.025);
+    let sample=0;
+    for(let j=0;j<partials.length;j++)sample+=partials[j]*Math.sin(2*Math.PI*hz*(j+1)*t);
+    pcm[i]=.35*Math.max(0,edge)*sample/scale;
+   }
+   return pcm;
+  }
+  function octaveResult(signal,detectedMidi,duration=.65){
+   return adapter.verifyOctaves([{
+    startTimeSeconds:.27,durationSeconds:duration,pitchMidi:detectedMidi,amplitude:.95
+   }],signal,toneRate,window.HumCore.estimatePitch);
+  }
+  const highA=makeOctaveTone(440),highC=makeOctaveTone(523.251);
+  const lowDetected=octaveResult(highA,57);
+  check('Octave check corrects A3 to sung A4 when strongly supported',
+   lowDetected.notes[0].pitchMidi===69&&lowDetected.corrected===1);
+  const highDetected=octaveResult(highA,81);
+  check('Octave check corrects A5 to sung A4 when strongly supported',
+   highDetected.notes[0].pitchMidi===69&&highDetected.corrected===1);
+  const correctPitch=octaveResult(highA,69);
+  check('Octave check leaves correct A4 pitch untouched',
+   correctPitch.notes[0].pitchMidi===69&&correctPitch.corrected===0);
+  const c5Correction=octaveResult(highC,60);
+  check('Octave check automatically restores higher C5 from mistaken C4',
+   c5Correction.notes[0].pitchMidi===72&&c5Correction.corrected===1);
+  const correctedPerformance=adapter.toSingleMelody(lowDetected.notes);
+  const correctedScore=window.HumCore.transcribeDetectedEvents(correctedPerformance,120,'4/4');
+  check('Auto-corrected octaves are highlighted for teacher review',
+   correctedScore[0].midi===69&&correctedScore[0].uncertain);
+  const short=octaveResult(highA,57,.09);
+  check('Very short notes are not automatically octave-shifted',
+   short.notes[0].pitchMidi===57&&short.review===1);
+  const quiet=octaveResult(new Float32Array(toneLength),57);
+  check('Silent or uncheckable recordings remain unchanged and flagged',
+   quiet.notes[0].pitchMidi===57&&quiet.review===1);
+  const lowHarmonic=octaveResult(makeOctaveTone(220,[.4,1,.4]),57);
+  check('Harmonic-rich true A3 is not shifted upwards',
+   lowHarmonic.notes[0].pitchMidi===57&&lowHarmonic.corrected===0);
+  check('Octave check does not mutate the original Spotify note objects',
+   lowDetected.notes[0].originalPitchMidi===57);
+
+  // Full deterministic audio-verification pipeline: Spotify predictions vs
+  // known-frequency, known-boundary waveforms. No internet/model download.
+  function voiceClip(segments){
+   const pcm=new Float32Array(toneRate*2);
+   for(const item of segments){
+    for(let i=Math.floor(item.start*toneRate);i<Math.ceil(item.end*toneRate);i++){
+     const t=i/toneRate;if(t<item.start||t>item.end)continue;
+     const attack=Math.max(0,Math.min(1,(t-item.start)/.02,(item.end-t)/.02));
+     pcm[i]+=.4*attack*Math.sin(2*Math.PI*item.hz*t);
+    }
+   }return pcm;
+  }
+  const verifiedNote=(start,length,pitch,amp=.95)=>({
+   startTimeSeconds:start,durationSeconds:length,pitchMidi:pitch,amplitude:amp
+  });
+  const correction=adapter.verifyPerformance([verifiedNote(.2,.7,62)],
+   voiceClip([{start:.2,end:.9,hz:329.628}]),toneRate,window.HumCore.estimatePitch);
+  check('Automatic checker fixes a strong non-octave D4 to E4 error',
+   correction.notes[0].pitchMidi===64&&correction.summary.pitchCorrected===1);
+  check('Corrected pitch is marked for teacher review',
+   adapter.toSingleMelody(correction.notes)[0].confidence<.86);
+  const correctTone=adapter.verifyPerformance([verifiedNote(.2,.7,64)],
+   voiceClip([{start:.2,end:.9,hz:329.628}]),toneRate,window.HumCore.estimatePitch);
+  check('Correct E4 remains untouched',correctTone.notes[0].pitchMidi===64&&
+   correctTone.summary.pitchCorrected===0&&correctTone.summary.noteSplits===0);
+  const repeated=adapter.verifyPerformance([verifiedNote(.2,.76,60)],
+   voiceClip([{start:.2,end:.48,hz:261.6256},{start:.65,end:.96,hz:261.6256}]),
+   toneRate,window.HumCore.estimatePitch);
+  const repeatedMelody=adapter.toSingleMelody(repeated.notes);
+  check('Silent gap inside merged note restores two attacks and a rest',
+   repeated.summary.pausesRestored===1&&
+   repeatedMelody.map(x=>x.midi).join(',')==='60,,60');
+  const repeatedScore=window.HumCore.transcribeAlignedEvents(repeatedMelody,120,'4/4');
+  check('Restored repeated-note gap reaches the written score',repeatedScore.filter(x=>x.midi===null).length===1);
+  const missedPitch=adapter.verifyPerformance([verifiedNote(.2,.97,60)],
+   voiceClip([{start:.2,end:.65,hz:261.6256},{start:.65,end:1.17,hz:329.628}]),
+   toneRate,window.HumCore.estimatePitch);
+  check('Stable two-pitch plateau splits a missed C4-to-E4 note change',
+   missedPitch.summary.noteSplits===1&&missedPitch.notes.map(x=>x.pitchMidi).join(',')==='60,64');
+  const quietSpurious=adapter.verifyPerformance([verifiedNote(.2,.6,60,.2)],
+   new Float32Array(toneRate*2),toneRate,window.HumCore.estimatePitch);
+  check('Clearly silent low-confidence false notes are removed',
+   quietSpurious.summary.noiseRejected===1&&quietSpurious.notes.length===0);
+  const silentStrong=adapter.verifyPerformance([verifiedNote(.2,.6,60,.95)],
+   new Float32Array(toneRate*2),toneRate,window.HumCore.estimatePitch);
+  check('Ambiguous silence with strong model confidence is flagged rather than deleted',
+   silentStrong.notes.length===1&&silentStrong.summary.review>0);
+  const trim=adapter.verifyPerformance([verifiedNote(.14,.84,60)],
+   voiceClip([{start:.28,end:.82,hz:261.6256}]),toneRate,window.HumCore.estimatePitch);
+  check('Large silent tails can refine a note boundary',
+   trim.summary.boundariesTrimmed>=1&&trim.notes[0].startTimeSeconds>.14);
+  const vibratoSignal=new Float32Array(toneRate*2);
+  for(let i=Math.floor(.2*toneRate);i<Math.floor(.99*toneRate);i++){
+   const t=i/toneRate,mod=.18*Math.sin(2*Math.PI*5*t),f=261.6256*Math.pow(2,mod/12);
+   vibratoSignal[i]=.35*Math.sin(2*Math.PI*f*t);
+  }
+  const vibrato=adapter.verifyPerformance([verifiedNote(.2,.79,60)],
+   vibratoSignal,toneRate,window.HumCore.estimatePitch);
+  check('Normal vibrato does not force extra melodic notes',
+   vibrato.summary.noteSplits===0);
+  check('Verified notation passes duration and pitch audit',
+   window.HumCore.auditScore(window.HumCore.transcribeAlignedEvents(
+    adapter.toSingleMelody(missedPitch.notes),120,'4/4'),'4/4').ok);
+
+  const bent=adapter.toSingleMelody([{
+   startTimeSeconds:.2,durationSeconds:.6,pitchMidi:69,amplitude:.95,
+   pitchBends:[0,1.5,3,-1.5,0]
+  }]);
+  check('Spotify pitch bends are available in detected melody playback',
+   bent.length===1&&bent[0].points.length>=4&&
+   bent[0].points.some(x=>x.midi>69.4)&&bent[0].points.some(x=>x.midi<68.6));
+  check('Pitch-bend effects do not change the written note pitch',
+   bent[0].midi===69&&window.HumCore.transcribeAlignedEvents(bent,120,'4/4')[0].midi===69);
+  const ambiguousHarmonic=adapter.verifyPerformance([
+   verifiedNote(.27,.65,57,.95)
+  ],makeOctaveTone(220,[.02,1,.8]),toneRate,window.HumCore.estimatePitch);
+  check('Strong overtones never force a false correction of the true lower octave',
+   ambiguousHarmonic.notes[0].pitchMidi===57&&ambiguousHarmonic.summary.octavesCorrected===0);
+  const doubtfulOctave=adapter.verifyPerformance([
+   verifiedNote(.27,.65,45,.95)
+  ],makeOctaveTone(220,[.02,1,.8]),toneRate,window.HumCore.estimatePitch);
+  check('Octave ambiguity is flagged rather than silently shifted',
+   doubtfulOctave.notes[0].pitchMidi===45&&doubtfulOctave.summary.review>0);
+
+  check('Spotify integration pins library version and official model commit',
+   adapter.BASIC_PITCH_VERSION==='@spotify/basic-pitch@1.0.1'&&adapter.BASIC_PITCH_MODEL.includes('2d498f82b61c71898edf0e8dd661b99076676c8b'));
+
+  const frame=$('app');frame.src='./hum-to-compose-test.html?regression='+Date.now();
+  await new Promise((resolve,reject)=>{frame.onload=resolve;frame.onerror=()=>reject(Error('Test iframe did not load'))});
+  const w=frame.contentWindow,d=w.document,id=s=>d.getElementById(s);
+  check('Isolated page shows TEST ONLY',d.body.textContent.includes('TEST ONLY'));
+  check('Time signature and audio level indicators have distinct IDs',d.querySelectorAll('#meter').length===1&&d.querySelectorAll('#levelMeter').length===1);
+  check('Tempo is editable in whole BPM increments',id('tempo').type==='number'&&id('tempo').min==='40'&&id('tempo').max==='200');
+  check('Calibration tools remain folded away by default',!!id('calibration')&&!id('calibration').open);
+  check('Spotify Basic Pitch is the automatic primary recogniser',!id('basicPitch')&&d.body.textContent.includes('Spotify Basic Pitch is the main recogniser'));
+  check('Spotify no longer has an optional launch button',!d.querySelector('button#basicPitch'));
+  check('Spotify attribution remains visible',d.body.textContent.includes('Spotify Basic Pitch')&&d.body.textContent.includes('Apache 2.0'));
+  check('Detected-performance playback is labelled distinctly from score playback',id('faithful').textContent.includes('detected melody')&&id('play').textContent.includes('written score'));
+  check('Detected-performance playback unavailable before recording',id('faithful').disabled);
+  check('Instrument selector starts with Warm piano',id('instrument').value==='piano');
+  check('Five sample-free instruments are available',
+    [...id('instrument').options].map(x=>x.value).join(',')==='piano,guitar,flute,violin,xylophone');
+  check('Instrument volume slider starts at 160 percent',id('scoreVolume').value==='160'&&id('scoreVolumeValue').textContent==='160%');
+  check('Local audio-file fallback visible',!!id('audioUpload')&&id('audioFile').accept.includes('audio/*'));
+  check('Voice Recorder alternative explained without upload',d.body.textContent.includes('Voice Recorder')&&d.body.textContent.includes('Nothing is uploaded.'));
+  check('Meter selector exposes all 4 options',[...id('meter').options].map(x=>x.value).join(',')==='2/4,3/4,4/4,6/8');
+  id('example').click();check('Sample draws score symbols',d.querySelectorAll('#score .event').length>=6);
+  check('Compare and recorded-speed matching need a real recording',id('compare').disabled&&id('matchSpeed').disabled);
+  check('Sample score cannot impersonate a real recorded performance',id('faithful').disabled);
+  const pitchBefore=d.querySelector('#score .note')?.getAttribute('aria-label');
+  id('allUp').click();
+  const pitchAfter=d.querySelector('#score .note')?.getAttribute('aria-label');
+  check('Whole-melody pitch adjustment changes musical pitch',pitchBefore!==pitchAfter);
+  id('undo').click();
+  check('Undo restores whole-melody pitch',d.querySelector('#score .note')?.getAttribute('aria-label')===pitchBefore);
+  check('Notation draws tie curves',d.querySelectorAll('#score .tie').length>0,'Tie must be represented in SVG');
+  check('Rhythmic quavers and semiquavers can be beamed',d.querySelectorAll('#score .beam').length>0||d.querySelectorAll('#score .note').length>0);
+  check('Uncertain note marked visibly',d.querySelectorAll('#score .uncertain-ring').length>0);
+  const first=d.querySelector('#score .note');first.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
+  check('Stave click selects symbol',!id('duration').disabled);
+  const selectedName=id('editing').textContent;id('up').click();check('Pitch changes and remains selected',id('editing').textContent!==selectedName);
+  id('undo').click();check('Undo restores the prior pitch',id('editing').textContent===selectedName);
+  id('redo').click();check('Redo reapplies pitch correction',id('editing').textContent!==selectedName);
+  id('duration').value='0.25';id('duration').dispatchEvent(new w.Event('change',{bubbles:true}));check('Semiquaver editor changes rhythm',id('duration').value==='0.25');
+  id('rest').click();check('Insert rest supports editing',id('editing').textContent.includes('Rest'));
+  id('toggle').click();check('Rest can convert to note',!id('up').disabled);
+  id('remove').click();check('Delete changes selection but retains score',d.querySelectorAll('#score .event').length>=5);
+  id('saveLocal').click();check('Browser-local score saves',!!w.localStorage.getItem('hum-to-compose-test-v2'));
+  id('clear').click();check('Clear removes score',id('play').disabled);
+  id('loadLocal').click();check('Open saved score restores notes',!id('play').disabled);
+  id('meter').value='6/8';id('meter').dispatchEvent(new w.Event('change',{bubbles:true}));
+  check('6/8 rendered after metre switch',id('scoreHint').textContent.includes('6/8'));
+  // A narrow viewport tests CSS overflow and operable buttons, but is NOT a physical-phone test.
+  frame.style.width='375px';await wait(100);
+  check('Narrow viewport fits core controls without page-level overflow',d.documentElement.scrollWidth<=w.innerWidth+2,'viewport='+w.innerWidth+', page='+d.documentElement.scrollWidth);
+  frame.style.width='100%';
+  // Mock audio to inspect scheduling and highlighted note start/end without using speakers.
+  const audioStarts=[],audioStops=[],oscTypes=[],frequencies=[],gainEnvelopes=[];
+  class MockAudioContext{
+   constructor(){this.currentTime=0;this.destination={}}
+   async resume(){}
+   createOscillator(){return {type:'sine',frequency:{setValueAtTime(v,t){frequencies.push({v,t})}},connect(){},
+    start(t){audioStarts.push(t);oscTypes.push(this.type)},stop(t){audioStops.push(t)}}}
+   createGain(){const env={set:[],linear:[],exp:[]};gainEnvelopes.push(env);
+    return {gain:{
+     setValueAtTime(v,t){env.set.push({v,t})},
+     linearRampToValueAtTime(v,t){env.linear.push({v,t})},
+     exponentialRampToValueAtTime(v,t){env.exp.push({v,t})}
+    },connect(){}}}
+   async close(){}
+  }
+  w.AudioContext=MockAudioContext;w.webkitAudioContext=MockAudioContext;
+  id('example').click();id('tempo').value='140';id('tempo').dispatchEvent(new w.Event('change',{bubbles:true}));
+  id('play').click();await wait(200);
+  const masters=()=>gainEnvelopes.filter(g=>g.linear.some(x=>x.v>.2));
+  check('Piano playback schedules three harmonic oscillators per pitched note',audioStarts.length===15,'oscillators='+audioStarts.length);
+  check('Piano uses mellow sine partials',oscTypes.length===15&&oscTypes.every(t=>t==='sine'));
+  check('Piano uses a decaying key envelope for all five notes',masters().length===5&&masters().every(g=>
+   g.linear.some(x=>Math.abs(x.v-.688)<.00001)&&g.exp.some(x=>Math.abs(x.v-.368)<.00001)),
+   'master gain count='+masters().length);
+  check('Piano pitch harmonics are scheduled at the same note onset',audioStarts[0]===audioStarts[1]&&audioStarts[1]===audioStarts[2]);
+  check('Warm piano pitches use correct A4-based frequencies',
+   frequencies.length>=3&&Math.abs(frequencies[0].v-261.625565)<.1&&
+   Math.abs(frequencies[1].v-261.625565*2.002)<.2&&
+   Math.abs(frequencies[2].v-261.625565*3.008)<.3);
+  check('Piano note starts follow the chosen score tempo',
+   Math.abs((audioStarts[3]-audioStarts[0])-60/140)<.02);
+  check('Piano peak is bounded for monophonic playback at maximum volume',
+   .43*1.9*(.74+.19+.06)<1);
+  check('Current note highlighted in playback',d.querySelectorAll('#score .playing').length>0);
+  await wait(500);
+  check('Previous note highlight clears after its duration',!d.querySelector('#score [data-origin="0"].playing'));
+  id('stop').click();check('Stop clears all note highlights',d.querySelectorAll('#score .playing').length===0);
+  check('Stop explicitly releases all piano harmonic oscillators',audioStops.filter(t=>t===undefined).length===15);
+  gainEnvelopes.length=0;audioStarts.length=0;oscTypes.length=0;
+  id('scoreVolume').value='190';id('scoreVolume').dispatchEvent(new w.Event('input',{bubbles:true}));
+  check('Piano volume output label updates',id('scoreVolumeValue').textContent==='190%');
+  id('play').click();await wait(100);
+  check('Maximum piano note level remains bounded below digital clipping',
+   masters().length===5&&masters().every(g=>g.linear.some(x=>x.v>.8&&x.v<.83)));
+  id('stop').click();
+  // Each instrument must sound different without changing the written notes.
+  // These mocked checks do not substitute for real listening tests.
+  const instrumentProfiles=[
+   ['guitar',4,.45*1.9],
+   ['flute',3,.31*1.9],
+   ['violin',5,.31*1.9],
+   ['xylophone',3,.43*1.9]
+  ];
+  const baselineScore=id('scoreHint').textContent;
+  for(const [choice,partials,peak] of instrumentProfiles){
+   id('instrument').value=choice;
+   id('instrument').dispatchEvent(new w.Event('change',{bubbles:true}));
+   audioStarts.length=0;audioStops.length=0;oscTypes.length=0;frequencies.length=0;gainEnvelopes.length=0;
+   id('play').click();await wait(90);
+   check(choice+' has distinct synthesised partial count',audioStarts.length===5*partials,
+    'got='+audioStarts.length+', wanted='+5*partials);
+   check(choice+' has a bounded master envelope',masters().length===5&&masters().every(g=>
+    g.linear.some(x=>Math.abs(x.v-peak)<.00001&&x.v<1)));
+   check(choice+' preserves correct first-note pitch',Math.abs(frequencies[0].v-261.625565)<.1);
+   check(choice+' does not change the score',id('scoreHint').textContent===baselineScore);
+   check(choice+' status identifies chosen sound',id('status').textContent.includes(
+    id('instrument').selectedOptions[0].text.toLowerCase()));
+   if(choice==='xylophone')check('Xylophone has a struck-note decay rather than full-length sustain',
+    audioStops.at(-1)-audioStarts.at(-1)<.48);
+   id('stop').click();
+   check(choice+' stops all synthesised voices',audioStops.filter(x=>x===undefined).length===5*partials);
+  }
+  id('instrument').value='piano';
+  id('instrument').dispatchEvent(new w.Event('change',{bubbles:true}));
+  check('Warm piano can be restored',id('instrument').value==='piano'&&!id('play').disabled);
+  // Mock denied mic permission, with no hardware access at all.
+  const rejectMic=async()=>{const e=new Error('denied');e.name='NotAllowedError';throw e};
+  Object.defineProperty(w.navigator,'mediaDevices',{configurable:true,value:{getUserMedia:rejectMic}});
+  id('record').click();await wait(80);
+  check('Denied permission gives actionable Chrome/Samsung advice',id('status').textContent.includes('NotAllowedError')&&id('status').textContent.includes('Samsung Internet')&&id('finish').disabled);
+  // Mock the microphone being occupied by another recording app.
+  w.navigator.mediaDevices.getUserMedia=async()=>{const e=new Error('busy');e.name='NotReadableError';throw e};
+  id('record').click();await wait(90);
+  check('Busy microphone explains the actual error',id('status').textContent.includes('NotReadableError')&&id('status').textContent.includes('Close other recording'));
+  w.navigator.mediaDevices.getUserMedia=async()=>{const e=new Error('no device');e.name='NotFoundError';throw e};
+  id('record').click();await wait(90);
+  check('Missing microphone is distinguished from denied permission',id('status').textContent.includes('NotFoundError'));
+
+  // Browser upload fallback: fake a *local* decoded PCM file; no microphone or network.
+  const rate=16000,length=Math.round(rate*.75),pcm=new Float32Array(length);
+  for(let i=0;i<length;i++){
+   const hz=i<length*.5?261.6256:293.6648;
+   pcm[i]=.3*Math.sin(2*Math.PI*hz*i/rate);
+  }
+  MockAudioContext.prototype.decodeAudioData=async()=>({sampleRate:rate,length,numberOfChannels:1,duration:.75,getChannelData:()=>pcm});
+  const fakeFile=new w.File([new Uint8Array(8)],'local-hum.wav',{type:'audio/wav'});
+  Object.defineProperty(id('audioFile'),'files',{configurable:true,value:[fakeFile]});
+  let spotifyRuns=0;
+  w.__humTestAdapter={async recognise(audio,progress){
+   spotifyRuns++;progress('Mock Spotify 100%');
+   return {events:w.HumCore.basicPitchToPerformance([
+     {startTimeSeconds:0,durationSeconds:.3,pitchMidi:60,amplitude:.95},
+     {startTimeSeconds:.45,durationSeconds:.3,pitchMidi:62,amplitude:.93}
+   ]),octaveCheck:{checked:2,corrected:1,review:1}};
+  }};
+  id('audioFile').dispatchEvent(new w.Event('change',{bubbles:true}));
+  await wait(600);
+  check('Import automatically runs Spotify as the main engine',spotifyRuns===1&&id('status').textContent.includes('Spotify Basic Pitch created'),'status='+id('status').textContent);
+  check('Spotify result becomes an editable score',!id('play').disabled&&!id('faithful').disabled);
+  check('Match recorded speed is available after Spotify transcription',!id('matchSpeed').disabled);
+  id('matchSpeed').click();
+  check('Tempo fitting uses detected performance after Spotify import',id('status').textContent.includes('Matched the score duration'));
+  check('Automatic octave verification results are explained to the user',id('status').textContent.includes('1 corrected, 1 to review'));
+  check('Original local audio is available after import',!id('original').disabled);
+  // Now make the Spotify engine fail; the app must label the built-in fallback.
+  w.__humTestAdapter={async recognise(){throw Error('mock model offline')}};
+  id('audioFile').dispatchEvent(new w.Event('change',{bubbles:true}));
+  await wait(650);
+  check('Built-in recognition is fallback only and labelled clearly',id('status').textContent.includes('built-in fallback'),'status='+id('status').textContent);
+  // Successful getUserMedia/startup regression: the previous implementation
+  // shadowed window.performance with a local array and threw TypeError at .now().
+  w.MediaRecorder=undefined;
+  MockAudioContext.prototype.sampleRate=16000;
+  MockAudioContext.prototype.createAnalyser=function(){
+   return {fftSize:4096,smoothingTimeConstant:0,
+    getFloatTimeDomainData(array){for(let i=0;i<array.length;i++)array[i]=.3*Math.sin(2*Math.PI*440*i/16000)},
+    disconnect(){}};
+  };
+  MockAudioContext.prototype.createMediaStreamSource=function(){return {connect(){},disconnect(){}}};
+  let stopped=0;
+  w.navigator.mediaDevices.getUserMedia=async()=>({getTracks:()=>[{stop(){stopped++}}]});
+  id('record').click();await wait(150);
+  check('Granted microphone reaches active recording without performance.now TypeError',!id('finish').disabled&&id('status').textContent.includes('Recording locally'),id('status').textContent);
+  id('finish').click();await wait(50);
+  check('Finish releases the successful mocked microphone',stopped===1&&!id('record').disabled);
+  // Inspect the actual generated SVG, using known, imported note sequences.
+  // Browser tests don't claim real microphone or audio-speaker validation.
+  async function loadEngraving(signature,melody){
+   const bytes=JSON.stringify({meter:signature,tempo:96,notes:melody});
+   const file=new w.File([bytes],'engraving-check.json',{type:'application/json'});
+   Object.defineProperty(id('file'),'files',{configurable:true,value:[file]});
+   id('file').dispatchEvent(new w.Event('change',{bubbles:true}));
+   await wait(85);
+  }
+  const stemPair=()=>[...d.querySelectorAll('#score .event.note')].slice(0,2).map(g=>({
+   head:g.querySelector('.head'),
+   stem:[...g.querySelectorAll('line')].find(e=>!e.classList.contains('ledger'))
+  }));
+  await loadEngraving('4/4',[{midi:76,beats:.5},{midi:77,beats:.5},{midi:79,beats:3}]);
+  const aboveStems=stemPair();
+  check('High beamed notes have stems descending from the left',
+   aboveStems.length===2&&aboveStems.every(p=>p.head&&p.stem&&
+    Number(p.stem.getAttribute('x1'))<Number(p.head.getAttribute('cx'))&&
+    Number(p.stem.getAttribute('y2'))>Number(p.stem.getAttribute('y1'))));
+  check('High-note beam is still displayed',d.querySelectorAll('#score .beam').length>0);
+  await loadEngraving('4/4',[{midi:60,beats:.5},{midi:62,beats:.5},{midi:64,beats:3}]);
+  const belowStems=stemPair();
+  check('Low beamed notes have stems ascending from the right',
+   belowStems.length===2&&belowStems.every(p=>p.head&&p.stem&&
+    Number(p.stem.getAttribute('x1'))>Number(p.head.getAttribute('cx'))&&
+    Number(p.stem.getAttribute('y2'))<Number(p.stem.getAttribute('y1'))));
+  await loadEngraving('4/4',[{midi:76,beats:4.5},{midi:76,beats:1}]);
+  const tiedAbove=d.querySelector('#score .tie');
+  const tieNumbers=tiedAbove?[...tiedAbove.getAttribute('d').matchAll(/-?\d+(?:\.\d+)?/g)].map(m=>Number(m[0])):[];
+  check('Ties above the middle line arc upwards',tieNumbers.length>=6&&tieNumbers[3]<tieNumbers[1]);
+  await loadEngraving('4/4',[{midi:61,beats:4.5},{midi:61,beats:1}]);
+  const sharpAfterTie=[...d.querySelectorAll('#score .event.note')];
+  check('Tied sharp does not suppress subsequent untied sharp',
+   sharpAfterTie.length===3&&
+   sharpAfterTie[0].querySelector('.accidental')?.textContent==='♯'&&
+   !sharpAfterTie[1].querySelector('.accidental')&&
+   sharpAfterTie[2].querySelector('.accidental')?.textContent==='♯');
+  for(const signature of ['2/4','3/4','4/4','6/8']){
+   await loadEngraving(signature,[{midi:null,beats:w.HumCore.METERS[signature].beats}]);
+   const rest=d.querySelector('#score .event.rest');
+   check('Full '+signature+' bar shows a semibreve rest',
+    rest?.getAttribute('aria-label')?.includes('full-bar rest')&&
+    Number(rest.querySelector('.rest-symbol')?.getAttribute('y'))===49);
+  }
+  await loadEngraving('4/4',[{midi:64,beats:1.5},{midi:65,beats:1.5}]);
+  const dotted=[...d.querySelectorAll('#score .event.note')].slice(0,2).map(g=>({
+   headY:Number(g.querySelector('.head')?.getAttribute('cy')),
+   dotY:Number(g.querySelector('.augmentation-dot')?.getAttribute('cy'))
+  }));
+  check('Dot on a note on a line goes into the space above',
+   dotted[0]&&Math.abs(dotted[0].dotY-(dotted[0].headY-5))<.01);
+  check('Dot on a note in a space stays in that space',
+   dotted[1]&&Math.abs(dotted[1].dotY-dotted[1].headY)<.01);
+
+ }catch(e){output.push('ERROR '+e.message)}
+ finally{result.textContent=output.join('\n')+'\n\n'+output.filter(x=>x.startsWith('PASS')).length+'/'+output.filter(x=>x.startsWith('PASS')||x.startsWith('FAIL')||x.startsWith('ERROR')).length+' checks passed';running=false;$('run').disabled=false}
+}
+$('run').addEventListener('click',run);
+})();
+</script>
+</main></body></html>

@@ -1,0 +1,58 @@
+name: Hum to Compose TEST verification
+
+on:
+  pull_request:
+    paths:
+      - 'music-score-studio/hum-to-compose-*'
+      - '.github/workflows/hum-to-compose-test.yml'
+  push:
+    branches:
+      - 'feature/hum-to-compose-test-2026-11-08'
+    paths:
+      - 'music-score-studio/hum-to-compose-*'
+      - '.github/workflows/hum-to-compose-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-audio-verification:
+    name: Hum transcription, pitch, rhythm and notation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Core music and notation regressions
+        run: node music-score-studio/hum-to-compose-tests.js
+      - name: Independent audio verification stress suite
+        run: node music-score-studio/hum-to-compose-verification-tests.cjs
+      - name: SVG note engraving and notation checks
+        run: node music-score-studio/hum-to-compose-engraving-tests.cjs
+      - name: No-singing benchmark (quantified synthetic verification)
+        run: node music-score-studio/hum-to-compose-benchmark-tests.cjs
+      - name: Teacher controls and save/reopen round trips
+        run: node music-score-studio/hum-to-compose-features-tests.cjs
+      - name: Real-human reference comparison (offline metric tests)
+        run: node music-score-studio/hum-to-compose-human-check-tests.cjs
+      - name: Parse exported MusicXML in all clefs and key signatures
+        run: node music-score-studio/hum-to-compose-musicxml-structure-tests.cjs
+
+  spotify-real-model-browser-smoke:
+    name: Actual Spotify browser inference (eight generated melodies)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Playwright browser test dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Infer eight synthetic melodies through real Spotify model
+        run: node music-score-studio/hum-to-compose-live-spotify-smoke.cjs

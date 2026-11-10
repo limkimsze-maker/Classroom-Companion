@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hum to Compose — Known Melody Benchmark (TEST only)</title>
+<style>body{margin:0;background:#f1f8fa;color:#17384b;font:16px/1.5 system-ui,sans-serif}main{max-width:850px;margin:24px auto;padding:0 15px}h1{font-size:1.7rem}button{background:#087b86;color:white;border:0;padding:13px 19px;border-radius:11px;font:inherit;cursor:pointer}button:disabled{opacity:.55}table{border-collapse:collapse;width:100%;background:white}td,th{border-bottom:1px solid #d9e6eb;padding:9px;text-align:left}pre{background:white;padding:15px;white-space:pre-wrap;border:1px solid #d9e6eb;border-radius:10px;overflow:auto}.note{color:#7a4900;background:#fff6e5;padding:10px;border-radius:8px;margin-bottom:14px}a{color:#146477}.human-box{border:1px solid #c6dce5;background:white;padding:17px;border-radius:12px;margin:24px 0}.human-box label{display:block;font-weight:700;margin:13px 0 6px}.human-box input[type=file]{font:inherit;max-width:100%;padding:8px;border:1px solid #b7ccd5;border-radius:8px}.human-box button{margin-top:15px}.small{color:#486777;font-size:14px}.human-box p{margin:10px 0}</style>
+</head><body><main>
+<h1>🎼 Known melody benchmark — TEST ONLY</h1>
+<p>This test synthesises known-pitch, known-duration melodies, then measures how the independent audio checker corrects <strong>deliberately seeded</strong> note mistakes. It does <strong>not</strong> run Spotify Basic Pitch and cannot certify human humming accuracy.</p>
+<p class="note">No microphone, voice recording, sound playback, audio uploads or paid services are used. This benchmark may take some time on a phone.</p>
+<button id="run">Run 84 verification cases (offline)</button><pre id="result" role="status" aria-live="polite">Ready to run offline synthetic verification.</pre><h2>Optional: test the actual Spotify model</h2><p>This separate test runs Spotify Basic Pitch itself on eight generated melodies, covering pure and harmonic-rich sounds. It downloads the pinned model on first use, but audio is generated and processed locally. No microphone or recording is used.</p><button id="runSpotify">Run Spotify on eight generated melodies</button><pre id="spotifyResult" role="status" aria-live="polite">Not run. Real-model accuracy is not included in the offline scores above.</pre>
+<section class="human-box" aria-label="Real human humming accuracy check">
+<h2>🎤 Test a real humming recording</h2>
+<p>Compare an actual hummed recording with a <strong>teacher-checked reference score</strong>. This uses the real Spotify recogniser, not seeded notes. The reference must be accurate; the result measures <strong>your singing and the recogniser together</strong>, not AI errors alone.</p>
+<p class="small">First, download a verified score using <b>Download score file</b> in Hum to Compose. Hum that tune on your phone at approximately the score's tempo, then select the recording and score file below. Use a short passage (up to 2 minutes). The original voice stays on this device; the Spotify model needs internet on first use.</p>
+<label for="humanAudio">1. Your humming recording (WAV, MP3, M4A or WebM)</label>
+<input id="humanAudio" type="file" accept="audio/*,.wav,.mp3,.m4a,.webm">
+<label for="humanScore">2. Teacher-checked reference score (.music-score.json)</label>
+<input id="humanScore" type="file" accept=".json,application/json">
+<div><button id="runHuman" type="button">Compare real humming with score</button></div>
+<pre id="humanResult" role="status" aria-live="polite">Choose your recording and reference score to begin. No files have been read.</pre>
+<p class="small">A low score may mean wrong notes, a different starting key/octave, changed speed, microphone noise or transcription mistakes. It is a diagnostic, not a pupil grade. Nothing is uploaded or automatically saved.</p>
+</section>
+<p><a href="./hum-to-compose-test.html">Return to Hum to Compose TEST</a></p>
+</main>
+<script src="./hum-to-compose-core.js"></script><script src="./hum-to-compose-benchmark.js"></script><script src="./hum-to-compose-human-check.js"></script>
+<script type="module">
+const button=document.getElementById('run'),output=document.getElementById('result');
+const spotifyButton=document.getElementById('runSpotify'),spotifyOutput=document.getElementById('spotifyResult');
+const humanRun=document.getElementById('runHuman'),humanOutput=document.getElementById('humanResult');
+humanRun.addEventListener('click',async()=>{
+ const audioFile=document.getElementById('humanAudio').files[0];
+ const scoreFile=document.getElementById('humanScore').files[0];
+ if(!audioFile||!scoreFile){humanOutput.textContent='Choose both a humming recording and a teacher-checked score file.';return}
+ if(audioFile.size>32*1024*1024||scoreFile.size>2*1024*1024){
+  humanOutput.textContent='File too large. Use a short recording (max 32 MB) and a score JSON file (max 2 MB).';return
+ }
+ humanRun.disabled=true;let audioContext=null;
+ try{
+  humanOutput.textContent='Reading the reference score locally…';
+  const data=JSON.parse(await scoreFile.text()),reference=window.HumHumanCheck.referenceEvents(data,window.HumCore);
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)throw Error('This browser cannot decode recorded audio');
+  audioContext=new AudioCtx();
+  humanOutput.textContent='Decoding the humming recording locally…';
+  const audio=await audioContext.decodeAudioData(await audioFile.arrayBuffer());
+  if(audio.duration>window.HumHumanCheck.MAX_SECONDS+.01||audio.duration<.12)
+   throw Error('Choose a recording between 0.12 seconds and 2 minutes');
+  humanOutput.textContent='Running Spotify Basic Pitch on the real recording…';
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const output=await adapter.recognise(audio,message=>{humanOutput.textContent=message},window.HumCore.estimatePitch);
+  const found=output.events.filter(e=>e.midi!==null);
+  const fit=window.HumHumanCheck.compare(reference,found);
+  const timed=window.HumBenchmark.scoreMelody(reference,found);
+  const percent=n=>(100*n).toFixed(1)+'%';
+  humanOutput.textContent=[
+   'Real-recording comparison complete (no audio uploaded)',
+   'Reference melody: '+fit.expected+' notes · Detected: '+fit.recognised+' notes',
+   'Correct pitches aligned in sequence: '+fit.matched+' / '+Math.max(fit.expected,fit.recognised),
+   'Sequence note match: '+percent(fit.accuracy),
+   'Pitch differences: '+fit.incorrect+' · Missing notes: '+fit.missing+' · Extra notes: '+fit.extra,
+   'Likely octave mismatches among aligned notes: '+fit.octaveErrors,
+   'Timing-sensitive note precision: '+percent(timed.precision),
+   'Timing-sensitive note recall: '+percent(timed.recall),
+   'Timing-sensitive one-to-one F1: '+percent(timed.f1),
+   'Mean matched onset difference: '+(timed.meanOnsetErrorSeconds===null?'No reliable timed matches':
+     Math.round(timed.meanOnsetErrorSeconds*1000)+' ms'),
+   fit.likelyShift!==null?'Possible consistent pitch shift: '+(fit.likelyShift>0?'+':'')+
+    fit.likelyShift+' semitones relative to the reference; check starting pitch/octave.':'',
+   '',
+   'This measures how your recording matches the written reference. A singer may',
+   'change pitch or timing; only a teacher/listening review can separate those',
+   'performance differences from recogniser mistakes.',
+   'No voice recording or score was stored or sent to any server.'
+  ].filter(Boolean).join('\n');
+ }catch(error){humanOutput.textContent='Real humming check could not finish: '+(error?.message||'unknown error')+
+   '\nNo accuracy result is claimed. Your files have not been uploaded.'}
+ finally{if(audioContext)await audioContext.close().catch(()=>{});humanRun.disabled=false}
+});
+
+spotifyButton.addEventListener('click',async()=>{
+ spotifyButton.disabled=true;
+ const checks=[0,1,2,3].flatMap(i=>['pure','rich'].map(voice=>'pattern'+i+'-'+voice+'-correct'));
+ let evaluated=0,matched=0,total=0,restHits=0,truePositive=0,falsePositive=0,falseNegative=0;
+ const detailRows=[];
+ try{
+  spotifyOutput.textContent='Loading pinned Spotify Basic Pitch model…';
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  const fixtures=window.HumBenchmark.deterministicCases().filter(x=>checks.includes(x.name));
+  for(const fixture of fixtures){
+   spotifyOutput.textContent='Spotify Basic Pitch recognising '+(evaluated+1)+'/'+fixtures.length+': '+fixture.name;
+   await new Promise(resolve=>setTimeout(resolve,25));
+   const pcm=window.HumBenchmark.makeClip(fixture.notes,fixture.voice);
+   const audio={sampleRate:window.HumBenchmark.RATE,length:pcm.length,
+    numberOfChannels:1,getChannelData:()=>pcm};
+   const found=await adapter.recognise(audio,progress=>{
+    spotifyOutput.textContent=fixture.name+' · '+progress;
+   },window.HumCore.estimatePitch);
+   const predicted=found.events.filter(e=>e.midi!==null);
+   const truth=fixture.notes.map(n=>({start:n.start-fixture.notes[0].start,
+    end:n.end-fixture.notes[0].start,midi:n.midi}));
+   for(const note of truth){
+    total++;
+    const overlapping=predicted.map(p=>({
+     p,overlap:Math.max(0,Math.min(note.end,p.end)-Math.max(note.start,p.start))
+    })).filter(x=>x.overlap>.05).sort((a,b)=>b.overlap-a.overlap);
+    if(overlapping.length&&overlapping[0].p.midi===note.midi)matched++;
+   }
+   detailRows.push(fixture.name+' expected '+truth.map(n=>n.midi+'@'+n.start.toFixed(2)+'-'+n.end.toFixed(2)).join(' ')+' | predicted '+predicted.map(n=>n.midi+'@'+n.start.toFixed(2)+'-'+n.end.toFixed(2)).join(' '));
+   const scored=window.HumBenchmark.scoreMelody(truth,predicted);
+   truePositive+=scored.truePositive;falsePositive+=scored.falsePositive;falseNegative+=scored.falseNegative;
+   if(found.events.some(e=>e.midi===null&&e.duration>.07))restHits++;
+   evaluated++;
+  }
+  const precision=truePositive+falsePositive?truePositive/(truePositive+falsePositive):0;
+  const recall=truePositive+falseNegative?truePositive/(truePositive+falseNegative):0;
+  const f1=precision+recall?2*precision*recall/(precision+recall):0;
+  spotifyOutput.textContent=[
+   'ACTUAL Spotify Basic Pitch inference on generated waveforms',
+   'Melodies successfully analysed: '+evaluated+'/'+checks.length,
+   'Known pitches matched: '+matched+'/'+total+' ('+(total?100*matched/total:0).toFixed(1)+'%)',
+   'One-to-one note precision: '+(precision*100).toFixed(1)+'%',
+   'One-to-one note recall: '+(recall*100).toFixed(1)+'%',
+   'One-to-one note F1: '+(f1*100).toFixed(1)+'%',
+   'Correctly matched notes: '+truePositive+' | extra or wrong: '+falsePositive+' | missed or wrong: '+falseNegative,
+   'Pauses recognised: '+restHits+'/'+evaluated,
+   '',
+   'Per-melody diagnostic (MIDI pitch @ start-end seconds):',
+   ...detailRows,
+   '',
+   'This tests synthetic melodies with the real model, NOT human voice reliability.',
+   'Teacher-reviewed human recordings remain necessary before release.'
+  ].join('\n');
+ }catch(e){
+  spotifyOutput.textContent='Real Spotify benchmark stopped after '+evaluated+' completed cases: '+e.message+
+   '\nNo score is claimed for unfinished cases. Check the model network connection and browser compatibility.';
+ }finally{spotifyButton.disabled=false}
+});
+button.addEventListener('click',async()=>{
+ button.disabled=true;output.textContent='Calculating the known-melody comparisons…';
+ try{
+  const adapter=await import('./hum-to-compose-basic-pitch-adapter.js');
+  await new Promise(resolve=>setTimeout(resolve,25)); // show progress before synchronous synthesis
+  const m=window.HumBenchmark.run(window.HumCore,adapter);
+  output.textContent=[
+   'Test type: seeded-model, synthetic waveform verification (NOT Spotify inference)',
+   'Melodies tested: '+m.cases,
+   'Known notes checked: '+m.pitchedNotes,
+   'Correct pitches: '+m.matchedPitch+' ('+(100*m.pitchAccuracy).toFixed(1)+'%)',
+   'One-to-one note precision: '+(100*m.notePrecision).toFixed(1)+'%',
+   'One-to-one note recall: '+(100*m.noteRecall).toFixed(1)+'%',
+   'One-to-one note F1: '+(100*m.noteF1).toFixed(1)+'%',
+   'Extra or wrong notes: '+m.falsePositive+' | missed or wrong notes: '+m.falseNegative,
+   'Corrupted melody cases fully recovered: '+m.fullyRecovered+'/'+m.correctionAttempts,
+   'Clean melody cases left correct: '+m.cleanUntouched+'/'+m.cleanCases,
+   'False pitch changes on clean inputs: '+m.falseShifts,
+   'Expected pauses detected: '+m.restDetected+'/'+m.expectedRests,
+   'Mean note-onset error: '+(m.meanOnsetErrorSeconds*1000).toFixed(1)+' ms',
+   'Needs further review: '+m.rows.filter(x=>x.correct!==x.expected).map(x=>x.name).join(', '),
+   '',
+   'Real voice and actual Spotify inference remain separate required tests.'
+  ].join('\n');
+ }catch(error){output.textContent='Benchmark could not complete: '+error.message}
+ finally{button.disabled=false}
+});
+</script></body></html>
