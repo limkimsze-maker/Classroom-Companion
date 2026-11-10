@@ -108,7 +108,7 @@ const say=(s,error=false)=>{$('status').textContent=s;$('status').setAttribute('
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const el=(tag,a={},inner='')=>'<'+tag+' '+Object.entries(a).map(([k,v])=>k+'="'+esc(v)+'"').join(' ')+'>'+inner+'</'+tag+'>';
 let notes=[],selected=null,history=[],future=[],stream=null,source=null,analyser=null,analysisCtx=null,playerCtx=null,mediaRecorder=null,chunks=[],originalUrl=null,originalAudio=new Audio(),recording=false,requesting=false,frame=null,lastFrame=0,started=0,samples=[],previousMidi=null;
-let playing=false,voices=[],timers=[],playbackEpoch=0,recordingDeadline=null,comparisonPending=false,detectedEvents=[];
+let playing=false,voices=[],timers=[],playbackEpoch=0,recordingDeadline=null,detectedEvents=[];
 let sourceAudioBlob=null,sourceAudioBuffer=null,basicPitchBusy=false,recognitionPending=false;
 let scorePage=0,notationView='engraved',engravedSerial=0,engravedRevision='',engraverLoadPromise=null;
 let engravedNoteheads=new Map(),engravedPlayingIndex=-1;
@@ -148,8 +148,8 @@ function closeMic(){if(recordingDeadline!==null)clearTimeout(recordingDeadline);
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
 function setOriginal(url,blob=null,audioBuffer=null){if(originalUrl)URL.revokeObjectURL(originalUrl);originalAudio.pause();originalUrl=url;originalAudio.src=url||'';
- sourceAudioBlob=blob;sourceAudioBuffer=audioBuffer;$('original').disabled=!url;$('compare').disabled=!url||!notes.length;recordingControls()}
-function stopPlayback(){playbackEpoch++;engravedPlayingIndex=-1;showProfessionalPlaying(-1);comparisonPending=false;voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null);
+ sourceAudioBlob=blob;sourceAudioBuffer=audioBuffer;$('original').disabled=!url;recordingControls()}
+function stopPlayback(){playbackEpoch++;engravedPlayingIndex=-1;showProfessionalPlaying(-1);voices.forEach(o=>{try{o.stop()}catch(_){}});voices=[];timers.forEach(clearTimeout);timers=[];originalAudio.pause();playing=false;document.querySelectorAll('#score .playing').forEach(e=>e.classList.remove('playing'));$('play').disabled=!notes.length;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null);
  $('editedTiming').disabled=!detectedEvents.some(n=>n.midi!==null)||
   notes.filter(n=>n.midi!==null).length!==detectedEvents.filter(n=>n.midi!==null).length;
  $('stop').disabled=true;$('original').textContent='▶ Original hum'}
@@ -373,10 +373,9 @@ function render(){
  $('scoreTitle').textContent=scoreName();
  const has=notes.length>0,valid=selected!==null&&notes[selected],isNote=valid&&notes[selected].midi!==null;
  $('play').disabled=!has||playing;$('faithful').disabled=!detectedEvents.some(n=>n.midi!==null)||playing;$('save').disabled=!has;$('download').disabled=!has;$('xml').disabled=!has;$('saveSession').disabled=!has;$('clear').disabled=!has;$('stop').disabled=!playing;
- $('compare').disabled=!has||!originalUrl||recording||requesting;
  $('editedTiming').disabled=!has||playing||recording||requesting||basicPitchBusy||
   notes.filter(n=>n.midi!==null).length!==detectedEvents.filter(n=>n.midi!==null).length||
-  !detectedEvents.some(n=>n.midi!==null);['allDown','allUp','octaveDown','octaveUp'].forEach(id=>$(id).disabled=!notes.some(n=>n.midi!==null));['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
+  !detectedEvents.some(n=>n.midi!==null);$('transpose').disabled=!notes.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy||recognitionPending;['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=!has||!detectedEvents.some(n=>n.midi!==null)||recording||requesting||basicPitchBusy);
  ['duration','remove','toggle'].forEach(id=>$(id).disabled=!valid);['down','up','accidental','playSelected','markReviewed'].forEach(id=>$(id).disabled=!isNote);
  $('undo').disabled=!history.length;$('redo').disabled=!future.length;
  $('editing').textContent=!valid?'Select a note or rest':(isNote?writtenPitchName(notes[selected]):'Rest')+' · '+(notes[selected].uncertain&&!notes[selected].reviewed?'Check pitch':'Selected');
@@ -663,11 +662,9 @@ function insert(isRest){change(()=>{const midi=isRest?null:((selected!==null&&no
 function toggle(){if(selected===null||!notes[selected])return;change(()=>{const n=notes[selected];n.midi=n.midi===null?60:null;delete n.spelling;n.uncertain=false;n.reviewed=true})}
 function remove(){if(selected===null)return;change(()=>{notes.splice(selected,1);selected=notes.length?Math.min(selected,notes.length-1):null})}
 function clear(){if(!notes.length)return;change(()=>{notes=[];selected=null;activeSavedId=null;scorePage=0})}
-function stopOriginal(){comparisonPending=false;originalAudio.pause();originalAudio.currentTime=0;$('original').textContent='▶ Original hum';$('stop').disabled=!playing}
+function stopOriginal(){originalAudio.pause();originalAudio.currentTime=0;$('original').textContent='▶ Original hum';$('stop').disabled=!playing}
 function playOriginal(){if(!originalUrl)return;if(!originalAudio.paused){stopOriginal();return}stopPlayback();originalAudio.currentTime=0;originalAudio.play().then(()=>{$('original').textContent='■ Stop original';$('stop').disabled=false;say('Playing your actual recorded humming (not a synthesised score).')}).catch(()=>say('Original audio could not be played.',true))}
-originalAudio.addEventListener('ended',()=>{const playNext=comparisonPending;stopOriginal();if(playNext)playScore()});
-function compare(){if(!originalUrl||!notes.length||recording)return;stopPlayback();comparisonPending=true;originalAudio.currentTime=0;
- originalAudio.play().then(()=>{$('original').textContent='■ Playing original';$('stop').disabled=false;say('Comparing: original humming first, then the generated score.')}).catch(()=>{comparisonPending=false;say('The original recording could not be played.',true)})}
+originalAudio.addEventListener('ended',stopOriginal);
 function transposeAll(semitones){if(recording||!notes.some(n=>n.midi!==null))return;
  if(notes.some(n=>n.midi!==null&&(n.midi+semitones<36||n.midi+semitones>95))){say('That shift would put a note outside the supported pitch range.',true);return}
  change(()=>{notes=notes.map(n=>{if(n.midi===null)return n;const midi=n.midi+semitones;return {...n,midi,spelling:C.spellingForKey(midi,keyFifths())}})});
@@ -1056,13 +1053,13 @@ $('example').addEventListener('click',sample);
 $('scoreVolume').addEventListener('input',()=>{$('scoreVolumeValue').textContent=$('scoreVolume').value+'%'});
 $('instrument').addEventListener('change',()=>{stopPlayback();say('Instrument: '+$('instrument').selectedOptions[0].text+'. Press Play to hear the new sound.');});
 $('play').addEventListener('click',playScore);$('faithful').addEventListener('click',()=>playDetected(false));$('editedTiming').addEventListener('click',()=>playDetected(true));$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
-$('compare').addEventListener('click',compare);$('allDown').addEventListener('click',()=>transposeAll(-1));$('allUp').addEventListener('click',()=>transposeAll(1));$('octaveDown').addEventListener('click',()=>transposeAll(-12));$('octaveUp').addEventListener('click',()=>transposeAll(12));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);$('rebuildDetailed').addEventListener('click',rebuildDetailed);
+$('transpose').addEventListener('click',()=>transposeAll(Number($('transposeSteps').value)));$('matchSpeed').addEventListener('click',matchSpeed);$('rebuild').addEventListener('click',rebuild);$('rebuildDetailed').addEventListener('click',rebuildDetailed);
 $('up').addEventListener('click',()=>editPitch(1));$('down').addEventListener('click',()=>editPitch(-1));$('duration').addEventListener('change',duration);$('accidental').addEventListener('change',accidental);
 $('add').addEventListener('click',()=>insert(false));$('rest').addEventListener('click',()=>insert(true));$('toggle').addEventListener('click',toggle);$('remove').addEventListener('click',remove);
 $('undo').addEventListener('click',undo);$('redo').addEventListener('click',redo);$('clear').addEventListener('click',clear);
 $('save').addEventListener('click',localSave);$('download').addEventListener('click',exportJSON);$('xml').addEventListener('click',exportXML);$('saveSession').addEventListener('click',saveSession);
 $('playSelected').addEventListener('click',playSelected);$('markReviewed').addEventListener('click',markReviewed);
-$('loadLocal').addEventListener('click',openLibrary);$('openSaved').addEventListener('click',localLoad);$('deleteSaved').addEventListener('click',deleteLocal);
+$('scoreLibrary').addEventListener('toggle',()=>{if($('scoreLibrary').open)openLibrary()});$('openSaved').addEventListener('click',localLoad);$('deleteSaved').addEventListener('click',deleteLocal);
 $('scoreName').addEventListener('input',()=>{$('scoreTitle').textContent=scoreName()});
 $('showEngraved').addEventListener('click',()=>{
  notationView='engraved';engravedRevision='';$('scoreViewHelp').textContent='Engraved for reading · Edit notes to correct uncertain pitches';updateNotationView();
