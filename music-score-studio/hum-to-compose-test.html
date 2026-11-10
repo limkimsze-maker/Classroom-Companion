@@ -128,9 +128,22 @@ function checkpoint(){history.push(snapshot());if(history.length>100)history.shi
 function change(fn){stopPlayback();checkpoint();fn();render()}
 function undo(){if(!history.length)return;future.push(snapshot());applySnapshot(history.pop())}
 function redo(){if(!future.length)return;history.push(snapshot());applySnapshot(future.pop())}
-function recordingControls(){$('audioUpload').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('record').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('finish').disabled=!recording;$('example').disabled=recording||requesting||basicPitchBusy||recognitionPending;$('tempo').disabled=recording||requesting;$('meter').disabled=recording||requesting;['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>$(id).disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null));$('compare').disabled=recording||requesting||!originalUrl||!notes.length;
- $('editedTiming').disabled=recording||requesting||basicPitchBusy||!detectedEvents.some(n=>n.midi!==null)||
-  notes.filter(n=>n.midi!==null).length!==detectedEvents.filter(n=>n.midi!==null).length;$('faithful').disabled=recording||requesting||!detectedEvents.some(n=>n.midi!==null)}
+function recordingControls(){
+ const busy=requesting||basicPitchBusy||recognitionPending;
+ $('record').disabled=busy;
+ $('record').textContent=recording?'■ Stop recording':'🎤 Record';
+ $('record').setAttribute('aria-label',recording?'Stop recording':'Start recording');
+ $('audioUpload').disabled=recording||busy;
+ $('example').disabled=recording||busy;
+ $('tempo').disabled=recording||requesting;
+ $('meter').disabled=recording||requesting;
+ ['matchSpeed','rebuild','rebuildDetailed'].forEach(id=>
+  $(id).disabled=recording||busy||!notes.length||!detectedEvents.some(n=>n.midi!==null));
+ $('editedTiming').disabled=recording||busy||playing||!notes.length||
+  !detectedEvents.some(n=>n.midi!==null)||
+  notes.filter(n=>n.midi!==null).length!==detectedEvents.filter(n=>n.midi!==null).length;
+ $('faithful').disabled=recording||busy||playing||!detectedEvents.some(n=>n.midi!==null);
+}
 function closeMic(){if(recordingDeadline!==null)clearTimeout(recordingDeadline);recordingDeadline=null;if(frame!==null)cancelAnimationFrame(frame);frame=null;if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop()}catch(_){}}mediaRecorder=null;
  if(source){try{source.disconnect()}catch(_){}}source=null;if(analyser){try{analyser.disconnect()}catch(_){}}analyser=null;
  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(analysisCtx){analysisCtx.close().catch(()=>{});analysisCtx=null}}
@@ -1037,9 +1050,9 @@ function deleteLocal(){
   refreshLibrary();say('Deleted “'+entry.name+'” from browser storage. The displayed score stays open.');
  }catch(error){say('Could not delete saved score: '+error.message,true)}
 }
-$('record').addEventListener('click',start);$('audioUpload').addEventListener('click',()=>$('audioFile').click());
+$('record').addEventListener('click',()=>{if(recording)finish();else void start()});$('audioUpload').addEventListener('click',()=>$('audioFile').click());
 $('audioFile').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(file)await useAudioFile(file)});
-$('finish').addEventListener('click',finish);$('example').addEventListener('click',sample);
+$('example').addEventListener('click',sample);
 $('scoreVolume').addEventListener('input',()=>{$('scoreVolumeValue').textContent=$('scoreVolume').value+'%'});
 $('instrument').addEventListener('change',()=>{stopPlayback();say('Instrument: '+$('instrument').selectedOptions[0].text+'. Press Play to hear the new sound.');});
 $('play').addEventListener('click',playScore);$('faithful').addEventListener('click',()=>playDetected(false));$('editedTiming').addEventListener('click',()=>playDetected(true));$('stop').addEventListener('click',stopBoth);$('original').addEventListener('click',playOriginal);
