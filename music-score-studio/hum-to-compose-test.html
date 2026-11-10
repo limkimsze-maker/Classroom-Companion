@@ -76,20 +76,16 @@ label{font-weight:720;color:#25495b;font-size:14px}.field{display:flex;align-ite
 <div id="professionalScore" class="professionalScore" role="region" aria-label="Professionally engraved notation" hidden><p id="engravingStatus" role="status" aria-live="polite">Preparing the engraved score…</p><div id="professionalScoreHost"></div></div>
 <div id="editableScoreArea" class="scoreArea"><svg xmlns="http://www.w3.org/2000/svg" id="score" viewBox="0 0 850 190" role="img" aria-label="Editable single-stave music score"><text x="24" y="58" font-size="20">Your musical score will appear here.</text></svg></div>
 <details id="calibration" class="calibration">
-<summary>🎚 Match the score to my humming</summary>
-<p>Original hum plays your actual recording. Play detected melody follows measured pitches and timing using an instrument sound; Play written score follows rounded musical notation. Corrections are reversible with Undo.</p>
-<div class="calibration-group"><strong>1. Compare</strong><div class="controls">
-<button id="compare" type="button" disabled>▶ Hum, then score</button><button id="editedTiming" type="button" disabled>▶ Corrected pitches, original rhythm</button></div>
-<p>“Corrected pitches, original rhythm” plays your edited note pitches on the recording’s measured note starts, lengths and pauses. It is available when the written and detected melodies have the same number of notes. “Play written score” always follows the printed note lengths.</p></div>
-<div class="calibration-group"><strong>2. Adjust the whole melody's pitch</strong><div class="controls">
-<button id="allDown" type="button" disabled>♭ All down 1</button><button id="allUp" type="button" disabled>♯ All up 1</button>
-<button id="octaveDown" type="button" disabled>All down 1 octave</button><button id="octaveUp" type="button" disabled>All up 1 octave</button>
-</div><p>If every note is too high or low, adjust the whole melody. For just one wrong note, select it on the stave.</p></div>
-<div class="calibration-group"><strong>3. Correct the speed and rhythm</strong><div class="controls">
-<button id="matchSpeed" type="button" disabled>Match recorded speed</button>
-<button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button><button id="rebuildDetailed" type="button" disabled>Keep shorter notes</button></div>
-<p>The app now adapts rhythmic detail to clear, short recorded notes. Use “Keep shorter notes” for finer demisemiquaver-level notation if the ordinary score loses fast notes. Original detected timing stays available for comparison; standard notation still rounds freely performed timing. Rebuilding replaces edits; Undo restores them.</p></div>
-<p class="small muted">Spotify Basic Pitch is the main recogniser. The TEST app compares the result with your recorded voice, correcting clear pitch mistakes, missed changes and rests, and aligning the score rhythm. Doubtful notes are highlighted for review. The model needs internet on first use; audio stays in your browser.</p>
+<summary>🎚 Advanced corrections · match the score to my humming</summary>
+<p>Use “Listen &amp; compare” to hear the detected version and compare it with the written score. All score edits can be reversed with Undo.</p>
+<div class="calibration-group"><strong>1. Play corrections with your recorded rhythm</strong><div class="controls"><button id="editedTiming" type="button" disabled>▶ Corrected pitches, original rhythm</button></div>
+<p>Uses your edited pitches but keeps the original recorded timing. It is available when the written and detected melodies have the same number of notes.</p></div>
+<div class="calibration-group"><strong>2. Move the whole melody up or down</strong><div class="controls"><label for="transposeSteps">Pitch shift</label><select id="transposeSteps" aria-label="Whole-melody pitch shift"><option value="-12">Down one octave</option><option value="-1">Down one semitone</option><option value="1" selected>Up one semitone</option><option value="12">Up one octave</option></select><button id="transpose" type="button" disabled>Apply pitch shift</button></div>
+<p>Only change all notes together if the whole melody sounds too high or low. For one wrong note, select it on the stave.</p></div>
+<div class="calibration-group"><strong>3. Match speed and rhythm</strong><div class="controls"><button id="matchSpeed" type="button" disabled>Match recorded speed</button></div>
+<details id="advancedRhythm" class="calibration"><summary>More rhythm tools</summary><div class="controls"><button id="rebuild" type="button" disabled>Rebuild rhythm at this BPM</button><button id="rebuildDetailed" type="button" disabled>Keep shorter notes</button></div>
+<p>Rebuilding can replace manual note edits; Undo restores them. “Keep shorter notes” produces more detailed notation when the recording supports it.</p></details></div>
+<p class="small muted">Spotify Basic Pitch remains the main recogniser. Doubtful notes are marked for teacher review.</p>
 </details>
 <div class="editor" aria-label="Review and correct score">
 <span id="editing">Select a note or rest</span><button id="playSelected" type="button" disabled>▶ Selected note</button><button id="markReviewed" type="button" disabled>✓ Mark checked</button>
