@@ -54,6 +54,7 @@ async function importJSON(data){
  const content=JSON.stringify(data);
  await elem('file').handlers.change({target:{files:[{size:content.length,text:async()=>content}],value:''}});
 }
+function openSavedScores(){elem('scoreLibrary').open=true;elem('scoreLibrary').handlers.toggle?.()}
 async function downloadedText(){
  const latest=downloads.at(-1);
  assert.ok(latest,'No file was downloaded');
@@ -147,7 +148,7 @@ async function downloadedText(){
   elem('save').click();
   elem('clear').click();
   elem('scoreName').value='Unsaved name';
-  elem('loadLocal').click();
+  openSavedScores();
   elem('openSaved').click();
   assert.equal(elem('scoreName').value,'Saved in browser');
   assert.equal(elem('keyFifths').value,'1');
@@ -284,7 +285,7 @@ async function downloadedText(){
   storage.delete('hum-to-compose-scores-v1');
   const legacy={meter:'3/4',tempo:100,name:'My earlier tune',notes:[{midi:67,beats:1}]};
   storage.set('hum-to-compose-test-v2',JSON.stringify(legacy));
-  elem('loadLocal').click();assert.equal(elem('savedCount').textContent,'1');
+  openSavedScores();assert.equal(elem('savedCount').textContent,'1');
   elem('savedScoreChoice').value='legacy-v2';elem('openSaved').click();
   assert.equal(elem('scoreName').value,'My earlier tune');
   assert.equal(elem('meter').value,'3/4');
@@ -300,6 +301,34 @@ async function downloadedText(){
   assert.ok(!all.some(e=>e.name==='Unstored score'));
   elem('download').click();
   assert.equal((await downloadedText()).name,'Unstored score.music-score.json');
+ });
+ await test('Simplified controls keep distinct playback, teacher tools and sample help',async()=>{
+  assert.ok(html.includes('id="examples"')&&html.includes('id="example"'));
+  assert.ok(html.includes('id="comparePlayback"'));
+  assert.ok(html.includes('id="advancedRhythm"'));
+  assert.ok(html.includes('▶ Hear what AI detected'));
+  assert.ok(html.includes('▶ Play my music score'));
+  assert.ok(!html.includes('id="finish"'),'Duplicate recording stop button returned');
+  assert.ok(!html.includes('id="loadLocal"'),'Duplicate saved-scores launcher returned');
+  assert.ok(!html.includes('id="compare"'),'Redundant sequential playback button returned');
+  assert.ok(!html.includes('id="allUp"')&&!html.includes('id="octaveDown"'));
+  assert.ok(html.includes("if(recording)finish();else void start()"),'Record/Stop toggle handler missing');
+  assert.equal(elem('record').textContent,'🎤 Record');
+  assert.equal(elem('record')['aria-label'],'Start recording');
+ });
+ await test('One pitch selector safely replaces all four whole-score shift buttons',async()=>{
+  const base={meter:'4/4',tempo:96,name:'Pitch shift test',
+   notes:[{midi:60,beats:1},{midi:62,beats:1}]};
+  for(const shift of [-12,-1,1,12]){
+   await importJSON(base);elem('transposeSteps').value=String(shift);
+   elem('transpose').click();elem('download').click();
+   const data=JSON.parse((await downloadedText()).content);
+   assert.deepEqual(data.notes.map(n=>n.midi),[60+shift,62+shift],
+    'Pitch shift '+shift+' semitones incorrect');
+   elem('undo').click();elem('download').click();
+   assert.deepEqual(JSON.parse((await downloadedText()).content).notes.map(n=>n.midi),
+    [60,62],'Undo did not restore original pitches');
+  }
  });
  await test('One sustained written note schedules exactly one piano attack',async()=>{
   await importJSON({format:'music-score-studio-hum-test-v2',name:'One sustained hum',
@@ -326,7 +355,7 @@ async function downloadedText(){
   const record=saved.find(x=>x.name==='Ten-minute melody');
   assert.ok(record);
   assert.equal(record.score.notes.length,3000);
-  elem('clear').click();elem('loadLocal').click();
+  elem('clear').click();openSavedScores();
   elem('savedScoreChoice').value=record.id;elem('openSaved').click();
   assert.equal(elem('scoreName').value,'Ten-minute melody');
   assert.match(elem('scoreHint').textContent,/1000 bars/);
