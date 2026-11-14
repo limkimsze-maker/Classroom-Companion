@@ -47,10 +47,10 @@ function stop(){selecting=false;selection=null;active=null;overlay.hidden=true;m
 function point(e){const r=wrap.getBoundingClientRect();return{x:Math.max(0,Math.min(r.width,e.clientX-r.left)),y:Math.max(0,Math.min(r.height,e.clientY-r.top))}}
 function paint(){if(!selection)return;const a=selection.a,b=selection.b;Object.assign(mark.style,{display:'block',left:Math.min(a.x,b.x)+'px',top:Math.min(a.y,b.y)+'px',width:Math.abs(a.x-b.x)+'px',height:Math.abs(a.y-b.y)+'px'})}
 overlay.addEventListener('pointerdown',e=>{if(!selecting)return;e.preventDefault();e.stopPropagation();overlay.setPointerCapture(e.pointerId);selection={a:point(e),b:point(e)};paint()});
-overlay.addEventListener('pointermove',e=>{if(!selection||!overlay.hasPointerCapture(e.pointerId))return;selection.b=point(e);paint()});
+overlay.addEventListener('pointermove',e=>{e.stopPropagation();if(!selection||!overlay.hasPointerCapture(e.pointerId))return;selection.b=point(e);paint()});
 overlay.addEventListener('pointercancel',()=>{selection=null;mark.style.display='none'});
 overlay.addEventListener('pointerup',e=>{
- if(!selecting||!selection||!active)return;selection.b=point(e);
+ e.stopPropagation();if(!selecting||!selection||!active)return;selection.b=point(e);
  const board=wrap.getBoundingClientRect(),r=active.el.getBoundingClientRect(),a=selection.a,b=selection.b;
  const left=Math.max(r.left,board.left+Math.min(a.x,b.x)),right=Math.min(r.right,board.left+Math.max(a.x,b.x)),top=Math.max(r.top,board.top+Math.min(a.y,b.y)),bottom=Math.min(r.bottom,board.top+Math.max(a.y,b.y));
  if(right-left<12||bottom-top<12){selection=null;mark.style.display='none';toast('Select a larger area inside the textbook page.');return}
