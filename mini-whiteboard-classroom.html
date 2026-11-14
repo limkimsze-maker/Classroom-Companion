@@ -245,5 +245,19 @@ window.addEventListener('message',e=>{
  window.parent.postMessage({type:'ccMiniQuestionAccepted',id:d.id},location.origin);
 });
 </script>
+<script>
+/* In the integrated view, use the existing Whiteboard Smart textbook viewer,
+   not a second PDF upload/crop workflow. Standalone mode remains unchanged. */
+if(new URLSearchParams(location.search).get('embedded')==='1'){
+ const picker=document.getElementById('sourceFile');
+ const sourceField=picker?.closest('.field');
+ if(sourceField){
+   const help=document.createElement('div');help.className='archiveHelp';
+   help.style.cssText='margin:8px 0 12px;padding:10px;border:1px solid #afddd3;border-radius:10px;background:#e9f7f4;font-weight:750';
+   help.textContent='Use "Select Question from Textbook" above. Scroll in Whiteboard Smart, drag around the question, then return here to set the answer and launch.';
+   sourceField.replaceWith(help);
+ }
+}
+</script>
 </body>
 </html>
