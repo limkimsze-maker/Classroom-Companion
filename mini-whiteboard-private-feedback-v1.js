@@ -176,8 +176,8 @@ $('ccStudentChatSend').onclick=()=>{
 $('ccStudentChatText').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('ccStudentChatSend').click()}});
 const demoReply=document.createElement('button');demoReply.type='button';demoReply.id='ccDemoPupilReply';demoReply.className='small soft';demoReply.textContent='Simulate pupil reply';demoReply.title='Preview a reply to your private message (demo only)';
 demoReply.onclick=()=>{
- if(state.mode!=='demo'||!state.selected)return;
- const p=state.pupils.get(state.selected);if(!p?.chatInitiated)return;
+ if(state.mode!=='demo'||!state.selected||!messagesEnabled||!repliesEnabled)return;
+ const p=state.pupils.get(state.selected);if(!p?.chatInitiated||p.replyEnabled===false)return;
  const options=['I understand now. Thank you!','I tried again but I am still unsure about this step.','I used a different method. May I show you?'];
  pushChat(p.id,{id:'sim-'+Date.now(),role:'student',text:options[Math.floor(Math.random()*options.length)],at:Date.now()});
  toast('Simulated reply received from '+p.name+'.');updateUI();
@@ -187,7 +187,7 @@ const prevHandle=handle;
 handle=function(d){
  if(!d||typeof d!=='object')return;
  if(d.type==='chatSettings'&&state.role==='teacher'){
-  chatServerReady=true;messagesEnabled=d.messagesEnabled!==false;repliesEnabled=d.repliesEnabled!==false;updateUI();return;
+  chatServerReady=true;messagesEnabled=d.messagesEnabled!==false;repliesEnabled=d.repliesEnabled!==false;if(state.selected)send({type:'chatHistory',id:state.selected});updateUI();return;
  }
  if(d.type==='chatPolicy'&&state.role==='student'){
   pupilPolicy={...pupilPolicy,...d};studentControls();return;
@@ -241,7 +241,7 @@ if(oldCreateRoom)$('createRoom').onclick=async function(){
 const originalRenderGrid=renderGrid;
 renderGrid=function(){originalRenderGrid();updateBadges()};
 const t=setInterval(()=>{
- if($('ccDemoPupilReply'))$('ccDemoPupilReply').hidden=state.mode!=='demo'||!state.selected||!state.pupils.get(state.selected)?.chatInitiated;
+ if($('ccDemoPupilReply'))$('ccDemoPupilReply').hidden=state.mode!=='demo'||!messagesEnabled||!repliesEnabled||!state.selected||!state.pupils.get(state.selected)?.chatInitiated||state.pupils.get(state.selected)?.replyEnabled===false;
  if(state.mode==='live'&&state.ws?.readyState!==1&&chatServerReady){chatServerReady=false;teacherControls()}
 },1500);
 window.addEventListener('pagehide',()=>clearInterval(t),{once:true});
