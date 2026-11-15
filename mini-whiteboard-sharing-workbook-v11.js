@@ -1,7 +1,7 @@
 /* Whiteboard Smart · original Mathematics workbook v9
  * 3 pages, movable learning objects, teacher tool control and local PDF printing.
  * Drawings are original canvas shapes; no third-party whiteboard assets or code.
- * Live collaboration requires separately deployed Mini Whiteboard Workbook Worker v9.
+ * Live collaboration requires separately deployed Mini Whiteboard Workbook Worker v11.
  */
 (function(){
 'use strict';
@@ -501,7 +501,7 @@ for(const key of POLICY_KEYS){
    if(state.ws?.readyState!==1){toast('Reconnect before changing pupil tool permissions.');input.checked=policy[key];return}
    send({type:'toolPolicy',policy:{[key]:input.checked}});
   }else{
-   policy[key]=input.checked;applyPolicyUI();toast('Demo tool permission updated. Live enforcement requires Worker v9.');
+   policy[key]=input.checked;applyPolicyUI();toast('Demo tool permission updated. Live enforcement requires Worker v11.');
   }
  });
 }
@@ -596,11 +596,11 @@ $('ccReportPrint').onclick=async()=>{
 // the new page and tool policy enforcement.
 async function verifyWorkbookWorker(raw){
  const u=new URL(raw);
- if(u.protocol!=='https:')throw Error('Use the HTTPS URL of your Workbook Worker v9.');
+ if(u.protocol!=='https:')throw Error('Use the HTTPS URL of your Workbook Worker v11.');
  const response=await fetch(u.origin+'/api/health',{cache:'no-store'});
  if(!response.ok)throw Error('Classroom backend is not reachable.');
  const info=await response.json();
- if(info.version!=='v9')throw Error('This beta requires Maths Workbook Worker v9. Your earlier Worker will not support these tools.');
+ if(info.version!=='v11')throw Error('This beta requires Maths Workbook Worker v11. Your earlier Worker will not support these tools.');
  return true;
 }
 const oldCreate=$('createRoom')?.onclick;
