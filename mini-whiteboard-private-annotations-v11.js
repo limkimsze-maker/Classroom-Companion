@@ -36,6 +36,7 @@ function canvasRecord(canvas){
  if(canvas?.ccAnnotationRecord)return canvas.ccAnnotationRecord;
  if(canvas?.id==='studentCanvas')return stored(state.studentId);
  if(canvas?.id==='teacherCanvas')return selectedRecord();
+ if(canvas?.dataset?.ccPupilId&&state.role==='teacher')return stored(canvas.dataset.ccPupilId);
  return null;
 }
 window.ccAnnotationFilterEvents=(canvas,events,questionOverride)=>{
@@ -46,6 +47,7 @@ window.ccAnnotationFilterEvents=(canvas,events,questionOverride)=>{
  return events.map((event,index)=>masked.has(index)&&['stroke','text'].includes(event?.op)?{...event,ccHidden:true}:event);
 };
 window.ccAnnotationHasMaskedEvents=canvas=>Boolean(canvasRecord(canvas)?.masked?.length);
+window.ccAnnotationStateForPupil=id=>state.role==='teacher'?stored(id):null;
 function drawMark(ctx,mark){
  if(!mark)return;
  ctx.save();
@@ -212,7 +214,7 @@ teacherOverlay.addEventListener('pointerdown',e=>{
  if(tool==='text'){
   textAt={...p,page};
   const box=teacherOverlay.getBoundingClientRect();
-  textEditor.style.left=Math.min(box.width-270,Math.max(5,e.clientX-box.left))+'px';
+  textEditor.style.left=Math.max(5,Math.min(box.width-270,Math.max(5,e.clientX-box.left)))+'px';
   textEditor.style.top=Math.min(box.height-95,Math.max(5,e.clientY-box.top))+'px';
   textEditor.hidden=false;textArea.focus();return;
  }
@@ -335,6 +337,7 @@ $('ccAnnUndoSent').onclick=()=>{
  tell('Undoing the last feedback sent to this pupil…');
 };
 function clearDraftOnSelection(){
+ if(sending){tell('Finish sending private feedback before changing pupil.');return false}
  if(!drafts.length)return true;
  if(!confirm('You have unsent teacher annotations. Discard them and switch pupil?'))return false;
  drafts.length=0;closeText();return true;
@@ -364,6 +367,7 @@ handle=function(d){
    paintPupilLayer();drawCommands(pupilCanvas,state.myEvents||[]);
   }
   if(state.role==='teacher'&&state.selected===d.pupilId&&d.questionId===questionId())paintAll();
+  if(state.role==='teacher'&&d.questionId===questionId())renderGrid();
   return;
  }
  if(d.type==='annotationReceipt'&&state.role==='teacher'){
