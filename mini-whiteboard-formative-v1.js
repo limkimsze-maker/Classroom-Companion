@@ -8,7 +8,7 @@ if(new URLSearchParams(location.search).get('mode')==='projector')return;
 const $=id=>document.getElementById(id);
 const labels=['A','B','C','D'];
 const tags=new Map(),batch=new Set();
-let batchMode=false,help=false,serverRound=0,reconnectAttempts=0,reconnecting=false,lastServerRoom='',misDraft={};
+let batchMode=false,help=false,serverRound=0,reconnectAttempts=0,reconnecting=false,lastServerRoom='',misDraft={},summaryTimer=0;
 const style=document.createElement('style');style.textContent=[
  '#ccFormInsights{margin:10px 0;padding:12px;border:1px solid #bfded5;border-radius:12px;background:#f6fbfa}',
  '#ccFormInsights header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}',
@@ -104,6 +104,7 @@ function paintSummary(){
  $('ccFormRetry').disabled=!state.question||state.mode==='none'||state.mode==='archive'||round>=3;
  paintBatch();
 }
+function scheduleSummary(){if(summaryTimer)return;summaryTimer=setTimeout(()=>{summaryTimer=0;paintSummary()},180)}
 function refreshTileMarks(){
  $('pupilGrid')?.querySelectorAll('button[data-cc-pupil]').forEach(b=>{
   const p=state.pupils.get(b.dataset.ccPupil);
@@ -138,6 +139,14 @@ makeQuestion=function(){
 };
 window.addEventListener('ccFormativePreparedLoaded',e=>{misDraft={...(e.detail?.misconceptions||{})};renderMisLabels()});
 $('ccFormTagSelect').onchange=e=>{if(state.selected)setTag(state.selected,e.target.value)};
+const oldSelectedDetails=renderSelectedDetails;
+renderSelectedDetails=function(){
+ oldSelectedDetails();
+ const p=state.pupils.get(state.selected);
+ if(p?.retryRound>0&&p.firstAnswer){
+  $('inspectDetail').textContent+='\nBefore reteaching: '+p.firstAnswer+' ('+(p.firstCorrect===true?'correct':'incorrect')+')'+'\nAfter reteaching: '+(p.answer||'Awaiting response')+(p.correct===true?' (correct)':p.correct===false?' (incorrect)':'');
+ }
+};
 const priorSelect=selectPupil;
 selectPupil=function(id){priorSelect(id);$('ccFormTagSelect').value=getTag(id);$('ccFormResolveHelp').disabled=!state.pupils.get(id)?.helpNeeded;paintSummary()};
 const root=$('pupilGrid');
@@ -198,7 +207,7 @@ $('ccFormStudentHelp').onclick=()=>{
  paintHelp();
 };
 const oldRenderGrid=renderGrid;
-renderGrid=function(){oldRenderGrid();refreshTileMarks();paintSummary()};
+renderGrid=function(){oldRenderGrid();refreshTileMarks();scheduleSummary()};
 const oldDemoLaunch=demoLaunch;
 demoLaunch=function(q){q.retryRound=0;oldDemoLaunch(q);batch.clear();help=false;misDraft={...q.misconceptions||{}};paintSummary();renderMisLabels()};
 const oldSetupDemo=setupDemo;
@@ -210,7 +219,7 @@ handle=function(d){
  if(d.type==='chatBatchReceipt'){toast('Private hint delivered to '+Number(d.count||0)+' pupil'+(Number(d.count)===1?'':'s')+'.');return}
  if(d.type==='inkSyncReceipt'){if(d.merged)toast('Recovered '+d.merged+' locally saved pen marks.');return}
  if(d.type==='welcome'&&d.role==='student'){
-  const retained=readInk(d.question?.id);
+  reconnectAttempts=0;const retained=readInk(d.question?.id);
   priorHandle(d);
   help=false;serverRound=Number(d.question?.retryRound)||0;
   if(retained.length){
@@ -237,8 +246,8 @@ handle=function(d){
   return;
  }
  priorHandle(d);
- if(d.type==='welcome'&&d.role==='teacher'){batch.clear();misDraft={...d.question?.misconceptions||{}};renderMisLabels();paintSummary()}
- if(d.type==='status'&&state.role==='teacher')paintSummary();
+ if(d.type==='welcome'&&d.role==='teacher'){reconnectAttempts=0;batch.clear();misDraft={...d.question?.misconceptions||{}};renderMisLabels();paintSummary()}
+ if(d.type==='status'&&state.role==='teacher')scheduleSummary();
 };
 function fingerprint(e){
  if(!e)return'';
