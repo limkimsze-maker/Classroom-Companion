@@ -264,7 +264,7 @@ handle=function(d){
 function fingerprint(e){
  if(!e)return'';
  const round=v=>Math.round((Number(v)||0)*10)/10;
- return JSON.stringify([e.op,Number(e.at)||0,(e.pts||[]).map(p=>p.map(round)),e.color||'',Number(e.width)||0]);
+ return JSON.stringify([e.op,Number(e.at)||0,(e.pts||[]).map(p=>p.map(round)),e.color||(e.op==='stroke'?'':'#17324d'),Number(e.width)||0]);
 }
 function inkKey(qid){return 'cc-mw-ink4:'+state.room+':'+state.studentId+':'+qid}
 function storeInk(){
