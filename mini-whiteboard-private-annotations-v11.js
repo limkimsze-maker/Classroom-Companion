@@ -108,6 +108,7 @@ css.textContent=[
  '#ccTeacherAnnotation #ccAnnNotice[hidden]{display:none}',
  '.cc-annotation-overlay{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none;z-index:20}',
  '#ccFeedbackPupilStatus{display:block;border-radius:8px;background:#fff8df;color:#745b1d;padding:6px 10px;font:750 12px/1.4 system-ui;margin:7px 0}',
+ '#ccFeedbackPupilStatus[hidden]{display:none!important}',
  '#ccAnnTextEditor{position:absolute;z-index:31;display:flex;gap:5px;align-items:flex-start;background:#fff7d6;box-shadow:0 4px 15px #193d3c30;padding:8px;border-radius:8px;max-width:min(90vw,400px)}',
  '#ccAnnTextEditor textarea{width:210px;max-width:50vw;min-height:62px;border:1px solid #b8a468;border-radius:6px;background:white;resize:vertical;padding:6px;font:13px system-ui}',
  '#ccAnnTextEditor button{padding:6px 9px;min-height:35px}',
