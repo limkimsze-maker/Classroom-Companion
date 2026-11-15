@@ -267,6 +267,8 @@ function refreshPupilPage(){
  }
  studentMsg.textContent='Page '+currentPage+' of '+MAX_PAGES+(policy.pages?' · separate working on each page.':' · page changes restricted by your teacher.');
  for(const b of mathBtns.values())b.disabled=!policy.math||!isInteractive();
+ const eraser=$('eraserTool');
+ if(eraser)eraser.disabled=!policy.eraser||currentSharing();
  if(typeof refreshSharingBank==='function')refreshSharingBank();
  moveMath.disabled=!policy.math||!isInteractive();
  eraseMath.disabled=!policy.math||!isInteractive()||!selectedMathId;
@@ -409,7 +411,7 @@ function refreshSharingBank(){
  const max=Number(state.question.workspace.counterCount);
  bankRemaining.textContent=remain+' of '+max+' remaining';
  counterButtons.forEach((dot,i)=>{dot.hidden=i>=remain;dot.disabled=!policy.math||!isInteractive()});
- bankHelp.textContent=remain===0?'All counters placed. Drag them between groups, or select one and tap Remove to return it to the bank.':'Drag a counter into a circle, or tap one and then tap the board. Everyone has their own '+max+' counters.';
+ bankHelp.textContent=remain===0?'All counters placed. Drag them between groups, or select one and tap Remove to return it to the bank.':'Drag a counter into a circle, or tap one and then tap the board. Everyone has their own '+max+' counters. Use Undo to correct work; the teacher drawing cannot be erased.';
  const questionBlock=$('studentQuestion');
  if(questionBlock){
   const image=questionBlock.querySelector('img');
@@ -435,7 +437,7 @@ function inkAllowed(event){
  if(event.op==='text')return policy.text;
  if(event.op==='stroke'){
   if(['line','rectangle'].includes(event.tool))return policy.shapes;
-  if(event.color==='#ffffff')return policy.eraser;
+  if(event.color==='#ffffff')return policy.eraser&&!currentSharing();
   return policy.pen;
  }
  return true;
@@ -454,7 +456,7 @@ addInk=function(event){
 function applyPupilPermissions(){
  const keys={pen:['penTool'],eraser:['eraserTool'],shapes:['ccPupilLine','ccPupilRect'],text:['ccPupilText']};
  for(const [name,ids] of Object.entries(keys))for(const id of ids){
-  const element=$(id);if(element)element.disabled=!policy[name];
+  const element=$(id);if(element)element.disabled=!policy[name]||(name==='eraser'&&currentSharing());
  }
  if(!policy.math){mathTool='';selectedMathId='';chooseMath();}
  if(!policy.pages&&currentPage!==1){currentPage=1;selectedMathId='';if(isPupil()&&!state.question?.ended)addInk({op:'page',page:1,at:eventTime()});paintPupilBoard();}
@@ -518,6 +520,19 @@ function questionsForReport(){
  }
  return [];
 }
+async function preloadBackgroundImages(entries){
+ const questions=entries.map(entry=>entry.question).filter(q=>q?.workspace?.kind==='equalSharing'&&typeof q.image==='string');
+ await Promise.all(questions.map(q=>new Promise(resolve=>{
+  const key=String(q.id||'')+':'+q.image.length+':'+q.image.slice(-24);
+  const existing=backgroundCache.get(key);
+  if(existing?.ready){resolve();return}
+  const image=new Image(),record={image,ready:false};
+  backgroundCache.set(key,record);
+  image.onload=()=>{record.ready=true;resolve()};
+  image.onerror=()=>resolve();
+  image.src=q.image;
+ })));
+}
 function pngPage(events,page,question){
  const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=600;
  renderWork(canvas,events||[],Infinity,page,null,question);
@@ -566,6 +581,7 @@ $('ccReportPrint').onclick=async()=>{
    const payload=await reply.json();if(!payload.ok||!Array.isArray(payload.session?.questions))throw Error('Session export data is incomplete.');
    entries=payload.session.questions;
   }
+  await preloadBackgroundImages(entries);
   generatePrintable(win,entries,selected);
  }catch(error){
   win.document.open();
