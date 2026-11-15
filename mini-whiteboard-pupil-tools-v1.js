@@ -4,6 +4,41 @@
  */
 (function(){
 'use strict';
+/* Replay and teacher-selected working preserve typed text as one atomic action. */
+const oldDraw=drawCommands;
+drawCommands=function(target,events,until=Infinity){
+ if(!events||!events.some(e=>e?.op==='text'))return oldDraw(target,events,until);
+ if(!target)return;
+ const c=target.getContext('2d');if(!c)return;
+ c.setTransform(1,0,0,1,0,0);
+ c.fillStyle='#fff';c.clearRect(0,0,target.width,target.height);c.fillRect(0,0,target.width,target.height);
+ const keep=[],undone=[];
+ for(const e of events){
+  if((Number(e?.at)||0)>until)break;
+  if(e.op==='clear'){keep.length=0;undone.length=0}
+  else if(e.op==='undo'){if(keep.length)undone.push(keep.pop())}
+  else if(e.op==='redo'){if(undone.length)keep.push(undone.pop())}
+  else if(e.op==='stroke'||e.op==='text'){keep.push(e);undone.length=0}
+ }
+ c.save();c.scale(target.width/1000,target.height/600);c.lineCap='round';c.lineJoin='round';
+ for(const e of keep){
+  c.fillStyle=/^#[a-f0-9]{6}$/i.test(e.color||'')?e.color:'#17324d';
+  c.strokeStyle=c.fillStyle;
+  if(e.op==='text'){
+   const x=Math.max(0,Math.min(980,Number(e.x)||0)),y=Math.max(20,Math.min(594,Number(e.y)||0));
+   c.font=Math.max(14,Math.min(64,Number(e.size)||30))+'px ui-sans-serif,system-ui,Arial,sans-serif';
+   c.textBaseline='alphabetic';c.fillText(String(e.text||'').slice(0,80),x,y,Math.max(10,990-x));continue;
+  }
+  const points=e.pts;
+  if(!Array.isArray(points)||!points.length)continue;
+  c.lineWidth=Math.max(1,Math.min(60,Number(e.width)||4));
+  c.beginPath();c.moveTo(Number(points[0][0])||0,Number(points[0][1])||0);
+  if(points.length===1){c.arc(Number(points[0][0])||0,Number(points[0][1])||0,c.lineWidth/2,0,2*Math.PI);c.fill()}
+  else{for(const xy of points.slice(1))if(Array.isArray(xy))c.lineTo(Number(xy[0])||0,Number(xy[1])||0);c.stroke()}
+ }
+ c.restore();
+};
+
 if(new URLSearchParams(location.search).get('mode')==='projector')return;
 const $=id=>document.getElementById(id);
 const canvas=$('studentCanvas'), bar=$('penTool')?.closest('.boardbar'), student=$('studentActivity');
@@ -187,39 +222,5 @@ document.addEventListener('pointerdown',e=>{
  if(more.open&&!more.contains(e.target))more.open=false;
  if(!typeBox.hidden&&!typeBox.contains(e.target)&&e.target!==canvas)hideTextBox();
 });
-/* Replay and teacher-selected working preserve typed text as one atomic action. */
-const oldDraw=drawCommands;
-drawCommands=function(target,events,until=Infinity){
- if(!events||!events.some(e=>e?.op==='text'))return oldDraw(target,events,until);
- if(!target)return;
- const c=target.getContext('2d');if(!c)return;
- c.setTransform(1,0,0,1,0,0);
- c.fillStyle='#fff';c.clearRect(0,0,target.width,target.height);c.fillRect(0,0,target.width,target.height);
- const keep=[],undone=[];
- for(const e of events){
-  if((Number(e?.at)||0)>until)break;
-  if(e.op==='clear'){keep.length=0;undone.length=0}
-  else if(e.op==='undo'){if(keep.length)undone.push(keep.pop())}
-  else if(e.op==='redo'){if(undone.length)keep.push(undone.pop())}
-  else if(e.op==='stroke'||e.op==='text'){keep.push(e);undone.length=0}
- }
- c.save();c.scale(target.width/1000,target.height/600);c.lineCap='round';c.lineJoin='round';
- for(const e of keep){
-  c.fillStyle=/^#[a-f0-9]{6}$/i.test(e.color||'')?e.color:'#17324d';
-  c.strokeStyle=c.fillStyle;
-  if(e.op==='text'){
-   const x=Math.max(0,Math.min(980,Number(e.x)||0)),y=Math.max(20,Math.min(594,Number(e.y)||0));
-   c.font=Math.max(14,Math.min(64,Number(e.size)||30))+'px ui-sans-serif,system-ui,Arial,sans-serif';
-   c.textBaseline='alphabetic';c.fillText(String(e.text||'').slice(0,80),x,y,Math.max(10,990-x));continue;
-  }
-  const points=e.pts;
-  if(!Array.isArray(points)||!points.length)continue;
-  c.lineWidth=Math.max(1,Math.min(60,Number(e.width)||4));
-  c.beginPath();c.moveTo(Number(points[0][0])||0,Number(points[0][1])||0);
-  if(points.length===1){c.arc(Number(points[0][0])||0,Number(points[0][1])||0,c.lineWidth/2,0,2*Math.PI);c.fill()}
-  else{for(const xy of points.slice(1))if(Array.isArray(xy))c.lineTo(Number(xy[0])||0,Number(xy[1])||0);c.stroke()}
- }
- c.restore();
-};
 updateSizes();
 })();
