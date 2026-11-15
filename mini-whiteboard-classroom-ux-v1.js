@@ -290,7 +290,7 @@ function saveMessage(){
  if(!live){head='Demo working';detail='Not sent to a real teacher.'}
  else if(!online){
   status='offline';head='Reconnecting…';
-  detail=backupGood?'Writing retained on this device. Do not close this tab.':'Local backup unavailable. Keep this tab open.';
+  detail=!lastInk?'Waiting to reconnect. Do not submit an answer yet.':backupGood?'Writing retained on this device. Do not close this tab.':'Local backup unavailable. Keep this tab open.';
  }else if(!lastInk){head='Connected';detail='Ready to write. Your working will sync to your teacher.'}
  else if(pending.size){head='Saving working…';detail=pending.size+' writing action'+(pending.size===1?'':'s')+' awaiting confirmation.'}
  else{head='✓ Working saved';detail='Confirmed received by classroom service.'}
@@ -338,6 +338,7 @@ handle=function(d){
  oldHandle(d);
  if(d.type==='feedback'&&state.role==='student'){answerPending=false;answerConfirmed=true;saveMessage()}
  if(d.type==='welcome'&&d.role==='student'){
+  if(Array.isArray(d.work)&&d.work.length){lastInk=true;latestAck=Date.now()}
   // The Worker already sent its version of this pupil's working.
   // Any missing writing will be recovered by the existing formative inkSync path.
   if(Array.isArray(d.work)&&pending.size){
