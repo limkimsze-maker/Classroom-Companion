@@ -63,7 +63,7 @@ const isLive=()=>state.mode==='live'&&state.ws?.readyState===1;
 // A configured address is a prerequisite for live use, never something a pupil must type.
 const query=new URLSearchParams(location.search);
 const configuredWorker=()=>{
- const input=query.get('worker')||window.MINI_WHITEBOARD_WORKER_URL||'';
+ let fallback='';try{fallback=localStorage.getItem('wscm-worker-url')||''}catch{}const input=query.get('worker')||window.MINI_WHITEBOARD_WORKER_URL||fallback||'';
  try{
   if(!input)return '';
   const u=new URL(input);
@@ -80,7 +80,7 @@ if(backendInput){
  else backendInput.value='';
 }
 const joinHelp=document.createElement('p');joinHelp.id='ccPupilEntryTip';
-joinHelp.textContent='Enter your class PIN and name. No account, QR code or technical settings required.';
+joinHelp.textContent='Enter your class PIN and name. No account or technical settings required.';
 $('joinLive')?.closest('.row')?.after(joinHelp);
 const copyLink=document.createElement('button');copyLink.type='button';copyLink.id='ccPupilLinkBtn';
 copyLink.textContent='Copy pupil link';copyLink.title='Give pupils this web address. They only enter their PIN and name.';
@@ -106,7 +106,7 @@ if(oldJoin)$('joinLive').onclick=function(){
  }
  return oldJoin();
 };
-if(query.has('pupil')){
+if(query.has('pupil')||location.pathname.endsWith('/mini-whiteboard-pin-join-beta.html')){
  selectRole('student');
  $('roleTeacher')?.classList.add('hidden');
  const oldTop=$('appHeader')?.querySelector('a[href*="whiteboard-smart-mini-preparation-beta"]');
@@ -311,6 +311,21 @@ seatWrap.addEventListener('dragend',()=>{dragPupilId=null},true);
 const bookPanel=document.createElement('section');bookPanel.id='ccBookPanel';
 bookPanel.innerHTML='<h3>🔖 Saved teaching examples</h3><p style="font-size:12px;color:#627a73;margin:0 0 8px">Bookmark a good method or an interesting mistake. Only the teacher sees pupil names; projection is anonymous.</p><div id="ccBookList"></div>';
 $('inspectTitle')?.closest('section')?.append(bookPanel);
+const rejoin=document.createElement('button');rejoin.type='button';rejoin.id='ccPupilRejoin';rejoin.className='small soft';rejoin.textContent='↻ Approve new device';rejoin.title='Allow a disconnected pupil to rejoin on a new device for five minutes while preserving their working';
+rejoin.style.marginTop='8px';
+$('ccFormResolveHelp')?.after(rejoin);
+function paintRejoin(){
+ const p=state.pupils.get(state.selected);
+ rejoin.disabled=!p||p.online!==false||state.mode!=='live'||state.ws?.readyState!==1;
+ rejoin.title=p?.online?'Ask the pupil to close the original tab before approving a device change.':'Approve a one-time five-minute new-device reconnect for this pupil';
+}
+rejoin.onclick=()=>{
+ const p=state.pupils.get(state.selected);
+ if(!p||p.online!==false||!isLive())return;
+ if(confirm('Allow '+p.name+' to reconnect on a new device within five minutes? The original device key will be invalidated.'))send({type:'permitRejoin',id:p.id});
+};
+const prevSelectPupil=selectPupil;
+selectPupil=function(id){prevSelectPupil(id);paintRejoin()};
 const addBook=document.createElement('button');addBook.type='button';addBook.id='ccBookSave';addBook.textContent='🔖 Save example';addBook.title='Bookmark this pupil’s current working as a teaching example';
 $('projectReplay')?.after(addBook);
 const bookModal=document.createElement('div');bookModal.id='ccBookModal';bookModal.hidden=true;
@@ -389,6 +404,7 @@ handle=function(d){
  if(d.type==='confidenceReceipt'&&state.role==='student'){
   if(d.questionId===state.question?.id){confidence=d.value||'';paintConfidence()}return;
  }
+ if(d.type==='rejoinPermit'){toast('New-device reconnect approved for '+d.name+'. Ask this pupil to enter the same name and class PIN within five minutes.');paintRejoin();return}
  if(d.type==='bookmarkList'&&state.role==='teacher'){
   bookmarks=Array.isArray(d.bookmarks)?d.bookmarks.slice(0,30):[];paintBookmarks();return;
  }
@@ -407,7 +423,7 @@ handle=function(d){
   if(state.role==='student')refreshQuestion();
   if(state.role==='teacher')paintConfidenceSummary();
  }
- if(d.type==='status'&&state.role==='teacher'){paintConfidenceSummary();paintSeats()}
+ if(d.type==='status'&&state.role==='teacher'){paintConfidenceSummary();paintSeats();paintRejoin()}
  if(d.type==='feedbackPolicy'&&state.role==='student')applyPauseUI();
 };
 const priorSetup=setupDemo;
@@ -429,5 +445,5 @@ if(priorCreateRoom)$('createRoom').onclick=async function(){
 const priorClose=$('closeRoom')?.onclick;
 if(priorClose)$('closeRoom').onclick=function(){const result=priorClose();applyPauseUI();return result};
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!bookModal.hidden){bookModal.hidden=true;currentBookmark=null}},true);
-applyPauseUI();paintConfidence();paintConfidenceSummary();paintSeats();paintBookmarks();
+applyPauseUI();paintConfidence();paintConfidenceSummary();paintSeats();paintBookmarks();paintRejoin();
 })();
