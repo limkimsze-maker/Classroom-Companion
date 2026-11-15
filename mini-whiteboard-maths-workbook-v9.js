@@ -335,7 +335,7 @@ function applyPupilPermissions(){
   const element=$(id);if(element)element.disabled=!policy[name];
  }
  if(!policy.math){mathTool='';selectedMathId='';chooseMath();}
- if(!policy.pages&&currentPage!==1){currentPage=1;selectedMathId='';paintPupilBoard();}
+ if(!policy.pages&&currentPage!==1){currentPage=1;selectedMathId='';if(isPupil()&&!state.question?.ended)addInk({op:'page',page:1,at:eventTime()});paintPupilBoard();}
  refreshPupilPage();
 }
 // Teacher: monitor a particular page without changing the pupil's working.
@@ -450,6 +450,25 @@ $('ccReportPrint').onclick=async()=>{
   win.document.write('<p style="font:16px system-ui;color:#9a3535;padding:25px">Could not prepare the PDF report. '+escapeHTML(error.message||String(error))+'</p>');
   win.document.close();toast(error.message||String(error));
  }
+};
+// Prevent accidental live connection to an older classroom Worker that lacks
+// the new page and tool policy enforcement.
+async function verifyWorkbookWorker(raw){
+ const u=new URL(raw);
+ if(u.protocol!=='https:')throw Error('Use the HTTPS URL of your Workbook Worker v9.');
+ const response=await fetch(u.origin+'/api/health',{cache:'no-store'});
+ if(!response.ok)throw Error('Classroom backend is not reachable.');
+ const info=await response.json();
+ if(info.version!=='v9')throw Error('This beta requires Maths Workbook Worker v9. Your earlier Worker will not support these tools.');
+ return true;
+}
+const oldCreate=$('createRoom')?.onclick;
+if(oldCreate)$('createRoom').onclick=async function(){
+ try{await verifyWorkbookWorker($('backend').value);return await oldCreate()}catch(error){toast(error.message||String(error))}
+};
+const oldJoin=$('joinLive')?.onclick;
+if(oldJoin)$('joinLive').onclick=async function(){
+ try{await verifyWorkbookWorker($('studentBackend').value);return await oldJoin()}catch(error){toast(error.message||String(error))}
 };
 // Legacy local backup additionally recognises new event types, through a
 // versioned recovery script loaded alongside this one.
