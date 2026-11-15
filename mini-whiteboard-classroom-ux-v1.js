@@ -174,8 +174,8 @@ function zoomTo(next){
  reset.setAttribute('aria-label','Reset whiteboard zoom to 100 percent; currently '+Math.round(zoom*100)+' percent');
 }
 function setMove(on){
+ if(on)$('penTool').click();
  move=on;
- if(on){$('penTool').click();}
  paintMove();
 }
 moveBtn.onclick=()=>setMove(!move);
