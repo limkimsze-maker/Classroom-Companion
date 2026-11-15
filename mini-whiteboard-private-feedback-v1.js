@@ -33,6 +33,11 @@ css.textContent=[
 '.pupil.cc-newreply::after{content:"Reply";position:absolute;right:3px;top:3px;background:#164e9c;color:white;border-radius:12px;padding:2px 5px;font:700 9px system-ui}',
 '#ccPrivateStudent.cc-new-private{border:2px solid #0f766e;background:#e7f6f1}',
 '#ccPrivateStudent .ccChatThread{height:126px}',
+ '#ccPrivateTeacher.cc-chat-docked{position:fixed;top:55px;right:10px;width:min(455px,calc(100vw - 20px));max-height:calc(100dvh - 68px);overflow:auto;background:#f7fcfa;z-index:900;box-shadow:0 15px 50px #112d4366;border:2px solid #0f766e}',
+ '#ccPrivateTeacher.cc-chat-docked .ccChatThread{height:190px}',
+ '#ccChatDockClose{display:none;float:right;padding:4px 8px;font-size:12px;font-weight:850;border:1px solid #b5d1cd;border-radius:7px;background:#fff;color:#174a4a}',
+ '#ccPrivateTeacher.cc-chat-docked #ccChatDockClose{display:inline-block}',
+ '#ccChatQuickOpen{background:#e3f6ef;border:1px solid #a5d4ca;border-radius:7px;color:#0f665d;font-size:12px;font-weight:850;padding:7px 10px}',
 '@media(max-width:600px){#ccPrivateTeacher,#ccPrivateStudent{padding:9px}.ccChatThread{height:118px}}'
 ].join('\n');document.head.appendChild(css);
 
@@ -42,6 +47,14 @@ teacherPanel.setAttribute('aria-label','Private messages to the selected pupil')
 teacherPanel.innerHTML='<div class="row between"><h3>✉ Private feedback</h3><span id="ccTeacherChatRecipient" class="pill amber">Select a pupil</span></div><p class="ccChatStatus" id="ccTeacherChatInfo">Select a pupil above. Send a private hint while they work or after a wrong answer.</p><div class="ccChatPupilSetting"><label><input type="checkbox" id="ccTeacherPupilReplies" checked> This pupil may reply</label></div><div id="ccTeacherThread" class="ccChatThread" role="log" aria-live="polite"></div><div class="ccChatComposer"><textarea id="ccTeacherChatText" maxlength="280" placeholder="Write a private hint for this pupil…" aria-label="Private message to selected pupil"></textarea><button type="button" id="ccTeacherChatSend">Send privately</button></div><div class="ccChatPresets" id="ccTeacherChatPresets"></div>';
 $('inspectTitle')?.closest('section')?.appendChild(teacherPanel);
 
+const closeDock=document.createElement('button');closeDock.type='button';closeDock.id='ccChatDockClose';closeDock.textContent='✕ Close';closeDock.onclick=()=>teacherPanel.classList.remove('cc-chat-docked');teacherPanel.prepend(closeDock);
+const quickMessage=document.createElement('button');quickMessage.type='button';quickMessage.id='ccChatQuickOpen';quickMessage.textContent='✉ Private hint';quickMessage.title='Send a discreet note to the selected pupil without leaving the dashboard';
+quickMessage.onclick=()=>{
+ if(!state.selected||!state.pupils.has(state.selected)){toast('Select a pupil tile first.');return;}
+ teacherPanel.classList.add('cc-chat-docked');$('ccTeacherChatText')?.focus();
+};
+$('ccFocusDashboardBar')?.prepend(quickMessage);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&teacherPanel.classList.contains('cc-chat-docked')){teacherPanel.classList.remove('cc-chat-docked');e.stopPropagation();}},true);
 const global=document.createElement('div');global.id='ccPrivateGlobalControls';global.className='ccChatSettings';
 global.innerHTML='<label><input type="checkbox" id="ccMessagesEnabled" checked> Private messaging ON</label><label><input type="checkbox" id="ccRepliesEnabled" checked> Pupils may reply</label><span id="ccChatServerStatus" class="ccChatStatus">Demo preview · Live messages need Worker v3</span>';
 $('ccFocusDashboardBar')?.appendChild(global);
