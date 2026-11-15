@@ -24,6 +24,7 @@ const tNow=()=>Math.max(0,Date.now()-(state.question?.startedAt||Date.now()));
 const existingObjects=()=>window.ccMathWorkbookModel?.(state.selectedEvents||[],Infinity,myPage())?.objects||[];
 const qName=()=>state.pupils.get(state.selected)?.name||'selected pupil';
 
+window.ccPupilTeacherTakeoverActive=false;
 const css=document.createElement('style');
 css.textContent=[
 '#ccTeacherTakeover{margin:10px 0;padding:12px;background:#f6fafc;border:1px solid #b5d7d9;border-radius:12px}',
@@ -196,7 +197,7 @@ overlay.addEventListener('pointerdown',pointerDown);
 overlay.addEventListener('pointermove',pointerMove);
 overlay.addEventListener('pointerup',pointerFinish);
 overlay.addEventListener('pointercancel',()=>{pointer=null;drawCommands(teacherCanvas,state.selectedEvents||[])});
-function setPupilLock(flag){enabledOnPupil=Boolean(flag);render();}
+function setPupilLock(flag){enabledOnPupil=Boolean(flag);window.ccPupilTeacherTakeoverActive=enabledOnPupil;render();}
 const activity=$('studentActivity');
 function blockPupilEvent(e){
  if(!enabledOnPupil)return;
@@ -207,6 +208,7 @@ function blockPupilEvent(e){
  if(editable){e.preventDefault();e.stopImmediatePropagation()}
 }
 for(const ev of ['pointerdown','click','keydown','input','change'])activity?.addEventListener(ev,blockPupilEvent,true);
+$('ccAnnTools')?.addEventListener('click',()=>{if(tool!=='off'){tool='off';render()} });
 const oldSelect=selectPupil;
 selectPupil=function(id){
  if(id!==state.selected&&validCurrent())returnControl();
