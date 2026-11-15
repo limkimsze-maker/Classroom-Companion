@@ -408,7 +408,7 @@ function generatePrintable(win,entries,selected){
   for(const pupil of entry.pupils||[]){
    if(selected&&pupil.id!==selected)continue;
    const events=Array.isArray(pupil.events)?pupil.events:[];
-   const total=Math.max(1,Math.min(MAX_PAGES,...events.map(e=>pageOf(e)),pupil.currentPage||1));
+   const total=Math.min(MAX_PAGES,Math.max(1,...events.map(e=>pageOf(e)),Number(pupil.currentPage)||1));
    for(let page=1;page<=total;page++){
     const answer=Array.isArray(pupil.history)&&pupil.history.length?pupil.history.at(-1)?.value:pupil.answer;
     const result=pupil.correct===true?'Correct':pupil.correct===false?'Review needed':'Not yet marked';
