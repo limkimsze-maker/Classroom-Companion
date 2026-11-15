@@ -56,8 +56,8 @@ mcqLabels.innerHTML='<strong style="font-size:12px">Possible explanations for wr
 $('mcqOptions')?.after(mcqLabels);
 function safe(v,max=120){return String(v??'').trim().slice(0,max)}
 function tagKey(id){return (state.room||'')+':'+(state.question?.id||'')+':'+id}
-function setTag(id,v){if(!id)return;const key=tagKey(id);if(v)tags.set(key,v);else tags.delete(key);paintSummary()}
-function getTag(id){return tags.get(tagKey(id))||''}
+function setTag(id,v){if(!id)return;const key=tagKey(id);if(v)tags.set(key,v);else tags.delete(key);const p=state.pupils.get(id);if(p)p.confirmedTag=v;if(state.mode==='live')send({type:'tagPupil',id,tag:v});paintSummary()}
+function getTag(id){return tags.get(tagKey(id))||state.pupils.get(id)?.confirmedTag||''}
 function chosen(){return [...batch].filter(id=>state.pupils.has(id))}
 function paintBatch(){
  const root=$('pupilGrid');root?.querySelectorAll('button[data-cc-pupil]').forEach(b=>b.classList.toggle('cc-form-selected',batch.has(b.dataset.ccPupil)));
@@ -208,6 +208,18 @@ $('ccFormStudentHelp').onclick=()=>{
 };
 const oldRenderGrid=renderGrid;
 renderGrid=function(){oldRenderGrid();refreshTileMarks();scheduleSummary()};
+const oldArchive=makeDemoArchiveEntry;
+makeDemoArchiveEntry=function(){
+ const entry=oldArchive();if(!entry)return entry;
+ for(const p of entry.pupils){
+  const live=state.pupils.get(p.id);if(!live)continue;
+  p.confirmedTag=live.confirmedTag||getTag(p.id);
+  p.firstAnswer=live.firstAnswer||'';
+  p.firstCorrect=live.firstCorrect??null;
+  if(live.firstAnswer)p.history=[{round:0,value:live.firstAnswer,correct:live.firstCorrect??null},{round:live.retryRound||1,value:live.answer||'',correct:live.correct??null}];
+ }
+ return entry;
+};
 const oldDemoLaunch=demoLaunch;
 demoLaunch=function(q){q.retryRound=0;oldDemoLaunch(q);batch.clear();help=false;misDraft={...q.misconceptions||{}};paintSummary();renderMisLabels()};
 const oldSetupDemo=setupDemo;
