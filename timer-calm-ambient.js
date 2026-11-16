@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   let ctx=null, master=null, compressor=null, airSource=null, airFilter=null, airGain=null, airLfo=null, airLfoGain=null;
-  let scheduler=null, playing=false, nextChordTime=0, nextBellTime=0, chordIndex=0, bellIndex=0;
+  let scheduler=null, playing=false, nextChordTime=0, nextBellTime=0, chordIndex=0, bellIndex=0, playRequest=0;
   const active=new Set();
   const CHORDS=[
     [146.83,220.00,277.18,329.63], // Dmaj9 colour
@@ -117,7 +117,9 @@
 
   async function start(){
     if(playing){if(ctx?.state==='suspended')await ctx.resume();return true}
+    const request=++playRequest;
     if(!(await prime()))return false;
+    if(request!==playRequest)return false;
     playing=true;chordIndex=0;bellIndex=0;
     const now=ctx.currentTime+.05;
     nextChordTime=now;nextBellTime=now+4.5;
@@ -130,18 +132,18 @@
   }
 
   function stop(fade=.8){
-    if(!ctx)return;
+    ++playRequest;
+    if(!playing)return;
     playing=false;clearInterval(scheduler);scheduler=null;
     const now=ctx.currentTime;
     master.gain.cancelScheduledValues(now);
     master.gain.setValueAtTime(Math.max(.0001,master.gain.value||1.16),now);
     master.gain.exponentialRampToValueAtTime(.0001,now+fade);
+    const retiringNodes=[airSource,airFilter,airGain,airLfo,airLfoGain,...active];
+    airSource=airFilter=airGain=airLfo=airLfoGain=null;
+    active.clear();
     setTimeout(()=>{
-      try{airSource?.stop();airLfo?.stop()}catch(e){}
-      [airSource,airFilter,airGain,airLfo,airLfoGain].forEach(n=>{try{n?.disconnect()}catch(e){}});
-      airSource=airFilter=airGain=airLfo=airLfoGain=null;
-      for(const n of [...active]){try{n.stop?.()}catch(e){}try{n.disconnect?.()}catch(e){}}
-      active.clear();
+      for(const n of retiringNodes){try{n?.stop?.()}catch(e){}try{n?.disconnect()}catch(e){}}
     },Math.max(50,fade*1000+80));
   }
 

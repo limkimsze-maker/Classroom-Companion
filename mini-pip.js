@@ -11,6 +11,7 @@ let pipSlug=null;
 let pipButton=null;
 let opening=false;
 let fullscreenWindow=null;
+const countdownPopups=new Map();
 // Remember the user's actual floating-window viewport before maximising.
 const originalCompactViewport=new Map();
 
@@ -24,7 +25,7 @@ function toolUrl(slug,display){
 function isCompactShowcase(slug){return slug==='timer-calm-music'||slug==='transition-countdown';}
 function pipSize(slug){return isCompactShowcase(slug)?{width:344,height:256,preferInitialWindowPlacement:true}:{width:430,height:320};}
 function clearActive(){
-  if(pipButton)pipButton.classList.remove('active','expanded');
+  if(pipButton&&!countdownPopups.has(pipSlug))pipButton.classList.remove('active','expanded');
   pipWindow=null;pipSlug=null;pipButton=null;
 }
 function fallback(button){button.dataset.ccPipBypass='1';button.click();}
@@ -90,7 +91,7 @@ function injectFreshNoise(frame){
     fd.body.appendChild(s);
   }catch(e){}
 }
-function buildFullscreenWindow(win,slug,title){
+function buildFullscreenWindow(win,slug,title,countdown){
   const d=win.document;
   d.open();
   d.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title></head><body></body></html>');
@@ -100,6 +101,7 @@ function buildFullscreenWindow(win,slug,title){
   d.body.style.cssText='margin:0;width:100%;height:100%;overflow:hidden;background:#fff;position:relative;';
 
   const frame=d.createElement('iframe');
+  frame.classroomCountdown=countdown;
   frame.src=toolUrl(slug,'fullscreen');
   frame.title=title;
   frame.allow='autoplay; fullscreen';
@@ -284,7 +286,7 @@ function buildFullscreenWindow(win,slug,title){
 
   return fs;
 }
-function openTrueFullscreen(slug,title){
+function openTrueFullscreen(slug,title,compactWindow,compactFrame){
   // The initial PiP window can be larger than its requested dimensions
   // (Chrome enforces its own minimums and teachers may resize it).
   if(pipWindow&&!pipWindow.closed&&pipSlug===slug){
@@ -309,9 +311,23 @@ function openTrueFullscreen(slug,title){
   }
 
   fullscreenWindow=win;
+  const countdown=compactFrame.classroomCountdown;
+  const button=pipButton;
+  if(countdown){
+    // The fullscreen view takes ownership of the live timer and soundtrack.
+    compactFrame.classroomCountdown=null;
+    countdownPopups.set(slug,win);
+  }
   try{win.moveTo(s.left,s.top)}catch(e){}
   try{win.resizeTo(s.width,s.height)}catch(e){}
-  const fsButton=buildFullscreenWindow(win,slug,title);
+  const fsButton=buildFullscreenWindow(win,slug,title,countdown);
+  if(countdown)win.addEventListener('pagehide',()=>{
+    countdown.dispose();
+    if(countdownPopups.get(slug)===win){
+      countdownPopups.delete(slug);
+      button?.classList.remove('active','expanded');
+    }
+  },{once:true});
   try{win.focus()}catch(e){}
 
   try{
@@ -320,11 +336,11 @@ function openTrueFullscreen(slug,title){
   }catch(e){}
 
   setTimeout(()=>{
-    if(pipWindow&&!pipWindow.closed){try{pipWindow.close()}catch(e){}}
+    if(!compactWindow.closed){try{compactWindow.close()}catch(e){}}
   },120);
   return true;
 }
-function addFullscreenControl(win,title,slug){
+function addFullscreenControl(win,title,slug,frame){
   const d=win.document;
   const b=d.createElement('button');
   b.type='button';
@@ -334,7 +350,7 @@ function addFullscreenControl(win,title,slug){
   b.style.cssText='position:fixed;top:7px;right:48px;z-index:2147483647;width:31px;height:31px;border:1px solid #cbd8df;border-radius:9px;background:rgba(255,255,255,.97);color:#17324d;font:900 17px/1 system-ui;display:grid;place-items:center;cursor:pointer;box-shadow:0 3px 10px rgba(18,32,46,.10);padding:0;';
   b.addEventListener('mouseenter',()=>{b.style.background='#eef7ff';b.style.borderColor='#82bdf2'});
   b.addEventListener('mouseleave',()=>{b.style.background='rgba(255,255,255,.97)';b.style.borderColor='#cbd8df'});
-  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openTrueFullscreen(slug,title)});
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openTrueFullscreen(slug,title,win,frame)});
   d.body.appendChild(b);
 }
 
@@ -342,6 +358,8 @@ async function openFloating(button){
   if(opening)return;
   const slug=button.dataset.slug;
   if(!slug)return;
+  const popup=countdownPopups.get(slug);
+  if(popup&&!popup.closed){try{popup.focus()}catch(e){}return;}
   if(pipWindow&&!pipWindow.closed&&pipSlug===slug){try{pipWindow.focus()}catch(e){}return;}
 
   opening=true;
@@ -360,6 +378,7 @@ async function openFloating(button){
     d.body.replaceChildren();
 
     const frame=d.createElement('iframe');
+    if(isCompactShowcase(slug))frame.classroomCountdown=window.ClassroomCountdown?.create(slug);
     frame.src=toolUrl(slug);frame.title=title;frame.allow='autoplay; fullscreen';
     frame.setAttribute('allowfullscreen','');
     frame.style.cssText='display:block;width:100%;height:100%;border:0;margin:0;padding:0;background:#fff;';
@@ -367,20 +386,17 @@ async function openFloating(button){
       frame.addEventListener('load',()=>{
         if(isCompactShowcase(slug)){
           enforceCompactSize(win,slug);
-          try{
-            const fd=frame.contentDocument;if(!fd)return;
-            const fresh=fd.createElement('script');
-            fresh.src=(slug==='timer-calm-music'?'timer-calm-music.js':'transition-compact-design.js')+'?v='+Date.now();
-            fd.body.appendChild(fresh);
-          }catch(e){}
         }
         if(slug==='noise-level')injectFreshNoise(frame);
       },{once:true});
     }
     d.body.appendChild(frame);
-    addFullscreenControl(win,title,slug);
+    addFullscreenControl(win,title,slug,frame);
 
-    win.addEventListener('pagehide',()=>{if(pipWindow===win)clearActive();},{once:true});
+    win.addEventListener('pagehide',()=>{
+      frame.classroomCountdown?.dispose();
+      if(pipWindow===win)clearActive();
+    },{once:true});
   }catch(err){
     clearActive();
     console.warn('Classroom Companion floating mini tool unavailable; using popup fallback.',err);

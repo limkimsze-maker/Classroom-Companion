@@ -6,8 +6,7 @@ if(!S||S.slug!=='timer-calm-music'||window.__timerCalmV10)return;
 function install(){
   if(window.__timerCalmV10)return true;
   const panel=S.panel||document.getElementById('panel');
-  const ambient=window.TimerCalmAmbient;
-  if(!panel||!ambient)return false;
+  if(!panel||!window.ClassroomCountdown)return false;
   window.__timerCalmV10=true;
   document.body.classList.add('ccTimerCompact');
 
@@ -76,7 +75,7 @@ function install(){
     document.head.appendChild(style);
   }
 
-  let base=300,sec=base,running=false,timerId=null,music=true;
+  const countdown=window.ClassroomCountdown.forView(S.slug);
 
   panel.innerHTML=`
     <div class="timerCompactGrid">
@@ -105,52 +104,26 @@ function install(){
   const hint=document.getElementById('musicHint');
   const presetButtons=[...document.querySelectorAll('[data-min]')];
 
-  function selectPreset(){presetButtons.forEach(b=>b.classList.toggle('selected',Number(b.dataset.min)*60===base));}
   function draw(){
+    const sec=countdown.seconds;
     time.textContent=S.fmt(sec);
-    ring.style.setProperty('--progress',`${base?Math.max(0,sec/base*100):100}%`);
-    start.textContent=running?'Ⅱ Pause':'▶ Start';
-    musicBtn.textContent='♫ Calm music: '+(music?'On':'Off');
-    musicBtn.setAttribute('aria-pressed',music?'true':'false');
-    selectPreset();
-  }
-  function stopMusic(fade=.8){try{ambient.stop(fade)}catch(e){}}
-  async function startMusic(){
-    if(!running||!music)return false;
-    hint.textContent='Calm ambience fading in…';
-    try{
-      await ambient.prime();
-      const ok=await ambient.start();
-      hint.textContent=ok?'Warm pads • soft bells • gentle air texture':'Tap Start again to enable sound.';
-      return ok;
-    }catch(e){hint.textContent='Tap Start again to enable sound.';return false;}
-  }
-  function stop(resetMusic=false){
-    if(timerId){clearInterval(timerId);timerId=null;}
-    running=false;stopMusic(.6);
-    if(resetMusic)hint.textContent='Warm pads and soft bells fade in gently.';
-    draw();
-  }
-  async function go(){
-    if(running){stop(false);return;}
-    if(sec<=0)sec=base;
-    void window.ClassroomTimerAlarm?.prime();
-    running=true;draw();
-    if(music)await startMusic();
-    timerId=setInterval(()=>{sec--;draw();if(sec<=0){stop(true);S.chime();S.toast('Time is up');}},1000);
+    ring.style.setProperty('--progress',`${Math.max(0,sec/countdown.duration*100)}%`);
+    start.textContent=countdown.running?'Ⅱ Pause':'▶ Start';
+    musicBtn.textContent='♫ Calm music: '+(countdown.music?'On':'Off');
+    musicBtn.setAttribute('aria-pressed',String(countdown.music));
+    presetButtons.forEach(b=>b.classList.toggle('selected',Number(b.dataset.min)*60===countdown.duration));
+    if(!countdown.music)hint.textContent='Calm music is off.';
+    else if(countdown.audioStatus==='starting')hint.textContent='Calm ambience fading in…';
+    else if(countdown.audioStatus==='playing')hint.textContent='Warm pads • soft bells • gentle air texture';
+    else if(countdown.audioStatus==='unavailable')hint.textContent='Tap Start again to enable sound.';
+    else hint.textContent='Warm pads and soft bells fade in gently.';
   }
 
-  presetButtons.forEach(b=>b.onclick=()=>{stop(true);base=sec=Number(b.dataset.min)*60;draw();});
-  start.onclick=go;
-  document.getElementById('reset').onclick=()=>{stop(true);sec=base;draw();};
-  musicBtn.onclick=async()=>{
-    music=!music;draw();
-    if(!music){stopMusic(.6);hint.textContent='Calm music is off.';return;}
-    hint.textContent='Warm pads and soft bells fade in gently.';
-    if(running)await startMusic();
-  };
-
-  draw();
+  presetButtons.forEach(b=>b.onclick=()=>countdown.select(Number(b.dataset.min)*60));
+  start.onclick=countdown.toggle;
+  document.getElementById('reset').onclick=()=>countdown.select(countdown.duration);
+  musicBtn.onclick=countdown.toggleMusic;
+  window.ClassroomCountdown.watch(countdown,draw,'Time is up');
   return true;
 }
 

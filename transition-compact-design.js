@@ -112,11 +112,6 @@ function install(){
     document.head.appendChild(style);
   }
 
-  const presetButtons=[...panel.querySelectorAll('[data-sec]')];
-  function mark(button){presetButtons.forEach(b=>b.classList.toggle('selected',b===button));}
-  presetButtons.forEach(b=>b.addEventListener('click',()=>mark(b)));
-  const initial=presetButtons.find(b=>Number(b.dataset.sec)===60)||presetButtons[0];
-  if(initial)mark(initial);
   return true;
 }
 

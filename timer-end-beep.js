@@ -3,7 +3,7 @@
 const S=window.Support;
 const supportTimer=S&&(S.slug==='timer-calm-music'||S.slug==='transition-countdown');
 const stripTimer=!!(document.getElementById('timerStart')&&document.getElementById('time'));
-if((!supportTimer&&!stripTimer)||window.ClassroomTimerAlarm)return;
+if(window.ClassroomTimerAlarm)return;
 let context=null;
 
 // The finish alarm has its own audio path: switching off/fading the optional
@@ -34,6 +34,7 @@ async function endAlarm(){
   });
 }
 window.ClassroomTimerAlarm={prime:primeAlarm,play:endAlarm};
+if(!supportTimer&&!stripTimer)return;
 if(supportTimer){S.endAlarm=endAlarm;S.chime=endAlarm;window.__ccTimerEndBeepV1=true}
 document.addEventListener('click',event=>{
   const start=event.target?.closest?.('#start,#timerStart,#time');

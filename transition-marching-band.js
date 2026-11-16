@@ -6,7 +6,7 @@ window.__transitionMarchBandV2=true;
 
 function install(){
   const panel=S.panel||document.getElementById('panel');
-  if(!panel)return false;
+  if(!panel||!window.ClassroomCountdown)return false;
 
   if(!document.getElementById('transitionMarchBandStyleV2')){
     const style=document.createElement('style');
@@ -66,8 +66,7 @@ function install(){
     document.head.appendChild(style);
   }
 
-  let base=60,sec=60,running=false,timerId=null,music=true;
-  let audioCtx=null,marchMaster=null,marchCompressor=null,beatId=null,step=0;
+  const countdown=window.ClassroomCountdown.forView(S.slug);
 
   panel.innerHTML=`
     <div class="eyebrow">Change activity</div>
@@ -97,127 +96,28 @@ function install(){
   const musicBtn=document.getElementById('music');
   const band=document.getElementById('marchBand');
   const wrap=document.getElementById('marchWrap');
-
-  function ensureAudio(){
-    const AC=window.AudioContext||window.webkitAudioContext;
-    if(!AC)return null;
-    if(!audioCtx){
-      audioCtx=new AC();
-      marchCompressor=audioCtx.createDynamicsCompressor();
-      marchCompressor.threshold.value=-18;marchCompressor.knee.value=16;marchCompressor.ratio.value=3;marchCompressor.attack.value=.01;marchCompressor.release.value=.22;
-      marchMaster=audioCtx.createGain();marchMaster.gain.value=1.38;
-      marchMaster.connect(marchCompressor);marchCompressor.connect(audioCtx.destination);
-    }
-    try{if(audioCtx.state==='suspended')audioCtx.resume()}catch(e){}
-    return audioCtx;
-  }
-
-  function output(node){node.connect(marchMaster||ensureAudio()?.destination)}
-
-  function tone(freq,dur=.13,vol=.052,type='square',delay=0){
-    const c=ensureAudio();if(!c)return;
-    const now=c.currentTime+delay,o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();
-    o.type=type;o.frequency.value=freq;f.type='lowpass';f.frequency.value=1650;
-    g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(vol,now+.012);g.gain.exponentialRampToValueAtTime(.0001,now+dur);
-    o.connect(f);f.connect(g);output(g);o.start(now);o.stop(now+dur+.03);
-  }
-
-  function kick(){
-    const c=ensureAudio();if(!c)return;
-    const now=c.currentTime,o=c.createOscillator(),g=c.createGain();
-    o.type='sine';o.frequency.setValueAtTime(118,now);o.frequency.exponentialRampToValueAtTime(56,now+.14);
-    g.gain.setValueAtTime(.09,now);g.gain.exponentialRampToValueAtTime(.0001,now+.18);
-    o.connect(g);output(g);o.start(now);o.stop(now+.20);
-  }
-
-  function snare(){
-    const c=ensureAudio();if(!c)return;
-    const len=Math.floor(c.sampleRate*.12),buf=c.createBuffer(1,len,c.sampleRate),data=buf.getChannelData(0);
-    for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*(1-i/len);
-    const src=c.createBufferSource(),hp=c.createBiquadFilter(),g=c.createGain(),now=c.currentTime;
-    hp.type='highpass';hp.frequency.value=1150;g.gain.setValueAtTime(.065,now);g.gain.exponentialRampToValueAtTime(.0001,now+.11);
-    src.buffer=buf;src.connect(hp);hp.connect(g);output(g);src.start(now);
-  }
-
-  const melody=[523.25,659.25,783.99,659.25,587.33,698.46,783.99,698.46];
-  function marchStep(){
-    if(!running||!music)return;
-    const strong=step%4===0,back=step%4===2;
-    if(strong||back)kick();
-    if(step%4===1||step%4===3)snare();
-    const f=melody[step%melody.length];
-    tone(f,.14,.048,'square');
-    tone(f/2,.17,.022,'triangle',.015);
-    step++;
-  }
-
-  function stopMarchMusic(){
-    if(beatId){clearInterval(beatId);beatId=null;}
-  }
-
-  async function startMarchMusic(){
-    stopMarchMusic();
-    if(!running||!music)return;
-    const c=ensureAudio();
-    if(!c){S.toast('Audio is unavailable');return;}
-    try{if(c.state==='suspended')await c.resume()}catch(e){}
-    step=0;marchStep();beatId=setInterval(marchStep,250);
-  }
-
-  function setAnimation(on){
-    band.classList.toggle('marching',on);
-    wrap.classList.toggle('playing',on);
-    band.classList.toggle('fast',on&&sec<=10);
-  }
+  const presets=[...panel.querySelectorAll('[data-sec]')];
 
   function draw(){
+    const sec=countdown.seconds;
+    const running=countdown.running;
     time.textContent=S.fmt(sec);
-    ring.style.setProperty('--progress',`${Math.max(0,sec/base*100)}%`);
+    ring.style.setProperty('--progress',`${Math.max(0,sec/countdown.duration*100)}%`);
     ring.classList.toggle('pulse',running&&sec<=10);
     start.textContent=running?'■ Stop':'▶ Start transition';
-    musicBtn.textContent='🥁 March music: '+(music?'On':'Off');
+    musicBtn.textContent='🥁 March music: '+(countdown.music?'On':'Off');
+    band.classList.toggle('marching',running);
+    wrap.classList.toggle('playing',running);
     band.classList.toggle('fast',running&&sec<=10);
+    cue.textContent=countdown.completed?'Ready!':'Move safely • Be ready';
+    cue.classList.toggle('transitionReadyPop',countdown.completed);
+    presets.forEach(b=>b.classList.toggle('selected',Number(b.dataset.sec)===countdown.duration));
   }
 
-  function stop(resetCue=false){
-    if(timerId){clearInterval(timerId);timerId=null;}
-    running=false;stopMarchMusic();setAnimation(false);
-    if(resetCue)cue.textContent='Move safely • Be ready';
-    draw();
-  }
-
-  async function go(){
-    if(running){stop(false);return;}
-    if(sec<=0)sec=base;
-    running=true;
-    cue.classList.remove('transitionReadyPop');
-    cue.textContent='Move safely • Be ready';
-    setAnimation(true);draw();
-    if(music)await startMarchMusic();
-    timerId=setInterval(()=>{
-      sec--;draw();
-      if(sec<=0){
-        if(timerId){clearInterval(timerId);timerId=null;}
-        running=false;stopMarchMusic();setAnimation(false);draw();
-        cue.textContent='Ready!';
-        cue.classList.remove('transitionReadyPop');void cue.offsetWidth;cue.classList.add('transitionReadyPop');
-        S.chime();S.toast('Transition complete');
-      }
-    },1000);
-  }
-
-  document.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{
-    stop(true);base=sec=Number(b.dataset.sec);draw();
-  });
-
-  musicBtn.onclick=async()=>{
-    music=!music;draw();
-    if(!music){stopMarchMusic();return;}
-    if(running)await startMarchMusic();
-  };
-  start.onclick=go;
-  window.addEventListener('beforeunload',stopMarchMusic,{once:true});
-  draw();
+  presets.forEach(b=>b.onclick=()=>countdown.select(Number(b.dataset.sec)));
+  start.onclick=countdown.toggle;
+  musicBtn.onclick=countdown.toggleMusic;
+  window.ClassroomCountdown.watch(countdown,draw,'Transition complete');
   return true;
 }
 
