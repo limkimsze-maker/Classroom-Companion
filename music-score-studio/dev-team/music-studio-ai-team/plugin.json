@@ -1,0 +1,25 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "author": {
+    "email": "lim_kim_sze@moe.edu.sg",
+    "name": "Kim Sze Lim"
+  },
+  "description": "A coordinated four-specialist review and enhancement workflow for Lim Kim Sze's Music Score Studio.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "capabilities": [],
+        "category": "Productivity",
+        "defaultPrompt": "Review the latest Music Score Studio implementation, preserve approved features, and coordinate music accuracy, pupil experience, development, and QA before proposing or implementing a safe enhancement.",
+        "developerName": "Kim Sze Lim",
+        "displayName": "Music Studio AI Team",
+        "longDescription": "Coordinate music notation, Singapore primary pupil experience, software implementation and independent quality review for Music Score Studio. Keep frozen features intact and distinguish verified fixes from untested changes.",
+        "shortDescription": "Improve your music studio"
+      }
+    }
+  },
+  "homepage": "https://limkimsze-maker.github.io/Classroom-Companion/music-score-studio/",
+  "name": "music-studio-ai-team",
+  "repository": "https://github.com/limkimsze-maker/Classroom-Companion",
+  "version": "0.2.0"
+}
